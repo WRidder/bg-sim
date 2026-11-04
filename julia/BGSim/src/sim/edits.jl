@@ -293,6 +293,7 @@ function _apply_parameter!(s::DebugSession, name::AbstractString, sym, value::Fl
     ModelingToolkit.SciMLBase.reeval_internals_due_to_modification!(
         integ, false; callback_initializealg = ModelingToolkit.SciMLBase.NoInit()
     )
+    _watch_rearm!(s)
     return nothing
 end
 
@@ -311,6 +312,7 @@ function _apply_state!(s::DebugSession, sym, value::Float64)
     ModelingToolkit.SciMLBase.reeval_internals_due_to_modification!(
         integ, false; callback_initializealg = ModelingToolkit.SciMLBase.NoInit()
     )
+    _watch_rearm!(s)
     return nothing
 end
 

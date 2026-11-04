@@ -494,8 +494,10 @@ target.
 
 **Deviations / open.**
 - E402 rule (DEC-M4-9).
-- A watch crossing at the same instant as another callback's event is not seen (DiffEqBase
-  applies only the earliest callback per step).
+- ~~A watch crossing at the same instant as another callback's event is not seen (DiffEqBase
+  applies only the earliest callback per step).~~ Closed: the pool now compares the truth of
+  each watch at every checkpoint, which also covers values that jump at a tick or in an
+  `@events` affect (NOTES.md, J4.3).
 - An edit made at a statement pause replays before that tick's partitions.
 - "Rewind to here" cancels the paused parent run before it starts the branch.
 - Vector assignments hook per element.

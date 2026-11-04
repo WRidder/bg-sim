@@ -32,10 +32,6 @@ resync would otherwise replace them with the user's. Live edits touch only the r
 `debug.setBreakpoints` says whether one bound, and the worker can only answer once the run is built.
 An unbound breakpoint leaves the run at entry; a run that ends without a pause says so.
 
-Known limit of the debugger itself: a watch is a continuous callback, and a signal of `@discrete` code
-jumps at a tick, so such a watch is verified and never fires (`debug-tour`, `s"Ctrl/z" > 0.1`). The tool
-descriptions send the agent to a line breakpoint with a condition instead.
-
 ## Layout
 
 - `backend/src/bgsim_server/assistant/`: `tools.py` (registry), `draft.py`, `session.py`, `manager.py`,

@@ -9,7 +9,10 @@
 #   * `hitCount`, disabled watches, the 16-slot limit, continuing past a crossing;
 #   * adding, changing and removing watches while paused never causes a spurious pause (50
 #     random changes, fixed seed);
-#   * `debug.evaluate` and `debug.values` at a pause.
+#   * `debug.evaluate` and `debug.values` at a pause;
+#   * a value that jumps at a step boundary (a tick, an `@events` affect, a kink) fires its watch
+#     once, `>` and `>=` differ on a discrete value, a watch mixing continuous and discrete
+#     signals counts one hit per crossing, and re-arming and live edits never fire one.
 
 using Test
 using BGSim
@@ -114,6 +117,29 @@ end
 
 _wt_result(run::_WtRun) = fetch(run.task)
 
+# Continue through every pause of a run: its `PausedInfo`s with `ids` read at each, in order.
+function _wt_pauses(run::_WtRun; ids = String[])
+    out = NamedTuple[]
+    while true
+        info = _wt_next(run)
+        info === :finished && return out
+        values = isempty(ids) ? Dict{String,Float64}() : debug_values(run.ctx, ids).values
+        push!(out, (; info, values))
+        debug_continue!(run.ctx)
+    end
+end
+
+# Upward crossings of `level` by `row -> value` in the rows of a watch-free run of `m`.
+function _wt_rows(m::_WtModel, ids)
+    dir = mktempdir()
+    result = simulate(m.flat; run_dir = dir, run_id = "rows", settings = m.settings)
+    @assert result.status == "done"
+    names = String[String(s.id) for s in result.signals]
+    raw = collect(reinterpret(Float64, read(joinpath(dir, "columns.f64"))))
+    rows = reshape(raw, :, length(names) + 1)
+    return Dict(id => rows[:, findfirst(==(id), names) + 1] for id in ids)
+end
+
 # Cancel a paused run and wait for it to end.
 function _wt_stop!(run::_WtRun)
     debug_cancel!(run.ctx)
@@ -130,6 +156,8 @@ _wt_watch(id, expr; context = nothing, enabled = true, hit = nothing) = Dict{Str
 )
 
 const _WT_DC = _wt_load("dc-motor", "iconic.bgmodel.json")
+const _WT_TOUR = _wt_load("debug-tour", "debug-tour.bgmodel.json")
+const _WT_BALL = _wt_load("bouncing-ball", "bouncing-ball.bgmodel.json")
 
 # A continuous ramp and a tick counter with a temporary (`w`), for the statement-pause tests.
 const _WT_RAMP = """
@@ -159,7 +187,7 @@ const _WT_COUNTER = """
 end
 """
 
-function _wt_counter_model()
+function _wt_counter_model(; ramp::Bool = true)
     node(id, name, source) = Dict{String,Any}(
         "id" => id, "name" => name,
         "block" => Dict{String,Any}("inline" => Dict{String,Any}("source" => source)),
@@ -170,7 +198,8 @@ function _wt_counter_model()
     doc = Dict{String,Any}(
         "format" => "bgsim.model", "language" => "0.1.0", "name" => "Counter",
         "diagram" => Dict{String,Any}(
-            "nodes" => Any[node("ramp", "Ramp", _WT_RAMP), node("cnt", "Cnt", _WT_COUNTER)],
+            "nodes" => ramp ? Any[node("ramp", "Ramp", _WT_RAMP), node("cnt", "Cnt", _WT_COUNTER)] :
+                       Any[node("cnt", "Cnt", _WT_COUNTER)],
             "connections" => Any[], "subsystemPorts" => Any[], "annotations" => Any[],
         ),
         "settings" => Dict{String,Any}(
@@ -595,6 +624,242 @@ end
         _wt_stop!(run)
     end
 
+    @testset "debug-tour: a watch on a signal that only changes at a tick" begin
+        m = _WT_TOUR
+        # c = z - 0.1 is -0.00203 before the tick at 0.6 s and +0.00727
+        # after it, so the solver never sees a sign change inside a step.
+        run = _wt_spawn(m; breakpoints = [_wt_watch("z", "s\"Ctrl/z\" > 0.1")])
+        info = _wt_next(run)
+        @test info isa NamedTuple
+        @test info.reason == "breakpoint" && info.breakpointId == "z"
+        @test info.t ≈ 0.6 atol = 1.0e-9
+        @test info.tick == 60
+        @test info.frame === nothing && info.location.scope == "watch"
+        @test all(s -> s.verified, run.ctx.statuses)
+        @test debug_values(run.ctx, ["Ctrl/z"]).values["Ctrl/z"] ≈ 0.10727 atol = 1.0e-4
+        @test debug_evaluate(run.ctx, "s\"Ctrl/z\" > 0.1").value === true
+        debug_continue!(run.ctx)
+        rest = _wt_pauses(run; ids = ["Ctrl/z"])
+        @test all(p -> p.values["Ctrl/z"] > 0.1, rest)
+        @test watch_hits(run.ctx)["z"] == 1 + length(rest)
+        @test _wt_result(run).status == "done"
+
+        # A held output, at a tick.
+        run = _wt_spawn(m; breakpoints = [_wt_watch("u", "s\"Ctrl/u\" > 16")])
+        pauses = _wt_pauses(run; ids = ["Ctrl/u"])
+        @test !isempty(pauses)
+        @test all(p -> p.values["Ctrl/u"] > 16, pauses)
+        @test all(p -> abs(p.info.t / 0.01 - round(p.info.t / 0.01)) < 1.0e-7, pauses)
+
+        # The continuous control keeps its located crossing.
+        run = _wt_spawn(m; breakpoints = [_wt_watch("y", "s\"Pos/y\" > 0.5")])
+        pauses = _wt_pauses(run; ids = ["Pos/y"])
+        @test pauses[1].info.t ≈ 0.7933869 atol = 1.0e-5
+        @test pauses[1].values["Pos/y"] ≈ 0.5 atol = 1.0e-9
+
+        # A mix: every upward crossing of the sum, whether a tick or the motion carries it
+        # across, is one hit. The rows of a watch-free run give the reference count.
+        rows = _wt_rows(m, ["Ctrl/z", "Pos/y"])
+        sum_rows = rows["Ctrl/z"] .+ rows["Pos/y"]
+        expected = count(i -> sum_rows[i - 1] <= 0.7 && sum_rows[i] > 0.7, 2:length(sum_rows))
+        @test expected >= 1
+        run = _wt_spawn(m; breakpoints = [_wt_watch("mix", "s\"Ctrl/z\" + s\"Pos/y\" > 0.7")])
+        pauses = _wt_pauses(run; ids = ["Ctrl/z", "Pos/y"])
+        @test length(pauses) == expected
+        @test watch_hits(run.ctx)["mix"] == expected
+        @test all(p -> p.values["Ctrl/z"] + p.values["Pos/y"] >= 0.7 - 1.0e-9, pauses)
+        @test issorted([p.info.t for p in pauses])
+        @test pauses[1].info.t < 1.0                  # the first crossing, not a later one
+    end
+
+    @testset "discrete values: the truth of the comparison decides, not the sign" begin
+        m = _wt_counter_model()
+        for (expr, k) in (
+            ("s\"Cnt/k\" > 5", 6), ("s\"Cnt/k\" >= 5", 5), ("s\"Cnt/k\" == 5", 5),
+            ("s\"Cnt/k\" > 5 && s\"Cnt/y\" >= 14", 7),   # the second part decides, at k = 7
+            ("s\"Cnt/k\" < 3 || s\"Cnt/k\" > 8", 9),     # true at the start: false, then true
+            ("s\"Cnt/y\" - 8", 4),                       # a bare real expression: reaches zero
+        )
+            run = _wt_spawn(m; breakpoints = [_wt_watch("c", expr)])
+            pauses = _wt_pauses(run; ids = ["Cnt/k"])
+            @test length(pauses) == 1
+            @test pauses[1].info.t ≈ k * 1.0e-3 atol = 1.0e-9
+            @test pauses[1].values["Cnt/k"] == k
+            @test pauses[1].info.tick == k
+        end
+        for expr in (
+            "s\"Cnt/k\" < 3",        # true from the start, then false: no upward crossing
+            "s\"Cnt/k\" >= 0",       # true all along
+            "s\"Cnt/y\" == 5",       # y is even: it jumps past 5, so `==` never holds
+            "s\"Cnt/k\" < 0",        # never true
+        )
+            run = _wt_spawn(m; breakpoints = [_wt_watch("c", expr)])
+            @test isempty(_wt_pauses(run))
+            @test watch_hits(run.ctx)["c"] == 0
+        end
+
+        # Two watches at one tick: one pause, both counted.
+        run = _wt_spawn(m; breakpoints = [
+            _wt_watch("a", "s\"Cnt/k\" > 5"), _wt_watch("b", "s\"Cnt/k\" >= 6"),
+        ])
+        pauses = _wt_pauses(run)
+        @test length(pauses) == 1 && pauses[1].info.breakpointId == "a"
+        @test watch_hits(run.ctx) == Dict("a" => 1, "b" => 1)
+
+        # A tick that fires a watch reports the breakpoint, not the step.
+        run = _wt_spawn(m; breakpoints = [_wt_watch("k", "s\"Cnt/k\" >= 1")], pause_on_entry = true)
+        @test _wt_next(run).reason == "entry"
+        debug_step!(run.ctx, "tick")
+        info = _wt_next(run)
+        @test info.reason == "breakpoint" && info.breakpointId == "k" && info.tick == 1
+        _wt_stop!(run)
+
+        # A model without continuous state has no solver steps at all, only its ticks.
+        s = _wt_counter_model(; ramp = false)
+        run = _wt_spawn(s; breakpoints = [_wt_watch("c", "s\"Cnt/k\" > 5")])
+        pauses = _wt_pauses(run)
+        @test length(pauses) == 1
+        @test pauses[1].info.t ≈ 6.0e-3 atol = 1.0e-9
+    end
+
+    @testset "a mix of continuous and discrete signals: one hit per crossing" begin
+        m = _wt_counter_model()
+        # 1000 x - y / 2 = 1000 t - k rises through 0.5 inside each tick and falls at the tick.
+        rising = "1000 * s\"Ramp/x\" - 0.5 * s\"Cnt/y\" > 0.5"
+        run = _wt_spawn(m; breakpoints = [_wt_watch("up", rising)])
+        pauses = _wt_pauses(run)
+        @test length(pauses) == 20
+        @test all(i -> isapprox(pauses[i].info.t, (i - 0.5) * 1.0e-3; atol = 1.0e-8), 1:20)
+        @test watch_hits(run.ctx)["up"] == 20
+
+        # y / 2 - 1000 x = k - 1000 t falls inside each tick and rises at the tick.
+        jumping = "0.5 * s\"Cnt/y\" - 1000 * s\"Ramp/x\" > -0.75"
+        run = _wt_spawn(m; breakpoints = [_wt_watch("up", jumping)])
+        pauses = _wt_pauses(run)
+        @test length(pauses) == 20
+        @test all(i -> isapprox(pauses[i].info.t, i * 1.0e-3; atol = 1.0e-9), 1:20)
+        @test watch_hits(run.ctx)["up"] == 20
+
+        # hitCount counts both kinds of crossing per watch.
+        run = _wt_spawn(m; breakpoints = [_wt_watch("up", jumping; hit = 3)])
+        pauses = _wt_pauses(run)
+        @test length(pauses) == 1
+        @test pauses[1].info.t ≈ 3.0e-3 atol = 1.0e-9
+        @test watch_hits(run.ctx)["up"] == 20
+
+        # The motion reaches the level on the tick and the tick lifts it past: the step ends on
+        # the root and the jump follows at the same instant, one crossing.
+        run = _wt_spawn(m; breakpoints = [
+            _wt_watch("both", "s\"Ramp/x\" + 1.0e-9 * s\"Cnt/y\" > 0.005000008"),
+        ])
+        pauses = _wt_pauses(run)
+        @test length(pauses) == 1
+        @test pauses[1].info.t ≈ 0.005 atol = 1.0e-8
+        @test watch_hits(run.ctx)["both"] == 1
+    end
+
+    @testset "jumps of other kinds: an @events affect and a kink" begin
+        # The limit switch latches in an event affect, a jump of the state.
+        run = _wt_spawn(_WT_TOUR; breakpoints = [_wt_watch("latch", "s\"Limit/latch\" > 0.5")])
+        pauses = _wt_pauses(run; ids = ["Limit/latch", "Pos/y"])
+        @test length(pauses) == 1
+        @test pauses[1].info.t ≈ 1.09365 atol = 1.0e-3
+        @test pauses[1].values["Limit/latch"] == 1.0
+        @test pauses[1].values["Pos/y"] ≈ 1.2 atol = 1.0e-6
+
+        # The reinit of the bounce turns v positive in one instant.
+        run = _wt_spawn(_WT_BALL; breakpoints = [_wt_watch("up", "s\"Ball1/v\" > 0")])
+        info = _wt_next(run)
+        @test info isa NamedTuple && info.reason == "breakpoint"
+        @test info.t ≈ sqrt(2 / 9.81) atol = 1.0e-6
+        @test debug_values(run.ctx, ["Ball1/v"]).values["Ball1/v"] > 0
+        _wt_stop!(run)
+
+        # The source steps at the instant of the model's own kink callback, which used to win.
+        run = _wt_spawn(_WT_DC; breakpoints = [_wt_watch("e", "s\"Motor1/p.e\" > 6")])
+        pauses = _wt_pauses(run; ids = ["Motor1/p.e"])
+        @test !isempty(pauses)
+        @test pauses[1].info.t ≈ 0.01 atol = 1.0e-9
+        @test pauses[1].values["Motor1/p.e"] > 6
+    end
+
+    @testset "discrete watches re-arm from the current state and survive a list change" begin
+        m = _wt_counter_model()
+        k5 = _wt_watch("a", "s\"Cnt/k\" > 5")
+        run = _wt_spawn(m; breakpoints = [k5])
+        @test _wt_next(run).breakpointId == "a"       # k = 6
+        # Added while paused: `b` is already true, so it never fires; `c` fires at its crossing.
+        list = [k5, _wt_watch("b", "s\"Cnt/k\" > 3"), _wt_watch("c", "s\"Cnt/k\" > 8")]
+        @test all(s -> s.verified, debug_set_breakpoints!(run.ctx, list))
+        @test watch_hits(run.ctx)["a"] == 1           # an unchanged watch keeps its count
+        debug_continue!(run.ctx)
+        info = _wt_next(run)
+        @test info.breakpointId == "c"
+        @test info.t ≈ 9.0e-3 atol = 1.0e-9
+        # Changed while paused: `a` is false again and counts from zero, `c` is true.
+        list = [
+            _wt_watch("a", "s\"Cnt/k\" > 10"), _wt_watch("b", "s\"Cnt/k\" > 3"),
+            _wt_watch("c", "s\"Cnt/k\" > 2"),
+        ]
+        debug_set_breakpoints!(run.ctx, list)
+        @test watch_hits(run.ctx) == Dict("a" => 0, "b" => 0, "c" => 0)
+        debug_continue!(run.ctx)
+        info = _wt_next(run)
+        @test info.breakpointId == "a"
+        @test info.t ≈ 11.0e-3 atol = 1.0e-9
+        debug_continue!(run.ctx)
+        @test _wt_next(run) === :finished
+        @test watch_hits(run.ctx) == Dict("a" => 1, "b" => 0, "c" => 0)
+
+        # At a statement pause of the crossing tick the value is not published yet: setting the
+        # list again must not lose the crossing of the unchanged watch.
+        line = findfirst(l -> occursin("d = w -", l), split(_WT_COUNTER, '\n'))
+        statement = Dict{String,Any}(
+            "id" => "line", "enabled" => true, "kind" => "line", "hitCount" => 6,
+            "line" => Dict{String,Any}("ref" => "inline:cnt", "line" => line, "path" => nothing),
+        )
+        run = _wt_spawn(m; breakpoints = [statement, k5])
+        info = _wt_next(run)
+        @test info.breakpointId == "line" && info.frame !== nothing
+        debug_set_breakpoints!(run.ctx, [k5])
+        debug_continue!(run.ctx)
+        info = _wt_next(run)
+        @test info.breakpointId == "a"
+        @test info.t ≈ 6.0e-3 atol = 1.0e-9
+        _wt_stop!(run)
+    end
+
+    @testset "a live edit is not a crossing" begin
+        m = _wt_oscillator(; t_end = 0.3)
+        run = _wt_spawn(m; breakpoints = [_wt_watch("w", "s\"Plant/w\" > 7")], pause_on_entry = true)
+        @test _wt_next(run).reason == "entry"
+        @test debug_set_parameter!(run.ctx, "Plant/w", 8.0).ok
+        debug_continue!(run.ctx)
+        @test _wt_next(run) === :finished
+        @test watch_hits(run.ctx)["w"] == 0
+
+        run = _wt_spawn(m; breakpoints = [_wt_watch("x", "s\"Plant/x\" > 2")], pause_on_entry = true)
+        @test _wt_next(run).reason == "entry"
+        @test debug_set_state!(run.ctx, "Plant/x", 3.0).ok
+        debug_continue!(run.ctx)
+        @test _wt_next(run) === :finished
+    end
+
+    @testset "an edit at a watch pause on a tick replays bit for bit" begin
+        m = _WT_TOUR
+        run = _wt_spawn(m; breakpoints = [_wt_watch("z", "s\"Ctrl/z\" > 0.1"; hit = 1)])
+        info = _wt_next(run)
+        @test info.reason == "breakpoint"
+        @test debug_set_parameter!(run.ctx, "Ctrl/aw", 1.0).ok
+        @test run.ctx.edits[1].position.at == "target"
+        debug_continue!(run.ctx)
+        _wt_pauses(run)
+        dir = mktempdir()
+        result = replay_run(run.dir; flat = m.flat, run_dir = dir, run_id = "replay")
+        @test result.status == "done"
+        @test read(joinpath(dir, "columns.f64")) == read(joinpath(run.dir, "columns.f64"))
+    end
+
     @testset "the pool is installed in a debug run and costs nothing visible" begin
         m = _WT_DC
         run = _wt_spawn(m; pause_on_entry = true)
@@ -602,6 +867,7 @@ end
         pool = watch_pool(run.ctx)
         @test pool isa BGSim.WatchPool
         @test length(pool.fns) == 16 && all(isnothing, pool.fns)
+        @test pool.active == 0
         _wt_stop!(run)
     end
 end

@@ -7,12 +7,25 @@
 # compiled once per watch from the watch AST with `SymbolicIndexingInterface.observed(sys, expr)`
 # (so a variable that `mtkcompile` eliminated can be watched). A disabled or empty slot returns
 # `1.0`. The affect only marks the slot of an **upward** crossing; the pause itself happens in
-# the after-step checkpoint (`dbg_after_step!` calls `_watch_hit`), so the integrator is never
-# blocked inside a callback.
+# a checkpoint (`dbg_after_step!` and `_dbg_target!` call `_watch_hit`), so the integrator is
+# never blocked inside a callback.
+#
+# The root finder only sees a sign change *inside* a step (see "Events on a jump" in
+# `simulate.jl`): every step compares the condition at `tprev` with the one at `t`, both
+# evaluated with the values the integrator has now. A value that jumps at a step boundary (a
+# published held output at a tick, a driven input, a parameter step, the affect of an `@events`
+# entry, a kink at the same instant) is already on the new side at `tprev`, so its crossing is
+# never reported. So the pool does not depend on the solver to see a crossing: it keeps the
+# truth of every watch (`truth`), and each checkpoint compares the current value with it.
+# `_watch_hit` is the only place that counts a hit, on the false to true edge, so a crossing the
+# affect located and a jump can never count twice. A located crossing keeps the exact time of
+# the root; a jump pauses where it happened, at the tick or right after the event. An empty pool
+# costs a lookup and a compare per checkpoint (about 40 ns), and a normal run has none of this.
 #
 # Changing the pool needs no recompile of the problem: `DiffEqBase` evaluates the condition at
-# `tprev` again in every step (no cached previous condition), so a new or changed slot starts
-# from the current state and cannot report a crossing that happened before it existed.
+# `tprev` again in every step (no cached previous condition), and `_resolve_watches!` arms a new
+# or changed slot with its truth in the current state, so it cannot report a crossing that
+# happened before it existed. A live edit re-arms every slot (`_watch_rearm!`).
 #
 # `debug.evaluate` (D27) runs the constant-folding interpreter of the front end over a resolved
 # watch expression, with signal lookups through the live integrator and, at a statement pause,
@@ -37,16 +50,20 @@ end
     WatchPool
 
 The 16 slots of the watch callback of one debug run (`ctx.ext[:watch]`): the compiled
-condition function, the owning breakpoint id, the `hitCount` target and the hit counter of
-each slot, plus the slots the affect marked since the last checkpoint."""
+condition function and resolved expression, the owning breakpoint id, the `hitCount` target and
+the hit counter of each slot, the truth of each watch at the last checkpoint, and the slots
+whose crossing the affect located since then. The first `active` slots are in use."""
 mutable struct WatchPool
     fns::Vector{Any}
+    resolved::Vector{Any}
     bp_ids::Vector{Union{Nothing,String}}
     targets::Vector{Union{Nothing,Int}}
     hits::Vector{Int}
     keys::Vector{Any}
     locations::Vector{Any}
-    fired::Vector{Int}
+    truth::Vector{Bool}
+    crossed::Vector{Bool}
+    active::Int
     errors::Vector{Union{Nothing,String}}
     compiled::Dict{Tuple{String,Union{Nothing,String}},Any}
     callback::Any
@@ -55,12 +72,15 @@ end
 function WatchPool(; interp_points::Int = 10)
     pool = WatchPool(
         Any[nothing for _ in 1:WATCH_SLOT_COUNT],
+        Any[nothing for _ in 1:WATCH_SLOT_COUNT],
         Union{Nothing,String}[nothing for _ in 1:WATCH_SLOT_COUNT],
         Union{Nothing,Int}[nothing for _ in 1:WATCH_SLOT_COUNT],
         zeros(Int, WATCH_SLOT_COUNT),
         Any[nothing for _ in 1:WATCH_SLOT_COUNT],
         Any[nothing for _ in 1:WATCH_SLOT_COUNT],
-        Int[],
+        fill(false, WATCH_SLOT_COUNT),
+        fill(false, WATCH_SLOT_COUNT),
+        0,
         Union{Nothing,String}[nothing for _ in 1:WATCH_SLOT_COUNT],
         Dict{Tuple{String,Union{Nothing,String}},Any}(),
         nothing,
@@ -108,12 +128,8 @@ end
 # discontinuity (no re-evaluation of the integrator internals).
 function (a::_WatchAffect)(integ, events)
     pool = a.pool
-    for i in 1:WATCH_SLOT_COUNT
-        events[i] > 0 || continue
-        pool.fns[i] === nothing && continue
-        pool.hits[i] += 1
-        target = pool.targets[i]
-        (target === nothing || pool.hits[i] == target) && push!(pool.fired, i)
+    for i in 1:pool.active
+        events[i] > 0 && (pool.crossed[i] = true)
     end
     ModelingToolkit.SciMLBase.derivative_discontinuity!(integ, false)
     return nothing
@@ -166,18 +182,59 @@ function _dbg_init_kwargs(ctx::DebugCtx, kwargs)
     return merge(kwargs, (; callback = pool.callback))
 end
 
-# After a step: the first watch the affect marked, or `nothing`. Always clears the marks.
-function _watch_hit(ctx::DebugCtx)
-    pool = get(ctx.ext, :watch, nothing)
-    (pool === nothing || isempty(pool.fired)) && return nothing
-    hit = nothing
-    for i in pool.fired
-        id = pool.bp_ids[i]
-        id === nothing && continue
-        hit === nothing && (hit = (id = id, location = pool.locations[i]))
+# Is watch `i` true in the current state, where its condition is `c`? The sign of `c` decides,
+# except that it cannot tell `k > 5` from `k >= 5` at `k == 5`, or say that `k == 5` holds after
+# `k` jumped past 5: a discrete value lands on such values, so what the sign does not settle
+# goes to the expression itself. `was` is the truth so far. NaN is false: it never crosses.
+function _watch_truth(s::DebugSession, pool::WatchPool, i::Int, c::Float64, was::Bool)
+    c >= 0 || return false
+    c > 0 && was && return true
+    value = try
+        eval_const(pool.resolved[i], WatchEnv(s, nothing))
+    catch
+        return true
     end
-    empty!(pool.fired)
+    return value isa Bool ? value : true
+end
+
+function _watch_now(s::DebugSession, pool::WatchPool, i::Int, was::Bool)
+    integ = s.integ
+    c = _watch_value(pool, i, pool.fns[i], integ.u, integ.p, integ.t)
+    return _watch_truth(s, pool, i, c, was)
+end
+
+# At a checkpoint: the first watch that became true since the last one and reached its
+# `hitCount`, or `nothing`. A crossing the affect located counts whatever the sign says at the
+# root. Without watches this is the lookup and one integer compare.
+function _watch_hit(s::DebugSession)
+    pool = get(s.ctx.ext, :watch, nothing)
+    (pool === nothing || pool.active == 0) && return nothing
+    hit = nothing
+    for i in 1:pool.active
+        was = pool.truth[i]
+        now = pool.crossed[i] || _watch_now(s, pool, i, was)
+        pool.crossed[i] = false
+        pool.truth[i] = now
+        (now && !was) || continue
+        pool.hits[i] += 1
+        target = pool.targets[i]
+        if hit === nothing && (target === nothing || pool.hits[i] == target)
+            hit = (id = pool.bp_ids[i], location = pool.locations[i])
+        end
+    end
     return hit
+end
+
+# After a live edit: what the user changed is not a crossing of the model, so every watch goes
+# on from the state the edit left, as the root finder would (it reads `tprev` with the new
+# values).
+function _watch_rearm!(s::DebugSession)
+    pool = get(s.ctx.ext, :watch, nothing)
+    pool === nothing && return nothing
+    for i in 1:pool.active
+        pool.truth[i] = _watch_now(s, pool, i, false)
+    end
+    return nothing
 end
 
 # ---------------------------------------------------------------------------------------
@@ -325,19 +382,22 @@ function _resolve_watches!(ctx::DebugCtx, s::Union{Nothing,DebugSession}, bps::V
         return NamedTuple[_syntax_status(bp) for bp in bps]
     end
     base = _watch_base(s)
-    saved = Dict{String,Tuple{Any,Int}}()
+    saved = Dict{String,Tuple{Any,Int,Bool}}()
     for i in 1:WATCH_SLOT_COUNT
         id = pool.bp_ids[i]
-        id === nothing || (saved[id] = (pool.keys[i], pool.hits[i]))
+        id === nothing || (saved[id] = (pool.keys[i], pool.hits[i], pool.truth[i]))
     end
     fill!(pool.fns, nothing)
+    fill!(pool.resolved, nothing)
     fill!(pool.bp_ids, nothing)
     fill!(pool.targets, nothing)
     fill!(pool.keys, nothing)
     fill!(pool.locations, nothing)
     fill!(pool.errors, nothing)
     fill!(pool.hits, 0)
-    empty!(pool.fired)
+    fill!(pool.truth, false)
+    fill!(pool.crossed, false)
+    pool.active = 0
     used = 0
     out = NamedTuple[]
     for bp in bps
@@ -364,14 +424,22 @@ function _resolve_watches!(ctx::DebugCtx, s::Union{Nothing,DebugSession}, bps::V
                 continue
             end
             used += 1
+            pool.active = used
             key = (text, context)
             pool.fns[used] = w.fn
+            pool.resolved[used] = w.resolved
             pool.bp_ids[used] = bp.id
             pool.targets[used] = bp.hit_count
             pool.keys[used] = key
             pool.locations[used] = _watch_location(base, w)
             old = get(saved, bp.id, nothing)
-            old !== nothing && old[1] == key && (pool.hits[used] = old[2])
+            if old !== nothing && old[1] == key
+                # An unchanged watch goes on: a jump this tick has not reached it yet.
+                pool.hits[used] = old[2]
+                pool.truth[used] = old[3]
+            else
+                pool.truth[used] = _watch_now(s, pool, used, false)
+            end
         end
         push!(out, breakpoint_status(bp; verified = true, hooks = 1, paths = paths))
     end

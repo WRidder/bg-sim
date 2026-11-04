@@ -658,6 +658,7 @@ end
 **Watch pool (D22).** One `VectorContinuousCallback` with 16 slots is passed to `init` together with the callbacks MTK put into the problem. Probe how `init` merges a `callback` keyword with the problem's callbacks, and record it in NOTES.md.
 - Slot i evaluates `c_i(u, p, t)`, built from the watch AST with `SymbolicIndexingInterface.observed(sys, expr)`. A disabled slot returns `1.0`.
 - The affect pauses with reason `breakpoint` only when the slot is enabled and the crossing is upward.
+- The root finder only sees a sign change inside a step, so a value that jumps at a step boundary (a held output at a tick, a driven input, a parameter step, an `@events` affect) has no located crossing. The pool therefore keeps the truth of each watch and compares it at every checkpoint (after a step, after a tick or grid target). The false to true edge is the one hit, whether the affect located it or a jump caused it, so a watch mixing continuous and discrete signals never counts a crossing twice. A jump pauses at its tick or right after its event. A live edit re-arms the watches instead of firing them.
 - Adding, changing or removing a watch while paused must never cause a spurious pause. A 17th watch is refused with "at most 16 watch breakpoints".
 - Time breakpoints and `runTo` use `add_tstop!`. Exception breakpoints pause before the run ends on E901 or W206, so the state at failure can be inspected.
 
@@ -671,7 +672,7 @@ end
 **Determinism requirements** (tested in J4.1 to J4.4):
 - A debug run with no breakpoints writes a `columns.f64` that is bit-identical to a normal run of the same model.
 - Pausing at line breakpoints, ticks, solver steps, events or `debug.pause` and then continuing does not change the results either.
-- A watch pause adds an integrator step at the located crossing, and a time breakpoint or `runTo` adds a tstop. Results after them match a normal run within the solver tolerances, not bit for bit.
+- A watch pause adds an integrator step at a located crossing (not at a tick, where the step ended anyway), and a time breakpoint or `runTo` adds a tstop. Results after them match a normal run within the solver tolerances, not bit for bit.
 - A replay reproduces an interactive session's `columns.f64` bit for bit when its edits were made at tick, statement, step, time or pause-request pauses, and within the solver tolerances when they were made at a watch pause.
 
 **Explain (`model.explain`).** It needs no run; it uses the compile cache (J2.8). For one signal ID it returns:
