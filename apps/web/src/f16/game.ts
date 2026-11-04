@@ -395,6 +395,8 @@ async function main(): Promise<void> {
   announce({
     flight,
     rig,
+    stage,
+    fighter,
     begin,
     setMode,
     state: () => ({ phase, tier: stage.tier, view: rig.view, crashed: flight.crashed, time: flight.time, gates: run.gates.length }),

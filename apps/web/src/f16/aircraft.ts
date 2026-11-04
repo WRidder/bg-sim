@@ -307,14 +307,16 @@ uniform float uTime;
 uniform float uPower;
 varying vec2 vRing;
 void main() {
-  float along = 1.0 - vRing.x;
+  // Seen end-on the cone's triangles are edge-on, and MSAA reads the varying far outside them:
+  // unclamped, the exponential below turns that into an enormous, negative red.
+  float along = clamp(1.0 - vRing.x, 0.0, 1.0);
   // Shock diamonds: bright knots that stand still in the plume.
   float diamonds = 0.55 + 0.45 * cos(along * 34.0 * (1.0 - along * 0.3));
   float core = exp(-along * 3.6);
   float flicker = 0.9 + 0.1 * sin(uTime * 83.0 + along * 13.0) * sin(uTime * 51.0);
   vec3 hot = mix(vec3(1.0, 0.55, 0.22), vec3(0.42, 0.62, 1.0), core);
   vec3 color = hot * (2.2 + 9.0 * core * diamonds) * flicker;
-  gl_FragColor = vec4(color * uPower * smoothstep(1.0, 0.55, along), 1.0);
+  gl_FragColor = vec4(color * uPower * (1.0 - smoothstep(0.55, 1.0, along)), 1.0);
 }
 `;
 

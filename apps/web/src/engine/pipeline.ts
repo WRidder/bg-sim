@@ -26,12 +26,17 @@ uniform vec2 uTexel;
 uniform float uThreshold;
 in vec2 vUv;
 out vec4 fragColor;
+// One NaN, infinite or negative pixel must not grow through the chain into a block of wrong colour.
+vec3 tap(vec2 uv) {
+  vec3 c = texture(uSource, uv).rgb;
+  return all(lessThan(abs(c), vec3(1000.0))) ? max(c, vec3(0.0)) : vec3(0.0);
+}
 void main() {
-  vec3 c = texture(uSource, vUv).rgb * 4.0;
-  c += texture(uSource, vUv + uTexel * vec2(-1.0, -1.0)).rgb;
-  c += texture(uSource, vUv + uTexel * vec2(1.0, -1.0)).rgb;
-  c += texture(uSource, vUv + uTexel * vec2(-1.0, 1.0)).rgb;
-  c += texture(uSource, vUv + uTexel * vec2(1.0, 1.0)).rgb;
+  vec3 c = tap(vUv) * 4.0;
+  c += tap(vUv + uTexel * vec2(-1.0, -1.0));
+  c += tap(vUv + uTexel * vec2(1.0, -1.0));
+  c += tap(vUv + uTexel * vec2(-1.0, 1.0));
+  c += tap(vUv + uTexel * vec2(1.0, 1.0));
   c /= 8.0;
   if (uThreshold > 0.0) {
     float brightness = max(c.r, max(c.g, c.b));
