@@ -26,7 +26,7 @@ While paused, the plots end at a *paused* marker, the 3D view shows the paused s
 ## Breakpoints
 
 - **Line breakpoint:** in the [Code tab](page:code-and-docs), click the gutter next to a line of block code, or press `F9`. A breakpoint that cannot be hit is shown as not verified, with the reason in its tooltip. Right-click the marker to set a **Condition** (for example `k == 5`) or a **Hit count**, or to disable or remove it.
-- **Signal breakpoint:** right-click a signal (in the Signals tab, a bond or a block) and choose **Break when…**, then pick a comparison and a value. It watches continuous signals: a signal that only changes at a clock tick, such as a variable of `@discrete` code, does not trigger it. Use a line breakpoint with a condition in that code instead.
+- **Signal breakpoint:** right-click a signal (in the Signals tab, a bond or a block) and choose **Break when…**, then pick a comparison and a value. The run pauses when the comparison turns true: at the exact crossing for a continuous signal, and at the tick that changed it for a signal of `@discrete` code.
 - **Break on:** in the **Debug** tab under **Breakpoints**, pause on every event, on a solver failure (E901) or when the event limit is reached (W206).
 
 A filled marker is verified, a hollow one is not (yet); a dashed marker is disabled.

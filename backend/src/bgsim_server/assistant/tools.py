@@ -1314,9 +1314,7 @@ BREAKPOINTS = {
     "'Instance'}, condition?: 'k == 5', hitCount?: 3}, where `line` is a statement's line in the "
     "block's file, counted from 1 at the first line of get_block_source; {kind: 'watch', watch: {expr: "
     "'s\"Motor1/i\" > 5', context?: 'Instance'}, hitCount?: 3}; {kind: 'time', time: {t: 0.5}}; "
-    "{kind: 'event', event: {path?: 'Instance'}}; {kind: 'exception', exception: {on: ['E901']}}. "
-    "A watch sees continuous signals only: on a signal of @discrete code it never fires, so use a "
-    "line breakpoint in that code with a `condition` over its locals.",
+    "{kind: 'event', event: {path?: 'Instance'}}; {kind: 'exception', exception: {on: ['E901']}}.",
 }
 PAUSE_WAIT = {"type": "number", "description": "How long to wait for the pause, default 60, at most 600."}
 _BREAKPOINT_DEFAULTS: dict[str, dict[str, Any]] = {

@@ -841,8 +841,8 @@ function dbg_after_step!(s::DebugSession)
             bp_id = timed
         end
     end
-    # M4 debug (J4.3): a watch crossing marked by the pool's affect (src/sim/watch.jl).
-    watch = _watch_hit(ctx)
+    # M4 debug (J4.3): a watch that became true in this step (src/sim/watch.jl).
+    watch = _watch_hit(s)
     if watch !== nothing && reason === nothing
         reason = "breakpoint"
         bp_id = watch.id
@@ -887,12 +887,20 @@ function _dbg_target!(ctx::DebugCtx, s::DebugSession, target::RunTarget)
     ctx.pending[] > 0 && _drain_commands!(s)
     ctx.cancel_flag[] && return nothing
     reason = nothing
-    if ctx.step_mode === :tick && (target.tick || s.run === nothing)
+    bp_id = nothing
+    location = nothing
+    # A watch that a tick, a driven input or a parameter step at this instant made true.
+    watch = _watch_hit(s)
+    if watch !== nothing
+        reason = "breakpoint"
+        bp_id = watch.id
+        location = watch.location
+    elseif ctx.step_mode === :tick && (target.tick || s.run === nothing)
         reason = "step"
     elseif ctx.pause_flag[]
         reason = "pause"
     end
-    reason === nothing || dbg_pause!(s, reason)
+    reason === nothing || dbg_pause!(s, reason; breakpoint_id = bp_id, location = location)
     return nothing
 end
 

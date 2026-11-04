@@ -307,6 +307,30 @@ end
         end
     end
 
+    @testset "debug-tour: a watch on a discrete signal pauses at its tick" begin
+        wd_with_connection() do client
+            project = joinpath(WD_EXAMPLES, "debug-tour")
+            model = wd_model("debug-tour", "debug-tour.bgmodel.json")
+            watch = Dict{String,Any}(
+                "id" => "z", "enabled" => true, "kind" => "watch",
+                "watch" => Dict{String,Any}("expr" => "s\"Ctrl/z\" > 0.1", "context" => nothing),
+                "hitCount" => nothing,
+            )
+            debug = Dict("breakpoints" => Any[watch], "pauseOnEntry" => false)
+            _, started = wd_start(client, "dbgz", runs_dir, model, project; debug = debug)
+            @test _wd_field(_wd_field(started, :result), :accepted) == true
+            info = _wd_field(wd_notification(client, "debug.paused", "dbgz"), :params)
+            @test info.reason == "breakpoint" && info.breakpointId == "z"
+            @test isapprox(info.t, 0.6; atol = 1.0e-9) && info.tick == 60
+            @test info.location.scope == "watch" && info.frame === nothing
+            values = wd_result(client, "debug.values", (; runId = "dbgz", ids = ["Ctrl/z"]))
+            @test isapprox(values.values[Symbol("Ctrl/z")], 0.10727; atol = 1.0e-4)
+            wd_result(client, "debug.setBreakpoints", (; runId = "dbgz", breakpoints = Any[]))
+            @test wd_result(client, "debug.continue", (; runId = "dbgz")).ok
+            @test _wd_field(wd_notification(client, "run.done", "dbgz"), :params).status == "done"
+        end
+    end
+
     @testset "model.explain" begin
         wd_with_connection() do client
             model = wd_model("dc-motor", "iconic.bgmodel.json")
