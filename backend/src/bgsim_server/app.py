@@ -19,6 +19,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
 from . import data, debug, docs, exports, meshes, model_cards, projects, proxy, runs, stream
+from .assistant import api as assistant_api
+from .assistant.manager import Assistant
 from .config import BACKEND_VERSION, Settings
 from .proxy import CatalogCache, WorkerRpcFailure
 from .worker import WorkerLauncher, WorkerSupervisor
@@ -57,12 +59,14 @@ def create_app(
         try:
             yield
         finally:
+            app.state.assistant.shutdown()
             await app.state.worker.stop()
 
     app = FastAPI(title="bg-sim backend", version=BACKEND_VERSION, lifespan=lifespan)
     app.state.settings = resolved
     app.state.worker = supervisor
     app.state.catalog_cache = CatalogCache()
+    app.state.assistant = Assistant(app)
 
     @app.exception_handler(WorkerRpcFailure)
     async def worker_rpc_failure(_request: Request, exc: WorkerRpcFailure) -> JSONResponse:
@@ -109,6 +113,8 @@ def create_app(
     app.include_router(docs.router, prefix="/api", tags=["docs"])
     app.include_router(stream.router, prefix="/api", tags=["stream"])
     app.include_router(exports.router, prefix="/api", tags=["exports"])
+    app.include_router(assistant_api.local, prefix="/api", tags=["assistant"])
+    app.include_router(assistant_api.router, prefix="/api", tags=["assistant"])
     app.include_router(stream.alias_router)  # WS /ws/stream/{id}, as in the plan's API table
 
     @app.get("/{path:path}", include_in_schema=False)

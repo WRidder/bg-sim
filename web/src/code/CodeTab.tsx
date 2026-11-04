@@ -42,6 +42,7 @@ import {
 import { blockNameOf, DISCRETE_TEMPLATE, EQUATION_TEMPLATE } from "./templates";
 import { SourceBanner, type CopyState } from "./SourceBanner";
 import type { CodeTarget } from "./sources";
+import { publishCodeSelection } from "../assistant/selectionStore";
 import type { MappedDiagnostic } from "./lintMapping";
 import "./code.css";
 
@@ -639,6 +640,14 @@ export function CodeTab() {
               line={target.line}
               col={target.col}
               onChange={handleChange}
+              onSelection={(text, fromLine, toLine) =>
+                publishCodeSelection(
+                  target.kind === "inline" ? (inlineNode?.name ?? target.nodeId) : target.blockRef,
+                  text,
+                  fromLine,
+                  toLine,
+                )
+              }
               onCheck={handleCheck}
               onDiagnostics={(items, error) => {
                 setDiagnostics(items);

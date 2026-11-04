@@ -1,0 +1,22 @@
+{
+  "seq": 9,
+  "t": 1793000001,
+  "type": "figure",
+  "figure": {
+    "id": "f3",
+    "kind": "image",
+    "title": "Gain map",
+    "rows": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        null
+      ]
+    ],
+    "min": 0,
+    "max": 2
+  }
+}

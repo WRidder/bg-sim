@@ -1,0 +1,9 @@
+{
+  "seq": 2,
+  "t": 1793000000,
+  "type": "tool_call",
+  "name": "add_block",
+  "args": { "model": "motor", "ref": "stdlib:bondgraph/R" },
+  "isError": false,
+  "summary": "added R1"
+}

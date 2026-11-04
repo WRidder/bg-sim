@@ -299,6 +299,14 @@ export function handleRunEvent(event: RunEvent): void {
 }
 
 /** True while a debug run is active (running or paused). */
+/**
+ * A followed run keeps the breakpoints it was started with: the assistant's own run must not get
+ * the user's list at its first pause.
+ */
+export function keepRunBreakpoints(runId: string): void {
+  resyncedRun = runId;
+}
+
 export function isDebugging(state: Pick<DebugStoreState, "status">): boolean {
   return state.status === "running" || state.status === "paused";
 }

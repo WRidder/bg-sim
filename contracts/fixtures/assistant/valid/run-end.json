@@ -1,0 +1,25 @@
+{
+  "seq": 21,
+  "t": 1793000010,
+  "type": "run_end",
+  "status": "ok",
+  "message": null,
+  "usage": { "costUsd": 0.04, "turns": 9, "durationMs": 21000 },
+  "proposal": {
+    "changed": true,
+    "valid": true,
+    "checked": true,
+    "issues": [],
+    "files": [
+      {
+        "kind": "model",
+        "name": "motor",
+        "change": "changed",
+        "rows": [
+          { "op": "changed", "what": "Motor.R", "before": "1.0", "after": "2.0" },
+          { "op": "added", "what": "block Friction" }
+        ]
+      }
+    ]
+  }
+}

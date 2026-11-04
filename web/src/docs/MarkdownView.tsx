@@ -4,7 +4,17 @@
  * guards the rest), model-aware links and copyable inline images.
  */
 
-import { createContext, useContext, useMemo, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import {
+  Children,
+  createContext,
+  isValidElement,
+  useContext,
+  useMemo,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
@@ -13,6 +23,7 @@ import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
 
 import { API_BASE } from "../api/client";
+import { MermaidDiagram } from "../assistant/MermaidDiagram";
 import { normalizeDisplayMath } from "./displayMath";
 import { copyImageToClipboard } from "./imageClipboard";
 import { assetUrl, imageMarkdown, parseImageAlt } from "./docsImages";
@@ -40,8 +51,9 @@ export interface MarkdownViewProps {
   /**
    * `page` (the default) is a docs page. `note` is a sticky note on the canvas: the same
    * Markdown, links and math, but no images or tables, and headings no bigger than bold text.
+   * `chat` is a message of the assistant: a page that also draws ```mermaid fences.
    */
-  variant?: "page" | "note";
+  variant?: "page" | "note" | "chat";
 }
 
 const MATH_CLASSES = ["math-inline", "math-display"];
@@ -246,6 +258,21 @@ const NOTE_COMPONENTS: Components = {
   h6: NoteHeading,
 };
 
+/** A fenced block; a ```mermaid fence is drawn instead of shown. */
+function ChatBlock({ children }: { children?: ReactNode }) {
+  const code = Children.toArray(children)[0];
+  if (isValidElement<{ className?: string; children?: ReactNode }>(code)) {
+    if (/\blanguage-mermaid\b/.test(code.props.className ?? "")) {
+      return <MermaidDiagram text={String(code.props.children).replace(/\n$/, "")} />;
+    }
+  }
+  return <pre>{children}</pre>;
+}
+
+const CHAT_COMPONENTS: Components = { ...COMPONENTS, pre: ChatBlock };
+
+const VARIANT_COMPONENTS = { page: COMPONENTS, note: NOTE_COMPONENTS, chat: CHAT_COMPONENTS };
+
 export function MarkdownView({ text, project, model, links, actions, variant = "page" }: MarkdownViewProps) {
   const value = useMemo(() => ({ project, model, links, actions }), [project, model, links, actions]);
   const source = useMemo(() => normalizeDisplayMath(text), [text]);
@@ -255,7 +282,7 @@ export function MarkdownView({ text, project, model, links, actions, variant = "
         remarkPlugins={REMARK_PLUGINS}
         rehypePlugins={REHYPE_PLUGINS}
         urlTransform={urlTransform}
-        components={variant === "note" ? NOTE_COMPONENTS : COMPONENTS}
+        components={VARIANT_COMPONENTS[variant]}
       >
         {source}
       </ReactMarkdown>

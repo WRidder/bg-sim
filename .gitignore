@@ -45,3 +45,6 @@ apps/cessna-sim/build/
 
 # a109-sim host: the FMU and the start list are built locally (apps/a109-sim/build_fmu.py)
 apps/a109-sim/build/
+
+# machine specific assistant profiles (assistant.example.toml is the committed default)
+assistant.toml

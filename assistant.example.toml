@@ -1,0 +1,57 @@
+# bg-sim modelling assistant: model profiles (plan/ASSISTANT_PLAN.md).
+# Copy to `assistant.toml` (gitignored) for machine specific settings. Without it this file is used.
+# The environment variable BGSIM_ASSISTANT_CONFIG can name another file.
+
+default = "claude-sonnet"
+
+# Claude Code as a subprocess on the user's own subscription login, never an API key: the runner
+# strips the key variables from the child environment and aborts unless the CLI reports
+# apiKeySource "none". The limits apply per message. max_budget_usd is Claude Code's estimate;
+# on a subscription it counts against plan usage, it is not a charge.
+[profiles.claude-sonnet]
+runner = "claude-cli"
+model = "sonnet"
+effort = "medium"
+max_turns = 80
+max_budget_usd = 3.0
+timeout_s = 1800
+
+[profiles.claude-opus]
+runner = "claude-cli"
+model = "opus"
+effort = "high"
+max_turns = 120
+max_budget_usd = 8.0
+timeout_s = 2700
+
+# A local model behind an OpenAI-compatible endpoint with function calling, e.g. llama.cpp:
+#   llama-server -hf <repo:quant> -ngl 99 --jinja --port 8001
+[profiles.local]
+runner = "openai-compatible"
+base_url = "http://127.0.0.1:8001/v1"
+model = "auto"            # the name served by the server, read from /v1/models
+temperature = 0.2
+max_turns = 40
+timeout_s = 1800
+one_tool_at_a_time = true
+
+# A hosted model behind an OpenAI-compatible endpoint: OpenCode Go (opencode.ai/console, a
+# subscription and an API key). The key stays in the environment, never in this file: set
+# OPENCODE_API_KEY before starting the backend. DeepSeek needs "Global" under Regions in the
+# console's Settings > Privacy; GLM does not. The chat, your models and their results go to that
+# service.
+[profiles.deepseek-flash]
+runner = "openai-compatible"
+base_url = "https://opencode.ai/inference/go/openai/v1"
+api_key_env = "OPENCODE_API_KEY"
+model = "deepseek-v4.1-flash"
+max_turns = 80
+timeout_s = 1800
+
+[profiles.glm-flash]
+runner = "openai-compatible"
+base_url = "https://opencode.ai/inference/go/openai/v1"
+api_key_env = "OPENCODE_API_KEY"
+model = "glm-5.3-flash"
+max_turns = 80
+timeout_s = 1800

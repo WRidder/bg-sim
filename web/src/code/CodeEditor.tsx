@@ -64,6 +64,8 @@ export interface CodeEditorProps {
   line: number;
   col: number;
   onChange?: (source: string) => void;
+  /** The selected text and its first and last line; empty when the selection collapses. */
+  onSelection?: (text: string, fromLine: number, toLine: number) => void;
   onCheck?: (source: string, result: BlockCheckResult) => void;
   onDiagnostics?: (diagnostics: MappedDiagnostic[], error: string | null) => void;
   onUndo?: () => void;
@@ -145,6 +147,7 @@ export function CodeEditor({
   line,
   col,
   onChange,
+  onSelection,
   onCheck,
   onDiagnostics,
   onUndo,
@@ -155,8 +158,8 @@ export function CodeEditor({
 }: CodeEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const callbacks = useRef({ onChange, onCheck, onDiagnostics, onUndo, onRedo });
-  callbacks.current = { onChange, onCheck, onDiagnostics, onUndo, onRedo };
+  const callbacks = useRef({ onChange, onSelection, onCheck, onDiagnostics, onUndo, onRedo });
+  callbacks.current = { onChange, onSelection, onCheck, onDiagnostics, onUndo, onRedo };
   const editBreakpoint = useRef(onEditBreakpoint);
   editBreakpoint.current = onEditBreakpoint;
 
@@ -258,6 +261,11 @@ export function CodeEditor({
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             callbacks.current.onChange?.(update.state.doc.toString());
+          }
+          if (update.selectionSet) {
+            const { from, to } = update.state.selection.main;
+            const { doc } = update.state;
+            callbacks.current.onSelection?.(doc.sliceString(from, to), doc.lineAt(from).number, doc.lineAt(to).number);
           }
         }),
       ],

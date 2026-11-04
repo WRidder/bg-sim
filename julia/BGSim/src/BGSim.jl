@@ -70,6 +70,8 @@ include("sim/inputs.jl")
 include("sim/debug.jl")
 include("sim/hooks.jl")
 include("sim/watch.jl")
+include("sim/cell_library.jl")
+include("sim/cells.jl")
 include("compile/explain.jl")
 include("sim/edits.jl")
 # Dashboard inputs (plan/DASHBOARD_PLAN.md): parameter overrides and the parameter schedule.

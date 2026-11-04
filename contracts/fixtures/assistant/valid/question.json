@@ -1,0 +1,32 @@
+{
+  "seq": 4,
+  "t": 1793000000.5,
+  "type": "question",
+  "question": {
+    "id": "q1",
+    "title": "Before I build the motor model",
+    "questions": [
+      {
+        "id": "form",
+        "prompt": "Which form should the model take?",
+        "kind": "single",
+        "options": [
+          { "value": "bond", "label": "Bond graph", "description": "$J\\dot\\omega = \\tau$ from the elements" },
+          { "value": "icon", "label": "Iconic components" }
+        ],
+        "allowOther": true
+      },
+      {
+        "id": "outputs",
+        "prompt": "What should I plot?",
+        "kind": "multiple",
+        "optional": true,
+        "options": [
+          { "value": "speed", "label": "Speed" },
+          { "value": "current", "label": "Current" }
+        ]
+      },
+      { "id": "note", "prompt": "Anything else?", "kind": "text", "optional": true }
+    ]
+  }
+}

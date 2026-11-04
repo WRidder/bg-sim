@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
+import { useAssistantPanelStore } from "../assistant/panelStore";
 import { usePersistedPanelSizes } from "../state/layout";
 import { useTheme } from "../theme/useTheme";
 import { BlockHelp } from "./BlockHelp";
@@ -18,6 +19,10 @@ import { useAppShortcuts } from "./useAppShortcuts";
 import { useAutoDetachStore, useDetachStore } from "../plot/detachStore";
 import { useViewerDetachStore } from "../viewer/detachStore";
 
+// The chat pulls in the Markdown stack; it loads when the panel first opens.
+const AssistantPanel = lazy(() =>
+  import("../assistant/AssistantPanel").then((m) => ({ default: m.AssistantPanel })),
+);
 // The popup windows pull in uPlot; they load only once a plot is detached (code splitting, W5.4).
 const DetachedPlotWindow = lazy(() =>
   import("../plot/DetachedPlotWindow").then((m) => ({ default: m.DetachedPlotWindow })),
@@ -58,6 +63,7 @@ export function App() {
   const plotsDetached = useDetachStore((state) => state.detached);
   const autoPlotDetached = useAutoDetachStore((state) => state.detached);
   const viewerDetached = useViewerDetachStore((state) => state.detached);
+  const assistantOpen = useAssistantPanelStore((state) => state.open);
 
   useEffect(() => {
     const showPlots = (): void => setDockTab("plots");
@@ -91,87 +97,96 @@ export function App() {
       <TopBar theme={theme} onToggleTheme={toggleTheme} route={route} />
       <ShortcutsOverlay />
       <BlockHelp />
-      {route.kind === "start" ? <StartPage /> : null}
-      {route.kind === "picker" ? <ModelPicker project={route.project} /> : null}
       <Suspense fallback={null}>
         {plotsDetached ? <DetachedPlotWindow /> : null}
         {autoPlotDetached ? <DetachedAutoPlotWindow /> : null}
         {viewerDetached ? <DetachedViewerWindow /> : null}
       </Suspense>
 
-      {route.kind !== "editor" ? null : (
-        <main id="main" tabIndex={-1} className="app-shell__main-landmark">
-          <Group
-            id="bgsim-rows"
-            orientation="vertical"
-            className="app-shell__body"
-            defaultLayout={rows.defaultLayout}
-            onLayoutChanged={rows.onLayoutChanged}
-          >
-            <Panel
-              id="main"
-              minSize="30"
-              className="app-shell__main"
-              style={{ overflow: "hidden" }}
-            >
+      <div className="app-shell__work">
+        <div className="app-shell__screen">
+          {route.kind === "start" ? <StartPage /> : null}
+          {route.kind === "picker" ? <ModelPicker project={route.project} /> : null}
+          {route.kind !== "editor" ? null : (
+            <main id="main" tabIndex={-1} className="app-shell__main-landmark">
               <Group
-                id="bgsim-columns"
-                orientation="horizontal"
-                defaultLayout={columns.defaultLayout}
-                onLayoutChanged={columns.onLayoutChanged}
+                id="bgsim-rows"
+                orientation="vertical"
+                className="app-shell__body"
+                defaultLayout={rows.defaultLayout}
+                onLayoutChanged={rows.onLayoutChanged}
               >
                 <Panel
-                  id="library"
-                  defaultSize="20"
-                  minSize={200}
-                  maxSize="40"
-                  className="app-shell__side"
-                  style={{ overflow: "hidden" }}
-                >
-                  <LeftPanel />
-                </Panel>
-
-                <Separator className="splitter" />
-
-                <Panel
-                  id="center"
+                  id="main"
                   minSize="30"
-                  className="app-shell__center"
+                  className="app-shell__main"
                   style={{ overflow: "hidden" }}
                 >
-                  <CenterTabs active={centerTab} onSelect={setCenterTab} />
+                  <Group
+                    id="bgsim-columns"
+                    orientation="horizontal"
+                    defaultLayout={columns.defaultLayout}
+                    onLayoutChanged={columns.onLayoutChanged}
+                  >
+                    <Panel
+                      id="library"
+                      defaultSize="20"
+                      minSize={200}
+                      maxSize="40"
+                      className="app-shell__side"
+                      style={{ overflow: "hidden" }}
+                    >
+                      <LeftPanel />
+                    </Panel>
+
+                    <Separator className="splitter" />
+
+                    <Panel
+                      id="center"
+                      minSize="30"
+                      className="app-shell__center"
+                      style={{ overflow: "hidden" }}
+                    >
+                      <CenterTabs active={centerTab} onSelect={setCenterTab} />
+                    </Panel>
+
+                    <Separator className="splitter" />
+
+                    <Panel
+                      id="inspector"
+                      defaultSize="22"
+                      minSize={220}
+                      maxSize="45"
+                      className="app-shell__side"
+                      style={{ overflow: "hidden" }}
+                    >
+                      <InspectorPanel />
+                    </Panel>
+                  </Group>
                 </Panel>
 
                 <Separator className="splitter" />
 
                 <Panel
-                  id="inspector"
-                  defaultSize="22"
-                  minSize={220}
-                  maxSize="45"
-                  className="app-shell__side"
+                  id="dock"
+                  defaultSize="32"
+                  minSize={140}
+                  maxSize="70"
+                  className="app-shell__dock"
                   style={{ overflow: "hidden" }}
                 >
-                  <InspectorPanel />
+                  <BottomDock active={dockTab} onSelect={setDockTab} diagnostics={NO_DIAGNOSTICS} />
                 </Panel>
               </Group>
-            </Panel>
-
-            <Separator className="splitter" />
-
-            <Panel
-              id="dock"
-              defaultSize="32"
-              minSize={140}
-              maxSize="70"
-              className="app-shell__dock"
-              style={{ overflow: "hidden" }}
-            >
-              <BottomDock active={dockTab} onSelect={setDockTab} diagnostics={NO_DIAGNOSTICS} />
-            </Panel>
-          </Group>
-        </main>
-      )}
+            </main>
+          )}
+        </div>
+        {assistantOpen ? (
+          <Suspense fallback={null}>
+            <AssistantPanel route={route} />
+          </Suspense>
+        ) : null}
+      </div>
     </div>
   );
 }

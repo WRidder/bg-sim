@@ -1,0 +1,690 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/assistant.schema.json",
+  "title": "AssistantEnvelope",
+  "description": "The modelling assistant's API (plan/ASSISTANT_PLAN.md): sessions, the progress events of a run, the questions it puts to the user, its figures and the proposal the user applies or discards. The root is one progress event, the shape of the SSE stream.",
+  "$ref": "#/$defs/event",
+  "$defs": {
+    "limits": {
+      "title": "AssistantLimits",
+      "type": "object",
+      "required": ["maxTurns", "timeoutS"],
+      "properties": {
+        "maxTurns": { "type": "integer", "minimum": 1 },
+        "timeoutS": { "type": "number", "exclusiveMinimum": 0 },
+        "maxBudgetUsd": {
+          "type": ["number", "null"],
+          "description": "claude-cli only: Claude Code's own estimate; on a subscription it counts against plan usage, it is not a charge."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "title": "AssistantProfile",
+      "type": "object",
+      "required": ["name", "runner", "model", "available", "reason", "limits"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "runner": { "title": "AssistantRunner", "enum": ["claude-cli", "openai-compatible"] },
+        "model": { "type": "string", "minLength": 1 },
+        "available": { "type": "boolean" },
+        "reason": { "type": ["string", "null"], "description": "Why the profile cannot be used." },
+        "limits": { "$ref": "#/$defs/limits" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "profileList": {
+      "title": "AssistantProfileList",
+      "type": "object",
+      "required": ["default", "profiles"],
+      "properties": {
+        "default": { "type": "string" },
+        "profiles": { "type": "array", "items": { "$ref": "#/$defs/profile" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "questionOption": {
+      "title": "AssistantQuestionOption",
+      "type": "object",
+      "required": ["value", "label"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1, "description": "What comes back in the answer." },
+        "label": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "description": "Markdown with math, under the label." },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "question": {
+      "title": "AssistantQuestion",
+      "description": "One question. `single` renders radio buttons, `multiple` checkboxes, `text` a text field.",
+      "type": "object",
+      "required": ["id", "prompt", "kind"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "prompt": { "type": "string", "minLength": 1, "description": "Markdown with math." },
+        "kind": { "title": "AssistantQuestionKind", "enum": ["single", "multiple", "text"] },
+        "options": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/questionOption" },
+          "description": "Required by `single` and `multiple`, at least two; `text` has none."
+        },
+        "allowOther": { "type": "boolean", "description": "Also offer a free-text answer." },
+        "optional": { "type": "boolean", "description": "The user may leave it unanswered." },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "questionSet": {
+      "title": "AssistantQuestionSet",
+      "description": "What one ask_user call puts on screen. The run ends with it; the answers start the next run.",
+      "type": "object",
+      "required": ["id", "questions"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "title": { "type": "string" },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/question" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "answer": {
+      "title": "AssistantAnswer",
+      "type": "object",
+      "required": ["questionId", "values"],
+      "properties": {
+        "questionId": { "type": "string" },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The chosen option values; empty for an unanswered optional question."
+        },
+        "other": { "type": ["string", "null"], "description": "Free text (a `text` question, or allowOther)." },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "answers": {
+      "title": "AssistantAnswers",
+      "description": "POST /api/assistant/{sid}/answers.",
+      "type": "object",
+      "required": ["questionSet", "answers"],
+      "properties": {
+        "questionSet": { "type": "string" },
+        "answers": { "type": "array", "items": { "$ref": "#/$defs/answer" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "plotFigure": {
+      "title": "AssistantPlotFigure",
+      "description": "Signals of a run, drawn in the chat from /api/runs/{runId}/data.",
+      "type": "object",
+      "required": ["id", "kind", "title", "runId", "signals"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "const": "plot" },
+        "title": { "type": "string" },
+        "runId": { "type": "string" },
+        "signals": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "x": { "type": "string", "description": "An XY plot: the signal on the horizontal axis." },
+        "t0": { "type": "number" },
+        "t1": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "diagramNode": {
+      "title": "AssistantDiagramNode",
+      "type": "object",
+      "required": ["id", "name", "kind", "label", "x", "y"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "kind": { "title": "AssistantDiagramNodeKind", "enum": ["block", "junction", "subsystem"] },
+        "label": { "type": "string", "description": "The block type, or the junction's 0 / 1." },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "diagramEdge": {
+      "title": "AssistantDiagramEdge",
+      "type": "object",
+      "required": ["from", "to", "kind"],
+      "properties": {
+        "from": { "type": "string", "description": "Node id." },
+        "to": { "type": "string", "description": "Node id." },
+        "kind": { "title": "AssistantDiagramEdgeKind", "enum": ["bond", "wire", "signal"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "diagramFigure": {
+      "title": "AssistantDiagramFigure",
+      "description": "One diagram level of a (draft) model, reduced to what a small drawing in the chat needs.",
+      "type": "object",
+      "required": ["id", "kind", "title", "model", "path", "nodes", "edges"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "const": "diagram" },
+        "title": { "type": "string" },
+        "model": { "type": "string" },
+        "path": { "type": "array", "items": { "type": "string" }, "description": "Subsystem names from the root." },
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/diagramNode" } },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/diagramEdge" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "figure": {
+      "title": "AssistantFigure",
+      "oneOf": [
+        { "$ref": "#/$defs/plotFigure" },
+        { "$ref": "#/$defs/diagramFigure" },
+        { "$ref": "#/$defs/tableFigure" },
+        { "$ref": "#/$defs/chartFigure" },
+        { "$ref": "#/$defs/imageFigure" }
+      ]
+    },
+    "issue": {
+      "title": "AssistantIssue",
+      "description": "A problem with one changed file of the draft.",
+      "type": "object",
+      "required": ["file", "severity", "message"],
+      "properties": {
+        "file": { "type": "string", "description": "`model:<name>` or `library:<block>`." },
+        "severity": { "title": "AssistantIssueSeverity", "enum": ["error", "warning"] },
+        "code": { "type": ["string", "null"] },
+        "path": { "type": ["string", "null"] },
+        "message": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "changeRow": {
+      "title": "AssistantChangeRow",
+      "description": "One line of a model diff.",
+      "type": "object",
+      "required": ["op", "what"],
+      "properties": {
+        "op": { "title": "AssistantChangeOp", "enum": ["added", "removed", "changed"] },
+        "what": { "type": "string", "description": "`block Motor`, `Motor.R`, `global Kp`, `settings.t_end`." },
+        "before": { "type": ["string", "null"] },
+        "after": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "fileChange": {
+      "title": "AssistantFileChange",
+      "type": "object",
+      "required": ["kind", "name", "change", "rows"],
+      "properties": {
+        "kind": { "title": "AssistantFileKind", "enum": ["model", "library", "doc"] },
+        "name": { "type": "string", "description": "Model or block name; for a doc `<model or @project>/<page id>`." },
+        "change": { "title": "AssistantFileChangeKind", "enum": ["added", "changed", "removed"] },
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/changeRow" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "proposal": {
+      "title": "AssistantProposal",
+      "description": "The draft compared with the saved project. `valid` means every changed file can be saved; `checked` that every changed model passed model.check since its last edit.",
+      "type": "object",
+      "required": ["changed", "valid", "checked", "issues", "files"],
+      "properties": {
+        "changed": { "type": "boolean" },
+        "valid": { "type": "boolean" },
+        "checked": { "type": "boolean" },
+        "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } },
+        "files": { "type": "array", "items": { "$ref": "#/$defs/fileChange" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "usage": {
+      "title": "AssistantUsage",
+      "type": "object",
+      "properties": {
+        "costUsd": { "type": ["number", "null"] },
+        "turns": { "type": ["integer", "null"] },
+        "durationMs": { "type": ["number", "null"] },
+        "promptTokens": { "type": ["integer", "null"] },
+        "completionTokens": { "type": ["integer", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "chatMessage": {
+      "title": "AssistantChatMessage",
+      "type": "object",
+      "required": ["role", "text"],
+      "properties": {
+        "role": { "title": "AssistantRole", "enum": ["user", "assistant"] },
+        "text": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "sessionInfo": {
+      "title": "AssistantSessionInfo",
+      "type": "object",
+      "required": ["session", "project", "model", "profile", "state", "messages", "usage", "events", "proposal", "question"],
+      "properties": {
+        "session": { "type": "string" },
+        "project": { "type": ["string", "null"] },
+        "model": { "type": ["string", "null"], "description": "The model open in the editor." },
+        "profile": { "type": "string" },
+        "state": { "title": "AssistantSessionState", "enum": ["idle", "running", "closed"] },
+        "messages": { "type": "array", "items": { "$ref": "#/$defs/chatMessage" } },
+        "usage": { "$ref": "#/$defs/usage" },
+        "events": { "type": "integer", "minimum": 0, "description": "Events so far: the next `after` of /events." },
+        "proposal": { "$ref": "#/$defs/proposal" },
+        "question": {
+          "anyOf": [{ "$ref": "#/$defs/questionSet" }, { "type": "null" }],
+          "description": "The question set waiting for an answer."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "selectionDiagram": {
+      "title": "AssistantSelectionDiagram",
+      "$comment": "Elements selected on the canvas, by name; `path` is the subsystem level, empty at the top.",
+      "type": "object",
+      "required": ["kind", "model", "path", "nodes", "connections"],
+      "properties": {
+        "kind": { "const": "diagram" },
+        "model": { "type": "string" },
+        "path": { "type": "array", "items": { "type": "string" } },
+        "nodes": { "type": "array", "maxItems": 200, "items": { "type": "string" } },
+        "connections": { "type": "array", "maxItems": 200, "items": { "type": "string" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "selectionCode": {
+      "title": "AssistantSelectionCode",
+      "$comment": "Text selected in the Code tab; `source` names the block (a ref, or the node of an inline block).",
+      "type": "object",
+      "required": ["kind", "source", "text", "fromLine", "toLine"],
+      "properties": {
+        "kind": { "const": "code" },
+        "source": { "type": "string" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "fromLine": { "type": "integer", "minimum": 1 },
+        "toLine": { "type": "integer", "minimum": 1 },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "selectionDoc": {
+      "title": "AssistantSelectionDoc",
+      "$comment": "Text selected on a docs page; `model` is null for the project docs.",
+      "type": "object",
+      "required": ["kind", "model", "page", "text"],
+      "properties": {
+        "kind": { "const": "doc" },
+        "model": { "type": ["string", "null"] },
+        "page": { "type": "string" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "selectionItem": {
+      "title": "AssistantSelectionItem",
+      "oneOf": [
+        { "$ref": "#/$defs/selectionDiagram" },
+        { "$ref": "#/$defs/selectionCode" },
+        { "$ref": "#/$defs/selectionDoc" }
+      ]
+    },
+    "messageRequest": {
+      "title": "AssistantMessageRequest",
+      "$comment": "A user message. `selection`: what the user had selected and chose to send along. `run`: the run the Plots dock shows. `profile` applies to the message that starts a chat.",
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "model": { "type": ["string", "null"] },
+        "profile": { "type": ["string", "null"] },
+        "selection": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/selectionItem" } },
+        "run": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "chartSeries": {
+      "title": "AssistantChartSeries",
+      "type": "object",
+      "required": ["name", "y"],
+      "properties": {
+        "name": { "type": "string" },
+        "y": { "type": "array", "items": { "type": ["number", "null"] } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "imageFigure": {
+      "title": "AssistantImageFigure",
+      "$comment": "A matrix from a code cell, shown as a heat map.",
+      "type": "object",
+      "required": ["id", "kind", "title", "rows", "min", "max"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "const": "image" },
+        "title": { "type": "string" },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "anyOf": [{ "type": "number" }, { "type": "boolean" }, { "type": "null" }] }
+          }
+        },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "tableFigure": {
+      "title": "AssistantTableFigure",
+      "$comment": "A table from a code cell.",
+      "type": "object",
+      "required": ["id", "kind", "title", "columns", "rows"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "const": "table" },
+        "title": { "type": "string" },
+        "columns": { "type": "array", "items": { "type": "string" } },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "anyOf": [{ "type": "number" }, { "type": "boolean" }, { "type": "null" }] }
+          }
+        },
+        "truncated": { "type": "boolean" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "chartFigure": {
+      "title": "AssistantChartFigure",
+      "$comment": "A plot from a code cell, with its data inline; a `plot` figure reads a run instead.",
+      "type": "object",
+      "required": ["id", "kind", "title", "xLabel", "style", "x", "series"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "const": "chart" },
+        "title": { "type": "string" },
+        "xLabel": { "type": "string" },
+        "style": { "title": "AssistantChartStyle", "enum": ["line", "points", "bar"] },
+        "x": { "type": "array", "items": { "type": "number" } },
+        "series": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/chartSeries" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "applyRequest": {
+      "title": "AssistantApplyRequest",
+      "description": "POST /api/assistant/{sid}/apply. `openModel` is the model open in the editor: the backend leaves that file alone and returns the document, and the editor takes it as one undoable edit (auto-save writes it).",
+      "type": "object",
+      "required": ["openModel"],
+      "properties": {
+        "openModel": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "applyResult": {
+      "title": "AssistantApplyResult",
+      "type": "object",
+      "required": ["applied", "backup"],
+      "properties": {
+        "applied": { "type": "array", "items": { "type": "string" }, "description": "`model:<name>`, `library:<block>`, `doc:<owner>/<page>`." },
+        "openModel": {
+          "$ref": "https://bgsim.local/schemas/model.schema.json",
+          "description": "The new document of the model open in the editor, when it changed."
+        },
+        "backup": { "type": ["string", "null"], "description": "Folder with the files as they were." },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runStartEvent": {
+      "title": "AssistantRunStartEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "profile", "runner"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "run_start" },
+        "profile": { "type": "string" },
+        "runner": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "userEvent": {
+      "title": "AssistantUserEvent",
+      "description": "What the user sent; the transcript is rebuilt from the events alone, so a reloaded page shows the whole chat.",
+      "type": "object",
+      "required": ["seq", "t", "type", "text"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "user" },
+        "text": { "type": "string" },
+        "selection": { "type": "array", "items": { "$ref": "#/$defs/selectionItem" } },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "codeEvent": {
+      "title": "AssistantCodeEvent",
+      "$comment": "A code cell that ran: Julia syntax, interpreted over a run and its model.",
+      "type": "object",
+      "required": ["seq", "t", "type", "id", "title", "code", "runId", "ok", "output", "error"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "code" },
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "code": { "type": "string" },
+        "runId": { "type": ["string", "null"] },
+        "ok": { "type": "boolean" },
+        "output": { "type": "array", "items": { "type": "string" } },
+        "error": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "projectCreatedEvent": {
+      "title": "AssistantProjectCreatedEvent",
+      "$comment": "A chat on the home screen made a project; the chat now works in it.",
+      "type": "object",
+      "required": ["seq", "t", "type", "project"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "project_created" },
+        "project": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "statusEvent": {
+      "title": "AssistantStatusEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "message"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "status" },
+        "message": { "type": "string" },
+        "model": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "textEvent": {
+      "title": "AssistantTextEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "text"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "text" },
+        "text": { "type": "string", "description": "Markdown with $math$ and mermaid fences." },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "toolCallEvent": {
+      "title": "AssistantToolCallEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "name", "args", "isError", "summary"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "tool_call" },
+        "name": { "type": "string" },
+        "args": {},
+        "isError": { "type": "boolean" },
+        "summary": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "proposalEvent": {
+      "title": "AssistantProposalEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "proposal"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "proposal" },
+        "proposal": { "$ref": "#/$defs/proposal" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "questionEvent": {
+      "title": "AssistantQuestionEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "question"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "question" },
+        "question": { "$ref": "#/$defs/questionSet" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "figureEvent": {
+      "title": "AssistantFigureEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "figure"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "figure" },
+        "figure": { "$ref": "#/$defs/figure" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "simulationEvent": {
+      "title": "AssistantSimulationEvent",
+      "description": "The assistant started a run of `model`; the Plots dock follows it when the editor is idle. A run of a draft is in the run history like any other, but its model is not saved until applied.",
+      "type": "object",
+      "required": ["seq", "t", "type", "runId", "model", "draft"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "simulation" },
+        "runId": { "type": "string" },
+        "model": { "type": "string" },
+        "draft": { "type": "boolean" },
+        "debug": { "type": "boolean", "description": "A debug run: the editor follows it into the debugger." },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "errorEvent": {
+      "title": "AssistantErrorEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "message"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "error" },
+        "message": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runEndEvent": {
+      "title": "AssistantRunEndEvent",
+      "type": "object",
+      "required": ["seq", "t", "type", "status", "proposal"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "run_end" },
+        "status": { "title": "AssistantRunStatus", "enum": ["ok", "error", "cancelled", "timeout", "limit"] },
+        "message": { "type": ["string", "null"] },
+        "usage": { "anyOf": [{ "$ref": "#/$defs/usage" }, { "type": "null" }] },
+        "proposal": { "$ref": "#/$defs/proposal" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "closedEvent": {
+      "title": "AssistantClosedEvent",
+      "type": "object",
+      "required": ["seq", "t", "type"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "t": { "type": "number" },
+        "type": { "const": "closed" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "title": "AssistantEvent",
+      "oneOf": [
+        { "$ref": "#/$defs/runStartEvent" },
+        { "$ref": "#/$defs/userEvent" },
+        { "$ref": "#/$defs/codeEvent" },
+        { "$ref": "#/$defs/projectCreatedEvent" },
+        { "$ref": "#/$defs/statusEvent" },
+        { "$ref": "#/$defs/textEvent" },
+        { "$ref": "#/$defs/toolCallEvent" },
+        { "$ref": "#/$defs/proposalEvent" },
+        { "$ref": "#/$defs/questionEvent" },
+        { "$ref": "#/$defs/figureEvent" },
+        { "$ref": "#/$defs/simulationEvent" },
+        { "$ref": "#/$defs/errorEvent" },
+        { "$ref": "#/$defs/runEndEvent" },
+        { "$ref": "#/$defs/closedEvent" }
+      ]
+    }
+  }
+}

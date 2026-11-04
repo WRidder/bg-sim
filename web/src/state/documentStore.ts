@@ -423,6 +423,9 @@ export interface DocumentActions {
   /** Copy shapes in front of all shapes, offset and unlocked, and select the copies. */
   duplicateShapes: (ids: readonly string[]) => string[];
 
+  /** Replace the whole document as one undo step (an applied assistant proposal). */
+  replaceDocument: (next: Model) => void;
+
   undo: () => void;
   redo: () => void;
 }
@@ -2125,6 +2128,18 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       const flowIds = copies.map((shape) => shapeFlowId(shape.id));
       set({ selection: { nodes: flowIds, connections: [] } });
       return flowIds;
+    },
+
+    replaceDocument: (next) => {
+      commit((draft) => {
+        const target = draft as unknown as Record<string, unknown>;
+        for (const key of Object.keys(target)) {
+          if (!(key in next)) {
+            delete target[key];
+          }
+        }
+        Object.assign(target, next);
+      });
     },
 
     undo: () => {

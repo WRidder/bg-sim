@@ -1,0 +1,19 @@
+{
+  "id": 72,
+  "method": "code.run",
+  "params": {
+    "code": "Plot(t, s\"Load/w\")",
+    "time": [
+      0,
+      1
+    ],
+    "signals": {
+      "Load/w": [
+        0,
+        2
+      ]
+    },
+    "model": null,
+    "projectDir": "C:/p"
+  }
+}

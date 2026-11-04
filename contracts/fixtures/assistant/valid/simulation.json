@@ -1,0 +1,9 @@
+{
+  "seq": 5,
+  "t": 1793000000,
+  "type": "simulation",
+  "runId": "20261104-0002",
+  "model": "motor",
+  "draft": true,
+  "debug": true
+}

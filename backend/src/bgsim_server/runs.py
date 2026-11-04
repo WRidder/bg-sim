@@ -849,6 +849,14 @@ async def begin_run(
 @router.post("/projects/{project}/runs", status_code=201)
 async def start_run(project: str, body: RunCreateBody, request: Request) -> dict[str, str]:
     """Plan 3.7: start a run and return ``{runId}``."""
+    return {"runId": await launch_run(request, project, body)}
+
+
+async def launch_run(request: Any, project: str, body: RunCreateBody) -> str:
+    """Start a run of ``body.model`` in ``project``; the API route and the assistant's tools.
+
+    ``request`` only needs ``.app``.
+    """
     settings: Settings = request.app.state.settings
     store = _store_for(request.app)
     project_dir = _project_dir(settings, project)
@@ -883,7 +891,7 @@ async def start_run(project: str, body: RunCreateBody, request: Request) -> dict
         "run.start",
         params,
     )
-    return {"runId": run_id}
+    return run_id
 
 
 @router.get("/runs/{run_id}")

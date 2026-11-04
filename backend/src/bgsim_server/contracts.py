@@ -19,6 +19,599 @@ from pydantic import (
 )
 
 
+class AssistantLimits(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    maxTurns: conint(ge=1)
+    timeoutS: PositiveFloat
+    maxBudgetUsd: float | None = Field(
+        None,
+        description="claude-cli only: Claude Code's own estimate; on a subscription it counts against plan usage, it is not a charge.",
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantRunner(Enum):
+    claude_cli = 'claude-cli'
+    openai_compatible = 'openai-compatible'
+
+
+class AssistantProfile(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: constr(min_length=1)
+    runner: AssistantRunner = Field(..., title='AssistantRunner')
+    model: constr(min_length=1)
+    available: bool
+    reason: str | None = Field(..., description='Why the profile cannot be used.')
+    limits: AssistantLimits
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantProfileList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    default: str
+    profiles: list[AssistantProfile]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantQuestionOption(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    value: constr(min_length=1) = Field(
+        ..., description='What comes back in the answer.'
+    )
+    label: constr(min_length=1)
+    description: str | None = Field(
+        None, description='Markdown with math, under the label.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantQuestionKind(Enum):
+    single = 'single'
+    multiple = 'multiple'
+    text = 'text'
+
+
+class AssistantQuestion(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    prompt: constr(min_length=1) = Field(..., description='Markdown with math.')
+    kind: AssistantQuestionKind = Field(..., title='AssistantQuestionKind')
+    options: list[AssistantQuestionOption] | None = Field(
+        None,
+        description='Required by `single` and `multiple`, at least two; `text` has none.',
+    )
+    allowOther: bool | None = Field(None, description='Also offer a free-text answer.')
+    optional: bool | None = Field(None, description='The user may leave it unanswered.')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantQuestionSet(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    title: str | None = None
+    questions: list[AssistantQuestion] = Field(..., max_length=8, min_length=1)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantAnswer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    questionId: str
+    values: list[str] = Field(
+        ...,
+        description='The chosen option values; empty for an unanswered optional question.',
+    )
+    other: str | None = Field(
+        None, description='Free text (a `text` question, or allowOther).'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantAnswers(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    questionSet: str
+    answers: list[AssistantAnswer]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantPlotFigure(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    kind: Literal['plot']
+    title: str
+    runId: str
+    signals: list[str] = Field(..., min_length=1)
+    x: str | None = Field(
+        None, description='An XY plot: the signal on the horizontal axis.'
+    )
+    t0: float | None = None
+    t1: float | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantDiagramNodeKind(Enum):
+    block = 'block'
+    junction = 'junction'
+    subsystem = 'subsystem'
+
+
+class AssistantDiagramNode(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    name: str
+    kind: AssistantDiagramNodeKind = Field(..., title='AssistantDiagramNodeKind')
+    label: str = Field(..., description="The block type, or the junction's 0 / 1.")
+    x: float
+    y: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantDiagramEdgeKind(Enum):
+    bond = 'bond'
+    wire = 'wire'
+    signal = 'signal'
+
+
+class AssistantDiagramEdge(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    from_: str = Field(..., alias='from', description='Node id.')
+    to: str = Field(..., description='Node id.')
+    kind: AssistantDiagramEdgeKind = Field(..., title='AssistantDiagramEdgeKind')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantDiagramFigure(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    kind: Literal['diagram']
+    title: str
+    model: str
+    path: list[str] = Field(..., description='Subsystem names from the root.')
+    nodes: list[AssistantDiagramNode]
+    edges: list[AssistantDiagramEdge]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantIssueSeverity(Enum):
+    error = 'error'
+    warning = 'warning'
+
+
+class AssistantIssue(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    file: str = Field(..., description='`model:<name>` or `library:<block>`.')
+    severity: AssistantIssueSeverity = Field(..., title='AssistantIssueSeverity')
+    code: str | None = None
+    path: str | None = None
+    message: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantChangeOp(Enum):
+    added = 'added'
+    removed = 'removed'
+    changed = 'changed'
+
+
+class AssistantChangeRow(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: AssistantChangeOp = Field(..., title='AssistantChangeOp')
+    what: str = Field(
+        ..., description='`block Motor`, `Motor.R`, `global Kp`, `settings.t_end`.'
+    )
+    before: str | None = None
+    after: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantFileKind(Enum):
+    model = 'model'
+    library = 'library'
+    doc = 'doc'
+
+
+class AssistantFileChangeKind(Enum):
+    added = 'added'
+    changed = 'changed'
+    removed = 'removed'
+
+
+class AssistantFileChange(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: AssistantFileKind = Field(..., title='AssistantFileKind')
+    name: str = Field(
+        ...,
+        description='Model or block name; for a doc `<model or @project>/<page id>`.',
+    )
+    change: AssistantFileChangeKind = Field(..., title='AssistantFileChangeKind')
+    rows: list[AssistantChangeRow]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantProposal(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    changed: bool
+    valid: bool
+    checked: bool
+    issues: list[AssistantIssue]
+    files: list[AssistantFileChange]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantUsage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    costUsd: float | None = None
+    turns: int | None = None
+    durationMs: float | None = None
+    promptTokens: int | None = None
+    completionTokens: int | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantRole(Enum):
+    user = 'user'
+    assistant = 'assistant'
+
+
+class AssistantChatMessage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    role: AssistantRole = Field(..., title='AssistantRole')
+    text: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantSessionState(Enum):
+    idle = 'idle'
+    running = 'running'
+    closed = 'closed'
+
+
+class AssistantSessionInfo(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session: str
+    project: str | None
+    model: str | None = Field(..., description='The model open in the editor.')
+    profile: str
+    state: AssistantSessionState = Field(..., title='AssistantSessionState')
+    messages: list[AssistantChatMessage]
+    usage: AssistantUsage
+    events: conint(ge=0) = Field(
+        ..., description='Events so far: the next `after` of /events.'
+    )
+    proposal: AssistantProposal
+    question: AssistantQuestionSet | None = Field(
+        ..., description='The question set waiting for an answer.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantSelectionDiagram(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['diagram']
+    model: str
+    path: list[str]
+    nodes: list[str] = Field(..., max_length=200)
+    connections: list[str] = Field(..., max_length=200)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantSelectionCode(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['code']
+    source: str
+    text: constr(min_length=1, max_length=20000)
+    fromLine: conint(ge=1)
+    toLine: conint(ge=1)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantSelectionDoc(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['doc']
+    model: str | None
+    page: str
+    text: constr(min_length=1, max_length=20000)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantSelectionItem(
+    RootModel[
+        AssistantSelectionDiagram | AssistantSelectionCode | AssistantSelectionDoc
+    ]
+):
+    root: AssistantSelectionDiagram | AssistantSelectionCode | AssistantSelectionDoc = (
+        Field(..., title='AssistantSelectionItem')
+    )
+
+
+class AssistantMessageRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    text: constr(min_length=1, max_length=20000)
+    model: str | None = None
+    profile: str | None = None
+    selection: list[AssistantSelectionItem] | None = Field(None, max_length=8)
+    run: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantChartSeries(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    y: list[float | None]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantImageFigure(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    kind: Literal['image']
+    title: str
+    rows: list[list[float | bool | None]]
+    min: float
+    max: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantTableFigure(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    kind: Literal['table']
+    title: str
+    columns: list[str]
+    rows: list[list[float | bool | None]]
+    truncated: bool | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantChartStyle(Enum):
+    line = 'line'
+    points = 'points'
+    bar = 'bar'
+
+
+class AssistantChartFigure(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    kind: Literal['chart']
+    title: str
+    xLabel: str
+    style: AssistantChartStyle = Field(..., title='AssistantChartStyle')
+    x: list[float]
+    series: list[AssistantChartSeries] = Field(..., min_length=1)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantApplyRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    openModel: str | None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantRunStartEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['run_start']
+    profile: str
+    runner: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantUserEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['user']
+    text: str
+    selection: list[AssistantSelectionItem] | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantCodeEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['code']
+    id: str
+    title: str
+    code: str
+    runId: str | None
+    ok: bool
+    output: list[str]
+    error: str | None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantProjectCreatedEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['project_created']
+    project: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantStatusEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['status']
+    message: str
+    model: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantTextEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['text']
+    text: str = Field(..., description='Markdown with $math$ and mermaid fences.')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantToolCallEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['tool_call']
+    name: str
+    args: Any
+    isError: bool
+    summary: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantProposalEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['proposal']
+    proposal: AssistantProposal
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantQuestionEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['question']
+    question: AssistantQuestionSet
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantSimulationEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['simulation']
+    runId: str
+    model: str
+    draft: bool
+    debug: bool | None = Field(
+        None, description='A debug run: the editor follows it into the debugger.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantErrorEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['error']
+    message: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantRunStatus(Enum):
+    ok = 'ok'
+    error = 'error'
+    cancelled = 'cancelled'
+    timeout = 'timeout'
+    limit = 'limit'
+
+
+class AssistantRunEndEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['run_end']
+    status: AssistantRunStatus = Field(..., title='AssistantRunStatus')
+    message: str | None = None
+    usage: AssistantUsage | None = None
+    proposal: AssistantProposal
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantClosedEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['closed']
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class PositionPeriodItem(RootModel[confloat(ge=0.0)]):
     root: confloat(ge=0.0)
 
@@ -1782,6 +2375,58 @@ class RunBranchResponse(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class CellTable(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['table']
+    title: str
+    columns: list[str]
+    rows: list[list[float | bool | None]]
+    truncated: bool
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class CellChartSeries(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    y: list[float | None]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class CellChartStyle(Enum):
+    line = 'line'
+    points = 'points'
+    bar = 'bar'
+
+
+class CellChart(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['chart']
+    title: str
+    xLabel: str
+    style: CellChartStyle = Field(..., title='CellChartStyle')
+    x: list[float]
+    series: list[CellChartSeries] = Field(..., min_length=1)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class CellImage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['image']
+    title: str
+    rows: list[list[float | bool | None]]
+    min: float
+    max: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class DebugResumedNotification(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1789,6 +2434,71 @@ class DebugResumedNotification(BaseModel):
     method: Literal['debug.resumed']
     params: ResumedInfo
     field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantFigure(
+    RootModel[
+        AssistantPlotFigure
+        | AssistantDiagramFigure
+        | AssistantTableFigure
+        | AssistantChartFigure
+        | AssistantImageFigure
+    ]
+):
+    root: (
+        AssistantPlotFigure
+        | AssistantDiagramFigure
+        | AssistantTableFigure
+        | AssistantChartFigure
+        | AssistantImageFigure
+    ) = Field(..., title='AssistantFigure')
+
+
+class AssistantFigureEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    seq: conint(ge=0)
+    t: float
+    type: Literal['figure']
+    figure: AssistantFigure
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class AssistantEvent(
+    RootModel[
+        AssistantRunStartEvent
+        | AssistantUserEvent
+        | AssistantCodeEvent
+        | AssistantProjectCreatedEvent
+        | AssistantStatusEvent
+        | AssistantTextEvent
+        | AssistantToolCallEvent
+        | AssistantProposalEvent
+        | AssistantQuestionEvent
+        | AssistantFigureEvent
+        | AssistantSimulationEvent
+        | AssistantErrorEvent
+        | AssistantRunEndEvent
+        | AssistantClosedEvent
+    ]
+):
+    root: (
+        AssistantRunStartEvent
+        | AssistantUserEvent
+        | AssistantCodeEvent
+        | AssistantProjectCreatedEvent
+        | AssistantStatusEvent
+        | AssistantTextEvent
+        | AssistantToolCallEvent
+        | AssistantProposalEvent
+        | AssistantQuestionEvent
+        | AssistantFigureEvent
+        | AssistantSimulationEvent
+        | AssistantErrorEvent
+        | AssistantRunEndEvent
+        | AssistantClosedEvent
+    ) = Field(..., title='AssistantEvent')
 
 
 class SegmentBinding(BaseModel):
@@ -2633,6 +3343,14 @@ class RunBranchRequest(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class AssistantEnvelope(RootModel[AssistantEvent]):
+    root: AssistantEvent = Field(
+        ...,
+        description="The modelling assistant's API (plan/ASSISTANT_PLAN.md): sessions, the progress events of a run, the questions it puts to the user, its figures and the proposal the user applies or discards. The root is one progress event, the shape of the SSE stream.",
+        title='AssistantEnvelope',
+    )
+
+
 class DeformationBinding(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2971,6 +3689,27 @@ class DebugSetBreakpointsRequest(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class CodeRunResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ok: bool
+    output: list[str]
+    figures: list[CellTable | CellChart | CellImage]
+    values: dict[str, float | None]
+    diagnostics: list[Diagnostic]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class CodeRunResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: CodeRunResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class DebugEditResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3305,6 +4044,21 @@ class DebugSetBreakpointsResponse(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class AssistantApplyResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    applied: list[str] = Field(
+        ..., description='`model:<name>`, `library:<block>`, `doc:<owner>/<page>`.'
+    )
+    openModel: Model | None = Field(
+        None,
+        description='The new document of the model open in the editor, when it changed.',
+    )
+    backup: str | None = Field(..., description='Folder with the files as they were.')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ClipboardEnvelope(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3501,6 +4255,28 @@ class RunStartParams(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class CodeRunRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['code.run']
+    params: CodeRunParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class CodeRunParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    code: str
+    time: list[float] | None
+    signals: dict[str, list[float | None]]
+    model: Model | None
+    projectDir: str | None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ModelExplainRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3567,6 +4343,7 @@ class WorkerRpc(
         | DebugSetStateRequest
         | RunReplayRequest
         | RunBranchRequest
+        | CodeRunRequest
         | ModelExplainRequest
         | DebugSetBreakpointsResponse
         | DebugPauseResponse
@@ -3579,6 +4356,7 @@ class WorkerRpc(
         | DebugSetStateResponse
         | RunReplayResponse
         | RunBranchResponse
+        | CodeRunResponse
         | ModelExplainResponse
         | DebugPausedNotification
         | DebugResumedNotification
@@ -3615,6 +4393,7 @@ class WorkerRpc(
         | DebugSetStateRequest
         | RunReplayRequest
         | RunBranchRequest
+        | CodeRunRequest
         | ModelExplainRequest
         | DebugSetBreakpointsResponse
         | DebugPauseResponse
@@ -3627,6 +4406,7 @@ class WorkerRpc(
         | DebugSetStateResponse
         | RunReplayResponse
         | RunBranchResponse
+        | CodeRunResponse
         | ModelExplainResponse
         | DebugPausedNotification
         | DebugResumedNotification
@@ -3639,7 +4419,8 @@ class WorkerRpc(
 
 class Contracts(
     RootModel[
-        Bindings
+        AssistantEnvelope
+        | Bindings
         | Catalog
         | ClipboardEnvelope
         | Debug
@@ -3657,7 +4438,8 @@ class Contracts(
     ]
 ):
     root: (
-        Bindings
+        AssistantEnvelope
+        | Bindings
         | Catalog
         | ClipboardEnvelope
         | Debug
@@ -3680,6 +4462,7 @@ class Contracts(
 
 
 DocsPage.model_rebuild()
+AssistantApplyResult.model_rebuild()
 ClipboardEnvelope.model_rebuild()
 ExportRequest.model_rebuild()
 Model.model_rebuild()
@@ -3687,4 +4470,5 @@ ModelDiagram.model_rebuild()
 ModelNode.model_rebuild()
 ModelCheckRequest.model_rebuild()
 RunStartRequest.model_rebuild()
+CodeRunRequest.model_rebuild()
 ModelExplainRequest.model_rebuild()

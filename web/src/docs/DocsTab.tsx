@@ -35,6 +35,7 @@ import { isLeaveConfirmed } from "./leaveGuard";
 import { allIds, findPage, pathTo } from "./pageTree";
 import { modelPagesOf, parseDocsRef, type LinkContext } from "./docsLinks";
 import { useSyncedScroll } from "./useSyncedScroll";
+import { DOC_MODEL_ATTRIBUTE, DOC_PAGE_ATTRIBUTE } from "../assistant/selectionStore";
 import "./docs.css";
 
 export interface DocsTabProps {
@@ -597,13 +598,20 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
                     {text.trim() === "" ? (
                       <p className="docs-preview__empty">This page is empty. Switch to Edit to write it.</p>
                     ) : (
-                      <MarkdownView
-                        text={text}
-                        project={project}
-                        model={shown === "project" ? null : modelName}
-                        links={links}
-                        actions={actions}
-                      />
+                      <div
+                        {...{
+                          [DOC_PAGE_ATTRIBUTE]: selected ?? "",
+                          ...(shown === "project" ? {} : { [DOC_MODEL_ATTRIBUTE]: modelName }),
+                        }}
+                      >
+                        <MarkdownView
+                          text={text}
+                          project={project}
+                          model={shown === "project" ? null : modelName}
+                          links={links}
+                          actions={actions}
+                        />
+                      </div>
                     )}
                   </div>
                 ) : null}

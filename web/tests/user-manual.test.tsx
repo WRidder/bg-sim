@@ -45,6 +45,7 @@ const EXPECTED_PAGES = [
   "background-tasks",
   "keyboard-shortcuts",
   "trusses",
+  "assistant",
 ];
 
 const LINKS: LinkContext = { pageIds: MANUAL_PAGE_IDS, model: null, signalIds: null };

@@ -1,0 +1,10 @@
+{
+  "$comment": "question kind must be single, multiple or text",
+  "seq": 4,
+  "t": 1793000000,
+  "type": "question",
+  "question": {
+    "id": "q1",
+    "questions": [{ "id": "a", "prompt": "Pick", "kind": "dropdown" }]
+  }
+}

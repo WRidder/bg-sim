@@ -1,0 +1,30 @@
+{
+  "seq": 1,
+  "t": 1793000000,
+  "type": "user",
+  "text": "why does this saturate?",
+  "selection": [
+    {
+      "kind": "diagram",
+      "model": "motor",
+      "path": [],
+      "nodes": [
+        "Motor"
+      ],
+      "connections": []
+    },
+    {
+      "kind": "code",
+      "source": "stdlib:bondgraph/R",
+      "text": "tau = k * i",
+      "fromLine": 3,
+      "toLine": 3
+    },
+    {
+      "kind": "doc",
+      "model": null,
+      "page": "overview",
+      "text": "the time constant"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$comment": "a chart has at least one series",
+  "seq": 9,
+  "t": 1793000001,
+  "type": "figure",
+  "figure": {
+    "id": "f2",
+    "kind": "chart",
+    "title": "",
+    "xLabel": "",
+    "style": "line",
+    "x": [],
+    "series": []
+  }
+}
