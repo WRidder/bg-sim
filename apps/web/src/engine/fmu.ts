@@ -67,6 +67,11 @@ export class Fmu {
     });
   }
 
+  /** The instance's memory as doubles, for a host that must reach what the FMU has no input for. */
+  memory(): Float64Array {
+    return new Float64Array(this.x.memory.buffer);
+  }
+
   /** A fresh instance at `parameters`, initialised at t = 0. */
   restart(parameters: Record<string, number>): void {
     if (!this.x.sim_instantiate()) {

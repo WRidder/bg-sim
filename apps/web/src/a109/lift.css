@@ -1,0 +1,30 @@
+/* The one thing this game shows that the shared menus do not: the landings of a run. */
+
+#over {
+  width: min(460px, calc(100vw - 32px));
+}
+
+#over-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+#over-table td {
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+}
+
+#over-table td:nth-child(2) {
+  color: var(--accent);
+}
+
+#over-table td:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-screen .panel {
+  gap: 10px;
+}
