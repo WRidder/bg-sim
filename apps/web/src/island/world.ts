@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { type AtmosphereUniforms, withAerial } from "../engine/atmosphere";
 import type { Heightfield } from "../engine/heightfield";
 import { hash2 } from "../engine/noise";
-import type { Gate } from "./flight";
+import type { Gate } from "../engine/gates";
 import { AIRFIELD, TOWN } from "./island";
 
 function runwayTexture(): THREE.CanvasTexture {

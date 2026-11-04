@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { flyTo } from "../src/f16/autopilot";
-import { Flight, type Start } from "../src/f16/flight";
-import { islandHeight } from "../src/f16/island";
+import { Flight, gateCourse, type Start } from "../src/f16/flight";
+import { islandHeight } from "../src/island/island";
 import starts from "../src/f16/starts.json";
 
 const ground = islandHeight;
@@ -48,23 +48,23 @@ describe("the flight", () => {
 describe("the gate run", () => {
   it("can be flown from its start without touching the ground", async () => {
     const flight = await Flight.create(ground, starts[2] as Start);
-    flight.startGates();
-    flight.reset();
+    const { run } = flight;
+    run.start(gateCourse(ground));
     const report: string[] = [];
-    flight.onGate = (gate) => {
-      report.push(`${flight.gates.indexOf(gate) + 1}: ${gate.hit ? "hit" : "MISS"} by ${gate.miss.toFixed(0)} h=${Math.round(gate.alt)} t=${flight.gateTime.toFixed(0)} nz=${flight.get("nz_g").toFixed(1)}`);
+    run.onGate = (gate) => {
+      report.push(`${run.gates.indexOf(gate) + 1}: ${gate.hit ? "hit" : "MISS"} by ${gate.miss.toFixed(0)} h=${Math.round(gate.alt)} t=${run.time.toFixed(0)} nz=${flight.get("nz_g").toFixed(1)}`);
     };
-    for (let i = 0; i < 200 * 420 && !flight.crashed && flight.gateDone === null; i += 1) {
-      const gate = flight.nextGate();
+    for (let i = 0; i < 200 * 420 && !flight.crashed && run.done === null; i += 1) {
+      const gate = run.next();
       if (gate) {
         flyTo(flight, gate, 190, ground);
       }
       flight.advance(flight.pacer.step);
     }
-    const outcome = `${report.join("\n")}\nend t=${flight.gateTime.toFixed(0)} crashed=${flight.crashed} ${flight.crashReason} at ${flight.north().toFixed(0)},${flight.east().toFixed(0)} alt ${flight.get("alt_m").toFixed(0)}`;
+    const outcome = `${report.join("\n")}\nend t=${run.time.toFixed(0)} crashed=${flight.crashed} ${flight.crashReason} at ${flight.north().toFixed(0)},${flight.east().toFixed(0)} alt ${flight.get("alt_m").toFixed(0)}`;
     expect(flight.crashed, outcome).toBe(false);
-    expect(flight.gateDone, outcome).not.toBeNull();
+    expect(run.done, outcome).not.toBeNull();
     // The tight turns are beyond this pilot, not beyond the aircraft.
-    expect(flight.gates.filter((gate) => gate.hit).length, outcome).toBeGreaterThanOrEqual(10);
+    expect(run.gates.filter((gate) => gate.hit).length, outcome).toBeGreaterThanOrEqual(10);
   }, 30000);
 });

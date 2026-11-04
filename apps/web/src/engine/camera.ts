@@ -1,5 +1,5 @@
 /**
- * The views. The chase camera lags the aircraft's attitude and only partly follows its bank, so the
+ * The views of something that flies. The chase camera lags the aircraft's attitude and only partly follows its bank, so the
  * horizon stays readable. The bank it keeps out fades away towards the vertical and when inverted,
  * so there is no attitude at which the view has to snap round: a loop flies through smoothly.
  */
@@ -23,10 +23,26 @@ const target = new THREE.Quaternion();
 const roll = new THREE.Quaternion();
 const orbit = new THREE.Quaternion();
 const euler = new THREE.Euler();
+const eye = new THREE.Vector3();
+
+export interface RigOptions {
+  /** The pilot's eye, in the mesh frame. */
+  eye: THREE.Vector3;
+  /** Chase distance and height above the view line, in metres. */
+  distance: number;
+  height: number;
+  /** How much of the bank the chase view keeps out, in radians at 90 degrees. */
+  keepLevel?: number;
+  /** Chase field of view at rest and at `fastSpeed`, in degrees. */
+  fov?: [number, number];
+  fastSpeed?: number;
+  cockpitFov?: number;
+  flybyOffset?: number;
+}
 
 export class Rig {
   view: View = "chase";
-  distance = 27;
+  distance: number;
   /** Dragging the mouse looks round the aircraft; letting go brings the view back. */
   azimuth = 0;
   elevation = 0;
@@ -39,7 +55,10 @@ export class Rig {
   constructor(
     readonly camera: THREE.PerspectiveCamera,
     private readonly groundAt: (x: number, z: number) => number,
-  ) {}
+    private readonly options: RigOptions,
+  ) {
+    this.distance = options.distance;
+  }
 
   snap(): void {
     this.fresh = true;
@@ -60,7 +79,7 @@ export class Rig {
       level.copy(WORLD_UP).addScaledVector(f, -f.dot(WORLD_UP)).normalize();
       const bank = Math.atan2(level.clone().cross(up).dot(f), level.dot(up));
       // Sine, not the angle: it is zero both level and inverted, and continuous through both.
-      roll.setFromAxisAngle(FORWARD, -0.62 * Math.sin(bank) * weight);
+      roll.setFromAxisAngle(FORWARD, -(this.options.keepLevel ?? 0.62) * Math.sin(bank) * weight);
       target.multiply(roll);
     }
     target.multiply(MESH_TO_CAMERA);
@@ -74,10 +93,10 @@ export class Rig {
     const rumble = this.shake + buffet;
     if (this.view === "cockpit") {
       this.smooth.copy(target);
-      camera.position.copy(position).add(new THREE.Vector3(3.15, 0, 1.08).applyQuaternion(attitude));
+      camera.position.copy(position).add(eye.copy(this.options.eye).applyQuaternion(attitude));
       camera.quaternion.copy(this.smooth);
       camera.near = 0.25;
-      camera.fov += (72 - camera.fov) * Math.min(1, dt * 6);
+      camera.fov += ((this.options.cockpitFov ?? 72) - camera.fov) * Math.min(1, dt * 6);
     } else if (this.view === "chase") {
       this.smooth.slerp(target, 1 - Math.exp(-dt / 0.2));
       if (!this.dragging) {
@@ -88,9 +107,10 @@ export class Rig {
       euler.set(this.elevation, this.azimuth, 0, "YXZ");
       orbit.setFromEuler(euler);
       camera.quaternion.copy(this.smooth).multiply(orbit);
-      camera.position.copy(position).add(new THREE.Vector3(0, 5.5, this.distance).applyQuaternion(camera.quaternion));
+      camera.position.copy(position).add(eye.set(0, this.options.height, this.distance).applyQuaternion(camera.quaternion));
       camera.near = 1;
-      const wide = 62 + 14 * THREE.MathUtils.smoothstep(speed, 150, 420);
+      const [rest, fast] = this.options.fov ?? [62, 76];
+      const wide = rest + (fast - rest) * THREE.MathUtils.smoothstep(speed, (this.options.fastSpeed ?? 420) * 0.36, this.options.fastSpeed ?? 420);
       camera.fov += (wide - camera.fov) * Math.min(1, dt * 2);
     } else {
       // Stand beside the path ahead and watch it go by.
@@ -100,7 +120,7 @@ export class Rig {
           .copy(position)
           .addScaledVector(f, Math.max(speed, 60) * 4.5)
           .addScaledVector(up, 14)
-          .add(new THREE.Vector3(0, 0, 1).applyQuaternion(attitude).cross(f).multiplyScalar(45));
+          .add(eye.set(0, 0, 1).applyQuaternion(attitude).cross(f).multiplyScalar(this.options.flybyOffset ?? 45));
       }
       camera.position.copy(this.flybyAt);
       camera.up.copy(WORLD_UP);

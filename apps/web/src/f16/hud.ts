@@ -4,12 +4,8 @@
  * screen's edges and the aircraft does the rest of the talking.
  */
 
+import { AMBER, GREEN, Overlay, type ScreenPoint } from "../engine/overlay";
 import type { Flight } from "./flight";
-
-const GREEN = "#7dffb0";
-const AMBER = "#ffc34d";
-const RED = "#ff5a4d";
-const FONT = 'ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace';
 
 const M_TO_FT = 3.28084;
 const MPS_TO_KT = 1.94384;
@@ -19,9 +15,9 @@ export interface HudView {
   /** Vertical field of view in degrees. */
   fov: number;
   /** Screen position (0..1) of the next gate, or null when it is behind the view. */
-  gateOnScreen: { x: number; y: number; ahead: boolean } | null;
+  gateOnScreen: ScreenPoint | null;
   /** Screen position (0..1) the aircraft is flying towards, outside the cockpit. */
-  velocityOnScreen: { x: number; y: number; ahead: boolean } | null;
+  velocityOnScreen: ScreenPoint | null;
 }
 
 export function warnings(f: Flight): string[] {
@@ -43,109 +39,7 @@ export function warnings(f: Flight): string[] {
   return found;
 }
 
-export class Hud {
-  private readonly c: CanvasRenderingContext2D;
-  private width = 1;
-  private height = 1;
-  private scale = 1;
-
-  constructor(private readonly canvas: HTMLCanvasElement) {
-    this.c = canvas.getContext("2d") as CanvasRenderingContext2D;
-  }
-
-  resize(width: number, height: number, ratio: number): void {
-    this.canvas.width = Math.round(width * ratio);
-    this.canvas.height = Math.round(height * ratio);
-    this.c.setTransform(ratio, 0, 0, ratio, 0, 0);
-    this.width = width;
-    this.height = height;
-    this.scale = Math.max(0.75, Math.min(width / 1280, height / 720));
-  }
-
-  clear(): void {
-    this.c.clearRect(0, 0, this.width, this.height);
-  }
-
-  private text(s: string, x: number, y: number, size: number, align: CanvasTextAlign = "left", color = GREEN): void {
-    const c = this.c;
-    c.font = `600 ${size * this.scale}px ${FONT}`;
-    c.textAlign = align;
-    c.fillStyle = color;
-    c.fillText(s, x, y);
-  }
-
-  private line(x0: number, y0: number, x1: number, y1: number): void {
-    this.c.beginPath();
-    this.c.moveTo(x0, y0);
-    this.c.lineTo(x1, y1);
-    this.c.stroke();
-  }
-
-  private box(s: string, x: number, y: number, align: CanvasTextAlign): void {
-    const c = this.c;
-    const w = 86 * this.scale;
-    const h = 28 * this.scale;
-    const left = align === "right" ? x - w : x;
-    c.fillStyle = "rgba(4,16,12,0.5)";
-    c.fillRect(left, y - h / 2, w, h);
-    c.strokeRect(left, y - h / 2, w, h);
-    this.text(s, left + w / 2, y + 7 * this.scale, 20, "center");
-  }
-
-  /** A tape of values: `value` at the centre, a tick each `step`, labelled each `label`. */
-  private tape(x: number, y: number, tall: number, value: number, step: number, label: number, side: 1 | -1, format: (v: number) => string): void {
-    const c = this.c;
-    const span = tall / 2;
-    const perUnit = (tall / 8) / step;
-    c.save();
-    c.beginPath();
-    c.rect(x - 90 * this.scale, y - span, 180 * this.scale, tall);
-    c.clip();
-    const first = Math.ceil((value - span / perUnit) / step) * step;
-    for (let v = first; v <= value + span / perUnit; v += step) {
-      const py = y - (v - value) * perUnit;
-      const major = Math.abs(v / label - Math.round(v / label)) < 1e-6;
-      this.line(x, py, x + side * (major ? 12 : 6) * this.scale, py);
-      if (major && Math.abs(py - y) > 18 * this.scale) {
-        this.text(format(v), x + side * 18 * this.scale, py + 5 * this.scale, 13, side > 0 ? "left" : "right");
-      }
-    }
-    c.restore();
-  }
-
-  private headingTape(y: number, heading: number, wide: number, gateBearing: number | null): void {
-    const c = this.c;
-    const cx = this.width / 2;
-    const perDeg = wide / 60;
-    c.save();
-    c.beginPath();
-    c.rect(cx - wide / 2, y - 26 * this.scale, wide, 50 * this.scale);
-    c.clip();
-    for (let d = Math.ceil((heading - 30) / 5) * 5; d <= heading + 30; d += 5) {
-      const x = cx + (d - heading) * perDeg;
-      const major = d % 10 === 0;
-      this.line(x, y, x, y + (major ? 10 : 5) * this.scale);
-      if (major) {
-        const value = ((d % 360) + 360) % 360;
-        const name = { 0: "N", 90: "E", 180: "S", 270: "W" }[value] ?? String(value / 10).padStart(2, "0");
-        this.text(name, x, y - 5 * this.scale, 13, "center");
-      }
-    }
-    c.restore();
-    this.line(cx, y + 13 * this.scale, cx - 6 * this.scale, y + 21 * this.scale);
-    this.line(cx, y + 13 * this.scale, cx + 6 * this.scale, y + 21 * this.scale);
-    if (gateBearing !== null) {
-      const off = ((gateBearing - heading + 540) % 360) - 180;
-      const x = cx + Math.max(-30, Math.min(30, off)) * perDeg;
-      c.fillStyle = AMBER;
-      c.beginPath();
-      c.moveTo(x, y + 12 * this.scale);
-      c.lineTo(x - 6 * this.scale, y + 24 * this.scale);
-      c.lineTo(x + 6 * this.scale, y + 24 * this.scale);
-      c.fill();
-    }
-  }
-
+export class Hud extends Overlay {
   /** The conformal part, centred on the boresight. */
   private ladder(f: Flight, view: HudView): void {
     const c = this.c;
@@ -195,102 +89,10 @@ export class Hud {
     this.flightPath(cx + f.get("beta_deg") * perDeg, cy + f.get("alpha_deg") * perDeg);
   }
 
-  private flightPath(x: number, y: number): void {
-    const c = this.c;
-    const r = 8 * this.scale;
-    c.beginPath();
-    c.arc(x, y, r, 0, Math.PI * 2);
-    c.stroke();
-    this.line(x - r, y, x - 2.6 * r, y);
-    this.line(x + r, y, x + 2.6 * r, y);
-    this.line(x, y - r, x, y - 2 * r);
-  }
-
-  private gateMarker(view: HudView, distance: number): void {
-    const g = view.gateOnScreen;
-    if (!g) {
-      return;
-    }
-    const c = this.c;
-    const x = g.x * this.width;
-    const y = g.y * this.height;
-    const edge = 60 * this.scale;
-    const inside = g.ahead && x > edge && x < this.width - edge && y > edge && y < this.height - edge;
-    c.strokeStyle = AMBER;
-    if (inside) {
-      const r = 14 * this.scale;
-      c.strokeRect(x - r, y - r, 2 * r, 2 * r);
-      this.text(`${(distance / 1000).toFixed(1)} km`, x, y + r + 16 * this.scale, 13, "center", AMBER);
-      return;
-    }
-    // Off the view: an arrow on a ring round the centre, pointing the way to turn.
-    const cx = this.width / 2;
-    const cy = this.height / 2;
-    const dx = (x - cx) * (g.ahead ? 1 : -1);
-    const dy = (y - cy) * (g.ahead ? 1 : -1);
-    const a = Math.atan2(dy, dx);
-    const radius = Math.min(this.width, this.height) * 0.38;
-    const ax = cx + Math.cos(a) * radius;
-    const ay = cy + Math.sin(a) * radius;
-    c.save();
-    c.translate(ax, ay);
-    c.rotate(a);
-    c.fillStyle = AMBER;
-    c.beginPath();
-    c.moveTo(18 * this.scale, 0);
-    c.lineTo(-10 * this.scale, -11 * this.scale);
-    c.lineTo(-4 * this.scale, 0);
-    c.lineTo(-10 * this.scale, 11 * this.scale);
-    c.fill();
-    c.restore();
-    this.text(`${(distance / 1000).toFixed(1)} km`, ax, ay + 30 * this.scale, 13, "center", AMBER);
-  }
-
-  private minimap(f: Flight, outline: Path2D): void {
-    const c = this.c;
-    const size = 132 * this.scale;
-    const m = 16 * this.scale;
-    const x = this.width - size - m;
-    const y = this.height - size - m;
-    const perMetre = size / 96000;
-    c.save();
-    c.beginPath();
-    c.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-    c.fillStyle = "rgba(4,16,12,0.45)";
-    c.fill();
-    c.clip();
-    c.translate(x + size / 2, y + size / 2);
-    c.scale(perMetre, perMetre);
-    c.fillStyle = "rgba(125,255,176,0.22)";
-    c.fill(outline);
-    c.fillStyle = AMBER;
-    const dot = 900;
-    const next = f.nextGate();
-    if (next) {
-      c.beginPath();
-      c.arc(next.east, -next.north, dot, 0, Math.PI * 2);
-      c.fill();
-    }
-    c.translate(f.east(), -f.north());
-    c.rotate((f.get("psi_deg") * Math.PI) / 180);
-    c.fillStyle = GREEN;
-    c.beginPath();
-    c.moveTo(0, -2400);
-    c.lineTo(1500, 1800);
-    c.lineTo(-1500, 1800);
-    c.fill();
-    c.restore();
-  }
-
   draw(f: Flight, view: HudView, outline: Path2D, time: number): void {
     const c = this.c;
     const { width, height, scale } = this;
-    this.clear();
-    c.lineWidth = 1.6 * scale;
-    c.strokeStyle = GREEN;
-    c.shadowColor = "rgba(0,0,0,0.55)";
-    c.shadowBlur = 3 * scale;
-    c.lineJoin = "round";
+    this.begin();
 
     const cx = width / 2;
     const wide = 420 * scale;
@@ -307,7 +109,7 @@ export class Hud {
       c.globalAlpha = 1;
     }
     const heading = ((f.get("psi_deg") % 360) + 360) % 360;
-    const gate = f.nextGate();
+    const gate = f.run.next();
     let bearing: number | null = null;
     let distance = 0;
     if (gate) {
@@ -354,42 +156,13 @@ export class Hud {
     this.text(`${Math.round(power)}%`, bx + 22 * scale, by, 14);
 
     if (gate) {
-      this.gateMarker(view, distance);
+      this.gateMarker(view.gateOnScreen, distance);
     }
-    if (f.gates.length > 0) {
-      const passed = f.gates.filter((g) => g.passed).length;
-      const missed = f.gates.filter((g) => g.passed && !g.hit).length;
-      const time2 = f.gateTime;
-      const m = Math.floor(time2 / 60);
-      const s = (time2 % 60).toFixed(1).padStart(4, "0");
-      this.text(`${m}:${s}`, cx, height - 54 * scale, 26, "center", GREEN);
-      this.text(`GATE ${Math.min(passed + 1, f.gates.length)}/${f.gates.length}${missed ? `   ${missed} MISSED` : ""}`, cx, height - 30 * scale, 14, "center", missed ? AMBER : GREEN);
+    if (f.run.active) {
+      this.gateClock(f.run.time, f.run.gates.filter((g) => g.passed).length, f.run.gates.length, f.run.missed());
     }
-    this.minimap(f, outline);
-
-    const active = warnings(f);
-    if (active.length > 0 && Math.floor(time * 4) % 2 === 0) {
-      active.forEach((message, i) => {
-        const red = message === "PULL UP" || message === "DEPARTED";
-        this.text(message, cx, height * 0.27 + i * 34 * scale, 28, "center", red ? RED : AMBER);
-      });
-    }
-    c.shadowBlur = 0;
+    this.minimap(f.north(), f.east(), f.get("psi_deg"), gate, outline, 96000);
+    this.warningList(warnings(f), ["PULL UP", "DEPARTED"], time);
+    this.end();
   }
-}
-
-/** The outline of the land for the map, from the same grid as the terrain. */
-export function coastOutline(heights: Float32Array, size: number, extent: number): Path2D {
-  const outline = new Path2D();
-  const cells = 128;
-  const step = Math.floor(size / cells);
-  const cell = (extent / (size - 1)) * step;
-  for (let row = 0; row * step < size; row += 1) {
-    for (let column = 0; column * step < size; column += 1) {
-      if (heights[row * step * size + column * step] > 0) {
-        outline.rect(-extent / 2 + column * cell, extent / 2 - row * cell - cell, cell, cell);
-      }
-    }
-  }
-  return outline;
 }

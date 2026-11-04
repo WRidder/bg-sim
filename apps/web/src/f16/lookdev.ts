@@ -8,7 +8,7 @@ import { Ocean } from "../engine/ocean";
 import { Pipeline } from "../engine/pipeline";
 import { Terrain } from "../engine/terrain";
 import { buildFighter } from "./aircraft";
-import { EXTENT, islandHeight, islandMask } from "./island";
+import { EXTENT, islandHeight, islandMask } from "../island/island";
 
 const q = new URLSearchParams(location.search);
 const num = (key: string, fallback: number): number => Number(q.get(key) ?? fallback);
