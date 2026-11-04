@@ -227,11 +227,9 @@ async function main(): Promise<void> {
   const quaternion = new THREE.Quaternion();
   const before = new THREE.Quaternion();
   const after = new THREE.Quaternion();
-  const spin = new THREE.Quaternion();
   const tip = new THREE.Vector3();
   const velocity = new THREE.Vector3();
   const projected = new THREE.Vector3();
-  const up = new THREE.Vector3(0, 1, 0);
   const stabAxis = new THREE.Vector3(0, 1, 0);
   const flapLeftAxis = new THREE.Vector3(0.153, 0.988, 0).normalize();
   const flapRightAxis = new THREE.Vector3(-0.153, 0.988, 0).normalize();
@@ -321,7 +319,7 @@ async function main(): Promise<void> {
     });
 
     if (flight.crashed && !wasCrashed) {
-      burst.fire(position);
+      burst.fire(position, flight.crashReason === "Water");
       sound.crash();
       rig.kick(6);
       crashedAt = time;
@@ -330,9 +328,7 @@ async function main(): Promise<void> {
     const buffet = THREE.MathUtils.smoothstep(flight.get("alpha_deg"), 16, 26) * 0.5 + load * 0.2;
     velocity.set(flight.get("u_mps"), -flight.get("v_mps"), -flight.get("w_mps")).applyQuaternion(quaternion);
     if (flight.crashed) {
-      // The camera drifts round the fire.
-      spin.setFromAxisAngle(up, (time - crashedAt) * 0.12).multiply(quaternion);
-      rig.update(dt, position, spin, 0, 0, time);
+      rig.wreck(position, time - crashedAt, time);
     } else {
       rig.update(dt, position, quaternion, flight.get("tas_mps"), buffet, time);
     }

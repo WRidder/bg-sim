@@ -116,13 +116,15 @@ export class Burst {
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { uTime: this.time, uScale: { value: 720 } },
+        uniforms: { uTime: this.time, uScale: { value: 720 }, uWater: { value: 0 } },
         vertexShader: /* glsl */ `
           uniform float uTime;
           uniform float uScale;
           attribute vec2 aSeed;
           varying float vAge;
+          varying float vTone;
           void main() {
+            vTone = aSeed.x;
             float t = max(uTime - aSeed.y * 0.25, 0.0);
             vAge = t / (2.2 + 4.0 * aSeed.x);
             // Hurled out fast, stopped by the air, then rising.
@@ -132,15 +134,23 @@ export class Burst {
             gl_PointSize = uScale * (5.0 + 26.0 * sqrt(min(vAge, 1.0))) / max(-view.z, 1.0);
           }`,
         fragmentShader: /* glsl */ `
+          uniform float uWater;
           varying float vAge;
+          varying float vTone;
           void main() {
-            float r = length(gl_PointCoord - 0.5) * 2.0;
+            vec2 p = gl_PointCoord - 0.5;
+            // A lumpy rim: round sprites read as balloons.
+            float a = atan(p.y, p.x) * 5.0 + vTone * 40.0;
+            float r = length(p) * 2.0 * (1.0 + 0.16 * sin(a) + 0.09 * sin(a * 2.3));
             if (vAge >= 1.0 || r > 1.0) discard;
             float soft = 1.0 - r * r;
-            float fire = exp(-vAge * 9.0);
-            vec3 smoke = vec3(0.05, 0.05, 0.055);
-            vec3 color = mix(smoke, vec3(9.0, 3.6, 0.9), fire);
-            gl_FragColor = vec4(color, soft * (1.0 - vAge) * (0.45 + 0.5 * fire));
+            float fire = exp(-vAge * (7.0 + 9.0 * vTone));
+            vec3 smoke = vec3(0.03, 0.028, 0.026) * (0.6 + vTone);
+            vec3 flame = mix(vec3(5.2, 1.5, 0.22), vec3(3.2, 0.62, 0.08), vTone);
+            vec3 color = mix(smoke, flame * (0.45 + soft), smoothstep(0.02, 0.5, fire));
+            // On water the same shape is a column of spray.
+            color = mix(color, vec3(2.2, 2.3, 2.4), uWater);
+            gl_FragColor = vec4(color, soft * (1.0 - vAge) * (0.6 + 0.4 * fire));
           }`,
       }),
     );
@@ -148,7 +158,8 @@ export class Burst {
     this.points.visible = false;
   }
 
-  fire(at: THREE.Vector3): void {
+  fire(at: THREE.Vector3, water = false): void {
+    (this.points.material as THREE.ShaderMaterial).uniforms.uWater.value = water ? 1 : 0;
     this.points.position.copy(at);
     this.points.visible = true;
     this.time.value = 0;

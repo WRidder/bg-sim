@@ -119,6 +119,14 @@ void main() {
   color = mix(color, sand, smoothstep(5.0, 1.5, height + (mid - 0.5) * 5.0));
   color = mix(color, mix(vec3(0.40, 0.40, 0.37), vec3(0.28, 0.27, 0.25), fine), mask);
   color *= 0.72 + 0.56 * fine * detail + 0.28 * (1.0 - detail);
+  // Tufts and bare patches, for what flies low: only near the eye, where they cannot shimmer.
+  float close = smoothstep(900.0, 80.0, distanceToEye) * (1.0 - mask);
+  if (close > 0.0) {
+    float tuft = fbm(xz * 0.23, 3);
+    float blade = vnoise(xz * 1.9);
+    color *= 1.0 + close * ((tuft - 0.5) * 0.7 + (blade - 0.5) * 0.35);
+    color = mix(color, color * vec3(1.28, 1.08, 0.82), close * smoothstep(0.46, 0.76, tuft) * 0.7);
+  }
 
   float clouds = 1.0 - 0.62 * cloudWeather(xz + uSunDir.xz / max(uSunDir.y, 0.15) * 2200.0);
   float sunlight = max(dot(normal, uSunDir), 0.0) * here.g * clouds;
@@ -175,7 +183,7 @@ export class Terrain {
     options: TerrainOptions = {},
   ) {
     const baseCell = options.baseCell ?? 12;
-    const half = options.half ?? 64;
+    const half = options.half ?? 96;
     const levels = options.levels ?? 8;
     const positions: number[] = [];
     const level: number[] = [];

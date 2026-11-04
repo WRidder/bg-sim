@@ -26,7 +26,7 @@ export function buildCourse(points: readonly (readonly [number, number, number])
     let highest = ground(north, east);
     if (height > lowest) {
       for (const [n, e] of [before, after]) {
-        for (let t = 0.1; t <= 0.3; t += 0.1) {
+        for (const t of [0.1, 0.2, 0.3]) {
           highest = Math.max(highest, ground(north + (n - north) * t, east + (e - east) * t));
         }
       }

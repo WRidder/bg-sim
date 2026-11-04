@@ -68,6 +68,22 @@ export class Rig {
     this.shake = Math.max(this.shake, amount);
   }
 
+  /** After a crash: well back from the wreck, drifting round it. */
+  wreck(at: THREE.Vector3, seconds: number, time: number): void {
+    const { camera } = this;
+    const angle = seconds * 0.1;
+    const reach = 170 + 45 * Math.min(seconds, 2);
+    camera.position.set(at.x + reach * Math.sin(angle), 0, at.z + reach * Math.cos(angle));
+    camera.position.y = Math.max(at.y, this.groundAt(camera.position.x, camera.position.z)) + 55;
+    camera.up.copy(WORLD_UP);
+    camera.lookAt(at.x, at.y + 22, at.z);
+    camera.near = 1;
+    this.shake *= 0.96;
+    camera.position.y += Math.sin(time * 47) * this.shake * 0.4;
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+  }
+
   update(dt: number, position: THREE.Vector3, attitude: THREE.Quaternion, speed: number, buffet: number, time: number): void {
     const camera = this.camera;
     target.copy(attitude);
