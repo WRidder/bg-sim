@@ -219,13 +219,20 @@ test("a selected note resizes from its corner in one undo step", async ({ page }
   await page.mouse.move(box.x + 40, box.y + 30, { steps: 5 });
   await page.mouse.move(box.x + 90, box.y + 60, { steps: 5 });
   await page.mouse.up();
+  // xyflow sizes the node's wrapper at once and the note from its measured size one
+  // ResizeObserver tick later, before the paint, so these reads retry instead of racing it.
+  const width = async () => (await note.boundingBox())?.width ?? 0;
+  const height = async () => (await note.boundingBox())?.height ?? 0;
+  await expect.poll(width).toBeGreaterThan(before.width + 60);
+  await expect.poll(height).toBeGreaterThan(before.height + 40);
   const after = await note.boundingBox();
-  expect(after?.width ?? 0).toBeGreaterThan(before.width + 60);
-  expect(after?.height ?? 0).toBeGreaterThan(before.height + 40);
   expect(Math.abs((after?.x ?? 0) - before.x)).toBeLessThan(2);
   await page.getByTestId("undo").click();
-  const undone = await note.boundingBox();
-  expect(Math.abs((undone?.width ?? 0) - before.width)).toBeLessThan(2);
+  await expect.poll(async () => Math.abs((await width()) - before.width)).toBeLessThan(2);
+  await expect.poll(async () => Math.abs((await height()) - before.height)).toBeLessThan(2);
+  // One step: the next undo takes back the note itself, not more of the resize.
+  await page.getByTestId("undo").click();
+  await expect(notes(page)).toHaveCount(0);
 });
 
 test("the wheel scrolls a long note instead of zooming the canvas", async ({ page }) => {

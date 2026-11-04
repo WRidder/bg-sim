@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import time
 from dataclasses import replace
+from typing import Any
 
 from fastapi.testclient import TestClient
 
+from bgsim_server import __main__ as entry
 from bgsim_server.app import create_app
 
 
@@ -55,3 +57,12 @@ def test_root_serves_web_dist_with_spa_fallback(fake_settings, tmp_path) -> None
         assert client.get("/api/nope").status_code == 404, "the SPA fallback never shadows /api"
         escaped = client.get("/..%2Fsecret.txt")
         assert "top secret" not in escaped.text, "no path escapes out of web/dist"
+
+
+def test_idle_connections_outlive_the_gap_between_a_clients_requests(monkeypatch) -> None:
+    """Uvicorn's default of 5 s resets requests that cross its close; see ``KEEP_ALIVE_S``."""
+    options: dict[str, Any] = {}
+    monkeypatch.setattr(entry, "create_app", lambda settings: "app")
+    monkeypatch.setattr(entry.uvicorn, "run", lambda app, **kwargs: options.update(kwargs))
+    entry.main()
+    assert options["timeout_keep_alive"] == entry.KEEP_ALIVE_S >= 60
