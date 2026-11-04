@@ -167,7 +167,7 @@ export class Stage {
     this.sunLight.position.copy(focus).addScaledVector(uSunDir.value, 100);
     this.sunLight.target.position.copy(focus);
     this.terrain.follow(this.camera.position);
-    this.ocean.update(this.camera.position, time);
+    this.ocean.update(this.camera.position, time, this.renderer);
     this.pipeline.render(this.world, this.near, this.camera, time);
   }
 

@@ -38,6 +38,8 @@ export interface RigOptions {
   fastSpeed?: number;
   cockpitFov?: number;
   flybyOffset?: number;
+  /** How far the aircraft goes past before the flyby camera moves on, in metres. */
+  flybyRange?: number;
 }
 
 export class Rig {
@@ -131,7 +133,7 @@ export class Rig {
     } else {
       // Stand beside the path ahead and watch it go by.
       const ahead = this.flybyAt.distanceTo(position);
-      if (ahead > 900) {
+      if (ahead > (this.options.flybyRange ?? 900)) {
         this.flybyAt
           .copy(position)
           .addScaledVector(f, Math.max(speed, 60) * 4.5)

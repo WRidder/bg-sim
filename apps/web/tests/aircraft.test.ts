@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { expect, it } from "vitest";
+import { buildAeroplane } from "../src/cessna/aircraft";
 import { buildFighter } from "../src/f16/aircraft";
 
 /** Positive for a closed mesh whose triangles face outwards: the sum of signed tetrahedra. */
@@ -21,9 +22,12 @@ function signedVolume(geometry: THREE.BufferGeometry): number {
   return volume;
 }
 
-it("faces outwards: an inside-out mesh shows its far walls and the light on the wrong side", () => {
+it.each([
+  ["fighter", buildFighter],
+  ["aeroplane", buildAeroplane],
+])("%s faces outwards: an inside-out mesh shows its far walls and the light on the wrong side", (_, build) => {
   const inverted: string[] = [];
-  buildFighter().root.traverse((object) => {
+  build().root.traverse((object) => {
     const mesh = object as THREE.Mesh;
     if (mesh.isMesh) {
       const volume = signedVolume(mesh.geometry);

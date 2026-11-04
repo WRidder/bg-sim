@@ -80,7 +80,7 @@ camera.lookAt(
 camera.updateMatrixWorld();
 camera.updateProjectionMatrix();
 terrain.follow(camera.position);
-ocean.update(camera.position, 10);
+ocean.update(camera.position, 10, renderer);
 const t2 = performance.now();
 pipeline.render(scene, near, camera, 10);
 const gl = renderer.getContext();
