@@ -20,6 +20,9 @@ export class Overlay {
   protected width = 1;
   protected height = 1;
   protected scale = 1;
+  /** Pixels a side window takes from each edge: what sits at an edge moves in by this much. */
+  protected roomLeft = 0;
+  protected roomRight = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.c = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -32,6 +35,11 @@ export class Overlay {
     this.width = width;
     this.height = height;
     this.scale = Math.max(0.75, Math.min(width / 1280, height / 720));
+  }
+
+  room(left: number, right: number): void {
+    this.roomLeft = left;
+    this.roomRight = right;
   }
 
   clear(): void {
@@ -174,7 +182,7 @@ export class Overlay {
     const c = this.c;
     const size = 132 * this.scale;
     const m = 16 * this.scale;
-    const x = this.width - size - m;
+    const x = this.width - this.roomRight - size - m;
     const y = this.height - size - m;
     const perMetre = size / extent;
     c.save();

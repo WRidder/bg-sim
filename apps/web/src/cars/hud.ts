@@ -89,7 +89,7 @@ export class Hud extends Overlay {
 
   private lapPanel(car: Vehicle, state: HudState): void {
     const { scale: k } = this;
-    const x = 18 * k;
+    const x = this.roomLeft + 18 * k;
     const y = 18 * k;
     const w = 208 * k;
     const lines = 1 + (car.laps.length > 0 ? 1 : 0) + (car.best !== null || state.record !== null ? 1 : 0);
@@ -166,7 +166,7 @@ export class Hud extends Overlay {
       return;
     }
     const size = 172 * k;
-    const x = w - size - 18 * k;
+    const x = w - this.roomRight - size - 18 * k;
     const y = 18 * k;
     this.plate(x, y, size, size);
     const s = this.mapScale * k;

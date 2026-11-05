@@ -5,9 +5,12 @@
 
 import { Fmu } from "./fmu";
 import { Pacer } from "./pacer";
+import { Tuning } from "./tuning";
 
 export class Sim<Output extends string> {
   readonly pacer: Pacer;
+  /** The model's parameters as the player has set them. */
+  readonly tuning: Tuning;
   readonly u: Float64Array;
   y: Float64Array;
   previous: Float64Array;
@@ -24,6 +27,7 @@ export class Sim<Output extends string> {
     outputs: readonly Output[],
   ) {
     this.pacer = new Pacer(fmu.step);
+    this.tuning = new Tuning(fmu.name, fmu.parameters);
     this.u = new Float64Array(inputs.length);
     this.y = new Float64Array(outputs.length);
     this.previous = new Float64Array(outputs.length);
@@ -46,9 +50,13 @@ export class Sim<Output extends string> {
     return this.previous[i] + (this.y[i] - this.previous[i]) * this.pacer.fraction;
   }
 
-  /** Back to the start: `u` holds the inputs to begin with once `init` has run. */
+  /**
+   * Back to the start with the player's settings: `params` are what the game itself decides, and
+   * win over them. `u` holds the inputs to begin with once `init` has run.
+   */
   protected restart(params: Record<string, number>, init: () => void): void {
-    this.fmu.restart(params);
+    this.fmu.restart({ ...this.tuning.changed, ...params });
+    this.tuning.started();
     this.u.fill(0);
     init();
     this.fmu.write(this.inRefs, this.u);

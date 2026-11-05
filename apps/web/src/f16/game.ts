@@ -11,6 +11,9 @@ import { attitude } from "../engine/frames";
 import { Controls, STANDARD_PAD } from "../engine/input";
 import { coastOutline, type ScreenPoint } from "../engine/overlay";
 import { Stage } from "../engine/stage";
+import { SideBar } from "../engine/side";
+import { Telemetry } from "../engine/telemetry";
+import { Setup } from "../engine/tuning";
 import { $, announce, BestTime, choices, clock } from "../engine/ui";
 import { Island } from "../island/source";
 import { buildGround, GateRings, groundShadow } from "../island/world";
@@ -18,6 +21,7 @@ import { buildFighter } from "./aircraft";
 import { flyOrbit, flyTo, type Orbit } from "./autopilot";
 import { buildCockpit } from "./cockpit";
 import { Flight, gateCourse, ORIGIN, type Start } from "./flight";
+import { F16_KNOBS, f16Panel } from "./telemetry";
 import { Hud, type HudView, warnings } from "./hud";
 import starts from "./starts.json";
 
@@ -81,6 +85,9 @@ async function main(): Promise<void> {
   );
 
   const flight = await Flight.create(ground, starts[0] as Start);
+  const side = new SideBar("f16", (left, right) => hud.room(left, right));
+  const telemetry = new Telemetry(side, f16Panel(flight));
+  new Setup(side).use(flight.tuning, "Aircraft setup", F16_KNOBS);
   const { run } = flight;
   const best = new BestTime("island-sortie-best");
   run.onGate = (gate) => {
@@ -112,6 +119,9 @@ async function main(): Promise<void> {
   }, "free");
 
   const show = (next: Phase): void => {
+    if (next === "flying" && phase !== "paused") {
+      telemetry.reset();
+    }
     phase = next;
     $("title").hidden = next !== "title";
     $("pause").hidden = next !== "paused";
@@ -354,6 +364,7 @@ async function main(): Promise<void> {
       });
     }
 
+    telemetry.update(dt, phase === "flying" && !flight.crashed ? "running" : phase === "title" ? "hidden" : "frozen");
     stage.render(position, time);
 
     if (phase === "flying") {
@@ -393,6 +404,8 @@ async function main(): Promise<void> {
   show("title");
   requestAnimationFrame(frame);
   announce({
+    telemetry,
+    side,
     flight,
     rig,
     stage,

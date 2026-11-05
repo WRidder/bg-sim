@@ -4,10 +4,22 @@
  * a new instance. Values cross as 64-bit floats through one shared buffer: a step allocates nothing.
  */
 
+/** A parameter as the FMU declares it; settable before initialisation, inside its range. */
+export interface FmuParameter {
+  name: string;
+  start: number;
+  min?: number;
+  max?: number;
+  unit?: string;
+  description?: string;
+}
+
 export interface FmuModel {
+  name: string;
   guid: string;
   step: number;
   refs: Record<string, number>;
+  params: FmuParameter[];
   wasm: string;
 }
 
@@ -54,6 +66,14 @@ export class Fmu {
     const x = instance.exports as unknown as Exports;
     x._initialize();
     return new Fmu(x, model);
+  }
+
+  get name(): string {
+    return this.model.name;
+  }
+
+  get parameters(): readonly FmuParameter[] {
+    return this.model.params;
   }
 
   /** The value references of `names`, in order: what `write` and `read` take. */

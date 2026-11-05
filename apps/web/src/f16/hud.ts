@@ -97,8 +97,8 @@ export class Hud extends Overlay {
     const cx = width / 2;
     const wide = 420 * scale;
     const tall = 300 * scale;
-    const left = view.cockpit ? cx - 290 * scale : 150 * scale;
-    const right = view.cockpit ? cx + 290 * scale : width - 150 * scale;
+    const left = view.cockpit ? cx - 290 * scale : this.roomLeft + 150 * scale;
+    const right = view.cockpit ? cx + 290 * scale : width - this.roomRight - 150 * scale;
     const middle = height * 0.5;
 
     if (view.cockpit) {
@@ -143,7 +143,7 @@ export class Hud extends Overlay {
     // The throttle: a bar with a mark at full dry thrust, afterburner beyond it.
     const throttle = f.u[3];
     const bar = 150 * scale;
-    const bx = 22 * scale;
+    const bx = this.roomLeft + 22 * scale;
     const by = height - 28 * scale;
     c.fillStyle = "rgba(4,16,12,0.5)";
     c.fillRect(bx, by - bar, 12 * scale, bar);

@@ -10,6 +10,9 @@ import { Burst } from "../engine/effects";
 import { attitude } from "../engine/frames";
 import { coastOutline, type ScreenPoint } from "../engine/overlay";
 import { Stage } from "../engine/stage";
+import { SideBar } from "../engine/side";
+import { Telemetry } from "../engine/telemetry";
+import { Setup } from "../engine/tuning";
 import { $, announce, BestTime, choices, clock } from "../engine/ui";
 import { Island } from "../island/source";
 import { buildGround } from "../island/world";
@@ -18,6 +21,7 @@ import { Cockpit, EYE } from "./cockpit";
 import { Controls } from "./controls";
 import { Downwash, type Wash } from "./downwash";
 import { Flight, OMEGA, type Placing, ROTOR_RADIUS, type Start, TAIL_RATIO, WEIGHT } from "./flight";
+import { a109Panel } from "./telemetry";
 import { Hud, type HudView, warnings } from "./hud";
 import { type Landing, Run } from "./mission";
 import { furnish, layPads, MISSIONS, type Pad } from "./pads";
@@ -121,6 +125,9 @@ async function main(): Promise<void> {
   const padOf = (id: string): Pad => pads.find((pad) => pad.id === id) as Pad;
   const onPad = (pad: Pad): Placing => ({ north: pad.north, east: pad.east, floor: pad.top, heading: pad.heading });
   const flight = await Flight.create(surface, PARKED, onPad(pads[0]));
+  const side = new SideBar("a109", (left, right) => hud.room(left, right));
+  const telemetry = new Telemetry(side, a109Panel(flight));
+  new Setup(side).use(flight.tuning, "Setup");
   const assist = new Assist();
   const run = new Run();
   let pilot: Autopilot | null = null;
@@ -162,6 +169,9 @@ async function main(): Promise<void> {
   $("aid").addEventListener("change", applyAid);
 
   const show = (next: Phase): void => {
+    if (next === "flying" && phase !== "paused") {
+      telemetry.reset();
+    }
     phase = next;
     $("title").hidden = next !== "title";
     $("pause").hidden = next !== "paused";
@@ -557,6 +567,7 @@ async function main(): Promise<void> {
       });
     }
 
+    telemetry.update(dt, phase === "flying" && !flight.crashed ? "running" : phase === "title" ? "hidden" : "frozen");
     stage.render(position, time);
 
     if (phase === "flying") {
@@ -588,6 +599,8 @@ async function main(): Promise<void> {
   show("title");
   requestAnimationFrame(frame);
   announce({
+    telemetry,
+    side,
     stage,
     flight,
     rig,

@@ -6,10 +6,14 @@
 
 import * as THREE from "three";
 import { SUNS, Stage } from "../engine/stage";
+import { SideBar } from "../engine/side";
+import { Telemetry } from "../engine/telemetry";
+import { Setup } from "../engine/tuning";
 import { $, announce, BestTime, choices } from "../engine/ui";
 import { Puffs, SkidMarks } from "./fx";
 import { type GhostLap, loadGhost, type Pose, Recording, saveGhost } from "./ghost";
 import { detailTexture, groundMaterial, type GroundUniforms, roadRibbon } from "./ground";
+import { carKnobs, carPanel } from "./telemetry";
 import { COLOURS, deltaText, Hud, type HudState, lapText } from "./hud";
 import { roadHeight } from "./land";
 import { Line } from "./line";
@@ -107,6 +111,9 @@ async function main(): Promise<void> {
   const hud = new Hud($<HTMLCanvasElement>("hud"));
   hud.setTrack(track);
   stage.onResize = (width, height) => hud.resize(width, height, Math.min(devicePixelRatio, 2));
+  const side = new SideBar("cars", (left, right) => hud.room(left, right));
+  const telemetry = new Telemetry(side);
+  const setup = new Setup(side);
   stage.resize();
   const sound = new CarVoice();
   const pedals = new Pedals();
@@ -126,6 +133,11 @@ async function main(): Promise<void> {
   const pose: Pose = { x: 0, y: 0, z: 0, w: 1, qx: 0, qy: 0, qz: 0, steer: 0 };
   const hudState: HudState = { laps: 3, record: null, delta: null, flash: null, message: null, lights: -2, time: 0 };
   let carNow = vehicles[kind] as Vehicle;
+  const takeCar = (car: Vehicle): void => {
+    carNow = car;
+    telemetry.use(carPanel(car));
+    setup.use(car.tuning, car.kind === "racecar" ? "Race car setup" : "Buggy setup", carKnobs(car.kind));
+  };
   let modelNow: CarModel;
   let ghostModel: CarModel;
 
@@ -242,7 +254,7 @@ async function main(): Promise<void> {
     shared.uStyle.value = kind === "racecar" ? 0 : 1;
     hud.setTrack(track);
     const { car, model, ghost } = await garage(kind);
-    carNow = car;
+    takeCar(car);
     modelNow = model;
     ghostModel = ghost;
     fillTracks();
@@ -268,6 +280,9 @@ async function main(): Promise<void> {
   $("sky").addEventListener("change", applySky);
 
   const show = (next: Phase): void => {
+    if (next === "grid") {
+      telemetry.reset();
+    }
     phase = next;
     $("title").hidden = next !== "title";
     $("pause").hidden = next !== "paused";
@@ -652,6 +667,7 @@ async function main(): Promise<void> {
       hudState.time = time;
       hud.draw(car, hudState);
     }
+    telemetry.update(dt, phase === "driving" ? "running" : phase === "paused" || phase === "over" ? "frozen" : "hidden");
     if (phase === "title" && car.laps.length >= 200) {
       attract();
     }
@@ -688,7 +704,7 @@ async function main(): Promise<void> {
   }
 
   const first = await garage(kind);
-  carNow = first.car;
+  takeCar(first.car);
   modelNow = first.model;
   ghostModel = first.ghost;
   fillTracks();
@@ -701,6 +717,8 @@ async function main(): Promise<void> {
   }
   requestAnimationFrame(frame);
   announce({
+    telemetry,
+    side,
     get car() {
       return carNow;
     },

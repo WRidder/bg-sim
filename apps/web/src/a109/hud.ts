@@ -138,7 +138,7 @@ export class Hud extends Overlay {
     const { scale, width, height } = this;
     const size = 150 * scale;
     const m = 16 * scale;
-    const cx = width - m - size / 2;
+    const cx = width - this.roomRight - m - size / 2;
     const cy = height - m - size / 2;
     const span = 24000;
     const perMetre = size / span;
@@ -202,8 +202,8 @@ export class Hud extends Overlay {
       this.gateMarker(view.padOnScreen, distance);
     }
     if (!view.cockpit) {
-      const left = 30 * scale;
-      const right = width - 30 * scale;
+      const left = this.roomLeft + 30 * scale;
+      const right = width - this.roomRight - 30 * scale;
       const middle = height * 0.5;
       const radar = Math.max(f.radar(), 0);
       this.readout("KNOTS", String(Math.round(f.get("kts"))), left, middle - 30 * scale, "left");
@@ -214,7 +214,7 @@ export class Hud extends Overlay {
       const base = height - 28 * scale;
       const tall = 130 * scale;
       const torque = f.get("power_hp") / POWER_LIMIT;
-      const x = 22 * scale;
+      const x = this.roomLeft + 22 * scale;
       this.bar(x, base, tall, f.u[0], GREEN, 0.6);
       this.bar(x + 42 * scale, base, tall, torque, torque > 0.98 ? RED : torque > 0.9 ? AMBER : GREEN, 1);
       this.bar(x + 84 * scale, base, tall, f.get("rotor_pct") / 120, f.get("rotor_pct") < 95 ? RED : GREEN, 100 / 120);
