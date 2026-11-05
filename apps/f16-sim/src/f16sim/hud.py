@@ -71,6 +71,16 @@ class Hud:
                 math.tan(math.radians(max(-80, min(80, el_deg)))) * self.k)
 
     # ---- per frame
+    @staticmethod
+    def _gear(y: dict) -> str:
+        pos = y["gear_pos"]
+        text = "GEAR DOWN" if pos > 0.99 else ("GEAR UP" if pos < 0.01 else "GEAR MOVING")
+        if y["on_ground"] > 0.5:
+            text += "\nWOW"
+        if y.get("brakes", 0.0) > 0.05:
+            text += " BRK"
+        return text
+
     def update(self, y: dict, *, cockpit: bool, info: str, ring: str, caption: str, t: float, crashed: bool,
                paused: bool, help_text: str, ring_cue: tuple[float, float] | None) -> None:
         self._used = 0
@@ -114,7 +124,7 @@ class Hud:
         thr = y.get("throttle", 0.0)
         T["left"].setText(f"M {y['mach']:.2f}\nG {y['nz_g']:4.1f}\nAOA {y['alpha_deg']:4.1f}\nB {y['beta_deg']:+4.1f}")
         T["right"].setText(f"THR {thr * 100:3.0f}%{' AB' if thr > 0.77 else ''}\nPWR {y['power_pct']:3.0f}%\n"
-                           f"TAS {y['tas_mps'] * KT:4.0f}\nROLL {phi:+4.0f}")
+                           f"TAS {y['tas_mps'] * KT:4.0f}\nROLL {phi:+4.0f}\n{self._gear(y)}")
         # warnings, most important first; they blink at 2 Hz
         blink = ((t + 0.1) * 2.0) % 1.0 < 0.65
         warn = []
@@ -123,7 +133,7 @@ class Hud:
         tti = y.get("agl", y["alt_m"]) / max(1e-3, -y["vs_mps"]) if y["vs_mps"] < -1.0 else 1e9
         if y.get("agl", y["alt_m"]) < 600.0 and tti < 8.0:
             warn.append("PULL UP")
-        if y["alpha_deg"] > 22.0 or (y["cas_mps"] * KT < 130.0):
+        if y["on_ground"] < 0.5 and (y["alpha_deg"] > 22.0 or (y["cas_mps"] * KT < 130.0)):
             warn.append("STALL")
         if y["limiter_active"] > 0.5:
             warn.append("ALPHA/G LIMIT" if y["alpha_deg"] > 20.0 else "G LIMIT")

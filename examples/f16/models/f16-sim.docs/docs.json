@@ -21,6 +21,12 @@
           ]
         },
         {
+          "id": "gear",
+          "title": "Landing gear",
+          "file": "pages/gear.md",
+          "children": []
+        },
+        {
           "id": "fmu",
           "title": "The FMU",
           "file": "pages/fmu.md",

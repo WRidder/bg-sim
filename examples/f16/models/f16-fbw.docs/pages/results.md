@@ -1,6 +1,6 @@
 # Results
 
-![Pitch rate, stabilator and alpha|900](assets/6b03c4266d7e.png)
+![Pitch rate, stabilator and alpha|900](assets/bdc4ced67117.png)
 
 | quantity | Sched | Frozen |
 | --- | --- | --- |

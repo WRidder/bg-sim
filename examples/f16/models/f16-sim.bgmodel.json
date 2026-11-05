@@ -392,6 +392,121 @@
    },
    {
     "id": "n18",
+    "name": "Thr2Stim",
+    "block": {
+     "ref": "stdlib:sources/Ramp"
+    },
+    "position": {
+     "x": 40,
+     "y": 840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "throttle2_t",
+     "slope": "throttle2_d / 0.2",
+     "duration": "0.2"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n19",
+    "name": "ThrMx",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 180,
+     "y": 760
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n20",
+    "name": "ThrSum",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 300,
+     "y": 760
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[1.0, 1.0]"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n21",
+    "name": "GearStim",
+    "block": {
+     "ref": "stdlib:sources/Ramp"
+    },
+    "position": {
+     "x": 40,
+     "y": 920
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "gear_t",
+     "initial": "gear0",
+     "slope": "(gear_set - gear0) / 0.05",
+     "duration": "0.05"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n22",
+    "name": "BrakeStim",
+    "block": {
+     "ref": "stdlib:sources/Ramp"
+    },
+    "position": {
+     "x": 40,
+     "y": 1000
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "brake_t",
+     "slope": "brake_set / 0.05",
+     "duration": "0.05"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n23",
     "name": "Calm",
     "block": {
      "ref": "stdlib:sources/Constant"
@@ -413,7 +528,7 @@
     }
    },
    {
-    "id": "n19",
+    "id": "n24",
     "name": "stick_pitch",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -435,7 +550,7 @@
     }
    },
    {
-    "id": "n20",
+    "id": "n25",
     "name": "stick_roll",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -457,7 +572,7 @@
     }
    },
    {
-    "id": "n21",
+    "id": "n26",
     "name": "pedals",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -479,7 +594,7 @@
     }
    },
    {
-    "id": "n22",
+    "id": "n27",
     "name": "throttle",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -501,7 +616,7 @@
     }
    },
    {
-    "id": "n23",
+    "id": "n28",
     "name": "wind_n",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -523,7 +638,7 @@
     }
    },
    {
-    "id": "n24",
+    "id": "n29",
     "name": "wind_e",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -545,7 +660,7 @@
     }
    },
    {
-    "id": "n25",
+    "id": "n30",
     "name": "wind_d",
     "block": {
      "ref": "stdlib:converters/ExportInputPass"
@@ -567,7 +682,73 @@
     }
    },
    {
-    "id": "n26",
+    "id": "n31",
+    "name": "gear_cmd",
+    "block": {
+     "ref": "stdlib:converters/ExportInputPass"
+    },
+    "position": {
+     "x": 420,
+     "y": 810
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n32",
+    "name": "brake_l",
+    "block": {
+     "ref": "stdlib:converters/ExportInputPass"
+    },
+    "position": {
+     "x": 420,
+     "y": 920
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n33",
+    "name": "brake_r",
+    "block": {
+     "ref": "stdlib:converters/ExportInputPass"
+    },
+    "position": {
+     "x": 420,
+     "y": 1030
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n34",
     "name": "F16",
     "block": {
      "subsystem": {
@@ -655,6 +836,162 @@
         "unit": null,
         "node": "n16",
         "port": "u"
+       },
+       {
+        "name": "gear_cmd",
+        "kind": "signal",
+        "direction": "input",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n40",
+        "port": "u"
+       },
+       {
+        "name": "brake_l",
+        "kind": "signal",
+        "direction": "input",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n41",
+        "port": "u"
+       },
+       {
+        "name": "brake_r",
+        "kind": "signal",
+        "direction": "input",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n42",
+        "port": "u"
+       },
+       {
+        "name": "pedal",
+        "kind": "signal",
+        "direction": "input",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n43",
+        "port": "u"
+       },
+       {
+        "name": "fn_nose",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n50",
+        "port": "fn"
+       },
+       {
+        "name": "q_nose",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "m",
+        "node": "n55",
+        "port": "compression"
+       },
+       {
+        "name": "fn_left",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n62",
+        "port": "fn"
+       },
+       {
+        "name": "q_left",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "m",
+        "node": "n67",
+        "port": "compression"
+       },
+       {
+        "name": "fn_right",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n74",
+        "port": "fn"
+       },
+       {
+        "name": "q_right",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "m",
+        "node": "n79",
+        "port": "compression"
+       },
+       {
+        "name": "gear_pos",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n44",
+        "port": "pos"
+       },
+       {
+        "name": "w",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n46",
+        "port": "w"
+       },
+       {
+        "name": "steer",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "rad",
+        "node": "n46",
+        "port": "steer"
        },
        {
         "name": "alpha",
@@ -982,12 +1319,12 @@
          "params": {},
          "constants": {},
          "starts": {
-          "qw": "cos((0.018311337486396788 - alpha0 / 57.29577951308232) / 2.0)",
+          "qw": "cos((0.018311337486396788 - ((alpha0 + gamma0) / 57.29577951308232)) / 2.0)",
           "qx": "0.0",
-          "qy": "sin((0.018311337486396788 - alpha0 / 57.29577951308232) / 2.0)",
+          "qy": "sin((0.018311337486396788 - ((alpha0 + gamma0) / 57.29577951308232)) / 2.0)",
           "qz": "0.0",
-          "px": "0.0",
-          "py": "0.0",
+          "px": "north0",
+          "py": "-east0",
           "pz": "h0"
          },
          "ui": {
@@ -1881,6 +2218,1084 @@
           "m": "mass",
           "g0": "9.805416000000001"
          },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n40",
+         "name": "GearCmdIn",
+         "block": {
+          "ref": "stdlib:continuous/Gain"
+         },
+         "position": {
+          "x": 1200,
+          "y": 1100
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n41",
+         "name": "brake_lIn",
+         "block": {
+          "ref": "stdlib:continuous/Gain"
+         },
+         "position": {
+          "x": 1200,
+          "y": 1160
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n42",
+         "name": "brake_rIn",
+         "block": {
+          "ref": "stdlib:continuous/Gain"
+         },
+         "position": {
+          "x": 1200,
+          "y": 1220
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n43",
+         "name": "pedalIn",
+         "block": {
+          "ref": "stdlib:continuous/Gain"
+         },
+         "position": {
+          "x": 1200,
+          "y": 1280
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n44",
+         "name": "GearAct",
+         "block": {
+          "ref": "project:GearActuator"
+         },
+         "position": {
+          "x": 1400,
+          "y": 1100
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "t_gear": "5.0",
+          "L": "3.0"
+         },
+         "constants": {},
+         "starts": {
+          "x": "gear0"
+         },
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n45",
+         "name": "SteerMax",
+         "block": {
+          "ref": "stdlib:continuous/Lookup1D"
+         },
+         "position": {
+          "x": 1200,
+          "y": 1340
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "x": "[3.048, 6.096, 9.144, 15.24, 45.72]",
+          "table": "[32.0, 16.0, 7.0, 3.0, 0.5]"
+         },
+         "constants": {
+          "N": "5"
+         },
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n46",
+         "name": "Logic",
+         "block": {
+          "ref": "project:GearLogic"
+         },
+         "position": {
+          "x": 1400,
+          "y": 1280
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "f0": "500.0",
+          "f1": "9114.60441802104"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n47",
+         "name": "NoSteer",
+         "block": {
+          "ref": "stdlib:sources/Constant"
+         },
+         "position": {
+          "x": 1400,
+          "y": 1440
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "value": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n48",
+         "name": "NoBrake",
+         "block": {
+          "ref": "stdlib:sources/Constant"
+         },
+         "position": {
+          "x": 1400,
+          "y": 1500
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "value": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n49",
+         "name": "Mount_nose",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 1600,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9999580871577167",
+          "qx": "0.0",
+          "qy": "0.009155540829474298",
+          "qz": "0.0",
+          "x": "-(2.7965400000000002 + (xcg - 0.35) * 3.450336)",
+          "y": "-0.0",
+          "z": "1.69926"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n50",
+         "name": "Contact_nose",
+         "block": {
+          "ref": "project:GearContact"
+         },
+         "position": {
+          "x": 1800,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "rx": "(2.7965400000000002 + (xcg - 0.35) * 3.450336)",
+          "ry": "0.0",
+          "rz": "-1.69926",
+          "ground_z": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n51",
+         "name": "N_nose",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 2000,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n52",
+         "name": "Lift_nose",
+         "block": {
+          "junction": "0"
+         },
+         "position": {
+          "x": 2120,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n53",
+         "name": "Retract_nose",
+         "block": {
+          "ref": "stdlib:bondgraph/MSf"
+         },
+         "position": {
+          "x": 2120,
+          "y": 1080
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n54",
+         "name": "Strut_nose",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 2240,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n55",
+         "name": "Spring_nose",
+         "block": {
+          "ref": "project:StrutSpring"
+         },
+         "position": {
+          "x": 2400,
+          "y": 1140
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "251744.82566680975",
+          "eps": "0.001"
+         },
+         "constants": {},
+         "starts": {
+          "q": "-(h0 + sin((alpha0 + gamma0) / 57.29577951308232) * (2.7965400000000002 + (xcg - 0.35) * 3.450336) + cos((alpha0 + gamma0) / 57.29577951308232) * -1.69926) - 3.0 * (1.0 - gear0)"
+         },
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n56",
+         "name": "Damper_nose",
+         "block": {
+          "ref": "project:StrutDamper"
+         },
+         "position": {
+          "x": 2400,
+          "y": 1240
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "b": "31012.04374156352",
+          "feps": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n57",
+         "name": "X_nose",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 2000,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n58",
+         "name": "Roll_nose",
+         "block": {
+          "ref": "project:WheelFriction"
+         },
+         "position": {
+          "x": 2400,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "mu_r": "0.02",
+          "mu_s": "0.5",
+          "vs": "0.2"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n59",
+         "name": "Y_nose",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 2000,
+          "y": 1520
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n60",
+         "name": "Side_nose",
+         "block": {
+          "ref": "project:WheelSide"
+         },
+         "position": {
+          "x": 2400,
+          "y": 1520
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "mu_s": "0.8",
+          "vs": "2.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n61",
+         "name": "Mount_left",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 2600,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9999580871577167",
+          "qx": "0.0",
+          "qy": "0.009155540829474298",
+          "qz": "0.0",
+          "x": "-(-0.7848600000000001 + (xcg - 0.35) * 3.450336)",
+          "y": "-1.2191999999999998",
+          "z": "1.6890999999999998"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n62",
+         "name": "Contact_left",
+         "block": {
+          "ref": "project:GearContact"
+         },
+         "position": {
+          "x": 2800,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "rx": "(-0.7848600000000001 + (xcg - 0.35) * 3.450336)",
+          "ry": "1.2191999999999998",
+          "rz": "-1.6890999999999998",
+          "ground_z": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n63",
+         "name": "N_left",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 3000,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n64",
+         "name": "Lift_left",
+         "block": {
+          "junction": "0"
+         },
+         "position": {
+          "x": 3120,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n65",
+         "name": "Retract_left",
+         "block": {
+          "ref": "stdlib:bondgraph/MSf"
+         },
+         "position": {
+          "x": 3120,
+          "y": 1080
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n66",
+         "name": "Strut_left",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 3240,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n67",
+         "name": "Spring_left",
+         "block": {
+          "ref": "project:StrutSpring"
+         },
+         "position": {
+          "x": 3400,
+          "y": 1140
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "547271.3601452386",
+          "eps": "0.001"
+         },
+         "constants": {},
+         "starts": {
+          "q": "-(h0 + sin((alpha0 + gamma0) / 57.29577951308232) * (-0.7848600000000001 + (xcg - 0.35) * 3.450336) + cos((alpha0 + gamma0) / 57.29577951308232) * -1.6890999999999998) - 3.0 * (1.0 - gear0)"
+         },
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n68",
+         "name": "Damper_left",
+         "block": {
+          "ref": "project:StrutDamper"
+         },
+         "position": {
+          "x": 3400,
+          "y": 1240
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "b": "54727.13601452386",
+          "feps": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n69",
+         "name": "X_left",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 3000,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n70",
+         "name": "Roll_left",
+         "block": {
+          "ref": "project:WheelFriction"
+         },
+         "position": {
+          "x": 3400,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "mu_r": "0.02",
+          "mu_s": "0.5",
+          "vs": "0.2"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n71",
+         "name": "Y_left",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 3000,
+          "y": 1520
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n72",
+         "name": "Side_left",
+         "block": {
+          "ref": "project:WheelSide"
+         },
+         "position": {
+          "x": 3400,
+          "y": 1520
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "mu_s": "0.8",
+          "vs": "2.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n73",
+         "name": "Mount_right",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 3600,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9999580871577167",
+          "qx": "0.0",
+          "qy": "0.009155540829474298",
+          "qz": "0.0",
+          "x": "-(-0.7848600000000001 + (xcg - 0.35) * 3.450336)",
+          "y": "1.2191999999999998",
+          "z": "1.6890999999999998"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n74",
+         "name": "Contact_right",
+         "block": {
+          "ref": "project:GearContact"
+         },
+         "position": {
+          "x": 3800,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "rx": "(-0.7848600000000001 + (xcg - 0.35) * 3.450336)",
+          "ry": "-1.2191999999999998",
+          "rz": "-1.6890999999999998",
+          "ground_z": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n75",
+         "name": "N_right",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 4000,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n76",
+         "name": "Lift_right",
+         "block": {
+          "junction": "0"
+         },
+         "position": {
+          "x": 4120,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n77",
+         "name": "Retract_right",
+         "block": {
+          "ref": "stdlib:bondgraph/MSf"
+         },
+         "position": {
+          "x": 4120,
+          "y": 1080
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n78",
+         "name": "Strut_right",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 4240,
+          "y": 1200
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n79",
+         "name": "Spring_right",
+         "block": {
+          "ref": "project:StrutSpring"
+         },
+         "position": {
+          "x": 4400,
+          "y": 1140
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "547271.3601452386",
+          "eps": "0.001"
+         },
+         "constants": {},
+         "starts": {
+          "q": "-(h0 + sin((alpha0 + gamma0) / 57.29577951308232) * (-0.7848600000000001 + (xcg - 0.35) * 3.450336) + cos((alpha0 + gamma0) / 57.29577951308232) * -1.6890999999999998) - 3.0 * (1.0 - gear0)"
+         },
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n80",
+         "name": "Damper_right",
+         "block": {
+          "ref": "project:StrutDamper"
+         },
+         "position": {
+          "x": 4400,
+          "y": 1240
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "b": "54727.13601452386",
+          "feps": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n81",
+         "name": "X_right",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 4000,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n82",
+         "name": "Roll_right",
+         "block": {
+          "ref": "project:WheelFriction"
+         },
+         "position": {
+          "x": 4400,
+          "y": 1400
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "mu_r": "0.02",
+          "mu_s": "0.5",
+          "vs": "0.2"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n83",
+         "name": "Y_right",
+         "block": {
+          "junction": "1"
+         },
+         "position": {
+          "x": 4000,
+          "y": 1520
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n84",
+         "name": "Side_right",
+         "block": {
+          "ref": "project:WheelSide"
+         },
+         "position": {
+          "x": 4400,
+          "y": 1520
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "mu_s": "0.8",
+          "vs": "2.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n85",
+         "name": "GearDrag",
+         "block": {
+          "ref": "project:GearDrag"
+         },
+         "position": {
+          "x": 1100,
+          "y": -260
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "cd": "0.027",
+          "S": "27.870912",
+          "z_arm": "1.2"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n86",
+         "name": "GearDragMount",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 620,
+          "y": -260
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9999580871577167",
+          "qx": "0.0",
+          "qy": "0.009155540829474298",
+          "qz": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n87",
+         "name": "GearWrench",
+         "block": {
+          "ref": "stdlib:multibond/ExternalWrenchSpatial"
+         },
+         "position": {
+          "x": 820,
+          "y": -260
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
          "constants": {},
          "starts": {},
          "ui": {
@@ -2897,6 +4312,954 @@
           "node": "n05",
           "port": "fz"
          }
+        },
+        {
+         "id": "c085",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
+          "port": "y"
+         },
+         "to": {
+          "node": "n44",
+          "port": "cmd"
+         }
+        },
+        {
+         "id": "c086",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "ui"
+         },
+         "to": {
+          "node": "n45",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c087",
+         "kind": "signal",
+         "from": {
+          "node": "n43",
+          "port": "y"
+         },
+         "to": {
+          "node": "n46",
+          "port": "pedal"
+         }
+        },
+        {
+         "id": "c088",
+         "kind": "signal",
+         "from": {
+          "node": "n45",
+          "port": "y"
+         },
+         "to": {
+          "node": "n46",
+          "port": "steer_max"
+         }
+        },
+        {
+         "id": "c089",
+         "kind": "signal",
+         "from": {
+          "node": "n46",
+          "port": "w"
+         },
+         "to": {
+          "node": "n44",
+          "port": "w"
+         }
+        },
+        {
+         "id": "c090",
+         "kind": "bond",
+         "from": {
+          "node": "n03",
+          "port": "p"
+         },
+         "to": {
+          "node": "n49",
+          "port": "b"
+         }
+        },
+        {
+         "id": "c091",
+         "kind": "bond",
+         "from": {
+          "node": "n49",
+          "port": "a"
+         },
+         "to": {
+          "node": "n50",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c092",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "gB"
+         },
+         "to": {
+          "node": "n50",
+          "port": "g"
+         }
+        },
+        {
+         "id": "c093",
+         "kind": "signal",
+         "from": {
+          "node": "n46",
+          "port": "steer"
+         },
+         "to": {
+          "node": "n50",
+          "port": "steer"
+         }
+        },
+        {
+         "id": "c094",
+         "kind": "bond",
+         "from": {
+          "node": "n51"
+         },
+         "to": {
+          "node": "n50",
+          "port": "n"
+         }
+        },
+        {
+         "id": "c095",
+         "kind": "bond",
+         "from": {
+          "node": "n51"
+         },
+         "to": {
+          "node": "n52"
+         }
+        },
+        {
+         "id": "c096",
+         "kind": "bond",
+         "from": {
+          "node": "n52"
+         },
+         "to": {
+          "node": "n53",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c097",
+         "kind": "signal",
+         "from": {
+          "node": "n44",
+          "port": "lift_rate"
+         },
+         "to": {
+          "node": "n53",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c098",
+         "kind": "bond",
+         "from": {
+          "node": "n52"
+         },
+         "to": {
+          "node": "n54"
+         }
+        },
+        {
+         "id": "c099",
+         "kind": "bond",
+         "from": {
+          "node": "n54"
+         },
+         "to": {
+          "node": "n55",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c100",
+         "kind": "bond",
+         "from": {
+          "node": "n54"
+         },
+         "to": {
+          "node": "n56",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c101",
+         "kind": "signal",
+         "from": {
+          "node": "n55",
+          "port": "Fk"
+         },
+         "to": {
+          "node": "n56",
+          "port": "Fk"
+         }
+        },
+        {
+         "id": "c102",
+         "kind": "signal",
+         "from": {
+          "node": "n55",
+          "port": "sig"
+         },
+         "to": {
+          "node": "n56",
+          "port": "sig"
+         }
+        },
+        {
+         "id": "c103",
+         "kind": "bond",
+         "from": {
+          "node": "n57"
+         },
+         "to": {
+          "node": "n50",
+          "port": "x"
+         }
+        },
+        {
+         "id": "c104",
+         "kind": "bond",
+         "from": {
+          "node": "n57"
+         },
+         "to": {
+          "node": "n58",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c105",
+         "kind": "signal",
+         "from": {
+          "node": "n50",
+          "port": "fn"
+         },
+         "to": {
+          "node": "n58",
+          "port": "fn"
+         }
+        },
+        {
+         "id": "c106",
+         "kind": "signal",
+         "from": {
+          "node": "n48",
+          "port": "y"
+         },
+         "to": {
+          "node": "n58",
+          "port": "brake"
+         }
+        },
+        {
+         "id": "c107",
+         "kind": "bond",
+         "from": {
+          "node": "n59"
+         },
+         "to": {
+          "node": "n50",
+          "port": "y"
+         }
+        },
+        {
+         "id": "c108",
+         "kind": "bond",
+         "from": {
+          "node": "n59"
+         },
+         "to": {
+          "node": "n60",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c109",
+         "kind": "signal",
+         "from": {
+          "node": "n50",
+          "port": "fn"
+         },
+         "to": {
+          "node": "n60",
+          "port": "fn"
+         }
+        },
+        {
+         "id": "c110",
+         "kind": "signal",
+         "from": {
+          "node": "n50",
+          "port": "vx"
+         },
+         "to": {
+          "node": "n60",
+          "port": "vx"
+         }
+        },
+        {
+         "id": "c111",
+         "kind": "bond",
+         "from": {
+          "node": "n03",
+          "port": "p"
+         },
+         "to": {
+          "node": "n61",
+          "port": "b"
+         }
+        },
+        {
+         "id": "c112",
+         "kind": "bond",
+         "from": {
+          "node": "n61",
+          "port": "a"
+         },
+         "to": {
+          "node": "n62",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c113",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "gB"
+         },
+         "to": {
+          "node": "n62",
+          "port": "g"
+         }
+        },
+        {
+         "id": "c114",
+         "kind": "signal",
+         "from": {
+          "node": "n47",
+          "port": "y"
+         },
+         "to": {
+          "node": "n62",
+          "port": "steer"
+         }
+        },
+        {
+         "id": "c115",
+         "kind": "bond",
+         "from": {
+          "node": "n63"
+         },
+         "to": {
+          "node": "n62",
+          "port": "n"
+         }
+        },
+        {
+         "id": "c116",
+         "kind": "bond",
+         "from": {
+          "node": "n63"
+         },
+         "to": {
+          "node": "n64"
+         }
+        },
+        {
+         "id": "c117",
+         "kind": "bond",
+         "from": {
+          "node": "n64"
+         },
+         "to": {
+          "node": "n65",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c118",
+         "kind": "signal",
+         "from": {
+          "node": "n44",
+          "port": "lift_rate"
+         },
+         "to": {
+          "node": "n65",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c119",
+         "kind": "bond",
+         "from": {
+          "node": "n64"
+         },
+         "to": {
+          "node": "n66"
+         }
+        },
+        {
+         "id": "c120",
+         "kind": "bond",
+         "from": {
+          "node": "n66"
+         },
+         "to": {
+          "node": "n67",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c121",
+         "kind": "bond",
+         "from": {
+          "node": "n66"
+         },
+         "to": {
+          "node": "n68",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c122",
+         "kind": "signal",
+         "from": {
+          "node": "n67",
+          "port": "Fk"
+         },
+         "to": {
+          "node": "n68",
+          "port": "Fk"
+         }
+        },
+        {
+         "id": "c123",
+         "kind": "signal",
+         "from": {
+          "node": "n67",
+          "port": "sig"
+         },
+         "to": {
+          "node": "n68",
+          "port": "sig"
+         }
+        },
+        {
+         "id": "c124",
+         "kind": "bond",
+         "from": {
+          "node": "n69"
+         },
+         "to": {
+          "node": "n62",
+          "port": "x"
+         }
+        },
+        {
+         "id": "c125",
+         "kind": "bond",
+         "from": {
+          "node": "n69"
+         },
+         "to": {
+          "node": "n70",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c126",
+         "kind": "signal",
+         "from": {
+          "node": "n62",
+          "port": "fn"
+         },
+         "to": {
+          "node": "n70",
+          "port": "fn"
+         }
+        },
+        {
+         "id": "c127",
+         "kind": "signal",
+         "from": {
+          "node": "n41",
+          "port": "y"
+         },
+         "to": {
+          "node": "n70",
+          "port": "brake"
+         }
+        },
+        {
+         "id": "c128",
+         "kind": "bond",
+         "from": {
+          "node": "n71"
+         },
+         "to": {
+          "node": "n62",
+          "port": "y"
+         }
+        },
+        {
+         "id": "c129",
+         "kind": "bond",
+         "from": {
+          "node": "n71"
+         },
+         "to": {
+          "node": "n72",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c130",
+         "kind": "signal",
+         "from": {
+          "node": "n62",
+          "port": "fn"
+         },
+         "to": {
+          "node": "n72",
+          "port": "fn"
+         }
+        },
+        {
+         "id": "c131",
+         "kind": "signal",
+         "from": {
+          "node": "n62",
+          "port": "vx"
+         },
+         "to": {
+          "node": "n72",
+          "port": "vx"
+         }
+        },
+        {
+         "id": "c132",
+         "kind": "bond",
+         "from": {
+          "node": "n03",
+          "port": "p"
+         },
+         "to": {
+          "node": "n73",
+          "port": "b"
+         }
+        },
+        {
+         "id": "c133",
+         "kind": "bond",
+         "from": {
+          "node": "n73",
+          "port": "a"
+         },
+         "to": {
+          "node": "n74",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c134",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "gB"
+         },
+         "to": {
+          "node": "n74",
+          "port": "g"
+         }
+        },
+        {
+         "id": "c135",
+         "kind": "signal",
+         "from": {
+          "node": "n47",
+          "port": "y"
+         },
+         "to": {
+          "node": "n74",
+          "port": "steer"
+         }
+        },
+        {
+         "id": "c136",
+         "kind": "bond",
+         "from": {
+          "node": "n75"
+         },
+         "to": {
+          "node": "n74",
+          "port": "n"
+         }
+        },
+        {
+         "id": "c137",
+         "kind": "bond",
+         "from": {
+          "node": "n75"
+         },
+         "to": {
+          "node": "n76"
+         }
+        },
+        {
+         "id": "c138",
+         "kind": "bond",
+         "from": {
+          "node": "n76"
+         },
+         "to": {
+          "node": "n77",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c139",
+         "kind": "signal",
+         "from": {
+          "node": "n44",
+          "port": "lift_rate"
+         },
+         "to": {
+          "node": "n77",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c140",
+         "kind": "bond",
+         "from": {
+          "node": "n76"
+         },
+         "to": {
+          "node": "n78"
+         }
+        },
+        {
+         "id": "c141",
+         "kind": "bond",
+         "from": {
+          "node": "n78"
+         },
+         "to": {
+          "node": "n79",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c142",
+         "kind": "bond",
+         "from": {
+          "node": "n78"
+         },
+         "to": {
+          "node": "n80",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c143",
+         "kind": "signal",
+         "from": {
+          "node": "n79",
+          "port": "Fk"
+         },
+         "to": {
+          "node": "n80",
+          "port": "Fk"
+         }
+        },
+        {
+         "id": "c144",
+         "kind": "signal",
+         "from": {
+          "node": "n79",
+          "port": "sig"
+         },
+         "to": {
+          "node": "n80",
+          "port": "sig"
+         }
+        },
+        {
+         "id": "c145",
+         "kind": "bond",
+         "from": {
+          "node": "n81"
+         },
+         "to": {
+          "node": "n74",
+          "port": "x"
+         }
+        },
+        {
+         "id": "c146",
+         "kind": "bond",
+         "from": {
+          "node": "n81"
+         },
+         "to": {
+          "node": "n82",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c147",
+         "kind": "signal",
+         "from": {
+          "node": "n74",
+          "port": "fn"
+         },
+         "to": {
+          "node": "n82",
+          "port": "fn"
+         }
+        },
+        {
+         "id": "c148",
+         "kind": "signal",
+         "from": {
+          "node": "n42",
+          "port": "y"
+         },
+         "to": {
+          "node": "n82",
+          "port": "brake"
+         }
+        },
+        {
+         "id": "c149",
+         "kind": "bond",
+         "from": {
+          "node": "n83"
+         },
+         "to": {
+          "node": "n74",
+          "port": "y"
+         }
+        },
+        {
+         "id": "c150",
+         "kind": "bond",
+         "from": {
+          "node": "n83"
+         },
+         "to": {
+          "node": "n84",
+          "port": "j"
+         }
+        },
+        {
+         "id": "c151",
+         "kind": "signal",
+         "from": {
+          "node": "n74",
+          "port": "fn"
+         },
+         "to": {
+          "node": "n84",
+          "port": "fn"
+         }
+        },
+        {
+         "id": "c152",
+         "kind": "signal",
+         "from": {
+          "node": "n74",
+          "port": "vx"
+         },
+         "to": {
+          "node": "n84",
+          "port": "vx"
+         }
+        },
+        {
+         "id": "c153",
+         "kind": "signal",
+         "from": {
+          "node": "n67",
+          "port": "Fk"
+         },
+         "to": {
+          "node": "n46",
+          "port": "Fk_left"
+         }
+        },
+        {
+         "id": "c154",
+         "kind": "signal",
+         "from": {
+          "node": "n79",
+          "port": "Fk"
+         },
+         "to": {
+          "node": "n46",
+          "port": "Fk_right"
+         }
+        },
+        {
+         "id": "c155",
+         "kind": "signal",
+         "from": {
+          "node": "n44",
+          "port": "pos"
+         },
+         "to": {
+          "node": "n85",
+          "port": "pos"
+         }
+        },
+        {
+         "id": "c156",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "qbar"
+         },
+         "to": {
+          "node": "n85",
+          "port": "qbar"
+         }
+        },
+        {
+         "id": "c157",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n85",
+          "port": "alpha"
+         }
+        },
+        {
+         "id": "c158",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "beta_deg"
+         },
+         "to": {
+          "node": "n85",
+          "port": "beta"
+         }
+        },
+        {
+         "id": "c159",
+         "kind": "bond",
+         "from": {
+          "node": "n87",
+          "port": "p"
+         },
+         "to": {
+          "node": "n86",
+          "port": "a"
+         }
+        },
+        {
+         "id": "c160",
+         "kind": "bond",
+         "from": {
+          "node": "n86",
+          "port": "b"
+         },
+         "to": {
+          "node": "n03",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c161",
+         "kind": "signal",
+         "from": {
+          "node": "n85",
+          "port": "tx"
+         },
+         "to": {
+          "node": "n87",
+          "port": "tx"
+         }
+        },
+        {
+         "id": "c162",
+         "kind": "signal",
+         "from": {
+          "node": "n85",
+          "port": "ty"
+         },
+         "to": {
+          "node": "n87",
+          "port": "ty"
+         }
+        },
+        {
+         "id": "c163",
+         "kind": "signal",
+         "from": {
+          "node": "n85",
+          "port": "tz"
+         },
+         "to": {
+          "node": "n87",
+          "port": "tz"
+         }
+        },
+        {
+         "id": "c164",
+         "kind": "signal",
+         "from": {
+          "node": "n85",
+          "port": "fx"
+         },
+         "to": {
+          "node": "n87",
+          "port": "fx"
+         }
+        },
+        {
+         "id": "c165",
+         "kind": "signal",
+         "from": {
+          "node": "n85",
+          "port": "fy"
+         },
+         "to": {
+          "node": "n87",
+          "port": "fy"
+         }
+        },
+        {
+         "id": "c166",
+         "kind": "signal",
+         "from": {
+          "node": "n85",
+          "port": "fz"
+         },
+         "to": {
+          "node": "n87",
+          "port": "fz"
+         }
         }
        ],
        "annotations": [
@@ -2908,6 +5271,16 @@
          "y": -60,
          "w": 900,
          "h": 50,
+         "color": "blue"
+        },
+        {
+         "id": "a2",
+         "kind": "text",
+         "text": "**Landing gear (one bond graph per leg, as the Cessna's).** GearContact is the tyre-runway contact: a modulated transformer from the airframe's multibond to three translational bonds. Normal: the strut spring (C) and damper (R) on a 1-junction, in series with the retraction (an MSf on a 0-junction, the rate at which the contact point rises). Rolling: rolling resistance and brake (R). Side: the tyre's cornering force (R). GearLogic: weight on wheels and nose steering; GearActuator: the 5 s traverse with its ground interlock.",
+         "x": 1600,
+         "y": 980,
+         "w": 1400,
+         "h": 60,
          "color": "blue"
         }
        ],
@@ -2995,6 +5368,162 @@
          "unit": null,
          "node": "n16",
          "port": "u"
+        },
+        {
+         "name": "gear_cmd",
+         "kind": "signal",
+         "direction": "input",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n40",
+         "port": "u"
+        },
+        {
+         "name": "brake_l",
+         "kind": "signal",
+         "direction": "input",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n41",
+         "port": "u"
+        },
+        {
+         "name": "brake_r",
+         "kind": "signal",
+         "direction": "input",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n42",
+         "port": "u"
+        },
+        {
+         "name": "pedal",
+         "kind": "signal",
+         "direction": "input",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n43",
+         "port": "u"
+        },
+        {
+         "name": "fn_nose",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n50",
+         "port": "fn"
+        },
+        {
+         "name": "q_nose",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "m",
+         "node": "n55",
+         "port": "compression"
+        },
+        {
+         "name": "fn_left",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n62",
+         "port": "fn"
+        },
+        {
+         "name": "q_left",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "m",
+         "node": "n67",
+         "port": "compression"
+        },
+        {
+         "name": "fn_right",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n74",
+         "port": "fn"
+        },
+        {
+         "name": "q_right",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "m",
+         "node": "n79",
+         "port": "compression"
+        },
+        {
+         "name": "gear_pos",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n44",
+         "port": "pos"
+        },
+        {
+         "name": "w",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n46",
+         "port": "w"
+        },
+        {
+         "name": "steer",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "rad",
+         "node": "n46",
+         "port": "steer"
         },
         {
          "name": "alpha",
@@ -3303,7 +5832,7 @@
     }
    },
    {
-    "id": "n27",
+    "id": "n35",
     "name": "PitchCmd",
     "block": {
      "ref": "project:PitchCommand"
@@ -3336,7 +5865,7 @@
     }
    },
    {
-    "id": "n28",
+    "id": "n36",
     "name": "Ka",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3361,7 +5890,7 @@
     }
    },
    {
-    "id": "n29",
+    "id": "n37",
     "name": "Kq",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3386,7 +5915,7 @@
     }
    },
    {
-    "id": "n30",
+    "id": "n38",
     "name": "Ki",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3411,7 +5940,7 @@
     }
    },
    {
-    "id": "n31",
+    "id": "n39",
     "name": "PitchLaw",
     "block": {
      "ref": "project:PitchFBW"
@@ -3438,7 +5967,29 @@
     }
    },
    {
-    "id": "n32",
+    "id": "n40",
+    "name": "StickDirect",
+    "block": {
+     "ref": "stdlib:continuous/Gain"
+    },
+    "position": {
+     "x": 700,
+     "y": -40
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "-25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n41",
     "name": "StabAct",
     "block": {
      "subsystem": {
@@ -3757,7 +6308,7 @@
     }
    },
    {
-    "id": "n33",
+    "id": "n42",
     "name": "LatLaw",
     "block": {
      "ref": "project:LateralFBW"
@@ -3794,7 +6345,7 @@
     }
    },
    {
-    "id": "n34",
+    "id": "n43",
     "name": "Kp",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3819,7 +6370,7 @@
     }
    },
    {
-    "id": "n35",
+    "id": "n44",
     "name": "Kip",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3844,7 +6395,7 @@
     }
    },
    {
-    "id": "n36",
+    "id": "n45",
     "name": "Kr",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3869,7 +6420,7 @@
     }
    },
    {
-    "id": "n37",
+    "id": "n46",
     "name": "Kb",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3894,7 +6445,7 @@
     }
    },
    {
-    "id": "n38",
+    "id": "n47",
     "name": "Kib",
     "block": {
      "ref": "stdlib:continuous/Lookup2D"
@@ -3919,7 +6470,7 @@
     }
    },
    {
-    "id": "n39",
+    "id": "n48",
     "name": "Kari",
     "block": {
      "ref": "stdlib:continuous/Lookup1D"
@@ -3944,7 +6495,7 @@
     }
    },
    {
-    "id": "n40",
+    "id": "n49",
     "name": "AilAct",
     "block": {
      "subsystem": {
@@ -4263,7 +6814,7 @@
     }
    },
    {
-    "id": "n41",
+    "id": "n50",
     "name": "RdrMx",
     "block": {
      "ref": "stdlib:continuous/Mux2"
@@ -4283,7 +6834,7 @@
     }
    },
    {
-    "id": "n42",
+    "id": "n51",
     "name": "RdrSum",
     "block": {
      "ref": "stdlib:continuous/Sum"
@@ -4305,7 +6856,7 @@
     }
    },
    {
-    "id": "n43",
+    "id": "n52",
     "name": "RdrAct",
     "block": {
      "subsystem": {
@@ -4624,7 +7175,7 @@
     }
    },
    {
-    "id": "n44",
+    "id": "n53",
     "name": "Status",
     "block": {
      "ref": "project:F16Status"
@@ -4635,7 +7186,11 @@
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "mass": "mass",
+     "g0": "9.805416000000001",
+     "stroke": "0.4"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -4644,7 +7199,7 @@
     }
    },
    {
-    "id": "n45",
+    "id": "n54",
     "name": "north_m",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4664,7 +7219,7 @@
     }
    },
    {
-    "id": "n46",
+    "id": "n55",
     "name": "east_m",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4684,7 +7239,7 @@
     }
    },
    {
-    "id": "n47",
+    "id": "n56",
     "name": "alt_m",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4704,7 +7259,7 @@
     }
    },
    {
-    "id": "n48",
+    "id": "n57",
     "name": "q_w",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4724,7 +7279,7 @@
     }
    },
    {
-    "id": "n49",
+    "id": "n58",
     "name": "q_x",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4744,7 +7299,7 @@
     }
    },
    {
-    "id": "n50",
+    "id": "n59",
     "name": "q_y",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4764,7 +7319,7 @@
     }
    },
    {
-    "id": "n51",
+    "id": "n60",
     "name": "q_z",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4784,7 +7339,7 @@
     }
    },
    {
-    "id": "n52",
+    "id": "n61",
     "name": "phi_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4804,7 +7359,7 @@
     }
    },
    {
-    "id": "n53",
+    "id": "n62",
     "name": "theta_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4824,7 +7379,7 @@
     }
    },
    {
-    "id": "n54",
+    "id": "n63",
     "name": "psi_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4844,7 +7399,7 @@
     }
    },
    {
-    "id": "n55",
+    "id": "n64",
     "name": "gamma_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4864,7 +7419,7 @@
     }
    },
    {
-    "id": "n56",
+    "id": "n65",
     "name": "p_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4884,7 +7439,7 @@
     }
    },
    {
-    "id": "n57",
+    "id": "n66",
     "name": "q_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4904,7 +7459,7 @@
     }
    },
    {
-    "id": "n58",
+    "id": "n67",
     "name": "r_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4924,7 +7479,7 @@
     }
    },
    {
-    "id": "n59",
+    "id": "n68",
     "name": "u_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4944,7 +7499,7 @@
     }
    },
    {
-    "id": "n60",
+    "id": "n69",
     "name": "v_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4964,7 +7519,7 @@
     }
    },
    {
-    "id": "n61",
+    "id": "n70",
     "name": "w_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4984,7 +7539,7 @@
     }
    },
    {
-    "id": "n62",
+    "id": "n71",
     "name": "vs_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5004,7 +7559,7 @@
     }
    },
    {
-    "id": "n63",
+    "id": "n72",
     "name": "tas_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5024,7 +7579,7 @@
     }
    },
    {
-    "id": "n64",
+    "id": "n73",
     "name": "cas_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5044,7 +7599,7 @@
     }
    },
    {
-    "id": "n65",
+    "id": "n74",
     "name": "mach",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5064,7 +7619,7 @@
     }
    },
    {
-    "id": "n66",
+    "id": "n75",
     "name": "qbar_pa",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5084,7 +7639,7 @@
     }
    },
    {
-    "id": "n67",
+    "id": "n76",
     "name": "alpha_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5104,7 +7659,7 @@
     }
    },
    {
-    "id": "n68",
+    "id": "n77",
     "name": "beta_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5124,7 +7679,7 @@
     }
    },
    {
-    "id": "n69",
+    "id": "n78",
     "name": "nz_g",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5144,7 +7699,7 @@
     }
    },
    {
-    "id": "n70",
+    "id": "n79",
     "name": "ny_g",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5164,7 +7719,7 @@
     }
    },
    {
-    "id": "n71",
+    "id": "n80",
     "name": "stab_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5184,7 +7739,7 @@
     }
    },
    {
-    "id": "n72",
+    "id": "n81",
     "name": "ail_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5204,7 +7759,7 @@
     }
    },
    {
-    "id": "n73",
+    "id": "n82",
     "name": "rdr_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5224,7 +7779,7 @@
     }
    },
    {
-    "id": "n74",
+    "id": "n83",
     "name": "power_pct",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5244,7 +7799,7 @@
     }
    },
    {
-    "id": "n75",
+    "id": "n84",
     "name": "thrust_n",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5264,7 +7819,7 @@
     }
    },
    {
-    "id": "n76",
+    "id": "n85",
     "name": "p_lim_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5284,7 +7839,7 @@
     }
    },
    {
-    "id": "n77",
+    "id": "n86",
     "name": "nz_cmd_g",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5304,7 +7859,7 @@
     }
    },
    {
-    "id": "n78",
+    "id": "n87",
     "name": "limiter_active",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5324,7 +7879,7 @@
     }
    },
    {
-    "id": "n79",
+    "id": "n88",
     "name": "departed",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5344,7 +7899,7 @@
     }
    },
    {
-    "id": "n80",
+    "id": "n89",
     "name": "ground_contact",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -5364,7 +7919,127 @@
     }
    },
    {
-    "id": "n81",
+    "id": "n90",
+    "name": "fn_nose",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2550,
+     "y": 40
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n91",
+    "name": "fn_left",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2550,
+     "y": 100
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n92",
+    "name": "fn_right",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2550,
+     "y": 160
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n93",
+    "name": "on_ground",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2550,
+     "y": 220
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n94",
+    "name": "steer_rad",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2550,
+     "y": 280
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n95",
+    "name": "gear_pos",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2550,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n96",
     "name": "F16View",
     "block": {
      "ref": "project:F16View"
@@ -5390,7 +8065,7 @@
     }
    },
    {
-    "id": "n82",
+    "id": "n97",
     "name": "F16Trail",
     "block": {
      "ref": "project:F16Trail"
@@ -5562,19 +8237,31 @@
     "id": "c013",
     "kind": "signal",
     "from": {
-     "node": "n04",
+     "node": "n17",
      "port": "y"
     },
     "to": {
      "node": "n19",
-     "port": "u"
+     "port": "u1"
     }
    },
    {
     "id": "c014",
     "kind": "signal",
     "from": {
-     "node": "n08",
+     "node": "n18",
+     "port": "y"
+    },
+    "to": {
+     "node": "n19",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c015",
+    "kind": "signal",
+    "from": {
+     "node": "n19",
      "port": "y"
     },
     "to": {
@@ -5583,46 +8270,10 @@
     }
    },
    {
-    "id": "c015",
-    "kind": "signal",
-    "from": {
-     "node": "n12",
-     "port": "y"
-    },
-    "to": {
-     "node": "n21",
-     "port": "u"
-    }
-   },
-   {
     "id": "c016",
     "kind": "signal",
     "from": {
-     "node": "n17",
-     "port": "y"
-    },
-    "to": {
-     "node": "n22",
-     "port": "u"
-    }
-   },
-   {
-    "id": "c017",
-    "kind": "signal",
-    "from": {
-     "node": "n18",
-     "port": "y"
-    },
-    "to": {
-     "node": "n23",
-     "port": "u"
-    }
-   },
-   {
-    "id": "c018",
-    "kind": "signal",
-    "from": {
-     "node": "n18",
+     "node": "n04",
      "port": "y"
     },
     "to": {
@@ -5631,10 +8282,10 @@
     }
    },
    {
-    "id": "c019",
+    "id": "c017",
     "kind": "signal",
     "from": {
-     "node": "n18",
+     "node": "n08",
      "port": "y"
     },
     "to": {
@@ -5643,15 +8294,39 @@
     }
    },
    {
-    "id": "c020",
+    "id": "c018",
     "kind": "signal",
     "from": {
-     "node": "n22",
+     "node": "n12",
      "port": "y"
     },
     "to": {
      "node": "n26",
-     "port": "thtl"
+     "port": "u"
+    }
+   },
+   {
+    "id": "c019",
+    "kind": "signal",
+    "from": {
+     "node": "n20",
+     "port": "y"
+    },
+    "to": {
+     "node": "n27",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c020",
+    "kind": "signal",
+    "from": {
+     "node": "n23",
+     "port": "y"
+    },
+    "to": {
+     "node": "n28",
+     "port": "u"
     }
    },
    {
@@ -5662,140 +8337,140 @@
      "port": "y"
     },
     "to": {
-     "node": "n26",
-     "port": "wn"
+     "node": "n29",
+     "port": "u"
     }
    },
    {
     "id": "c022",
     "kind": "signal",
     "from": {
-     "node": "n24",
+     "node": "n23",
      "port": "y"
     },
     "to": {
-     "node": "n26",
-     "port": "we"
+     "node": "n30",
+     "port": "u"
     }
    },
    {
     "id": "c023",
     "kind": "signal",
     "from": {
-     "node": "n25",
+     "node": "n21",
      "port": "y"
     },
     "to": {
-     "node": "n26",
-     "port": "wd"
+     "node": "n31",
+     "port": "u"
     }
    },
    {
     "id": "c024",
     "kind": "signal",
     "from": {
-     "node": "n19",
+     "node": "n22",
      "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "stick"
+     "node": "n32",
+     "port": "u"
     }
    },
    {
     "id": "c025",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "vt"
+     "node": "n22",
+     "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "vt"
+     "node": "n33",
+     "port": "u"
     }
    },
    {
     "id": "c026",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "alpha"
+     "node": "n27",
+     "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "alpha"
+     "node": "n34",
+     "port": "thtl"
     }
    },
    {
     "id": "c027",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "nz"
+     "node": "n28",
+     "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "nz"
+     "node": "n34",
+     "port": "wn"
     }
    },
    {
     "id": "c028",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "gamma"
+     "node": "n29",
+     "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "gamma"
+     "node": "n34",
+     "port": "we"
     }
    },
    {
     "id": "c029",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "phi"
+     "node": "n30",
+     "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "phi"
+     "node": "n34",
+     "port": "wd"
     }
    },
    {
     "id": "c030",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "theta"
+     "node": "n31",
+     "port": "y"
     },
     "to": {
-     "node": "n27",
-     "port": "theta"
+     "node": "n34",
+     "port": "gear_cmd"
     }
    },
    {
     "id": "c031",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n32",
+     "port": "y"
     },
     "to": {
-     "node": "n28",
-     "port": "u"
+     "node": "n34",
+     "port": "brake_l"
     }
    },
    {
     "id": "c032",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n33",
+     "port": "y"
     },
     "to": {
-     "node": "n28",
-     "port": "v"
+     "node": "n34",
+     "port": "brake_r"
     }
    },
    {
@@ -5803,130 +8478,130 @@
     "kind": "signal",
     "from": {
      "node": "n26",
-     "port": "qbar"
+     "port": "y"
     },
     "to": {
-     "node": "n29",
-     "port": "u"
+     "node": "n34",
+     "port": "pedal"
     }
    },
    {
     "id": "c034",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n24",
+     "port": "y"
     },
     "to": {
-     "node": "n29",
-     "port": "v"
+     "node": "n35",
+     "port": "stick"
     }
    },
    {
     "id": "c035",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n34",
+     "port": "vt"
     },
     "to": {
-     "node": "n30",
-     "port": "u"
+     "node": "n35",
+     "port": "vt"
     }
    },
    {
     "id": "c036",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n34",
+     "port": "alpha"
     },
     "to": {
-     "node": "n30",
-     "port": "v"
+     "node": "n35",
+     "port": "alpha"
     }
    },
    {
     "id": "c037",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "alpha"
+     "node": "n34",
+     "port": "nz"
     },
     "to": {
-     "node": "n31",
-     "port": "alpha"
+     "node": "n35",
+     "port": "nz"
     }
    },
    {
     "id": "c038",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "q"
+     "node": "n34",
+     "port": "gamma"
     },
     "to": {
-     "node": "n31",
-     "port": "q"
+     "node": "n35",
+     "port": "gamma"
     }
    },
    {
     "id": "c039",
     "kind": "signal",
     "from": {
-     "node": "n27",
-     "port": "q_cmd"
+     "node": "n34",
+     "port": "phi"
     },
     "to": {
-     "node": "n31",
-     "port": "q_cmd"
+     "node": "n35",
+     "port": "phi"
     }
    },
    {
     "id": "c040",
     "kind": "signal",
     "from": {
-     "node": "n28",
-     "port": "y"
+     "node": "n34",
+     "port": "theta"
     },
     "to": {
-     "node": "n31",
-     "port": "Ka"
+     "node": "n35",
+     "port": "theta"
     }
    },
    {
     "id": "c041",
     "kind": "signal",
     "from": {
-     "node": "n29",
-     "port": "y"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
-     "node": "n31",
-     "port": "Kq"
+     "node": "n36",
+     "port": "u"
     }
    },
    {
     "id": "c042",
     "kind": "signal",
     "from": {
-     "node": "n30",
-     "port": "y"
+     "node": "n34",
+     "port": "mach"
     },
     "to": {
-     "node": "n31",
-     "port": "Ki"
+     "node": "n36",
+     "port": "v"
     }
    },
    {
     "id": "c043",
     "kind": "signal",
     "from": {
-     "node": "n31",
-     "port": "u"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
-     "node": "n32",
+     "node": "n37",
      "port": "u"
     }
    },
@@ -5934,47 +8609,47 @@
     "id": "c044",
     "kind": "signal",
     "from": {
-     "node": "n32",
-     "port": "y"
+     "node": "n34",
+     "port": "mach"
     },
     "to": {
-     "node": "n26",
-     "port": "el"
+     "node": "n37",
+     "port": "v"
     }
    },
    {
     "id": "c045",
     "kind": "signal",
     "from": {
-     "node": "n20",
-     "port": "y"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
-     "node": "n33",
-     "port": "stick"
+     "node": "n38",
+     "port": "u"
     }
    },
    {
     "id": "c046",
     "kind": "signal",
     "from": {
-     "node": "n21",
-     "port": "y"
+     "node": "n34",
+     "port": "mach"
     },
     "to": {
-     "node": "n33",
-     "port": "pedal"
+     "node": "n38",
+     "port": "v"
     }
    },
    {
     "id": "c047",
     "kind": "signal",
     "from": {
-     "node": "n26",
+     "node": "n34",
      "port": "alpha"
     },
     "to": {
-     "node": "n33",
+     "node": "n39",
      "port": "alpha"
     }
    },
@@ -5982,107 +8657,107 @@
     "id": "c048",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "beta"
+     "node": "n34",
+     "port": "q"
     },
     "to": {
-     "node": "n33",
-     "port": "beta"
+     "node": "n39",
+     "port": "q"
     }
    },
    {
     "id": "c049",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "p"
+     "node": "n35",
+     "port": "q_cmd"
     },
     "to": {
-     "node": "n33",
-     "port": "p"
+     "node": "n39",
+     "port": "q_cmd"
     }
    },
    {
     "id": "c050",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "r"
+     "node": "n36",
+     "port": "y"
     },
     "to": {
-     "node": "n33",
-     "port": "r"
+     "node": "n39",
+     "port": "Ka"
     }
    },
    {
     "id": "c051",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "nz"
+     "node": "n37",
+     "port": "y"
     },
     "to": {
-     "node": "n33",
-     "port": "nz"
+     "node": "n39",
+     "port": "Kq"
     }
    },
    {
     "id": "c052",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n38",
+     "port": "y"
     },
     "to": {
-     "node": "n33",
-     "port": "qbar"
+     "node": "n39",
+     "port": "Ki"
     }
    },
    {
     "id": "c053",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n34",
+     "port": "w"
     },
     "to": {
-     "node": "n34",
-     "port": "u"
+     "node": "n39",
+     "port": "w"
     }
    },
    {
     "id": "c054",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n24",
+     "port": "y"
     },
     "to": {
-     "node": "n34",
-     "port": "v"
+     "node": "n40",
+     "port": "u"
     }
    },
    {
     "id": "c055",
     "kind": "signal",
     "from": {
-     "node": "n34",
+     "node": "n40",
      "port": "y"
     },
     "to": {
-     "node": "n33",
-     "port": "Kp"
+     "node": "n39",
+     "port": "u_ground"
     }
    },
    {
     "id": "c056",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n39",
+     "port": "y"
     },
     "to": {
-     "node": "n35",
+     "node": "n41",
      "port": "u"
     }
    },
@@ -6090,24 +8765,24 @@
     "id": "c057",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n41",
+     "port": "y"
     },
     "to": {
-     "node": "n35",
-     "port": "v"
+     "node": "n34",
+     "port": "el"
     }
    },
    {
     "id": "c058",
     "kind": "signal",
     "from": {
-     "node": "n35",
+     "node": "n25",
      "port": "y"
     },
     "to": {
-     "node": "n33",
-     "port": "Kip"
+     "node": "n42",
+     "port": "stick"
     }
    },
    {
@@ -6115,142 +8790,142 @@
     "kind": "signal",
     "from": {
      "node": "n26",
-     "port": "qbar"
+     "port": "y"
     },
     "to": {
-     "node": "n36",
-     "port": "u"
+     "node": "n42",
+     "port": "pedal"
     }
    },
    {
     "id": "c060",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n34",
+     "port": "w"
     },
     "to": {
-     "node": "n36",
-     "port": "v"
+     "node": "n42",
+     "port": "w"
     }
    },
    {
     "id": "c061",
     "kind": "signal",
     "from": {
-     "node": "n36",
-     "port": "y"
+     "node": "n34",
+     "port": "alpha"
     },
     "to": {
-     "node": "n33",
-     "port": "Kr"
+     "node": "n42",
+     "port": "alpha"
     }
    },
    {
     "id": "c062",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n34",
+     "port": "beta"
     },
     "to": {
-     "node": "n37",
-     "port": "u"
+     "node": "n42",
+     "port": "beta"
     }
    },
    {
     "id": "c063",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n34",
+     "port": "p"
     },
     "to": {
-     "node": "n37",
-     "port": "v"
+     "node": "n42",
+     "port": "p"
     }
    },
    {
     "id": "c064",
     "kind": "signal",
     "from": {
-     "node": "n37",
-     "port": "y"
+     "node": "n34",
+     "port": "r"
     },
     "to": {
-     "node": "n33",
-     "port": "Kb"
+     "node": "n42",
+     "port": "r"
     }
    },
    {
     "id": "c065",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n34",
+     "port": "nz"
     },
     "to": {
-     "node": "n38",
-     "port": "u"
+     "node": "n42",
+     "port": "nz"
     }
    },
    {
     "id": "c066",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
-     "node": "n38",
-     "port": "v"
+     "node": "n42",
+     "port": "qbar"
     }
    },
    {
     "id": "c067",
     "kind": "signal",
     "from": {
-     "node": "n38",
-     "port": "y"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
-     "node": "n33",
-     "port": "Kib"
+     "node": "n43",
+     "port": "u"
     }
    },
    {
     "id": "c068",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "alpha"
+     "node": "n34",
+     "port": "mach"
     },
     "to": {
-     "node": "n39",
-     "port": "u"
+     "node": "n43",
+     "port": "v"
     }
    },
    {
     "id": "c069",
     "kind": "signal",
     "from": {
-     "node": "n39",
+     "node": "n43",
      "port": "y"
     },
     "to": {
-     "node": "n33",
-     "port": "Kari"
+     "node": "n42",
+     "port": "Kp"
     }
    },
    {
     "id": "c070",
     "kind": "signal",
     "from": {
-     "node": "n33",
-     "port": "ail"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
-     "node": "n40",
+     "node": "n44",
      "port": "u"
     }
    },
@@ -6258,200 +8933,32 @@
     "id": "c071",
     "kind": "signal",
     "from": {
-     "node": "n40",
-     "port": "y"
+     "node": "n34",
+     "port": "mach"
     },
     "to": {
-     "node": "n26",
-     "port": "ail"
+     "node": "n44",
+     "port": "v"
     }
    },
    {
     "id": "c072",
     "kind": "signal",
     "from": {
-     "node": "n33",
-     "port": "rdr"
+     "node": "n44",
+     "port": "y"
     },
     "to": {
-     "node": "n41",
-     "port": "u1"
+     "node": "n42",
+     "port": "Kip"
     }
    },
    {
     "id": "c073",
     "kind": "signal",
     "from": {
-     "node": "n16",
-     "port": "y"
-    },
-    "to": {
-     "node": "n41",
-     "port": "u2"
-    }
-   },
-   {
-    "id": "c074",
-    "kind": "signal",
-    "from": {
-     "node": "n41",
-     "port": "y"
-    },
-    "to": {
-     "node": "n42",
-     "port": "u"
-    }
-   },
-   {
-    "id": "c075",
-    "kind": "signal",
-    "from": {
-     "node": "n42",
-     "port": "y"
-    },
-    "to": {
-     "node": "n43",
-     "port": "u"
-    }
-   },
-   {
-    "id": "c076",
-    "kind": "signal",
-    "from": {
-     "node": "n43",
-     "port": "y"
-    },
-    "to": {
-     "node": "n26",
-     "port": "rdr"
-    }
-   },
-   {
-    "id": "c077",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n44",
-     "port": "gB"
-    }
-   },
-   {
-    "id": "c078",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "phi"
-    },
-    "to": {
-     "node": "n44",
-     "port": "phi"
-    }
-   },
-   {
-    "id": "c079",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "theta"
-    },
-    "to": {
-     "node": "n44",
-     "port": "theta"
-    }
-   },
-   {
-    "id": "c080",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "psi"
-    },
-    "to": {
-     "node": "n44",
-     "port": "psi"
-    }
-   },
-   {
-    "id": "c081",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "gamma"
-    },
-    "to": {
-     "node": "n44",
-     "port": "gamma"
-    }
-   },
-   {
-    "id": "c082",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "mach"
-    },
-    "to": {
-     "node": "n44",
-     "port": "mach"
-    }
-   },
-   {
-    "id": "c083",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "pa"
-    },
-    "to": {
-     "node": "n44",
-     "port": "pa"
-    }
-   },
-   {
-    "id": "c084",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "alpha"
-    },
-    "to": {
-     "node": "n44",
-     "port": "alpha"
-    }
-   },
-   {
-    "id": "c085",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "beta"
-    },
-    "to": {
-     "node": "n44",
-     "port": "beta"
-    }
-   },
-   {
-    "id": "c086",
-    "kind": "signal",
-    "from": {
-     "node": "n26",
-     "port": "h"
-    },
-    "to": {
-     "node": "n44",
-     "port": "h"
-    }
-   },
-   {
-    "id": "c087",
-    "kind": "signal",
-    "from": {
-     "node": "n44",
-     "port": "north"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
      "node": "n45",
@@ -6459,11 +8966,35 @@
     }
    },
    {
-    "id": "c088",
+    "id": "c074",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "east"
+     "node": "n34",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n45",
+     "port": "v"
+    }
+   },
+   {
+    "id": "c075",
+    "kind": "signal",
+    "from": {
+     "node": "n45",
+     "port": "y"
+    },
+    "to": {
+     "node": "n42",
+     "port": "Kr"
+    }
+   },
+   {
+    "id": "c076",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
      "node": "n46",
@@ -6471,11 +9002,35 @@
     }
    },
    {
-    "id": "c089",
+    "id": "c077",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "h"
+     "node": "n34",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n46",
+     "port": "v"
+    }
+   },
+   {
+    "id": "c078",
+    "kind": "signal",
+    "from": {
+     "node": "n46",
+     "port": "y"
+    },
+    "to": {
+     "node": "n42",
+     "port": "Kb"
+    }
+   },
+   {
+    "id": "c079",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
      "node": "n47",
@@ -6483,11 +9038,35 @@
     }
    },
    {
-    "id": "c090",
+    "id": "c080",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "q_w"
+     "node": "n34",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n47",
+     "port": "v"
+    }
+   },
+   {
+    "id": "c081",
+    "kind": "signal",
+    "from": {
+     "node": "n47",
+     "port": "y"
+    },
+    "to": {
+     "node": "n42",
+     "port": "Kib"
+    }
+   },
+   {
+    "id": "c082",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "alpha"
     },
     "to": {
      "node": "n48",
@@ -6495,11 +9074,23 @@
     }
    },
    {
-    "id": "c091",
+    "id": "c083",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "q_x"
+     "node": "n48",
+     "port": "y"
+    },
+    "to": {
+     "node": "n42",
+     "port": "Kari"
+    }
+   },
+   {
+    "id": "c084",
+    "kind": "signal",
+    "from": {
+     "node": "n42",
+     "port": "ail"
     },
     "to": {
      "node": "n49",
@@ -6507,23 +9098,47 @@
     }
    },
    {
-    "id": "c092",
+    "id": "c085",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "q_y"
+     "node": "n49",
+     "port": "y"
     },
     "to": {
-     "node": "n50",
-     "port": "u"
+     "node": "n34",
+     "port": "ail"
     }
    },
    {
-    "id": "c093",
+    "id": "c086",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "q_z"
+     "node": "n42",
+     "port": "rdr"
+    },
+    "to": {
+     "node": "n50",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c087",
+    "kind": "signal",
+    "from": {
+     "node": "n16",
+     "port": "y"
+    },
+    "to": {
+     "node": "n50",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c088",
+    "kind": "signal",
+    "from": {
+     "node": "n50",
+     "port": "y"
     },
     "to": {
      "node": "n51",
@@ -6531,11 +9146,11 @@
     }
    },
    {
-    "id": "c094",
+    "id": "c089",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "phi_deg"
+     "node": "n51",
+     "port": "y"
     },
     "to": {
      "node": "n52",
@@ -6543,23 +9158,227 @@
     }
    },
    {
-    "id": "c095",
+    "id": "c090",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "theta_deg"
+     "node": "n52",
+     "port": "y"
+    },
+    "to": {
+     "node": "n34",
+     "port": "rdr"
+    }
+   },
+   {
+    "id": "c091",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "pose"
     },
     "to": {
      "node": "n53",
-     "port": "u"
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c092",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "phi"
+    },
+    "to": {
+     "node": "n53",
+     "port": "phi"
+    }
+   },
+   {
+    "id": "c093",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "theta"
+    },
+    "to": {
+     "node": "n53",
+     "port": "theta"
+    }
+   },
+   {
+    "id": "c094",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "psi"
+    },
+    "to": {
+     "node": "n53",
+     "port": "psi"
+    }
+   },
+   {
+    "id": "c095",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "gamma"
+    },
+    "to": {
+     "node": "n53",
+     "port": "gamma"
     }
    },
    {
     "id": "c096",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "psi_deg"
+     "node": "n34",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n53",
+     "port": "mach"
+    }
+   },
+   {
+    "id": "c097",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "pa"
+    },
+    "to": {
+     "node": "n53",
+     "port": "pa"
+    }
+   },
+   {
+    "id": "c098",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "alpha"
+    },
+    "to": {
+     "node": "n53",
+     "port": "alpha"
+    }
+   },
+   {
+    "id": "c099",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "beta"
+    },
+    "to": {
+     "node": "n53",
+     "port": "beta"
+    }
+   },
+   {
+    "id": "c100",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "h"
+    },
+    "to": {
+     "node": "n53",
+     "port": "h"
+    }
+   },
+   {
+    "id": "c101",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "nz"
+    },
+    "to": {
+     "node": "n53",
+     "port": "nz"
+    }
+   },
+   {
+    "id": "c102",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "fn_nose"
+    },
+    "to": {
+     "node": "n53",
+     "port": "fn_nose"
+    }
+   },
+   {
+    "id": "c103",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "fn_left"
+    },
+    "to": {
+     "node": "n53",
+     "port": "fn_left"
+    }
+   },
+   {
+    "id": "c104",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "fn_right"
+    },
+    "to": {
+     "node": "n53",
+     "port": "fn_right"
+    }
+   },
+   {
+    "id": "c105",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "q_nose"
+    },
+    "to": {
+     "node": "n53",
+     "port": "q_nose"
+    }
+   },
+   {
+    "id": "c106",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "q_left"
+    },
+    "to": {
+     "node": "n53",
+     "port": "q_left"
+    }
+   },
+   {
+    "id": "c107",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "q_right"
+    },
+    "to": {
+     "node": "n53",
+     "port": "q_right"
+    }
+   },
+   {
+    "id": "c108",
+    "kind": "signal",
+    "from": {
+     "node": "n53",
+     "port": "north"
     },
     "to": {
      "node": "n54",
@@ -6567,11 +9386,11 @@
     }
    },
    {
-    "id": "c097",
+    "id": "c109",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "gamma_deg"
+     "node": "n53",
+     "port": "east"
     },
     "to": {
      "node": "n55",
@@ -6579,11 +9398,11 @@
     }
    },
    {
-    "id": "c098",
+    "id": "c110",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "p"
+     "node": "n34",
+     "port": "h"
     },
     "to": {
      "node": "n56",
@@ -6591,11 +9410,11 @@
     }
    },
    {
-    "id": "c099",
+    "id": "c111",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "q"
+     "node": "n53",
+     "port": "q_w"
     },
     "to": {
      "node": "n57",
@@ -6603,11 +9422,11 @@
     }
    },
    {
-    "id": "c100",
+    "id": "c112",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "r"
+     "node": "n53",
+     "port": "q_x"
     },
     "to": {
      "node": "n58",
@@ -6615,11 +9434,11 @@
     }
    },
    {
-    "id": "c101",
+    "id": "c113",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "ui"
+     "node": "n53",
+     "port": "q_y"
     },
     "to": {
      "node": "n59",
@@ -6627,11 +9446,11 @@
     }
    },
    {
-    "id": "c102",
+    "id": "c114",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "vi"
+     "node": "n53",
+     "port": "q_z"
     },
     "to": {
      "node": "n60",
@@ -6639,11 +9458,11 @@
     }
    },
    {
-    "id": "c103",
+    "id": "c115",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "wi"
+     "node": "n53",
+     "port": "phi_deg"
     },
     "to": {
      "node": "n61",
@@ -6651,11 +9470,11 @@
     }
    },
    {
-    "id": "c104",
+    "id": "c116",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "hdot"
+     "node": "n53",
+     "port": "theta_deg"
     },
     "to": {
      "node": "n62",
@@ -6663,11 +9482,11 @@
     }
    },
    {
-    "id": "c105",
+    "id": "c117",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "vt"
+     "node": "n53",
+     "port": "psi_deg"
     },
     "to": {
      "node": "n63",
@@ -6675,11 +9494,11 @@
     }
    },
    {
-    "id": "c106",
+    "id": "c118",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "cas"
+     "node": "n53",
+     "port": "gamma_deg"
     },
     "to": {
      "node": "n64",
@@ -6687,11 +9506,11 @@
     }
    },
    {
-    "id": "c107",
+    "id": "c119",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "mach"
+     "node": "n34",
+     "port": "p"
     },
     "to": {
      "node": "n65",
@@ -6699,11 +9518,11 @@
     }
    },
    {
-    "id": "c108",
+    "id": "c120",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "qbar"
+     "node": "n34",
+     "port": "q"
     },
     "to": {
      "node": "n66",
@@ -6711,11 +9530,11 @@
     }
    },
    {
-    "id": "c109",
+    "id": "c121",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "alpha"
+     "node": "n34",
+     "port": "r"
     },
     "to": {
      "node": "n67",
@@ -6723,11 +9542,11 @@
     }
    },
    {
-    "id": "c110",
+    "id": "c122",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "beta"
+     "node": "n34",
+     "port": "ui"
     },
     "to": {
      "node": "n68",
@@ -6735,11 +9554,11 @@
     }
    },
    {
-    "id": "c111",
+    "id": "c123",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "nz"
+     "node": "n34",
+     "port": "vi"
     },
     "to": {
      "node": "n69",
@@ -6747,11 +9566,11 @@
     }
    },
    {
-    "id": "c112",
+    "id": "c124",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "ny"
+     "node": "n34",
+     "port": "wi"
     },
     "to": {
      "node": "n70",
@@ -6759,11 +9578,11 @@
     }
    },
    {
-    "id": "c113",
+    "id": "c125",
     "kind": "signal",
     "from": {
-     "node": "n32",
-     "port": "y"
+     "node": "n34",
+     "port": "hdot"
     },
     "to": {
      "node": "n71",
@@ -6771,11 +9590,11 @@
     }
    },
    {
-    "id": "c114",
+    "id": "c126",
     "kind": "signal",
     "from": {
-     "node": "n40",
-     "port": "y"
+     "node": "n34",
+     "port": "vt"
     },
     "to": {
      "node": "n72",
@@ -6783,11 +9602,11 @@
     }
    },
    {
-    "id": "c115",
+    "id": "c127",
     "kind": "signal",
     "from": {
-     "node": "n43",
-     "port": "y"
+     "node": "n53",
+     "port": "cas"
     },
     "to": {
      "node": "n73",
@@ -6795,11 +9614,11 @@
     }
    },
    {
-    "id": "c116",
+    "id": "c128",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "pow"
+     "node": "n34",
+     "port": "mach"
     },
     "to": {
      "node": "n74",
@@ -6807,11 +9626,11 @@
     }
    },
    {
-    "id": "c117",
+    "id": "c129",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "thrust"
+     "node": "n34",
+     "port": "qbar"
     },
     "to": {
      "node": "n75",
@@ -6819,11 +9638,11 @@
     }
    },
    {
-    "id": "c118",
+    "id": "c130",
     "kind": "signal",
     "from": {
-     "node": "n33",
-     "port": "p_lim"
+     "node": "n34",
+     "port": "alpha"
     },
     "to": {
      "node": "n76",
@@ -6831,11 +9650,11 @@
     }
    },
    {
-    "id": "c119",
+    "id": "c131",
     "kind": "signal",
     "from": {
-     "node": "n27",
-     "port": "nz_cmd"
+     "node": "n34",
+     "port": "beta"
     },
     "to": {
      "node": "n77",
@@ -6843,11 +9662,11 @@
     }
    },
    {
-    "id": "c120",
+    "id": "c132",
     "kind": "signal",
     "from": {
-     "node": "n27",
-     "port": "lim_active"
+     "node": "n53",
+     "port": "nz_total"
     },
     "to": {
      "node": "n78",
@@ -6855,11 +9674,11 @@
     }
    },
    {
-    "id": "c121",
+    "id": "c133",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "departed"
+     "node": "n34",
+     "port": "ny"
     },
     "to": {
      "node": "n79",
@@ -6867,11 +9686,11 @@
     }
    },
    {
-    "id": "c122",
+    "id": "c134",
     "kind": "signal",
     "from": {
-     "node": "n44",
-     "port": "ground"
+     "node": "n41",
+     "port": "y"
     },
     "to": {
      "node": "n80",
@@ -6879,50 +9698,230 @@
     }
    },
    {
-    "id": "c123",
+    "id": "c135",
     "kind": "signal",
     "from": {
-     "node": "n26",
-     "port": "pose"
+     "node": "n49",
+     "port": "y"
     },
     "to": {
      "node": "n81",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c136",
+    "kind": "signal",
+    "from": {
+     "node": "n52",
+     "port": "y"
+    },
+    "to": {
+     "node": "n82",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c137",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "pow"
+    },
+    "to": {
+     "node": "n83",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c138",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "thrust"
+    },
+    "to": {
+     "node": "n84",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c139",
+    "kind": "signal",
+    "from": {
+     "node": "n42",
+     "port": "p_lim"
+    },
+    "to": {
+     "node": "n85",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c140",
+    "kind": "signal",
+    "from": {
+     "node": "n35",
+     "port": "nz_cmd"
+    },
+    "to": {
+     "node": "n86",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c141",
+    "kind": "signal",
+    "from": {
+     "node": "n35",
+     "port": "lim_active"
+    },
+    "to": {
+     "node": "n87",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c142",
+    "kind": "signal",
+    "from": {
+     "node": "n53",
+     "port": "departed"
+    },
+    "to": {
+     "node": "n88",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c143",
+    "kind": "signal",
+    "from": {
+     "node": "n53",
+     "port": "ground"
+    },
+    "to": {
+     "node": "n89",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c144",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "fn_nose"
+    },
+    "to": {
+     "node": "n90",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c145",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "fn_left"
+    },
+    "to": {
+     "node": "n91",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c146",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "fn_right"
+    },
+    "to": {
+     "node": "n92",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c147",
+    "kind": "signal",
+    "from": {
+     "node": "n53",
+     "port": "on_ground"
+    },
+    "to": {
+     "node": "n93",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c148",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "steer"
+    },
+    "to": {
+     "node": "n94",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c149",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "gear_pos"
+    },
+    "to": {
+     "node": "n95",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c150",
+    "kind": "signal",
+    "from": {
+     "node": "n34",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n96",
      "port": "g"
     }
    },
    {
-    "id": "c124",
+    "id": "c151",
     "kind": "signal",
     "from": {
-     "node": "n26",
+     "node": "n34",
      "port": "pose"
     },
     "to": {
-     "node": "n81",
+     "node": "n96",
      "port": "g0"
     }
    },
    {
-    "id": "c125",
+    "id": "c152",
     "kind": "signal",
     "from": {
-     "node": "n26",
+     "node": "n34",
      "port": "pose"
     },
     "to": {
-     "node": "n82",
+     "node": "n97",
      "port": "g"
     }
    },
    {
-    "id": "c126",
+    "id": "c153",
     "kind": "signal",
     "from": {
-     "node": "n26",
+     "node": "n34",
      "port": "pose"
     },
     "to": {
-     "node": "n82",
+     "node": "n97",
      "port": "g0"
     }
    }
@@ -7022,6 +10021,23 @@
    "signals": [
     "throttle/y",
     "F16/Engine/pow"
+   ]
+  },
+  {
+   "id": "p8",
+   "title": "Wheel loads (N)",
+   "signals": [
+    "F16/Contact_nose/fn",
+    "F16/Contact_left/fn",
+    "F16/Contact_right/fn"
+   ]
+  },
+  {
+   "id": "p9",
+   "title": "Gear position, weight on wheels",
+   "signals": [
+    "F16/GearAct/pos",
+    "F16/Logic/w"
    ]
   }
  ],
@@ -7316,6 +10332,30 @@
    "description": "Mass (the inertia scales with it)"
   },
   {
+   "name": "gamma0",
+   "value": "0.0",
+   "unit": "deg",
+   "description": "Start flight-path angle: the pitch is alpha0 + gamma0 (0: level, or on the runway)"
+  },
+  {
+   "name": "gear0",
+   "value": "0.0",
+   "unit": null,
+   "description": "Start gear position, 0 up .. 1 down"
+  },
+  {
+   "name": "north0",
+   "value": "0.0",
+   "unit": "m",
+   "description": "Start position, north"
+  },
+  {
+   "name": "east0",
+   "value": "0.0",
+   "unit": "m",
+   "description": "Start position, east"
+  },
+  {
    "name": "pitch_amp",
    "value": "0.0",
    "unit": null,
@@ -7398,6 +10438,42 @@
    "value": "1.0",
    "unit": "s",
    "description": "Test input: throttle change at"
+  },
+  {
+   "name": "throttle2_d",
+   "value": "0.0",
+   "unit": null,
+   "description": "Test input: a second throttle change (added)"
+  },
+  {
+   "name": "throttle2_t",
+   "value": "1.0",
+   "unit": "s",
+   "description": "Test input: second throttle change at"
+  },
+  {
+   "name": "gear_set",
+   "value": "0.0",
+   "unit": null,
+   "description": "Test input: gear handle from gear_t on, 0 up .. 1 down"
+  },
+  {
+   "name": "gear_t",
+   "value": "1.0",
+   "unit": "s",
+   "description": "Test input: gear handle moves at"
+  },
+  {
+   "name": "brake_set",
+   "value": "0.0",
+   "unit": null,
+   "description": "Test input: both toe brakes from brake_t on, 0 .. 1"
+  },
+  {
+   "name": "brake_t",
+   "value": "1.0",
+   "unit": "s",
+   "description": "Test input: brakes on at"
   },
   {
    "name": "limiter",
@@ -7675,6 +10751,53 @@
     "signals": [
      "F16/Air/vt",
      "F16/Air/h"
+    ]
+   },
+   {
+    "id": "d18",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "Gear handle (from 1 s; 0 up, 1 down)",
+    "parameter": "global:gear_set",
+    "options": {
+     "min": 0.0,
+     "max": 1.0,
+     "step": 1.0,
+     "decimals": 0
+    }
+   },
+   {
+    "id": "d19",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "Toe brakes (from 1 s)",
+    "parameter": "global:brake_set",
+    "options": {
+     "min": 0.0,
+     "max": 1.0,
+     "step": 0.05,
+     "decimals": 2
+    }
+   },
+   {
+    "id": "d20",
+    "kind": "plot",
+    "size": "2x2",
+    "title": "Wheel loads (N)",
+    "signals": [
+     "F16/Contact_nose/fn",
+     "F16/Contact_left/fn",
+     "F16/Contact_right/fn"
+    ]
+   },
+   {
+    "id": "d21",
+    "kind": "plot",
+    "size": "2x2",
+    "title": "Gear position, weight on wheels",
+    "signals": [
+     "F16/GearAct/pos",
+     "F16/Logic/w"
     ]
    }
   ]

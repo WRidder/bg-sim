@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -43,6 +44,9 @@ STARTS = [
     ("High 600 ft/s, 20 000 ft", 600.0, 20000.0),
     ("Approach 350 ft/s, 2 000 ft", 350.0, 2000.0),
 ]
+# On the airfield (src/f16sim/terrain.py): the south end of the runway, and a final approach to it
+RUNWAY_START = (3000.0 - 1500.0 + 100.0, -1800.0)     # north, east (m)
+APPROACH_V, APPROACH_GAMMA, APPROACH_DIST = 76.0, -3.0, 3000.0      # m/s (148 kt), deg, m from the threshold
 
 
 def export(tmp: Path) -> Path:
@@ -83,11 +87,22 @@ def starts() -> list[dict]:
         _, g = simscen.trim_globals(vt, h, XCG)
         rec = {"label": label, "vt0": g["vt0"], "h0": g["h0"], "alpha0": g["alpha0"], "el0": g["el0"],
                "thtl0": g["thtl0"], "xcg": XCG}
-        if not (90.0 <= rec["vt0"] <= 400.0 and 300.0 <= rec["h0"] <= 12000.0 and -5.0 <= rec["alpha0"] <= 25.0
+        if not (0.0 <= rec["vt0"] <= 400.0 and 0.0 <= rec["h0"] <= 12000.0 and -5.0 <= rec["alpha0"] <= 25.0
                 and -25.0 <= rec["el0"] <= 25.0 and 0.0 <= rec["thtl0"] <= 1.0):
             raise SystemExit(f"start {label!r} is outside the FMU's parameter ranges: {rec}")
         out.append(rec)
         print(f"start {label}: alpha {rec['alpha0']:.2f} deg, stabilator {rec['el0']:.2f} deg, throttle {rec['thtl0']:.3f}")
+    import gear
+
+    des = json.loads((ROOT / "examples" / "f16" / "design" / "design.json").read_text(encoding="utf-8"))["fbw"]
+    st = gear.static(XCG)
+    out.append({"label": "Runway, gear down, idle", "vt0": 0.0, "h0": st["h"], "alpha0": st["theta_deg"], "el0": 0.0,
+                "thtl0": 0.0, "xcg": XCG, "gear0": 1.0, "north0": RUNWAY_START[0], "east0": RUNWAY_START[1]})
+    ap = gear.trim_approach(des, APPROACH_V, APPROACH_GAMMA, xcg=XCG)
+    h_app = APPROACH_DIST * math.tan(math.radians(-APPROACH_GAMMA)) + st["h"]
+    out.append({"label": "Final approach, 148 kt, 3 deg, gear down", **ap, "h0": h_app, "xcg": XCG, "gear0": 1.0,
+                "north0": 3000.0 - 1500.0 + 300.0 - APPROACH_DIST, "east0": RUNWAY_START[1]})
+    print(f"start final approach: alpha {ap['alpha0']:.2f} deg, stabilator {ap['el0']:.2f} deg, throttle {ap['thtl0']:.3f}")
     BUILD.mkdir(exist_ok=True)
     (BUILD / "starts.json").write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     return out

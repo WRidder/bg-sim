@@ -2,7 +2,7 @@
 
 At 900 ft/s (Mach 0.82) and 5000 ft the pilot pulls the stick fully aft from 1 s and lights the afterburner. The stick gearing asks for 11 g. **Protected** has the alpha/g limiter on; **Unprotected** has it off.
 
-![The model canvas|900](assets/ce936c1987dd.png)
+![The model canvas|900](assets/d722a9460c75.png)
 
 | block | role |
 | --- | --- |
@@ -22,6 +22,6 @@ so the commanded pitch rate fades out as alpha approaches 25 deg or the load fac
 2. Set the limiter slider to 0: both aircraft depart.
 3. Pull less (stick 0.5): neither limit is reached.
 
-![3D view at t = 5 s|600](assets/0aded2c57b81.png)
+![3D view at t = 5 s|600](assets/637c45a1d16d.png)
 
 Continue with [the results](page:results).

@@ -24,9 +24,9 @@ Use `ExportInputPass` when the model should keep its own test stimulus in BG-Sim
 
 The **f16-sim** model of the f16 example shows a complete interface:
 
-- the pilot's controls and the wind come in through `ExportInputPass` markers;
-- 36 `ExportOutput` markers carry what a flight-simulator host draws;
-- the trim, the CG, the mass and the control-law switches are globals that are kept tunable.
+- the pilot's controls, the gear handle, the wheel brakes and the wind come in through `ExportInputPass` markers;
+- 42 `ExportOutput` markers carry what a flight-simulator host draws;
+- the trim, the start position, the gear's start position, the CG, the mass and the control-law switches are globals that are kept tunable.
 
 The **beaver-sim** model of the beaver example has a cockpit interface:
 

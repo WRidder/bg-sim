@@ -9,9 +9,11 @@
 1. ``examples/export_f16.jl`` exports ``f16/models/f16-sim`` with the host interface (the
    ExportInputPass markers as inputs, the ExportOutput markers as outputs, the trim globals,
    CG, mass and law switches as FMU parameters with ranges; 5 ms communication step, the
-   analysis picks the method and the internal step) and runs a bg-sim reference of four
-   manoeuvres driven through the same inputs: a pitch doublet, a roll and roll back, a
-   coordinated 60 deg turn and a throttle step to full afterburner (with a pedal pulse);
+   internal step is set) and runs a bg-sim reference of seven runs driven through the same
+   inputs: in the air with the gear up a pitch doublet, a roll and roll back, a coordinated
+   60 deg turn and a throttle step to full afterburner (with a pedal pulse); on the wheels a
+   taxi with steering and a brake stop in a crosswind, a take-off with the gear coming up, and
+   a landing with the gear down;
 2. ``bgsim_server.fmu_build`` builds the FMU: -Werror, C++17, the hot-path symbol check, the
    counting allocation harness and the doStep timing;
 3. in fmpy every manoeuvre is driven through the FMU's inputs (``export_checks.run_driven``:
@@ -27,7 +29,8 @@ fifth of the 5 ms step, worst relative deviation below ``TOL_REL``.
 The worst case is the engine of the throttle step: its power level crosses military power (50 %)
 where the lag's rate and target switch (``F16Engine``: 1/s to 5/s), and the FMU evaluates that
 switch once per step (W203), so the knee can come up to 5 ms late: 0.7 % of the power's peak for a
-moment, 0.5 kN of thrust. Everything else agrees to about 1e-3 of its peak.
+moment, 0.5 kN of thrust. Everything else agrees to about 1e-3 of its peak. The on-ground flag
+switches once per step too, so it is gated on its own bound.
 """
 
 from __future__ import annotations
@@ -49,12 +52,17 @@ from bgsim_server.fmu_build import build_fmu  # noqa: E402
 from export_checks import reference, run_driven  # noqa: E402
 
 RUNTIME = ROOT / "julia" / "BGSim" / "export" / "runtime"
-SCENARIOS = ("pitch_doublet", "roll", "turn", "throttle_step")
+SCENARIOS = ("pitch_doublet", "roll", "turn", "throttle_step", "taxi_stop", "takeoff", "landing")
 TOL_REL = 1e-2            # of the signal's peak over the manoeuvre (see below)
+# A surface with a small peak in a run: at touchdown the laws hand over in a few steps, so one substep of
+# timing shows. 0.05 deg is a fifth of what the stabilator moves in a 5 ms step at its 60 deg/s rate.
+TOL_ABS = {"stab_deg": 0.05}
+# indicators that switch: a switch evaluated once per step (W203) can come one step late
+INDICATORS = {"on_ground": 0.1}
 STEP_BUDGET_US = 1000.0   # a fifth of the 5 ms communication step
 # the flight variables whose absolute deviation the table lists
 SHOWN = [("alpha_deg", "deg"), ("beta_deg", "deg"), ("phi_deg", "deg"), ("theta_deg", "deg"),
-         ("nz_g", "g"), ("alt_m", "m"), ("tas_mps", "m/s"), ("thrust_n", "N")]
+         ("nz_g", "g"), ("alt_m", "m"), ("tas_mps", "m/s"), ("thrust_n", "N"), ("fn_left", "N")]
 
 
 def deviations(res: dict, ref_dir: Path, names: list[str]) -> dict:
@@ -136,16 +144,19 @@ def main() -> int:
         inputs = json.loads((out / sc / "inputs.json").read_text(encoding="utf-8"))
         t_end = float(inputs["t"][-1])
         t0 = time.perf_counter()
-        res = run_driven(built.fmu, names, inputs, t_end, rec["step"])
+        res = run_driven(built.fmu, names, inputs, t_end, rec["step"], inputs.get("params"))
         wall = time.perf_counter() - t0
         dev = deviations(res, out / sc / "reference", names)
-        worst = max(dev.items(), key=lambda kv: kv[1]["rel"])
+        worst = max(((n, d) for n, d in dev.items() if n not in INDICATORS), key=lambda kv: kv[1]["rel"])
+        for n, tol in INDICATORS.items():
+            if n in dev and dev[n]["rel"] > tol:
+                failures.append(f"{sc}: indicator {n} deviates {dev[n]['rel']:.2e} at t = {dev[n]['t']:.2f} s")
         rows.append((sc, t_end, wall, worst, dev))
         if len(dev) != len(names):
             failures.append(f"{sc}: {len(names) - len(dev)} outputs not in the reference")
         if not all(d["finite"] for d in dev.values()):
             failures.append(f"{sc}: non-finite outputs")
-        if worst[1]["rel"] > TOL_REL:
+        if worst[1]["rel"] > TOL_REL and worst[1]["abs"] > TOL_ABS.get(worst[0], 0.0):
             failures.append(f"{sc}: {worst[0]} deviates {worst[1]['rel']:.2e} of its peak at t = {worst[1]['t']:.2f} s")
 
     tun = report.get("tunables", {})

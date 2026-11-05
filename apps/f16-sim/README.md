@@ -3,7 +3,7 @@
 A small, standalone real-time flight simulator around the FMU that bg-sim exports from the
 `f16-sim` model of the F-16 example (`examples/f16/models/f16-sim`: the Stevens & Lewis nonlinear
 F-16 with a three-axis fly-by-wire). The FMU is the flight model; this app adds the pilot's inputs,
-the world, the cameras and the HUD. Start airborne, fly, crash, press R.
+the world, the cameras and the HUD. Start airborne or on the runway, fly, land or crash, press R.
 
 Everything you see is generated here or comes from the example: the aircraft meshes are the
 example's own (`examples/f16/meshes`, written by `examples/f16/design/make_meshes.py`), the
@@ -58,10 +58,12 @@ Rebuild after changing the model. `uv run build_fmu.py --skip-export` rewrites o
 | arrows, or W/S and A/D | stick (spring back to the centre when released); down/S = pull |
 | Q/E or Z/X | pedals (left/right) |
 | PgUp/PgDn or +/- | throttle (0 idle, 77 % military, 100 % full afterburner) |
+| U | gear handle (with weight on the wheels the gear stays down) |
+| B | wheel brakes, held |
 | C | chase view / cockpit (HUD) view |
 | P | pause |
 | R | reset to the current start condition |
-| 1 .. 6 | reset to start condition N (the list is under F1) |
+| 1 .. 8 | reset to start condition N (the list is under F1) |
 | G | ring course on/off (gates ahead of you; the next one pulses yellow, an amber circle on the HUD points to it) |
 | T | turbulence on/off |
 | L, V, Y | alpha/g limiter, velocity-vector roll, yaw damper on/off: FMU parameters, so the flight restarts |
@@ -70,7 +72,12 @@ Rebuild after changing the model. `uv run build_fmu.py --skip-export` rewrites o
 
 Start conditions (`build/starts.json`): cruise 500 ft/s at 10 000 ft, slow 300 ft/s at 10 000 ft,
 700 ft/s at 5 000 ft, 900 ft/s at 2 000 ft, 600 ft/s at 20 000 ft, 350 ft/s at 2 000 ft, all trimmed
-level, heading north, CG 0.35.
+level, heading north, CG 0.35, gear up. Start 7 (`--start 6`) is on the south end of the runway at rest,
+gear down, idle; start 8 (`--start 7`) is on a 3 deg final approach at 148 kt, 3 km out, gear down.
+
+On the wheels the pedals steer the nose wheel (32 deg at taxi speed, falling with speed so that full pedal stays near 0.35 g).
+Full aft stick lifts the nose at about 150 kt with full afterburner. The stick drives the stabilator
+directly on the ground, and the fly-by-wire laws fade in as the weight leaves the main wheels.
 
 ### Devices
 
@@ -138,7 +145,9 @@ and the law switches that are off.
 The FMU tests skip without `build/f16_sim.fmu`. They check that the trim holds level flight, that
 right roll stick rolls and turns right with |beta| < 1 deg, that full aft stick sets the limiter
 flag below 9.3 g and 26 deg alpha, that the quaternion matches the Euler angles and that a reset
-restarts at the trim.
+restarts at the trim. On the gear they check that the aircraft rests on the runway with its weight on
+the wheels, that the pedals steer it, that the approach start lands, and that the ground is still a
+crash with the gear up.
 
 ## Video
 
@@ -149,27 +158,13 @@ into the limiter in an 80 deg bank, chase and cockpit views) offscreen at fixed 
 twice the size, and pipes the frames to ffmpeg (H.264, yuv420p, downscaled). A folder instead of an
 `.mp4` writes PNG frames.
 
-## Landing gear and takeoff (not built)
-
-The flight starts airborne; there is no gear. Taking off would need, in the bg-sim model:
-
-* three gear legs as spring-damper struts between the airframe and the ground (compression from
-  the leg's height above the terrain), with stroke limits and tyre contact forces: a normal force
-  from the strut and a friction force from the slip of each wheel (rolling resistance, cornering
-  stiffness, brake torque), switching cleanly on touchdown and lift-off (an event per wheel);
-* inputs for nose-wheel steering (from the pedals below a speed) and the wheel brakes;
-* weight-on-wheels logic in the control laws: on the ground the integrators held at zero, the
-  pitch law in a direct stick-to-stabilator mode, the roll law off; switching at lift-off;
-* the ground and the runway as terrain in the model (now the FMU knows only a flat ground at 0 m),
-  plus the gear and flap animations and a landing-capable trim (low speed, high alpha) here.
-
 ## Limitations
 
 * The aerodynamics are the book's low-speed NASA TP-1538 data (no Mach effects): above about
   Mach 0.6 it flies like the model, not like an F-16. Beyond alpha 45 deg or beta 30 deg the tables
   hold their edge values, so post-departure motion is qualitative.
-* The hills are the host's: the FMU's ground is flat at 0 m (its `ground_contact` output), the
-  host checks the terrain height itself. Wind and turbulence are a steady wind plus filtered
+* The hills are the host's: the FMU's ground is flat at 0 m, so the wheels roll at height 0 and the
+  runway must lie at 0 m. Off the airfield the host checks the terrain height itself. Wind and turbulence are a steady wind plus filtered
   noise, not a Dryden model.
 * Changing the mass (an FMU parameter) without a new trim starts the flight out of trim.
 * With vertical sync on, a window in the background may be throttled by the desktop compositor
