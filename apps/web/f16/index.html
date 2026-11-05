@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Island Sortie</title>
+    <link rel="stylesheet" href="../src/engine/game.css" />
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <canvas id="hud"></canvas>
+
+    <section id="loading" class="screen">
+      <h1>Island Sortie</h1>
+      <p id="loading-text">Raising the island…</p>
+      <div class="bar"><div></div></div>
+    </section>
+
+    <section id="title" class="screen panel-screen" hidden>
+      <header>
+        <h1>Island Sortie</h1>
+        <p class="lead">A fighter, a mountain island and fifteen gates.</p>
+      </header>
+      <div class="panel">
+        <div class="choices" id="mode" role="radiogroup" aria-label="Mode">
+          <button data-value="free" role="radio">
+            <strong>Free flight</strong>
+            <span>Start out at sea and go wherever you like.</span>
+          </button>
+          <button data-value="gates" role="radio">
+            <strong>Gate run</strong>
+            <span>Fifteen gates: down the runway, past the town, up the valley. <em id="best"></em></span>
+          </button>
+        </div>
+        <label id="start-row">Start
+          <select id="start"></select>
+        </label>
+        <label>Time of day
+          <select id="time">
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+        </label>
+        <label>Sky
+          <select id="sky">
+            <option value="0.14">Clear</option>
+            <option value="0.3">Scattered</option>
+            <option value="0.48">Broken</option>
+          </select>
+        </label>
+        <div class="toggles">
+          <label><input type="checkbox" id="turbulence" /> Turbulence</label>
+          <label><input type="checkbox" id="limiter" checked /> G and alpha limiter</label>
+          <label><input type="checkbox" id="yaw-damper" checked /> Yaw damper</label>
+        </div>
+        <button id="fly" class="primary">Fly</button>
+      </div>
+      <aside class="keys">
+        <h2>Controls</h2>
+        <dl>
+          <dt>↑ ↓ or W S</dt><dd>Push, pull</dd>
+          <dt>← → or A D</dt><dd>Roll</dd>
+          <dt>Q E</dt><dd>Rudder</dd>
+          <dt>PgUp PgDn or + −</dt><dd>Throttle</dd>
+          <dt>C</dt><dd>Chase, cockpit, flyby</dd>
+          <dt>Mouse drag, wheel</dt><dd>Look round, zoom</dd>
+          <dt>R</dt><dd>Restart</dd>
+          <dt>P or Esc</dt><dd>Pause</dd>
+          <dt>M</dt><dd>Sound</dd>
+        </dl>
+        <p class="pad" id="pad">A gamepad works too: press any button on it.</p>
+      </aside>
+    </section>
+
+    <section id="pause" class="screen dialog" hidden>
+      <h2>Paused</h2>
+      <button id="resume" class="primary">Resume</button>
+      <button id="restart">Restart</button>
+      <button id="quit">Back to the menu</button>
+    </section>
+
+    <section id="over" class="screen dialog" hidden>
+      <h2 id="over-title"></h2>
+      <p id="over-text"></p>
+      <button id="again" class="primary">Fly again</button>
+      <button id="over-quit">Back to the menu</button>
+    </section>
+
+    <section id="failed" class="screen" hidden>
+      <h1>Island Sortie</h1>
+      <p>This game needs WebGL 2, and this browser could not start it.</p>
+    </section>
+
+    <script type="module" src="../src/f16/game.ts"></script>
+  </body>
+</html>

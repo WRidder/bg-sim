@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bg-sim games</title>
+    <style>
+      :root {
+        --ink: #f2f4ef;
+        --muted: #b6bfb9;
+        --line: rgba(242, 244, 239, 0.16);
+        --ground: #0d1416;
+        --display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", sans-serif;
+        --body: "Segoe UI", system-ui, -apple-system, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--body);
+      }
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: clamp(28px, 6vw, 72px) 16px;
+      }
+      h1 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: clamp(38px, 7vw, 68px);
+        font-weight: 700;
+        line-height: 1.05;
+      }
+      header p {
+        max-width: 60ch;
+        margin: 12px 0 clamp(24px, 4vw, 44px);
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.5;
+      }
+      ul {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+        gap: 18px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      a {
+        display: block;
+        height: 100%;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(242, 244, 239, 0.04);
+        color: inherit;
+        text-decoration: none;
+        transition: border-color 0.15s;
+      }
+      a:hover,
+      a:focus-visible {
+        border-color: var(--accent);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+      }
+      h2 {
+        margin: 16px 18px 4px;
+        color: var(--accent);
+        font-family: var(--display);
+        font-size: 26px;
+        font-weight: 700;
+      }
+      a p {
+        margin: 0 18px 18px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      footer {
+        margin-top: 32px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>bg-sim games</h1>
+        <p>Four games on models built in bg-sim. The physics runs in your browser, with nothing to install.</p>
+      </header>
+      <ul>
+        <li>
+          <a href="./f16/" style="--accent: #ffc34d">
+            <img src="covers/f16.jpg" alt="A jet flying over the open sea" width="900" height="506" />
+            <h2>Island Sortie</h2>
+            <p>A fighter, a mountain island and fifteen gates.</p>
+          </a>
+        </li>
+        <li>
+          <a href="./cessna/" style="--accent: #ffae57">
+            <img src="covers/cessna.jpg" alt="A light aeroplane over a beach and shallow water" width="900" height="506" />
+            <h2>Short Final</h2>
+            <p>Anyone can take off. Bring it back gently.</p>
+          </a>
+        </li>
+        <li>
+          <a href="./a109/" style="--accent: #ffc34d">
+            <img src="covers/a109.jpg" alt="A helicopter on a landing pad" width="900" height="506" />
+            <h2>Island Lift</h2>
+            <p>One helicopter, and the places nothing else can land.</p>
+          </a>
+        </li>
+        <li>
+          <a href="./cars/" style="--accent: #ff7a2f">
+            <img src="covers/cars.jpg" alt="A single-seat race car on a circuit straight" width="900" height="506" />
+            <h2>Apex &amp; Dust</h2>
+            <p>Two electric cars, four roads, and the clock.</p>
+          </a>
+        </li>
+      </ul>
+      <footer>Best on a computer with a keyboard or gamepad.</footer>
+    </main>
+  </body>
+</html>

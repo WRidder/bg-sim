@@ -1,0 +1,106 @@
+/* Short Final on top of the shared game styles: warmer than the fighter's, and a score sheet. */
+
+:root {
+  --accent: #ffb05c;
+  --glass: rgba(12, 22, 28, 0.56);
+}
+
+.panel-screen {
+  background: linear-gradient(90deg, rgba(6, 14, 20, 0.66), rgba(6, 14, 20, 0) 64%);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+}
+
+.choices {
+  grid-template-columns: 1fr 1fr;
+}
+
+.choices button span {
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.toggles {
+  grid-template-columns: 1fr 1fr;
+}
+
+.sheet {
+  width: min(420px, calc(100vw - 32px));
+  align-items: stretch;
+}
+
+.score {
+  margin: 0 !important;
+  font-family: var(--display);
+  font-size: 76px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--accent) !important;
+}
+
+.score:empty {
+  display: none;
+}
+
+#over-lines {
+  display: grid;
+  gap: 8px;
+  margin: 2px 0 8px;
+}
+
+#over-lines:empty {
+  display: none;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 2px 12px;
+  align-items: baseline;
+  font-size: 14px;
+}
+
+.line small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.line b {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 56px;
+  text-align: right;
+}
+
+.line u {
+  grid-column: 1 / -1;
+  display: block;
+  height: 3px;
+  background: var(--line);
+  text-decoration: none;
+}
+
+.line u:empty {
+  display: none;
+}
+
+.line u i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .choices {
+    grid-template-columns: 1fr;
+  }
+}

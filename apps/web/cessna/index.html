@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Short Final</title>
+    <link rel="stylesheet" href="../src/engine/game.css" />
+    <link rel="stylesheet" href="../src/cessna/style.css" />
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <canvas id="hud"></canvas>
+
+    <section id="loading" class="screen">
+      <h1>Short Final</h1>
+      <p id="loading-text">Rolling out the island…</p>
+      <div class="bar"><div></div></div>
+    </section>
+
+    <section id="title" class="screen panel-screen" hidden>
+      <header>
+        <p class="eyebrow">One island, one runway</p>
+        <h1>Short Final</h1>
+        <p class="lead">Anyone can take off. Bring it back gently.</p>
+      </header>
+      <div class="panel">
+        <div class="choices" id="mode" role="radiogroup" aria-label="Mode">
+          <button data-value="circuit" role="radio">
+            <strong>Circuit</strong>
+            <span>Take off, follow the rings round the bay, land. <em id="best-circuit"></em></span>
+          </button>
+          <button data-value="spot" role="radio">
+            <strong>Spot landing</strong>
+            <span>Three hundred feet up on final. A minute to the numbers. <em id="best-spot"></em></span>
+          </button>
+          <button data-value="engine" role="radio">
+            <strong>Engine out</strong>
+            <span>Abeam the runway at a thousand feet, the engine stops. <em id="best-engine"></em></span>
+          </button>
+          <button data-value="coast" role="radio">
+            <strong>Coast run</strong>
+            <span>Round the shore and the town, then down the runway, flat out. <em id="best-coast"></em></span>
+          </button>
+        </div>
+        <label>Wind
+          <select id="wind">
+            <option value="calm">Calm</option>
+            <option value="breeze">Light breeze</option>
+            <option value="cross">Crosswind, 15 kt</option>
+            <option value="rough">Gusty, 20 kt</option>
+          </select>
+        </label>
+        <label>Time of day
+          <select id="time">
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+        </label>
+        <label>Sky
+          <select id="sky">
+            <option value="0.14">Clear</option>
+            <option value="0.3">Scattered</option>
+            <option value="0.48">Broken</option>
+          </select>
+        </label>
+        <div class="toggles">
+          <label><input type="checkbox" id="instructor" checked /> Instructor</label>
+          <label><input type="checkbox" id="auto-rudder" checked /> Steady hands</label>
+        </div>
+        <button id="fly" class="primary">Fly</button>
+      </div>
+      <aside class="keys">
+        <h2>Controls</h2>
+        <dl>
+          <dt>↑ ↓ or W S</dt><dd>Yoke: push, pull</dd>
+          <dt>← → or A D</dt><dd>Bank</dd>
+          <dt>PgUp PgDn or + −</dt><dd>Throttle</dd>
+          <dt>F V</dt><dd>Flaps down, up</dd>
+          <dt>B or Space</dt><dd>Brakes</dd>
+          <dt>Q E</dt><dd>Rudder, steers on the ground</dd>
+          <dt>Home End or [ ]</dt><dd>Trim</dd>
+          <dt>C</dt><dd>Chase, cockpit, flyby</dd>
+          <dt>Mouse drag, wheel</dt><dd>Look round, zoom</dd>
+          <dt>R</dt><dd>Restart</dd>
+          <dt>P or Esc</dt><dd>Pause</dd>
+          <dt>M</dt><dd>Sound</dd>
+        </dl>
+        <p class="pad" id="pad">A gamepad works too: triggers for power, bumpers for flaps, A for brakes.</p>
+      </aside>
+    </section>
+
+    <section id="pause" class="screen dialog" hidden>
+      <h2>Paused</h2>
+      <button id="resume" class="primary">Resume</button>
+      <button id="restart">Restart</button>
+      <button id="quit">Back to the menu</button>
+    </section>
+
+    <section id="over" class="screen dialog sheet" hidden>
+      <p id="over-score" class="score"></p>
+      <h2 id="over-title"></h2>
+      <p id="over-text"></p>
+      <div id="over-lines"></div>
+      <button id="again" class="primary">Fly again</button>
+      <button id="over-quit">Back to the menu</button>
+    </section>
+
+    <section id="failed" class="screen" hidden>
+      <h1>Short Final</h1>
+      <p>This game needs WebGL 2, and this browser could not start it.</p>
+    </section>
+
+    <script type="module" src="../src/cessna/game.ts"></script>
+  </body>
+</html>

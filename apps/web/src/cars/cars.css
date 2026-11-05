@@ -1,0 +1,81 @@
+:root {
+  --accent: #ff7a2e;
+}
+
+h1 span {
+  color: var(--accent);
+}
+
+.panel-screen {
+  grid-template-columns: minmax(320px, 440px) minmax(0, 290px);
+  gap: 16px;
+  padding: clamp(18px, 4vh, 44px) clamp(20px, 4vw, 60px);
+}
+
+.choices.side {
+  grid-template-columns: 1fr 1fr;
+}
+
+.panel {
+  gap: 9px;
+  padding: 14px;
+}
+
+.choices button {
+  padding: 8px 11px;
+}
+
+.lap-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lap-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.lap-list li span {
+  color: var(--muted);
+}
+
+.lap-list li.fastest b {
+  color: var(--accent);
+}
+
+.switching {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dialog button.primary,
+button.primary {
+  color: #190d04;
+}
+
+/* The controls stay folded by default: the title's best picture is the car behind the menu. */
+details.keys {
+  align-self: start;
+}
+
+details.keys:not([open]) {
+  width: max-content;
+}
+
+details.keys summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+details.keys[open] summary {
+  margin-bottom: 8px;
+}
