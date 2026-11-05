@@ -86,7 +86,7 @@ export class Flight extends Sim<Output> {
   reset(start: Start = this.start, switches: Record<string, number> = {}): void {
     this.start = start;
     const { vt0, h0, alpha0, el0, thtl0, xcg } = start;
-    this.restart({ vt0, h0, alpha0, el0, thtl0, xcg, ...switches }, () => {
+    this.restart({ vt0, h0, alpha0, el0, thtl0, xcg: this.tuning.changed.xcg ?? xcg, ...switches }, () => {
       this.u[3] = thtl0;
     });
     this.crashed = false;

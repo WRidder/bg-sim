@@ -106,7 +106,9 @@ moves, while the 1-D reference uses steady-state slip. After that the two accele
   and regen torque; the battery's state of charge, voltage, current and power; the aero
   `downforce` and `drag` (N).
 * FMU parameters with ranges: the start pose `x0`, `y0`, `z0`, `yaw0` and charge `soc0`
-  (globals whose expressions set the start state), the motor limits and the brake torques.
+  (globals whose expressions set the start state), the motor limits, the brake torques and
+  what sets the handling: traction control slip `kappa_tc`, downforce, drag and aero balance
+  (race car), anti-roll bars, and the limited slip of each driven axle.
 
     uv run examples/export_cars_check.py       # export, references, build, fmpy comparison
 

@@ -22,4 +22,12 @@ Then open http://127.0.0.1:8831/.
 - `node tests/keys.mjs out.png` flies with real key presses against the dev server.
 - `node tests/cessna-keys.mjs`, `tests/a109-keys.mjs` and `tests/cars-keys.mjs` do the same for the other games.
 
+## In the game
+
+- `T` shows and hides the telemetry: gauges, plots, bars and readouts of what the model is doing.
+- `Y` shows and hides the setup: a slider for each parameter the FMU exposes, in the F-16 and the cars. A change counts from the next start or restart (`R`), and is remembered in the browser. Stock puts everything back.
+- Only one of the two is open at a time. `Shift+T` and `Shift+Y` move it to the other side, and the HUD makes room.
+
+The Cessna and the A109 export only start values, so they have no setup until their exports expose parameters.
+
 The design and its reasons are in `plan/WEB_APPS_PLAN.md`.

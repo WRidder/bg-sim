@@ -9,6 +9,9 @@ import { Burst, Trail } from "../engine/effects";
 import { Controls, STANDARD_PAD } from "../engine/input";
 import type { ScreenPoint } from "../engine/overlay";
 import { Stage } from "../engine/stage";
+import { SideBar } from "../engine/side";
+import { Telemetry } from "../engine/telemetry";
+import { Setup } from "../engine/tuning";
 import { $, announce, BestTime, choices, clock } from "../engine/ui";
 import { Island } from "../island/source";
 import { buildGround, GateRings } from "../island/world";
@@ -17,6 +20,7 @@ import { Cockpit, EYE, SEAT_TILT } from "./cockpit";
 import { circuitGates, coastGates, coastStart, DOWNWIND_START, LINE_UP, RUNWAY_START, SHORT_FINAL_START } from "./course";
 import { FieldLights, runwayNumbers } from "./field";
 import { CALM, DATUM, Flight, FRAME, LANDING_HEADING, runwayCoordinates, type Start, surfaceAt, type Touchdown, type Wind } from "./flight";
+import { cessnaPanel } from "./telemetry";
 import { bakeChart, Hud, readings, warnings, type HudView } from "./hud";
 import { type Line, markLanding } from "./landing";
 import { Pilot } from "./pilot";
@@ -124,6 +128,9 @@ async function main(): Promise<void> {
   );
 
   const flight = await Flight.create(ground, RUNWAY_START);
+  const side = new SideBar("cessna", (left, right) => hud.room(left, right));
+  const telemetry = new Telemetry(side, cessnaPanel(flight));
+  new Setup(side).use(flight.tuning, "Setup");
   const { run } = flight;
   const bests: Record<Mode, BestScore | BestTime> = {
     circuit: new BestScore("short-final-circuit"),
@@ -157,6 +164,9 @@ async function main(): Promise<void> {
   }, "circuit");
 
   const show = (next: Phase): void => {
+    if (next === "flying" && phase !== "paused") {
+      telemetry.reset();
+    }
     phase = next;
     $("title").hidden = next !== "title";
     $("pause").hidden = next !== "paused";
@@ -676,6 +686,7 @@ async function main(): Promise<void> {
       cockpit.update(flight, readings(flight), run.next() ? bearing() : null, windText, time);
     }
 
+    telemetry.update(dt, phase === "flying" && !flight.crashed ? "running" : phase === "title" ? "hidden" : "frozen");
     stage.render(position, time);
 
     if (phase === "flying") {
@@ -756,6 +767,8 @@ async function main(): Promise<void> {
   show("title");
   requestAnimationFrame(frame);
   announce({
+    telemetry,
+    side,
     stage,
     flight,
     rig,

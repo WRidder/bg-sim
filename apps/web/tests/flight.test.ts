@@ -7,6 +7,19 @@ import starts from "../src/f16/starts.json";
 const ground = islandHeight;
 
 describe("the flight", () => {
+  it("takes a mass from the setup at the next start, and flies it heavier", async () => {
+    const light = await Flight.create(ground, starts[0] as Start);
+    const heavy = await Flight.create(ground, starts[0] as Start);
+    heavy.tuning.set("mass", 13000);
+    heavy.reset();
+    for (let i = 0; i < 400; i += 1) {
+      light.advance(light.pacer.step);
+      heavy.advance(heavy.pacer.step);
+    }
+    expect(heavy.tuning.pending).toBe(false);
+    expect(heavy.get("alt_m")).toBeLessThan(light.get("alt_m") - 1);
+  });
+
   it("holds a trimmed cruise for a minute", async () => {
     const start = starts[0] as Start;
     const flight = await Flight.create(ground, start);

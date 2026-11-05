@@ -104,7 +104,7 @@ export class Hud extends Overlay {
     const c = this.c;
     const size = 158 * this.scale;
     const m = 14 * this.scale;
-    const x = this.width - size - m;
+    const x = this.width - this.roomRight - size - m;
     const y = this.height - size - m;
     const reach = 7000;
     const perMetre = size / (2 * reach);
@@ -218,9 +218,9 @@ export class Hud extends Overlay {
       this.gateMarker(view.target, view.targetRange);
     }
     if (view.clock) {
-      this.text(view.clock, 22 * scale, 42 * scale, 22, "left", CREAM);
+      this.text(view.clock, this.roomLeft + 22 * scale, 42 * scale, 22, "left", CREAM);
     }
-    this.text(view.wind, 22 * scale, 66 * scale, 13, "left", CREAM);
+    this.text(view.wind, this.roomLeft + 22 * scale, 66 * scale, 13, "left", CREAM);
     if (view.coach) {
       const c2 = this.c;
       c2.font = `600 ${17 * scale}px ${FONT}`;

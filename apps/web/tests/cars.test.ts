@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Line } from "../src/cars/line";
+import { model as racecar } from "../src/cars/racecar.gen";
 import { Pilot } from "../src/cars/pilot";
 import { trackFor, TRACKS } from "../src/cars/tracks";
-import { Vehicle } from "../src/cars/vehicle";
+import { INPUTS, Vehicle } from "../src/cars/vehicle";
+import { Fmu } from "../src/engine/fmu";
+import { Sim } from "../src/engine/sim";
 
 /** Drives until `laps` are done, restarting from a recovery as the game does. */
 async function drive(id: string, laps: number): Promise<{ car: Vehicle; rescued: number }> {
@@ -23,6 +26,74 @@ async function drive(id: string, laps: number): Promise<{ car: Vehicle; rescued:
   }
   return { car, rescued };
 }
+
+/** The race car on the FMU's own flat ground, with no track to hit. */
+class Bench extends Sim<"kmh" | "beta"> {
+  static async create(): Promise<Bench> {
+    return new Bench(await Fmu.load(racecar), INPUTS, ["kmh", "beta"]);
+  }
+
+  start(): void {
+    this.restart({ z0: 0.31 }, () => this.u.fill(1, 5));
+  }
+
+  drive(steer: number, throttle: number, brake = 0): void {
+    this.u[0] = steer;
+    this.u[1] = throttle;
+    this.u[2] = brake;
+    this.advance(this.pacer.step);
+  }
+}
+
+describe("the setup of a car", () => {
+  /** The car turning hard at about 60 km/h, then the accelerator floored: the peak body slip, deg. */
+  async function floored(setup: Record<string, number>): Promise<number> {
+    const car = await Bench.create();
+    for (const [name, value] of Object.entries(setup)) {
+      car.tuning.set(name, value);
+    }
+    car.start();
+    while (car.get("kmh") < 60) {
+      car.drive(0, 0.3);
+    }
+    for (let i = 0; i < 700; i += 1) {
+      const error = 60 - car.get("kmh");
+      car.drive(0.34 * Math.min(1, i / 400), Math.max(0, Math.min(0.45, 0.05 * error + 0.05)), Math.max(0, -0.03 * error));
+    }
+    let peak = 0;
+    for (let i = 0; i < 600; i += 1) {
+      car.drive(0.34, Math.min(1, i / 36));
+      peak = Math.max(peak, Math.abs((car.get("beta") * 180) / Math.PI));
+    }
+    return peak;
+  }
+
+  it("reaches the FMU at the next start, not before", async () => {
+    const car = await Vehicle.create("racecar", trackFor("harbour"));
+    car.place(0);
+    expect(car.get("motor_r_tlim")).toBeCloseTo(300, 3);
+    car.tuning.set("MotorR/T_max", 150);
+    car.advance(car.pacer.step);
+    expect(car.get("motor_r_tlim")).toBeCloseTo(300, 3);
+    car.place(0);
+    expect(car.get("motor_r_tlim")).toBeCloseTo(150, 3);
+  });
+
+  it("cures the spin on the throttle with less traction control slip", async () => {
+    expect(await floored({})).toBeGreaterThan(60);
+    expect(await floored({ "MotorR/kappa_tc": 0.05 })).toBeLessThan(15);
+  }, 60000);
+
+  it("cures it with less torque too", async () => {
+    expect(await floored({ "MotorR/T_max": 200 })).toBeLessThan(15);
+  }, 60000);
+
+  it("gives the buggy its own settings", async () => {
+    const car = await Vehicle.create("buggy", trackFor(TRACKS.find((t) => t.car === "buggy")?.id as string));
+    expect(car.tuning.has("Brakes/Th")).toBe(true);
+    expect(car.tuning.has("Aero/ClA")).toBe(false);
+  });
+});
 
 describe.each(TRACKS.map((t) => [t.id] as const))("the scripted driver on %s", (id) => {
   it("completes a clean lap on the FMU, slower than gold", async () => {

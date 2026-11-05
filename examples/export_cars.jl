@@ -22,16 +22,20 @@ const PROJECT = joinpath(HERE, "cars")
 const STEP = 0.005          # s, the host's communication step (200 Hz)
 const T_END = 3600.0        # s, the default stop time in the modelDescription (the host runs open-ended)
 
-# FMU parameters: the start charge, the motor envelope, the brakes; ranges the host's menus cover.
+# FMU parameters: the start charge, the motor envelope, the brakes, and what sets the handling (the
+# traction control's slip, the aero balance, the anti-roll bars, the limited slip); ranges the hosts' menus cover.
 const TUNABLES = Dict(
     "racecar" => ["global:soc0" => (0.05, 1.0), "global:x0" => (-1000.0, 1000.0), "global:y0" => (-1000.0, 1000.0),
                   "global:z0" => (0.2, 1.0), "global:yaw0" => (-7.0, 7.0), "MotorR/T_max" => (50.0, 400.0), "MotorR/P_max" => (20.0e3, 300.0e3),
                   "MotorR/P_regen" => (0.0, 250.0e3), "Brakes/Tf" => (500.0, 2500.0), "Brakes/Tr" => (300.0, 2000.0),
-                  "Aero/ClA" => (0.0, 4.0)],
+                  "Aero/ClA" => (0.0, 4.0), "Aero/CdA" => (0.6, 1.4), "Aero/front" => (0.25, 0.6),
+                  "MotorR/kappa_tc" => (0.01, 0.3), "ArbF/k" => (0.0, 90000.0), "ArbR/k" => (0.0, 90000.0), "LsdR/d" => (0.0, 400.0)],
     "buggy" => ["global:soc0" => (0.05, 1.0), "global:x0" => (-380.0, 380.0), "global:y0" => (-380.0, 380.0),
                 "global:z0" => (-6.0, 8.0), "global:yaw0" => (-7.0, 7.0), "MotorF/T_max" => (30.0, 200.0), "MotorR/T_max" => (30.0, 200.0),
                 "MotorF/P_max" => (10.0e3, 80.0e3), "MotorR/P_max" => (10.0e3, 80.0e3),
-                "Brakes/Tf" => (500.0, 2500.0), "Brakes/Tr" => (300.0, 2000.0), "Brakes/Th" => (0.0, 2500.0)],
+                "Brakes/Tf" => (500.0, 2500.0), "Brakes/Tr" => (300.0, 2000.0), "Brakes/Th" => (0.0, 2500.0),
+                "MotorF/kappa_tc" => (0.01, 0.3), "MotorR/kappa_tc" => (0.01, 0.3), "ArbF/k" => (0.0, 30000.0),
+                "LsdF/d" => (0.0, 200.0), "LsdR/d" => (0.0, 200.0)],
 )
 
 todict(x::AbstractDict) = Dict{String,Any}(String(k) => todict(v) for (k, v) in pairs(x))
