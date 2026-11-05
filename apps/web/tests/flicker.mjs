@@ -16,8 +16,8 @@ const spots = { coast: [-21000, 3000], shelf: [-16000, 9000], airfield: [-16500,
 for (const [name, [north, east]] of Object.entries(spots)) {
   await page.evaluate(([n, e, v]) => {
     game.begin();
-    game.flight.origin.north = n;
-    game.flight.origin.east = e;
+    game.flight.frame.north = n;
+    game.flight.frame.east = e;
     game.rig.view = v ?? "chase";
     game.rig.snap();
   }, [north, east, view]);
@@ -26,7 +26,7 @@ for (const [name, [north, east]] of Object.entries(spots)) {
   await page.evaluate(() => { document.getElementById("pause").hidden = true; });
   await page.waitForTimeout(700);
   for (let i = 0; i < 4; i += 1) {
-    await page.evaluate((step) => { game.flight.origin.north += step; }, 0.5);
+    await page.evaluate((step) => { game.flight.frame.north += step; }, 0.5);
     await page.waitForTimeout(250);
     await page.screenshot({ path: `${out}/${name}-${i}.png` });
   }

@@ -14,13 +14,16 @@ import { Stage } from "../engine/stage";
 import { SideBar } from "../engine/side";
 import { Telemetry } from "../engine/telemetry";
 import { Setup } from "../engine/tuning";
-import { $, announce, BestTime, choices, clock } from "../engine/ui";
+import { $, announce, BestScore, BestTime, choices, clock } from "../engine/ui";
+import { CALM, lift, surfaceAt } from "../island/airfield";
+import { FieldLights, runwayNumbers } from "../island/field";
+import { type Line, type Marks, markLanding, writeLines } from "../island/landing";
 import { Island } from "../island/source";
 import { buildGround, GateRings, groundShadow } from "../island/world";
 import { buildFighter } from "./aircraft";
 import { flyOrbit, flyTo, type Orbit } from "./autopilot";
 import { buildCockpit } from "./cockpit";
-import { Flight, gateCourse, ORIGIN, type Start } from "./flight";
+import { FINAL_START, Flight, gateCourse, ORIGIN, RUNWAY_START, type Start } from "./flight";
 import { F16_KNOBS, f16Panel } from "./telemetry";
 import { Hud, type HudView, warnings } from "./hud";
 import starts from "./starts.json";
@@ -29,6 +32,10 @@ const q = new URLSearchParams(location.search);
 const DEMO = q.has("demo");
 /** Fast and fairly low, with the first gate straight ahead. */
 const GATE_START = starts[2] as Start;
+const STARTS: readonly Start[] = [...(starts as Start[]), RUNWAY_START, FINAL_START];
+/** What a good landing is in a fast jet: firm, on the mains, with the nose well up. */
+const JET: Marks = { sink: [100, 600], pitch: 9 };
+const BOUND = { Water: "Into the sea.", Terrain: "Into the island." } as Record<string, string | undefined>;
 /** Behind the title: round the island, clockwise, so the land stays on the free side of the menu. */
 const TITLE_ORBIT: Orbit = { north: 6000, east: 1500, radius: 30000, alt: 1500 };
 
@@ -48,7 +55,9 @@ async function main(): Promise<void> {
   $("loading-text").textContent = "Fuelling the aircraft…";
   const { camera, field, near, pipeline, renderer, world } = stage;
   const ground = stage.ground;
-  world.add(buildGround(field, stage.atmosphere.uniforms));
+  world.add(buildGround(field, stage.atmosphere.uniforms), runwayNumbers(stage.atmosphere.uniforms));
+  const lights = new FieldLights(ground);
+  near.add(lights.group);
 
   const fighter = buildFighter();
   const place = new THREE.Group();
@@ -62,7 +71,9 @@ async function main(): Promise<void> {
   near.add(rings.group);
   const trails = [new Trail(), new Trail()];
   const burst = new Burst();
-  near.add(trails[0].mesh, trails[1].mesh, burst.points);
+  // Rubber smoke off each main wheel at the moment of touchdown.
+  const smoke = [new Trail(40, 0.3, new THREE.Color(0.5, 0.5, 0.52)), new Trail(40, 0.3, new THREE.Color(0.5, 0.5, 0.52))];
+  near.add(trails[0].mesh, trails[1].mesh, smoke[0].mesh, smoke[1].mesh, burst.points);
 
   const rig = new Rig(camera, (x, z) => Math.max(ground(-z, x), 0), { eye: new THREE.Vector3(3.15, 0, 1.08), distance: 27, height: 5.5 });
   const hud = new Hud($<HTMLCanvasElement>("hud"));
@@ -84,12 +95,13 @@ async function main(): Promise<void> {
     STANDARD_PAD,
   );
 
-  const flight = await Flight.create(ground, starts[0] as Start);
+  const flight = await Flight.create(ground, STARTS[0]);
   const side = new SideBar("f16", (left, right) => hud.room(left, right));
   const telemetry = new Telemetry(side, f16Panel(flight));
   new Setup(side).use(flight.tuning, "Aircraft setup", F16_KNOBS);
   const { run } = flight;
   const best = new BestTime("island-sortie-best");
+  const bestLanding = new BestScore("island-sortie-landing");
   run.onGate = (gate) => {
     if (phase === "flying") {
       sound.gate(gate.hit);
@@ -103,7 +115,7 @@ async function main(): Promise<void> {
   let phase: Phase = "title";
   let mode: "free" | "gates" = "free";
   const select = $<HTMLSelectElement>("start");
-  for (const [i, start] of starts.entries()) {
+  for (const [i, start] of STARTS.entries()) {
     select.add(new Option(start.label, String(i)));
   }
   $<HTMLSelectElement>("time").value = "afternoon";
@@ -142,13 +154,16 @@ async function main(): Promise<void> {
     burst.clear();
     pipeline.flash = 0;
     trails.forEach((trail) => trail.clear());
+    smoke.forEach((trail) => trail.clear());
     rig.snap();
     crashedAt = -1;
+    wasOnGround = flight.onGround;
+    smokeUntil = -1;
   };
 
   /** A flight from the start, with whatever the menu says. */
   const begin = (): void => {
-    const start = mode === "gates" ? GATE_START : (starts[Number(select.value)] as Start);
+    const start = mode === "gates" ? GATE_START : STARTS[Number(select.value)];
     if (mode === "gates") {
       run.start(gateCourse(ground));
       rings.show(run.gates);
@@ -156,7 +171,7 @@ async function main(): Promise<void> {
       run.stop();
     }
     rings.group.visible = mode === "gates";
-    flight.origin = { ...ORIGIN };
+    flight.frame = { ...ORIGIN, heading: 0 };
     flight.reset(start, switches());
     flight.gusts.intensity = $<HTMLInputElement>("turbulence").checked ? 2.5 : 0;
     controls.setThrottle(start.thtl0);
@@ -168,7 +183,7 @@ async function main(): Promise<void> {
   const attract = (): void => {
     run.stop();
     rings.group.visible = false;
-    flight.origin = { north: TITLE_ORBIT.north, east: TITLE_ORBIT.east - TITLE_ORBIT.radius };
+    flight.frame = { north: TITLE_ORBIT.north, east: TITLE_ORBIT.east - TITLE_ORBIT.radius, heading: 0 };
     flight.reset(GATE_START, {});
     flight.gusts.intensity = 0;
     rig.view = "chase";
@@ -195,7 +210,12 @@ async function main(): Promise<void> {
   $("again").addEventListener("click", begin);
   $("over-quit").addEventListener("click", toMenu);
 
+  const brakeKeys = new Set<string>();
   addEventListener("keydown", (event) => {
+    if (event.code === "KeyB" || event.code === "Space") {
+      brakeKeys.add(event.code);
+      event.preventDefault();
+    }
     if (event.repeat) {
       return;
     }
@@ -205,12 +225,20 @@ async function main(): Promise<void> {
       show("flying");
     } else if ((phase === "flying" || phase === "over") && event.code === "KeyR") {
       begin();
+    } else if (phase === "flying" && event.code === "KeyG") {
+      flight.toggleGear();
     } else if (event.code === "KeyC") {
       rig.view = VIEWS[(VIEWS.indexOf(rig.view) + 1) % VIEWS.length];
       rig.snap();
     } else if (event.code === "KeyM") {
       sound.muted = !sound.muted;
     }
+  });
+  addEventListener("keyup", (event) => {
+    brakeKeys.delete(event.code);
+  });
+  addEventListener("blur", () => {
+    brakeKeys.clear();
   });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && phase === "flying") {
@@ -238,6 +266,8 @@ async function main(): Promise<void> {
   // ---- The frame -----------------------------------------------------------------------------
   const position = new THREE.Vector3();
   const quaternion = new THREE.Quaternion();
+  const frameTurn = new THREE.Quaternion();
+  const up = new THREE.Vector3(0, 1, 0);
   const before = new THREE.Quaternion();
   const after = new THREE.Quaternion();
   const tip = new THREE.Vector3();
@@ -252,6 +282,8 @@ async function main(): Promise<void> {
   let last = performance.now();
   let time = 0;
   let wasCrashed = false;
+  let wasOnGround = false;
+  let smokeUntil = -1;
 
   const screen = (point: THREE.Vector3): ScreenPoint => {
     projected.copy(point).project(camera);
@@ -259,10 +291,18 @@ async function main(): Promise<void> {
     return { x: 0.5 + projected.x * (ahead ? 0.5 : -0.5), y: 0.5 - projected.y * (ahead ? 0.5 : -0.5), ahead };
   };
 
-  const finish = (title: string, text: string): void => {
+  const finish = (title: string, text: string, total = "", lines: Line[] = []): void => {
     $("over-title").textContent = title;
     $("over-text").textContent = text;
+    $("over-score").textContent = total;
+    writeLines($("over-lines"), lines);
     show("over");
+  };
+
+  const finishLanding = (): void => {
+    const sheet = markLanding(flight.touchdowns, flight.stoppedAt, 0, flight.scraped, JET);
+    const record = bestLanding.offer(sheet.total);
+    finish(sheet.verdict, record ? "A new best." : `Best ${bestLanding.get()}.`, String(sheet.total), sheet.lines);
   };
 
   const frame = (now: number): void => {
@@ -283,6 +323,7 @@ async function main(): Promise<void> {
       controls.update(dt);
       const v = controls.value;
       flight.setControls(v.pitch, v.roll, v.yaw, v.throttle);
+      flight.setBrakes(brakeKeys.size > 0 ? 1 : 0);
     }
     if (phase !== "paused") {
       time += dt;
@@ -290,12 +331,11 @@ async function main(): Promise<void> {
     }
 
     const i = flight.previous;
-    const north = flight.between("north_m") + flight.north() - flight.get("north_m");
-    const east = flight.between("east_m") + flight.east() - flight.get("east_m");
-    position.set(east, flight.between("alt_m"), -north);
+    const [north, east] = flight.at(flight.between("north_m"), flight.between("east_m"));
+    position.set(east, flight.between("alt_m") + lift(north, east), -north);
     attitude(i[3], i[4], i[5], i[6], before);
     attitude(flight.get("q_w"), flight.get("q_x"), flight.get("q_y"), flight.get("q_z"), after);
-    quaternion.copy(before).slerp(after, flight.pacer.fraction);
+    quaternion.copy(before).slerp(after, flight.pacer.fraction).premultiply(frameTurn.setFromAxisAngle(up, -flight.frame.heading * degrees));
 
     place.position.copy(position);
     place.quaternion.copy(quaternion);
@@ -303,6 +343,7 @@ async function main(): Promise<void> {
     fighter.flapLeft.quaternion.setFromAxisAngle(flapLeftAxis, flight.between("ail_deg") * degrees);
     fighter.flapRight.quaternion.setFromAxisAngle(flapRightAxis, -flight.between("ail_deg") * degrees);
     fighter.rudder.quaternion.setFromAxisAngle(rudderAxis, -flight.between("rdr_deg") * degrees);
+    fighter.gear.pose(flight.between("gear_pos"), flight.between("steer_rad"), flight.between("fn_nose"), flight.between("fn_left"), flight.between("fn_right"));
     const power = flight.between("power_pct");
     const burner = Math.max(0, (power - 50) / 50);
     fighter.flame.visible = burner > 0.01 && !flight.crashed;
@@ -312,7 +353,7 @@ async function main(): Promise<void> {
     cockpit.visible = rig.view === "cockpit" && !flight.crashed;
     (fighter.burnerGlow.material as THREE.MeshBasicMaterial).color.setRGB(0.5 + 4 * burner + power * 0.012, 0.22 + 2 * burner, 0.08 + burner);
 
-    const height = position.y - Math.max(ground(north, east), 0);
+    const height = position.y - flight.floor(north, east);
     const sunDir = stage.atmosphere.uniforms.uSunDir.value;
     shadow.visible = height < 900 && height > 0 && !flight.crashed;
     if (shadow.visible) {
@@ -320,8 +361,9 @@ async function main(): Promise<void> {
       const slide = height / Math.max(sunDir.y, 0.2);
       const n = north + sunDir.z * slide;
       const e = east - sunDir.x * slide;
-      shadow.position.set(e, Math.max(ground(n, e), 0) + 2.5, -n);
-      shadow.rotation.y = -flight.get("psi_deg") * degrees;
+      const under = surfaceAt(n, e);
+      shadow.position.set(e, flight.floor(n, e) + (under === "runway" || under === "paved" ? 0.12 : 2.5), -n);
+      shadow.rotation.y = -flight.heading() * degrees;
       shadow.scale.setScalar(14);
       (shadow.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - height / 900);
     }
@@ -331,6 +373,19 @@ async function main(): Promise<void> {
     trails.forEach((trail, side) => {
       tip.set(-2.3, side === 0 ? 4.7 : -4.7, 0.05).applyQuaternion(quaternion).add(position);
       trail.add(tip, flight.crashed ? 0 : load);
+    });
+
+    if (flight.onGround && !wasOnGround && phase !== "paused") {
+      const touchdown = flight.touchdowns[flight.touchdowns.length - 1];
+      if (touchdown) {
+        rig.kick(0.4 + Math.min(touchdown.sink / 300, 1.2));
+        smokeUntil = time + 0.6;
+      }
+    }
+    wasOnGround = flight.onGround;
+    smoke.forEach((trail, side) => {
+      tip.set(-0.785, side === 0 ? 1.219 : -1.219, -1.6).applyQuaternion(quaternion).add(position);
+      trail.add(tip, time < smokeUntil ? 1.2 : 0);
     });
 
     if (flight.crashed && !wasCrashed) {
@@ -348,9 +403,10 @@ async function main(): Promise<void> {
       rig.update(dt, position, quaternion, flight.get("tas_mps"), buffet, time);
     }
     stage.shiftView(phase === "title" && innerWidth > 760);
-    for (const trail of trails) {
+    for (const trail of [...trails, ...smoke]) {
       trail.update(camera.position);
     }
+    lights.update(camera.position, CALM, time);
     burst.update(dt, renderer.domElement.height);
     rings.update(run.gates, time);
 
@@ -385,7 +441,9 @@ async function main(): Promise<void> {
       }
       if (flight.crashed && time - crashedAt > 1.8) {
         const stops = run.active ? " The run stops here." : "";
-        finish("Crashed", `${flight.crashReason === "Water" ? "Into the sea." : "Into the island."}${stops}`);
+        finish("Crashed", `${BOUND[flight.crashReason] ?? `${flight.crashReason}.`}${stops}`);
+      } else if (flight.landing === "stopped" && !run.active) {
+        finishLanding();
       } else if (run.done !== null) {
         const score = run.score();
         const missed = run.missed();

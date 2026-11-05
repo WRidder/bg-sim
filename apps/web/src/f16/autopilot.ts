@@ -20,8 +20,8 @@ export interface Waypoint {
 export function flyTo(flight: Flight, target: Waypoint, speed: number, ground: (north: number, east: number) => number): void {
   const north = flight.north();
   const east = flight.east();
-  const alt = flight.get("alt_m");
-  const psi = flight.get("psi_deg") / DEG;
+  const alt = flight.altitude();
+  const psi = flight.heading() / DEG;
   const range = Math.hypot(target.north - north, target.east - east);
   // Aim short of the target on its centre line, so the aircraft arrives going the right way.
   const lead = Math.min(range * 0.42, 1400);
@@ -71,7 +71,7 @@ export function flyOrbit(flight: Flight, orbit: Orbit, speed: number, ground: (n
   const east = flight.east();
   const dn = north - orbit.north;
   const de = east - orbit.east;
-  const psi = flight.get("psi_deg") / DEG;
+  const psi = flight.heading() / DEG;
   const tas = flight.get("tas_mps");
   // Along the tangent, leaning in or out by how far off the circle the aircraft is.
   const drift = clamp((Math.hypot(dn, de) - orbit.radius) / 9000, -0.3, 0.3);
@@ -85,7 +85,7 @@ export function flyOrbit(flight: Flight, orbit: Orbit, speed: number, ground: (n
     floor = Math.max(floor, ground(north + tas * seconds * Math.cos(psi), east + tas * seconds * Math.sin(psi)));
   }
   const wantAlt = Math.max(orbit.alt, floor + 350);
-  const wantGamma = clamp((wantAlt - flight.get("alt_m")) * 0.012, -3, 5);
+  const wantGamma = clamp((wantAlt - flight.altitude()) * 0.012, -3, 5);
   const roll = (wantRoll - flight.get("phi_deg")) * 0.012;
   flight.setControls(pitchFor(flight, wantGamma, 0.12, 1.6), roll, 0, throttleFor(flight, speed));
 }

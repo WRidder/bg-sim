@@ -62,7 +62,7 @@ describe("the title screen's flight", () => {
   it("is a calm orbit: shallow banks, no rocking, clear of the ground", async () => {
     const orbit = { north: 6000, east: 1500, radius: 30000, alt: 1500 };
     const flight = await Flight.create(ground, starts[2] as Start);
-    flight.origin = { north: orbit.north, east: orbit.east - orbit.radius };
+    flight.frame = { north: orbit.north, east: orbit.east - orbit.radius, heading: 0 };
     flight.reset();
     let bank = 0;
     let rate = 0;

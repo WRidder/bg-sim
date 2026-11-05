@@ -16,6 +16,9 @@ The FMU-based desktop apps (`apps/f16-sim`, `cessna-sim`, `a109-sim`, `car-sim`)
 | W8 | Telemetry and the setup are side windows in the engine (`side.ts`), described by each game as data | One window at a time on one side, with the keys, the memory and the room on the HUD in one place, so a new game writes a list and no drawing. |
 | W9 | What can be set is what the FMU declares | `build_wasm.py` carries each parameter's start, range, unit and description into `model.gen.ts`, every `Sim` has a `Tuning`, and `Sim.restart` passes it on. The game's own values win over it. A game needs no code to get the feature, only labels to get it nicely. |
 | W10 | A change counts from the next start, and the window says so | FMU parameters are `fixed`: settable before initialisation only (D-EX10), so a slider cannot move a running model. The FMU refuses a value out of range, so `Tuning` holds values to the range and drops a stored value that no longer fits. |
+| W11 | The airfield is shared, in `src/island/` | The F-16 and the Cessna land on one runway. The code for it (`airfield.ts`, `field.ts`, `landing.ts`) moved out of the Cessna, because importing it from there would pull the Cessna's model into the F-16's bundle. `markLanding` takes the aeroplane's own `Marks`. |
+| W12 | The F-16's `Frame` turns the FMU's north down the runway, and `lift` lays its plane on the runway | The FMU has no heading parameter and starts north at z = 0, and that plane has to be the sea at sea and the runway at the runway. `lift` is the height of the runway on the airfield and eases to 0 over 3 km, so the sea stays exact wherever the aircraft can reach it. |
+| W13 | The FMU flies, the game judges | The FMU gives wheels and a flat plane. Whether a surface is there, whether a wing touched and whether the gear folded (320 kN a main leg, about 6 m/s of sink) is decided in `flight.ts` from the height of the airframe's points, as in the Cessna. |
 
 ## Layout
 
@@ -89,7 +92,7 @@ Port 8831 is the dev server the scripts expect (`GAMES_PORT` overrides it). Neve
 
 ## Not done
 
-- No landing on the F-16: its FMU now has a gear (`examples/f16/README.md`), but the game does not use it yet, so touching the ground is a crash.
+- On the F-16: no flaps, ground effect or anti-skid in the model, gear limits and steering assumed (`examples/f16/README.md`), and no gamepad button for the brakes.
 - Touch controls.
 - Device mapping beyond the standard gamepad layout: the desktop apps' per-device configuration did not carry over.
 - Setup for the Cessna and the A109: their exports have start values only. Mass and the like need new tunables, and the start states are trimmed for one mass.

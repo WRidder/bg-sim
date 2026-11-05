@@ -213,6 +213,131 @@ function strake(side: 1 | -1): THREE.BufferGeometry {
   }, 12, 14);
 }
 
+/** Where each tyre meets the ground with its leg at full stretch, and the legs' springs: gear.json. */
+const NOSE_CONTACT = [2.797, 0, -1.699] as const;
+const MAIN_CONTACT = [-0.785, 1.219, -1.689] as const;
+const NOSE_SPRING = 251745;
+const MAIN_SPRING = 547271;
+const NOSE_TYRE = 0.24;
+const MAIN_TYRE = 0.35;
+/** The angle each leg folds through: the nose leg aft, the main legs forward. */
+const NOSE_FOLD = 1.5;
+const MAIN_FOLD = -1.45;
+/** How far a leg can slide, whatever the load says. */
+const STROKE = 0.4;
+
+export interface FighterGear {
+  group: THREE.Group;
+  /** Down is 1 and up 0; steering in radians, right positive; wheel loads in newtons. */
+  pose(down: number, steer: number, nose: number, left: number, right: number): void;
+}
+
+/** A cylinder hanging from z = 0 down the -z axis. */
+function hanging(radius: number, length: number, from = 0): THREE.BufferGeometry {
+  return new THREE.CylinderGeometry(radius, radius, length, 12).rotateX(Math.PI / 2).translate(0, 0, -from - length / 2);
+}
+
+function buildGear(): FighterGear {
+  const group = new THREE.Group();
+  const strut = new THREE.MeshStandardMaterial({ color: 0xc9cdd0, roughness: 0.5, metalness: 0.3 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xe8ecef, roughness: 0.18, metalness: 0.95 });
+  const rubber = new THREE.MeshStandardMaterial({ color: 0x17181a, roughness: 0.9 });
+  const hub = new THREE.MeshStandardMaterial({ color: 0xa4a9ad, roughness: 0.45, metalness: 0.5 });
+  const mesh = (geometry: THREE.BufferGeometry, material: THREE.Material, parent: THREE.Object3D): THREE.Mesh => {
+    const part = new THREE.Mesh(geometry, material);
+    parent.add(part);
+    return part;
+  };
+  const wheel = (radius: number, width: number, parent: THREE.Object3D): void => {
+    mesh(new THREE.CylinderGeometry(radius, radius, width, 28), rubber, parent);
+    mesh(new THREE.CylinderGeometry(radius * 0.56, radius * 0.56, width + 0.02, 18), hub, parent);
+  };
+
+  /** A leg from a hinge in the belly to the axle: the fixed cylinder, and the part that slides. */
+  const leg = (hinge: readonly number[], axle: readonly number[]): { fold: THREE.Group; slide: THREE.Group; length: number; upright: THREE.Quaternion } => {
+    const fold = new THREE.Group();
+    fold.position.set(hinge[0], hinge[1], hinge[2]);
+    group.add(fold);
+    const line = new THREE.Vector3(axle[0] - hinge[0], axle[1] - hinge[1], axle[2] - hinge[2]);
+    const length = line.length();
+    const tilt = new THREE.Group();
+    tilt.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), line.normalize());
+    fold.add(tilt);
+    mesh(hanging(0.075, length * 0.62), strut, tilt);
+    const slide = new THREE.Group();
+    tilt.add(slide);
+    mesh(hanging(0.048, length * 0.62, length * 0.38), chrome, slide);
+    return { fold, slide, length, upright: tilt.quaternion.clone().invert() };
+  };
+
+  const nose = leg([2.92, 0, -0.86], [NOSE_CONTACT[0], 0, NOSE_CONTACT[2] + NOSE_TYRE * 2 + 0.05]);
+  const steering = new THREE.Group();
+  steering.position.z = -nose.length;
+  steering.quaternion.copy(nose.upright);
+  nose.slide.add(steering);
+  // The fork: a crown and two arms down to the axle.
+  mesh(new THREE.BoxGeometry(0.1, 0.2, 0.04), strut, steering);
+  for (const y of [0.085, -0.085]) {
+    mesh(new THREE.BoxGeometry(0.05, 0.022, NOSE_TYRE + 0.05).translate(0, y, -(NOSE_TYRE + 0.05) / 2), strut, steering);
+  }
+  const noseAxle = new THREE.Group();
+  noseAxle.position.z = -NOSE_TYRE - 0.05;
+  steering.add(noseAxle);
+  wheel(NOSE_TYRE, 0.13, noseAxle);
+
+  const mains = ([1, -1] as const).map((side) => {
+    const main = leg([-0.56, side * 0.98, -0.62], [MAIN_CONTACT[0], side * (MAIN_CONTACT[1] - 0.18), MAIN_CONTACT[2] + MAIN_TYRE]);
+    const axle = new THREE.Group();
+    axle.position.z = -main.length;
+    axle.quaternion.copy(main.upright);
+    main.slide.add(axle);
+    mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.2, 10).translate(0, side * 0.09, 0), chrome, axle);
+    const tyre = new THREE.Group();
+    tyre.position.y = side * 0.18;
+    axle.add(tyre);
+    wheel(MAIN_TYRE, 0.21, tyre);
+    return main;
+  });
+
+  /** A door on the belly: hanging when open, folded flat against it when shut. */
+  const door = (x: number, y: number, z: number, length: number, depth: number, shut: number): ((open: number) => void) => {
+    const hinge = new THREE.Group();
+    hinge.position.set(x, y, z);
+    group.add(hinge);
+    mesh(new THREE.BoxGeometry(length, 0.02, depth).translate(0, 0, -depth / 2), strut, hinge);
+    return (open) => {
+      hinge.rotation.x = shut * (1 - open) * (Math.PI / 2);
+    };
+  };
+  const doors = [
+    door(2.45, 0.2, -0.9, 0.95, 0.3, -1),
+    door(-0.72, 1.03, -0.72, 1.05, 0.3, -1),
+    door(-0.72, -1.03, -0.72, 1.05, 0.3, 1),
+  ];
+
+  return {
+    group,
+    pose(down, steer, noseLoad, left, right) {
+      group.visible = down > 0.02;
+      if (!group.visible) {
+        return;
+      }
+      nose.fold.rotation.y = NOSE_FOLD * (1 - down);
+      mains[0].fold.rotation.y = MAIN_FOLD * (1 - down);
+      mains[1].fold.rotation.y = MAIN_FOLD * (1 - down);
+      nose.slide.position.z = Math.min(noseLoad / NOSE_SPRING, STROKE);
+      mains[0].slide.position.z = Math.min(left / MAIN_SPRING, STROKE);
+      mains[1].slide.position.z = Math.min(right / MAIN_SPRING, STROKE);
+      steering.quaternion.copy(nose.upright).multiply(turn.setFromAxisAngle(up, -steer));
+      const open = Math.min(down / 0.2, 1);
+      doors.forEach((move) => move(open));
+    },
+  };
+}
+
+const turn = new THREE.Quaternion();
+const up = new THREE.Vector3(0, 0, 1);
+
 export interface FighterParts {
   root: THREE.Group;
   stabilators: THREE.Group;
@@ -223,6 +348,7 @@ export interface FighterParts {
   flame: THREE.Mesh;
   flameTime: { value: number };
   flamePower: { value: number };
+  gear: FighterGear;
 }
 
 const PAINT = /* glsl */ `
@@ -321,6 +447,7 @@ void main() {
 `;
 
 export function buildFighter(): FighterParts {
+  const gear = buildGear();
   const paint = paintMaterial();
   const root = new THREE.Group();
 
@@ -567,5 +694,6 @@ export function buildFighter(): FighterParts {
     vertical: true,
   }, 10, 12));
 
-  return { root, stabilators, flapLeft, flapRight, rudder, burnerGlow, flame, flameTime, flamePower };
+  root.add(gear.group);
+  return { root, stabilators, flapLeft, flapRight, rudder, burnerGlow, flame, flameTime, flamePower, gear };
 }

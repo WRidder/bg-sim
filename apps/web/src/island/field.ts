@@ -6,8 +6,8 @@
 
 import * as THREE from "three";
 import { type AtmosphereUniforms, withAerial } from "../engine/atmosphere";
-import { AIRFIELD } from "../island/island";
-import { AIM_POINT, DATUM, LANDING_HEADING, THRESHOLD, type Wind } from "./flight";
+import { AIM_POINT, DATUM, LANDING_HEADING, THRESHOLD, type Wind } from "./airfield";
+import { AIRFIELD } from "./island";
 
 const DEG = Math.PI / 180;
 const HN = Math.cos(LANDING_HEADING * DEG);

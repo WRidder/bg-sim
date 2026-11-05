@@ -12,17 +12,17 @@ import { Stage } from "../engine/stage";
 import { SideBar } from "../engine/side";
 import { Telemetry } from "../engine/telemetry";
 import { Setup } from "../engine/tuning";
-import { $, announce, BestTime, choices, clock } from "../engine/ui";
+import { $, announce, BestScore, BestTime, choices, clock } from "../engine/ui";
+import { FieldLights, runwayNumbers } from "../island/field";
+import { type Line, markLanding, writeLines } from "../island/landing";
 import { Island } from "../island/source";
 import { buildGround, GateRings } from "../island/world";
 import { aeroplaneShadow, buildAeroplane } from "./aircraft";
 import { Cockpit, EYE, SEAT_TILT } from "./cockpit";
 import { circuitGates, coastGates, coastStart, DOWNWIND_START, LINE_UP, RUNWAY_START, SHORT_FINAL_START } from "./course";
-import { FieldLights, runwayNumbers } from "./field";
 import { CALM, DATUM, Flight, FRAME, LANDING_HEADING, runwayCoordinates, type Start, surfaceAt, type Touchdown, type Wind } from "./flight";
 import { cessnaPanel } from "./telemetry";
 import { bakeChart, Hud, readings, warnings, type HudView } from "./hud";
-import { type Line, markLanding } from "./landing";
 import { Pilot } from "./pilot";
 import { PistonVoice } from "./voice";
 import starts from "./starts.json";
@@ -46,21 +46,6 @@ const WINDS: Record<string, Wind> = {
 
 /** The stick feels soft round the middle and firm at the end: a key press is a nudge, not a jab. */
 const soften = (v: number): number => v * (0.38 + 0.62 * v * v);
-
-/** Best is the highest score, not the lowest time, so it is kept upside down in a BestTime. */
-class BestScore {
-  private readonly store: BestTime;
-  constructor(key: string) {
-    this.store = new BestTime(key);
-  }
-  get(): number | null {
-    const value = this.store.get();
-    return value === null ? null : 1000 - value;
-  }
-  offer(score: number): boolean {
-    return this.store.offer(1000 - score);
-  }
-}
 
 async function main(): Promise<void> {
   const stage = await Stage.create({
@@ -426,15 +411,7 @@ async function main(): Promise<void> {
     $("over-title").textContent = title;
     $("over-text").textContent = text;
     $("over-score").textContent = total;
-    const table = $("over-lines");
-    table.textContent = "";
-    for (const line of lines) {
-      const row = document.createElement("div");
-      row.className = "line";
-      const bar = line.of > 0 ? `<i style="width:${Math.round((100 * line.points) / line.of)}%"></i>` : "";
-      row.innerHTML = `<span>${line.label}</span><small>${line.detail}</small><b>${line.points > 0 && line.of === 0 ? "+" : ""}${line.points}${line.of > 0 ? ` / ${line.of}` : ""}</b><u>${bar}</u>`;
-      table.append(row);
-    }
+    writeLines($("over-lines"), lines);
     show("over");
   };
 

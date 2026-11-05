@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { circuitGates, coastGates, coastStart, DOWNWIND_START, LINE_UP, RUNWAY_START, SHORT_FINAL_START } from "../src/cessna/course";
 import { DATUM, Flight, runwayCoordinates, type Start, surfaceAt, type Touchdown } from "../src/cessna/flight";
-import { markLanding, verdict } from "../src/cessna/landing";
+import { markLanding, verdict } from "../src/island/landing";
 import { Pilot } from "../src/cessna/pilot";
 import starts from "../src/cessna/starts.json";
 import { AIRFIELD, islandHeight } from "../src/island/island";

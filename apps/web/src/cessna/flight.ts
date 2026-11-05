@@ -14,8 +14,14 @@ import { Fmu } from "../engine/fmu";
 import { type Gate, GateRun } from "../engine/gates";
 import { Gusts } from "../engine/gusts";
 import { Sim } from "../engine/sim";
-import { AIRFIELD } from "../island/island";
+import {
+  AIM_POINT, CALM, DATUM, LANDING_HEADING, type LandingState, runwayCoordinates, type Surface, surfaceAt, THRESHOLD, type Touchdown, type Wind,
+} from "../island/airfield";
 import { model } from "./model.gen";
+
+export {
+  AIM_POINT, CALM, DATUM, LANDING_HEADING, type LandingState, runwayCoordinates, type Surface, surfaceAt, THRESHOLD, type Touchdown, type Wind,
+} from "../island/airfield";
 
 export const INPUTS = [
   "yoke_pitch", "yoke_roll", "pedals", "throttle", "mixture", "flaps", "trim", "brake_l", "brake_r",
@@ -48,24 +54,12 @@ const MASS = 1088.62;
 /** On one wheel, this much and the gear folds. */
 const GEAR_LIMIT = 3.5 * MASS * G0;
 
-/** The runway surface above the sea: the height of the FMU's z = 0 on the island. */
-export const DATUM = AIRFIELD.elevation + 1.2;
-/** The runway's heading in the direction the game lands on it: in from the sea. */
-export const LANDING_HEADING = AIRFIELD.heading + 180;
-/** The aiming point: the first pair of bars painted on the runway, from the threshold. */
-export const AIM_POINT = 330;
 /** Where the desktop's trims put their aiming point, in the FMU's x. */
 const TRIM_AIM = 120;
 
-const heading = (LANDING_HEADING * DEG);
+const heading = LANDING_HEADING * DEG;
 const HN = Math.cos(heading);
 const HE = Math.sin(heading);
-
-/** Runway 25's threshold on the island. */
-export const THRESHOLD = {
-  north: AIRFIELD.north - (AIRFIELD.length / 2) * HN,
-  east: AIRFIELD.east - (AIRFIELD.length / 2) * HE,
-};
 
 /** The FMU's origin on the island, and the compass heading of its x axis. */
 export const FRAME = {
@@ -83,37 +77,6 @@ export interface Start {
   airborne: boolean;
 }
 
-/** A surface the FMU's plane may stand for. */
-export type Surface = "runway" | "paved" | "grass" | "none";
-
-/** Along the runway from its threshold, and across it to the right of the landing direction. */
-export function runwayCoordinates(north: number, east: number): { along: number; across: number } {
-  const dn = north - THRESHOLD.north;
-  const de = east - THRESHOLD.east;
-  return { along: dn * HN + de * HE, across: -dn * HE + de * HN };
-}
-
-export function surfaceAt(north: number, east: number): Surface {
-  const { along, across } = runwayCoordinates(north, east);
-  if (along >= 0 && along <= AIRFIELD.length && Math.abs(across) <= AIRFIELD.width / 2) {
-    return "runway";
-  }
-  if (along >= -120 && along <= AIRFIELD.length + 120 && Math.abs(across) <= 30) {
-    return "paved";
-  }
-  // The island's flat block round the runway: see airfieldMask in island.ts. Its apron and hangars
-  // are on the side of `across` that is positive here, because the runway's own heading is the
-  // other way. Past the apron stand the hangars, and those are not to be taxied through.
-  const middle = Math.abs(along - AIRFIELD.length / 2);
-  if ((middle <= 450 && across >= 130 && across <= 425) || (middle <= 750 && Math.abs(across - 150) <= 12)) {
-    return "paved";
-  }
-  if (along >= -300 && along <= AIRFIELD.length + 300 && across >= -240 && across <= 425) {
-    return "grass";
-  }
-  return "none";
-}
-
 /** Airframe points that must stay off the ground, from the CG: x forward, y left, z up. */
 const STRIKE: Record<string, readonly [number, number, number]> = {
   "left wing": [0.061, 5.456, 0.607],
@@ -121,34 +84,6 @@ const STRIKE: Record<string, readonly [number, number, number]> = {
   tail: [-3.617, 0, -0.699],
   propeller: [2.116, 0, -1.178],
 };
-
-export interface Touchdown {
-  /** Feet a minute, positive down. */
-  sink: number;
-  kias: number;
-  /** Past the threshold, and right of the centre line. */
-  along: number;
-  across: number;
-  pitch: number;
-  bank: number;
-  surface: Surface;
-  /** The nose wheel was on before the main wheels. */
-  noseFirst: boolean;
-  bounce: boolean;
-}
-
-export type LandingState = "air" | "rolling" | "stopped";
-
-/** The steady wind on the runway, with the part that dies away near the ground. */
-export interface Wind {
-  /** Metres a second on the nose of a landing. */
-  head: number;
-  /** Metres a second from the right of a landing. */
-  cross: number;
-  gusts: number;
-}
-
-export const CALM: Wind = { head: 0, cross: 0, gusts: 0 };
 
 export class Flight extends Sim<Output> {
   readonly gusts = new Gusts(150);
