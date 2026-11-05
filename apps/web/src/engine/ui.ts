@@ -34,6 +34,21 @@ export class BestTime {
   }
 }
 
+/** Best is the highest score, not the lowest time, so it is kept upside down in a BestTime. */
+export class BestScore {
+  private readonly store: BestTime;
+  constructor(key: string) {
+    this.store = new BestTime(key);
+  }
+  get(): number | null {
+    const value = this.store.get();
+    return value === null ? null : 1000 - value;
+  }
+  offer(score: number): boolean {
+    return this.store.offer(1000 - score);
+  }
+}
+
 /** Radio buttons made of big buttons with a heading and a line of text. */
 export function choices<V extends string>(group: HTMLElement, onChange: (value: V) => void, initial: V): (value: V) => void {
   const pick = (value: V): void => {

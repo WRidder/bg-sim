@@ -25,13 +25,21 @@ export function warnings(f: Flight): string[] {
   if (f.get("departed") > 0.5) {
     found.push("DEPARTED");
   }
+  if (f.onGround) {
+    return found;
+  }
   const agl = f.altitudeAboveGround();
   const sink = -f.get("vs_mps");
-  if (agl < 600 && sink > 1 && agl / sink < 8) {
+  // With the gear down the ground is where the pilot means to go, and only a dive is a warning.
+  if (agl < 600 && sink > (f.gearDown ? 7 : 1) && agl / sink < 8) {
     found.push("PULL UP");
   }
-  if (f.get("alpha_deg") > 22 || f.get("cas_mps") * MPS_TO_KT < 130) {
+  const cas = f.get("cas_mps") * MPS_TO_KT;
+  if (f.get("alpha_deg") > 22 || cas < (f.gearDown ? 115 : 130)) {
     found.push("STALL");
+  }
+  if (!f.gearDown && agl < 150 && sink > 1 && cas < 200) {
+    found.push("GEAR UP");
   }
   if (f.get("limiter_active") > 0.5) {
     found.push(f.get("alpha_deg") > 20 ? "ALPHA LIMIT" : "G LIMIT");
@@ -108,7 +116,7 @@ export class Hud extends Overlay {
       this.flightPath(view.velocityOnScreen.x * width, view.velocityOnScreen.y * height);
       c.globalAlpha = 1;
     }
-    const heading = ((f.get("psi_deg") % 360) + 360) % 360;
+    const heading = f.heading();
     const gate = f.run.next();
     let bearing: number | null = null;
     let distance = 0;
@@ -116,12 +124,12 @@ export class Hud extends Overlay {
       const dn = gate.north - f.north();
       const de = gate.east - f.east();
       bearing = (Math.atan2(de, dn) * 180) / Math.PI;
-      distance = Math.hypot(dn, de, gate.alt - f.get("alt_m"));
+      distance = Math.hypot(dn, de, gate.alt - f.altitude());
     }
     this.headingTape(view.cockpit ? middle - 250 * scale : 44 * scale, heading, wide, bearing);
 
     const speed = f.get("cas_mps") * MPS_TO_KT;
-    const altitude = f.get("alt_m") * M_TO_FT;
+    const altitude = f.altitude() * M_TO_FT;
     this.tape(left, middle, tall, speed, 10, 50, -1, (v) => String(Math.round(v)));
     this.tape(right, middle, tall, altitude, 100, 500, 1, (v) => (v / 1000).toFixed(1));
     this.box(String(Math.round(speed)), left + 4 * scale, middle, "right");
@@ -155,14 +163,23 @@ export class Hud extends Overlay {
     this.text(power > 50 ? "AB" : "MIL", bx + 22 * scale, by - bar * 0.77 + 5 * scale, 12, "left", power > 50 ? AMBER : GREEN);
     this.text(`${Math.round(power)}%`, bx + 22 * scale, by, 14);
 
+    // The gear, in green when it is down and locked, and the brakes while they are held.
+    const gear = f.get("gear_pos");
+    if (gear > 0.001 || f.gearDown) {
+      this.text(gear > 0.999 ? "GEAR DOWN" : "GEAR", bx, by - bar - 30 * scale, 12, "left", gear > 0.999 ? GREEN : AMBER);
+    }
+    if (f.braking) {
+      this.text("BRAKES", bx, by - bar - 48 * scale, 12, "left", AMBER);
+    }
+
     if (gate) {
       this.gateMarker(view.gateOnScreen, distance);
     }
     if (f.run.active) {
       this.gateClock(f.run.time, f.run.gates.filter((g) => g.passed).length, f.run.gates.length, f.run.missed());
     }
-    this.minimap(f.north(), f.east(), f.get("psi_deg"), gate, outline, 96000);
-    this.warningList(warnings(f), ["PULL UP", "DEPARTED"], time);
+    this.minimap(f.north(), f.east(), f.heading(), gate, outline, 96000);
+    this.warningList(warnings(f), ["PULL UP", "DEPARTED", "GEAR UP"], time);
     this.end();
   }
 }

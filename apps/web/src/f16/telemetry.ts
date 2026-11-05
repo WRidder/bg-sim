@@ -63,6 +63,16 @@ export function f16Panel(f: Flight): Panel {
           { kind: "bar", label: "Rudder", unit: "°", get: () => f.get("rdr_deg"), min: -30, max: 30, digits: 1 },
         ],
       },
+      {
+        title: "Gear",
+        items: [
+          { kind: "bar", label: "Position", unit: "%", get: () => f.get("gear_pos") * 100, min: 0, max: 100, digits: 0 },
+          {
+            kind: "corners", label: "Wheel loads", unit: "kN", min: 0, max: 80, digits: 0,
+            get: [() => f.get("fn_nose") / 1000, () => f.get("fn_left") / 1000, () => f.get("fn_right") / 1000],
+          },
+        ],
+      },
     ],
   };
 }

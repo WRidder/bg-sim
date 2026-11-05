@@ -28,6 +28,8 @@ Then open http://127.0.0.1:8831/.
 - `Y` shows and hides the setup: a slider for each parameter the FMU exposes, in the F-16 and the cars. A change counts from the next start or restart (`R`), and is remembered in the browser. Stock puts everything back.
 - Only one of the two is open at a time. `Shift+T` and `Shift+Y` move it to the other side, and the HUD makes room.
 
+In the F-16, `G` works the gear and `B` or `Space` holds the brakes. Start on the runway or on final from the Start list, or come back from anywhere: a landing that stops on the airfield gets a marked sheet. Anywhere else, the ground is still a crash, and so is the runway with the gear up.
+
 The Cessna and the A109 export only start values, so they have no setup until their exports expose parameters.
 
 The design and its reasons are in `plan/WEB_APPS_PLAN.md`.

@@ -25,7 +25,7 @@
         <div class="choices" id="mode" role="radiogroup" aria-label="Mode">
           <button data-value="free" role="radio">
             <strong>Free flight</strong>
-            <span>Start out at sea and go wherever you like.</span>
+            <span>Out at sea, on the runway or on final: go wherever you like, and land if you can.</span>
           </button>
           <button data-value="gates" role="radio">
             <strong>Gate run</strong>
@@ -63,6 +63,8 @@
           <dt>← → or A D</dt><dd>Roll</dd>
           <dt>Q E</dt><dd>Rudder</dd>
           <dt>PgUp PgDn or + −</dt><dd>Throttle</dd>
+          <dt>G</dt><dd>Gear up, down</dd>
+          <dt>B or Space</dt><dd>Brakes, while held</dd>
           <dt>C</dt><dd>Chase, cockpit, flyby</dd>
           <dt>Mouse drag, wheel</dt><dd>Look round, zoom</dd>
           <dt>R</dt><dd>Restart</dd>
@@ -82,9 +84,11 @@
       <button id="quit">Back to the menu</button>
     </section>
 
-    <section id="over" class="screen dialog" hidden>
+    <section id="over" class="screen dialog sheet" hidden>
+      <p id="over-score" class="score"></p>
       <h2 id="over-title"></h2>
       <p id="over-text"></p>
+      <div id="over-lines"></div>
       <button id="again" class="primary">Fly again</button>
       <button id="over-quit">Back to the menu</button>
     </section>
