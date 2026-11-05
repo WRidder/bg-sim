@@ -15,6 +15,7 @@ and the engine. The models differ in what flies it.
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -22,8 +23,13 @@ HERE = Path(__file__).resolve().parent
 EXAMPLE = HERE.parent
 sys.path.insert(0, str(HERE))
 DESIGN = json.loads((HERE / "design.json").read_text(encoding="utf-8"))
+GEAR = json.loads((HERE / "gear.json").read_text(encoding="utf-8"))    # design/gear.py
 SI = DESIGN["si"]
 TABLES = DESIGN["tables"]
+# The gear's bond-graph elements are the Cessna's, unchanged. A project library belongs to one
+# project and a project is copied whole from its example, so main() copies these files here on
+# every build: the Cessna's library stays their one source.
+CESSNA_BLOCKS = ("GearContact", "StrutSpring", "StrutDamper", "WheelFriction", "WheelSide")
 
 
 def num(v: float) -> str:
@@ -70,6 +76,9 @@ class Diagram:
 
     def bond(self, a, pa, b, pb):
         self._conn("bond", a, pa, b, pb)
+
+    def junction(self, name, kind, x, y):
+        return self.node(name, {"junction": str(kind)}, x, y)
 
     def note(self, text, x, y, w, h, color=None):
         a = {"id": f"a{len(self.annotations) + 1}", "kind": "text", "text": text, "x": x, "y": y, "w": w, "h": h}
@@ -157,13 +166,115 @@ SIM_OUTPUTS = [  # the f16-sim airframe's extra ports: (port name, node, node po
 ]
 
 
+def landing_gear(d: Diagram, xcg: str, st: dict) -> None:
+    """Three legs on the airframe, as the Cessna's (`GearContact`, `StrutSpring`, `StrutDamper`,
+    `WheelFriction`, `WheelSide`), plus what the Cessna's fixed gear does not have: the retraction
+    (an MSf in series with the strut, through a 0-junction), nose steering and the gear's drag.
+    `st` holds the start expressions: `gear` (position), `strut` (leg -> compression)."""
+    x0, y0 = 1600, 1400
+    d.node("GearCmdIn", "stdlib:continuous/Gain", x0 - 400, y0 - 300, params={"k": "1.0"})
+    d.port("gear_cmd", "input", "GearCmdIn", "u")
+    for nm in ("brake_l", "brake_r", "pedal"):
+        d.node(f"{nm}In", "stdlib:continuous/Gain", x0 - 400, y0 - 240 + 60 * ("brake_l", "brake_r", "pedal").index(nm),
+               params={"k": "1.0"})
+        d.port(nm, "input", f"{nm}In", "u")
+    d.node("GearAct", "project:GearActuator", x0 - 200, y0 - 300,
+           params={"t_gear": num(GEAR["t_gear"]), "L": num(GEAR["l_retract"])}, starts={"x": ex(st["gear"])})
+    d.sig("GearCmdIn", "y", "GearAct", "cmd")
+    lookup1d(d, "SteerMax", GEAR["steer_v"], GEAR["steer_deg"], x0 - 400, y0 - 60)
+    d.sig("Air", "ui", "SteerMax", "u")
+    d.node("Logic", "project:GearLogic", x0 - 200, y0 - 120,
+           params={"f0": num(GEAR["f0_wow"]), "f1": num(GEAR["f1_wow"])})
+    d.sig("pedalIn", "y", "Logic", "pedal")
+    d.sig("SteerMax", "y", "Logic", "steer_max")
+    d.sig("Logic", "w", "GearAct", "w")
+    d.node("NoSteer", "stdlib:sources/Constant", x0 - 200, y0 + 40, params={"value": "0.0"})
+    d.node("NoBrake", "stdlib:sources/Constant", x0 - 200, y0 + 100, params={"value": "0.0"})
+    q_bp = SI["q_bp"]
+    legs = GEAR["legs"]
+    for k, leg in enumerate(("nose", "left", "right")):
+        gl = legs[leg]
+        x, y = x0 + 1000 * k, y0
+        rx = f"({num(gl['rx'])} + ({xcg} - {num(SI['xcgr'])}) * {num(SI['cbar'])})"
+        d.node(f"Mount_{leg}", "stdlib:multibond/FixedTransform3DNeutral", x, y,
+               params={"qw": num(q_bp[0]), "qx": num(q_bp[1]), "qy": num(q_bp[2]), "qz": num(q_bp[3]),
+                       "x": f"-{rx}", "y": num(-gl["ry"]), "z": num(-gl["rz"])})
+        d.bond("Body", "p", f"Mount_{leg}", "b")
+        d.node(f"Contact_{leg}", "project:GearContact", x + 200, y,
+               params={"rx": rx, "ry": num(gl["ry"]), "rz": num(gl["rz"]), "ground_z": "0.0"})
+        d.bond(f"Mount_{leg}", "a", f"Contact_{leg}", "p")
+        d.sig("Air", "gB", f"Contact_{leg}", "g")
+        d.sig("Logic" if leg == "nose" else "NoSteer", "steer" if leg == "nose" else "y", f"Contact_{leg}", "steer")
+        # normal direction: the contact's 1-junction, the 0-junction of the retraction, the strut's 1-junction
+        d.junction(f"N_{leg}", 1, x + 400, y - 200)
+        d.bond(f"N_{leg}", None, f"Contact_{leg}", "n")
+        d.junction(f"Lift_{leg}", 0, x + 520, y - 200)
+        d.bond(f"N_{leg}", None, f"Lift_{leg}", None)
+        d.node(f"Retract_{leg}", "stdlib:bondgraph/MSf", x + 520, y - 320)
+        d.bond(f"Lift_{leg}", None, f"Retract_{leg}", "p")
+        d.sig("GearAct", "lift_rate", f"Retract_{leg}", "u")
+        d.junction(f"Strut_{leg}", 1, x + 640, y - 200)
+        d.bond(f"Lift_{leg}", None, f"Strut_{leg}", None)
+        d.node(f"Spring_{leg}", "project:StrutSpring", x + 800, y - 260,
+               params={"k": num(gl["k"]), "eps": num(GEAR["gear_eps"])}, starts={"q": ex(st["strut"][leg])})
+        d.node(f"Damper_{leg}", "project:StrutDamper", x + 800, y - 160,
+               params={"b": num(gl["b"]), "feps": num(GEAR["gear_feps"])})
+        d.bond(f"Strut_{leg}", None, f"Spring_{leg}", "j")
+        d.bond(f"Strut_{leg}", None, f"Damper_{leg}", "j")
+        d.sig(f"Spring_{leg}", "Fk", f"Damper_{leg}", "Fk")
+        d.sig(f"Spring_{leg}", "sig", f"Damper_{leg}", "sig")
+        # rolling: rolling resistance and the brake
+        d.junction(f"X_{leg}", 1, x + 400, y)
+        d.bond(f"X_{leg}", None, f"Contact_{leg}", "x")
+        d.node(f"Roll_{leg}", "project:WheelFriction", x + 800, y,
+               params={"mu_r": num(GEAR["mu_r"]), "mu_s": num(GEAR["mu_brake"]), "vs": num(GEAR["v_roll"])})
+        d.bond(f"X_{leg}", None, f"Roll_{leg}", "j")
+        d.sig(f"Contact_{leg}", "fn", f"Roll_{leg}", "fn")
+        d.sig({"nose": "NoBrake", "left": "brake_lIn", "right": "brake_rIn"}[leg], "y", f"Roll_{leg}", "brake")
+        # lateral: the tyre's cornering force
+        d.junction(f"Y_{leg}", 1, x + 400, y + 120)
+        d.bond(f"Y_{leg}", None, f"Contact_{leg}", "y")
+        d.node(f"Side_{leg}", "project:WheelSide", x + 800, y + 120,
+               params={"mu_s": num(GEAR["mu_s"]), "vs": num(GEAR["v_side"])})
+        d.bond(f"Y_{leg}", None, f"Side_{leg}", "j")
+        d.sig(f"Contact_{leg}", "fn", f"Side_{leg}", "fn")
+        d.sig(f"Contact_{leg}", "vx", f"Side_{leg}", "vx")
+        d.port(f"fn_{leg}", "output", f"Contact_{leg}", "fn", "N")
+        d.port(f"q_{leg}", "output", f"Spring_{leg}", "compression", "m")
+    d.sig("Spring_left", "Fk", "Logic", "Fk_left")
+    d.sig("Spring_right", "Fk", "Logic", "Fk_right")
+    # the gear's drag: a wrench in the geometric body frame, through its own mount
+    d.node("GearDrag", "project:GearDrag", 1100, 40 - 300,
+           params={"cd": num(GEAR["cd_gear"]), "S": num(SI["S"]), "z_arm": num(GEAR["z_drag"])})
+    d.sig("GearAct", "pos", "GearDrag", "pos")
+    d.sig("Air", "qbar", "GearDrag", "qbar")
+    d.sig("Air", "alpha_deg", "GearDrag", "alpha")
+    d.sig("Air", "beta_deg", "GearDrag", "beta")
+    d.node("GearDragMount", "stdlib:multibond/FixedTransform3DNeutral", 620, -260,
+           params={"qw": num(q_bp[0]), "qx": num(q_bp[1]), "qy": num(q_bp[2]), "qz": num(q_bp[3])})
+    d.node("GearWrench", "stdlib:multibond/ExternalWrenchSpatial", 820, -260)
+    d.bond("GearWrench", "p", "GearDragMount", "a")
+    d.bond("GearDragMount", "b", "Body", "p")
+    for p in ("tx", "ty", "tz", "fx", "fy", "fz"):
+        d.sig("GearDrag", p, "GearWrench", p)
+    d.port("gear_pos", "output", "GearAct", "pos")
+    d.port("w", "output", "Logic", "w")
+    d.port("steer", "output", "Logic", "steer", "rad")
+    d.note("**Landing gear (one bond graph per leg, as the Cessna's).** GearContact is the tyre-runway contact: a "
+           "modulated transformer from the airframe's multibond to three translational bonds. Normal: the strut spring "
+           "(C) and damper (R) on a 1-junction, in series with the retraction (an MSf on a 0-junction, the rate at which "
+           "the contact point rises). Rolling: rolling resistance and brake (R). Side: the tyre's cornering force (R). "
+           "GearLogic: weight on wheels and nose steering; GearActuator: the 5 s traverse with its ground interlock.",
+           x0, y0 - 420, 1400, 60, "blue")
+
+
 def airframe(xcg: str, start: dict, energy: bool = False, wind: bool = False, mass=None, J=None,
-             extra_outputs: bool = False) -> Diagram:
+             extra_outputs: bool = False, gear: dict | None = None) -> Diagram:
     """One F-16: inputs el, ail, rdr (deg) and thtl (0..1); xcg is a parameter expression.
 
     The start values (pose, momentum, power) and the mass and inertia may be numbers or expressions over
     global parameters (the f16-sim model). With wind, the subsystem has the inputs wn, we, wd
-    (m/s, north-east-down); without, the air is calm."""
+    (m/s, north-east-down); without, the air is calm. `gear` adds the landing gear (`landing_gear`)."""
     d = Diagram()
     pose, P, power = start["start_pose"], start["start_P"], start["start_power"]
     mass = SI["mass"] if mass is None else mass
@@ -261,6 +372,8 @@ def airframe(xcg: str, start: dict, energy: bool = False, wind: bool = False, ma
         d.sig("Body", "V", "Energy", "VP")
         d.node("Work", "stdlib:continuous/Integrator", 1300, 40)
         d.sig("Forces", "P_ext", "Work", "u")
+    if gear is not None:
+        landing_gear(d, xcg, gear)
     for name, node, port, unit in AIRFRAME_OUTPUTS + (SIM_OUTPUTS if extra_outputs else []):
         d.port(name, "output", node, port, unit)
     d.port("pose", "output", "Air", "gB", None, size=7)
@@ -622,6 +735,8 @@ def flight_control(d: Diagram, lab: str, case: dict, xcg: str, x: float, y: floa
     d.sig(lab, "alpha", law, "alpha")
     d.sig(lab, "q", law, "q")
     d.sig(q_cmd[0], q_cmd[1], law, "q_cmd")
+    d.sig(f"{lab}Zero", "y", law, "w")
+    d.sig(f"{lab}Zero", "y", law, "u_ground")
     for nm, node in gn.items():
         d.sig(node, "y", law, nm)
     src = (law, "u")
@@ -771,6 +886,9 @@ SIM_INPUTS = [  # (marker, start value, description)
     ("wind_n", "0.0", "wind towards north (m/s)"),
     ("wind_e", "0.0", "wind towards east (m/s)"),
     ("wind_d", "0.0", "wind downwards (m/s)"),
+    ("gear_cmd", "0.0", "gear handle, 0 up .. 1 down"),
+    ("brake_l", "0.0", "left toe brake, 0 .. 1"),
+    ("brake_r", "0.0", "right toe brake, 0 .. 1"),
 ]
 SIM_OUTPUT_SOURCES = [  # (marker, node, port)
     ("north_m", "Status", "north"), ("east_m", "Status", "east"), ("alt_m", "F16", "h"),
@@ -780,11 +898,13 @@ SIM_OUTPUT_SOURCES = [  # (marker, node, port)
     ("p_dps", "F16", "p"), ("q_dps", "F16", "q"), ("r_dps", "F16", "r"),
     ("u_mps", "F16", "ui"), ("v_mps", "F16", "vi"), ("w_mps", "F16", "wi"), ("vs_mps", "F16", "hdot"),
     ("tas_mps", "F16", "vt"), ("cas_mps", "Status", "cas"), ("mach", "F16", "mach"), ("qbar_pa", "F16", "qbar"),
-    ("alpha_deg", "F16", "alpha"), ("beta_deg", "F16", "beta"), ("nz_g", "F16", "nz"), ("ny_g", "F16", "ny"),
+    ("alpha_deg", "F16", "alpha"), ("beta_deg", "F16", "beta"), ("nz_g", "Status", "nz_total"), ("ny_g", "F16", "ny"),
     ("stab_deg", "StabAct", "y"), ("ail_deg", "AilAct", "y"), ("rdr_deg", "RdrAct", "y"),
     ("power_pct", "F16", "pow"), ("thrust_n", "F16", "thrust"),
     ("p_lim_dps", "LatLaw", "p_lim"), ("nz_cmd_g", "PitchCmd", "nz_cmd"), ("limiter_active", "PitchCmd", "lim_active"),
     ("departed", "Status", "departed"), ("ground_contact", "Status", "ground"),
+    ("fn_nose", "F16", "fn_nose"), ("fn_left", "F16", "fn_left"), ("fn_right", "F16", "fn_right"),
+    ("on_ground", "Status", "on_ground"), ("steer_rad", "F16", "steer"), ("gear_pos", "F16", "gear_pos"),
 ]
 # Stimulus globals (the model's own test input; the FMU host replaces it)
 SIM_STIM = [  # (axis, global prefix, marker, description)
@@ -816,6 +936,10 @@ def sim_globals() -> list[dict]:
         g("thtl0", num(tr["thtl0"]), None, "Trim throttle"),
         g("xcg", num(SIMD["xcg"]), None, "Centre of gravity, fraction of the mean chord"),
         g("mass", num(SI["mass"]), "kg", "Mass (the inertia scales with it)"),
+        g("gamma0", "0.0", "deg", "Start flight-path angle: the pitch is alpha0 + gamma0 (0: level, or on the runway)"),
+        g("gear0", "0.0", None, "Start gear position, 0 up .. 1 down"),
+        g("north0", "0.0", "m", "Start position, north"),
+        g("east0", "0.0", "m", "Start position, east"),
     ]
     for axis, pre, _, desc in SIM_STIM:
         amp = {"Roll": turn.get("roll_amp", 0.0)}.get(axis, 0.0)
@@ -826,6 +950,12 @@ def sim_globals() -> list[dict]:
                      f"Test input: {desc} held for"))
     out.append(g("throttle_set", num(turn["throttle_set"]), None, "Test input: throttle from throttle_t on"))
     out.append(g("throttle_t", "1.0", "s", "Test input: throttle change at"))
+    out.append(g("throttle2_d", "0.0", None, "Test input: a second throttle change (added)"))
+    out.append(g("throttle2_t", "1.0", "s", "Test input: second throttle change at"))
+    out.append(g("gear_set", "0.0", None, "Test input: gear handle from gear_t on, 0 up .. 1 down"))
+    out.append(g("gear_t", "1.0", "s", "Test input: gear handle moves at"))
+    out.append(g("brake_set", "0.0", None, "Test input: both toe brakes from brake_t on, 0 .. 1"))
+    out.append(g("brake_t", "1.0", "s", "Test input: brakes on at"))
     for name, desc in SIM_SWITCHES:
         out.append(g(name, "1.0", None, desc))
     return out
@@ -849,13 +979,22 @@ def stim_pulse(d: Diagram, axis: str, pre: str, x: float, y: float) -> str:
 def sim_airframe() -> Diagram:
     eps = num(SI["eps"])
     a0 = f"alpha0 / {D2R}"
-    start = {"start_pose": {"qw": f"cos(({eps} - {a0}) / 2.0)", "qx": "0.0", "qy": f"sin(({eps} - {a0}) / 2.0)",
-                            "qz": "0.0", "px": "0.0", "py": "0.0", "pz": "h0"},
+    pitch = f"(alpha0 + gamma0) / {D2R}"
+    start = {"start_pose": {"qw": f"cos(({eps} - ({pitch})) / 2.0)", "qx": "0.0", "qy": f"sin(({eps} - ({pitch})) / 2.0)",
+                            "qz": "0.0", "px": "north0", "py": "-east0", "pz": "h0"},
              "start_P": ["0.0", "0.0", "0.0", f"mass * vt0 * cos({a0} - {eps})", "0.0",
                          f"-(mass * vt0 * sin({a0} - {eps}))"],
              "start_power": "64.94 * thtl0"}
     J = [f"{num(j)} * mass / {num(SI['mass'])}" for j in SI["J_principal"]]
-    return airframe("xcg", start, wind=True, mass="mass", J=J, extra_outputs=True)
+    # A strut's start: the contact point's geometric penetration (GearContact.delta), less what the
+    # retraction has lifted it.
+    strut = {}
+    for leg, gl in GEAR["legs"].items():
+        rx = f"({num(gl['rx'])} + (xcg - {num(SI['xcgr'])}) * {num(SI['cbar'])})"
+        strut[leg] = (f"-(h0 + sin({pitch}) * {rx} + cos({pitch}) * {num(gl['rz'])}) "
+                      f"- {num(GEAR['l_retract'])} * (1.0 - gear0)")
+    return airframe("xcg", start, wind=True, mass="mass", J=J, extra_outputs=True,
+                    gear={"gear": "gear0", "strut": strut})
 
 
 def model_sim():
@@ -869,21 +1008,38 @@ def model_sim():
            params={"t_start": "throttle_t", "initial": "thtl0",
                    "slope": f"(throttle_set - thtl0) / {num(SIMD['throttle_ramp'])}",
                    "duration": num(SIMD["throttle_ramp"])})
+    d.node("Thr2Stim", "stdlib:sources/Ramp", 40, 840,
+           params={"t_start": "throttle2_t", "slope": f"throttle2_d / {num(SIMD['throttle_ramp'])}",
+                   "duration": num(SIMD["throttle_ramp"])})
+    d.node("ThrMx", "stdlib:continuous/Mux2", 180, 760)
+    d.node("ThrSum", "stdlib:continuous/Sum", 300, 760, params={"signs": "[1.0, 1.0]"})
+    d.sig("ThrStim", "y", "ThrMx", "u1")
+    d.sig("Thr2Stim", "y", "ThrMx", "u2")
+    d.sig("ThrMx", "y", "ThrSum", "u")
+    fast = num(SIMD["fast"])
+    d.node("GearStim", "stdlib:sources/Ramp", 40, 920,
+           params={"t_start": "gear_t", "initial": "gear0", "slope": f"(gear_set - gear0) / {fast}", "duration": fast})
+    d.node("BrakeStim", "stdlib:sources/Ramp", 40, 1000, params={"t_start": "brake_t", "slope": f"brake_set / {fast}",
+                                                                 "duration": fast})
     d.node("Calm", "stdlib:sources/Constant", 40, 780, params={"value": "0.0"})
     for k, (marker, start, _) in enumerate(SIM_INPUTS):
         d.node(marker, "stdlib:converters/ExportInputPass", 420, 40 + 110 * k, params={"value": start})
     d.sig(src["Pitch"], "y", "stick_pitch", "u")
     d.sig(src["Roll"], "y", "stick_roll", "u")
     d.sig(src["Pedal"], "y", "pedals", "u")
-    d.sig("ThrStim", "y", "throttle", "u")
+    d.sig("ThrSum", "y", "throttle", "u")
     for nm in ("wind_n", "wind_e", "wind_d"):
         d.sig("Calm", "y", nm, "u")
+    d.sig("GearStim", "y", "gear_cmd", "u")
+    d.sig("BrakeStim", "y", "brake_l", "u")
+    d.sig("BrakeStim", "y", "brake_r", "u")
     d.note("**Inputs.** The ExportInputPass markers pass the test stimulus (globals *_amp, *_t, *_dur, "
            "throttle_set) through in bg-sim; in the FMU the host drives them.", 40, -60, 700, 40, "blue")
     # ---- the airframe
     sim_airframe().subsystem(d, "F16", 1500, 300)
     d.sig("throttle", "y", "F16", "thtl")
-    for nm, port in (("wind_n", "wn"), ("wind_e", "we"), ("wind_d", "wd")):
+    for nm, port in (("wind_n", "wn"), ("wind_e", "we"), ("wind_d", "wd"), ("gear_cmd", "gear_cmd"),
+                     ("brake_l", "brake_l"), ("brake_r", "brake_r"), ("pedals", "pedal")):
         d.sig(nm, "y", "F16", port)
     # ---- pitch: g-command with turn compensation, scheduled pitch-rate law, stabilator servo
     d.node("PitchCmd", "project:PitchCommand", 700, 40, params={
@@ -906,9 +1062,13 @@ def model_sim():
     d.sig("PitchCmd", "q_cmd", "PitchLaw", "q_cmd")
     for nm in ("Ka", "Kq", "Ki"):
         d.sig(nm, "y", "PitchLaw", nm)
+    d.sig("F16", "w", "PitchLaw", "w")
+    d.node("StickDirect", "stdlib:continuous/Gain", 700, -40, params={"k": num(-FBW["act"]["pos"])})
+    d.sig("stick_pitch", "y", "StickDirect", "u")
+    d.sig("StickDirect", "y", "PitchLaw", "u_ground")
     act = LAT["act"]
     actuator("el0", act["el"], "Stabilator").subsystem(d, "StabAct", 1100, 40)
-    d.sig("PitchLaw", "u", "StabAct", "u")
+    d.sig("PitchLaw", "y", "StabAct", "u")
     d.sig("StabAct", "y", "F16", "el")
     # ---- roll and yaw: scheduled lateral law, ARI over alpha, aileron and rudder servos
     d.node("LatLaw", "project:LateralFBW", 900, 500, params={
@@ -919,6 +1079,7 @@ def model_sim():
         "yaw_damper": "yaw_damper", "beta_hold": "beta_hold", "ari": "ari", "vv_roll": "vv_roll"})
     d.sig("stick_roll", "y", "LatLaw", "stick")
     d.sig("pedals", "y", "LatLaw", "pedal")
+    d.sig("F16", "w", "LatLaw", "w")
     for p in ("alpha", "beta", "p", "r", "nz", "qbar"):
         d.sig("F16", p, "LatLaw", p)
     for k, nm in enumerate(("Kp", "Kip", "Kr", "Kb", "Kib")):
@@ -945,10 +1106,14 @@ def model_sim():
            "over qbar and Mach and the ARI gain Kari over alpha. Servos: stabilator +-25 deg 60 deg/s, ailerons "
            "+-21.5 deg 80 deg/s, rudder +-30 deg 120 deg/s, all 20.2 rad/s.", 700, -60, 700, 50, "blue")
     # ---- what the host reads
-    d.node("Status", "project:F16Status", 1900, 300)
+    d.node("Status", "project:F16Status", 1900, 300, params={"mass": "mass", "g0": num(SI["g0"]),
+                                                             "stroke": num(GEAR["stroke_max"])})
     d.sig("F16", "pose", "Status", "gB")
-    for p in ("phi", "theta", "psi", "gamma", "mach", "pa", "alpha", "beta", "h"):
+    for p in ("phi", "theta", "psi", "gamma", "mach", "pa", "alpha", "beta", "h", "nz", "fn_nose", "fn_left", "fn_right",
+              "q_nose"):
         d.sig("F16", p, "Status", p)
+    d.sig("F16", "q_left", "Status", "q_left")
+    d.sig("F16", "q_right", "Status", "q_right")
     for k, (marker, node, port) in enumerate(SIM_OUTPUT_SOURCES):
         d.node(marker, "stdlib:converters/ExportOutput", 2150 + 200 * (k // 18), 40 + 60 * (k % 18))
         d.sig(node, port, marker, "u")
@@ -963,6 +1128,8 @@ def model_sim():
         {"id": "p5", "title": "Surfaces (deg)", "signals": ["StabAct/Servo/y", "AilAct/Servo/y", "RdrAct/Servo/y"]},
         {"id": "p6", "title": "Airspeed (m/s) and altitude (m)", "signals": ["F16/Air/vt", "F16/Air/h"]},
         {"id": "p7", "title": "Throttle and power (percent)", "signals": ["throttle/y", "F16/Engine/pow"]},
+        {"id": "p8", "title": "Wheel loads (N)", "signals": ["F16/Contact_nose/fn", "F16/Contact_left/fn", "F16/Contact_right/fn"]},
+        {"id": "p9", "title": "Gear position, weight on wheels", "signals": ["F16/GearAct/pos", "F16/Logic/w"]},
     ]
     turn = SIMD["turn"]
     return model_doc(
@@ -1117,6 +1284,10 @@ DASHBOARDS = {
         plot("d15", "Stability-axis roll rate, command and limit (deg/s)", ["LatLaw/ps", "LatLaw/p_cmd", "LatLaw/p_lim"]),
         plot("d16", "Surfaces (deg)", ["StabAct/Servo/y", "AilAct/Servo/y", "RdrAct/Servo/y"]),
         plot("d17", "Airspeed (m/s) and altitude (m)", ["F16/Air/vt", "F16/Air/h"]),
+        slider("d18", "Gear handle (from 1 s; 0 up, 1 down)", "gear_set", 0.0, 1.0, 1.0, 0),
+        slider("d19", "Toe brakes (from 1 s)", "brake_set", 0.0, 1.0, 0.05, 2),
+        plot("d20", "Wheel loads (N)", ["F16/Contact_nose/fn", "F16/Contact_left/fn", "F16/Contact_right/fn"]),
+        plot("d21", "Gear position, weight on wheels", ["F16/GearAct/pos", "F16/Logic/w"]),
     ]},
 }
 
@@ -1261,6 +1432,101 @@ def sim_entry(name: str, checks: list) -> dict:
             "overrides": sim_overrides(name), "checks": checks}
 
 
+def gear_overrides(rec: dict) -> dict:
+    """The f16-sim globals of a scenario of design/gear.py, against the model's defaults (the turn)."""
+    model = {gl["name"]: float(gl["value"]) for gl in sim_globals()}
+    want = {**model, "roll_amp": 0.0, "throttle_set": rec["spec"]["thtl0"]}
+    want.update({k: float(v) for k, v in rec["spec"].items() if k in model})
+    return {f"global:{k}": v for k, v in want.items() if abs(v - model[k]) > 1e-12}
+
+
+def gear_entry(name: str, checks: list) -> dict:
+    rec = GEAR["scenarios"][name]
+    t_end = rec["spec"]["t_end"]
+    return {"model": "f16-sim", "settings": {"t_end": t_end, "output": {"points": int(round(t_end * 100)) + 1}},
+            "overrides": gear_overrides(rec), "checks": checks}
+
+
+def expected_gear() -> dict:
+    """The gear scenarios of design/gear.py (an independent pitch-plane reference)."""
+    st = GEAR["static"]
+    ref = "the planar scipy reference with the book's coefficients (design/gear.py)"
+    w = GEAR["weight"]
+    sc = {k: {**v, **v["series"]} for k, v in GEAR["scenarios"].items()}
+    rest, taxi, to, ld = sc["rest"], sc["taxi"], sc["takeoff"], sc["landing"]
+    h = "F16/Air/h"
+    checks_rest = [
+        NO_DIAG,
+        _cursor(h, rest, "h", 5.0, 0.002, ref + f": at rest, idle, brakes set. Without thrust the analytic rest is "
+                f"h = {st['h']:.4f} m, nose {st['fn']['nose'] / 1e3:.2f} kN ({100 * st['nose_share']:.1f} %), "
+                f"mains {st['fn']['left'] / 1e3:.2f} kN each; the idle thrust against the brakes shifts a little to the nose"),
+        _cursor("Status/theta_deg", rest, "theta", 5.0, 0.02),
+        _cursor("F16/Contact_nose/fn", rest, "fn_nose", 5.0, 0.01 * w, "nose wheel load"),
+        _cursor("F16/Contact_left/fn", rest, "fn_left", 5.0, 0.005 * w, "main wheel load"),
+        _cursor("F16/Contact_right/fn", rest, "fn_left", 5.0, 0.005 * w, "symmetric"),
+        {"kind": "max_abs", "signal": "Status/on_ground", "from_t": 1.0, "value": 1.0, "rtol": 1e-9},
+        {"kind": "cursor_value", "signal": "Status/nz_total", "t": 5.0, "value": 1.0, "abs": 0.01,
+         "note": "nz_g reads 1 g on the ramp"},
+        {"kind": "cursor_value", "signal": "Status/departed", "t": 5.0, "value": 0.0, "abs": 1e-9},
+        {"kind": "cursor_value", "signal": "Status/ground", "t": 5.0, "value": 0.0, "abs": 1e-9,
+         "note": "ground_contact stays 0 on the wheels"}]
+    checks_taxi = [
+        NO_DIAG,
+        {"kind": "max_abs", "signal": "F16/Air/ui", "value": max(taxi["vx"]), "rtol": 0.01,
+         "note": ref + ": the speed when the brakes come on"},
+        {"kind": "final_value", "signal": "F16/Air/x", "t": 30.0, "value": taxi["x"][-1], "abs": 3.0,
+         "note": "where it stops (reference): the taxi and the stop together"},
+        {"kind": "cursor_value", "signal": "F16/Air/ui", "t": 30.0, "value": taxi["vx"][-1], "abs": 0.05,
+         "note": "stopped: idle thrust against the brakes creeps at the tanh regularisation speed"}]
+    for t in (10.0, 16.0, 18.0):
+        checks_taxi.append(_cursor("F16/Air/ui", taxi, "vx", t, 0.1))
+    checks_to = [
+        NO_DIAG,
+        {"kind": "max_abs_le", "signal": "Status/theta_deg", "value": max(to["theta"]) + 1.0},
+        {"kind": "final_value", "signal": "F16/GearAct/pos", "t": 26.0, "value": 0.0, "abs": 1e-3,
+         "note": "gear up: 5 s traverse (JSBSim f16.xml), then the loop's tail"},
+        {"kind": "max_abs_le", "signal": "F16/Contact_left/fn", "from_t": 16.0, "value": 1.0, "note": "airborne"}]
+    for t in (5.0, 10.0, 12.0):
+        checks_to.append(_cursor("F16/Air/ui", to, "vx", t, 0.1, ref if t == 5.0 else None))
+        checks_to.append(_cursor("F16/Air/x", to, "x", t, 0.5))
+    for t in (13.0, 14.0, 15.0, 20.0):
+        checks_to.append(_cursor("Status/theta_deg", to, "theta", t, 0.5))
+        checks_to.append(_cursor(h, to, "h", t, 1.0))
+    td = ld["t_first_contact"]
+    checks_ld = [
+        NO_DIAG,
+        {"kind": "max_abs", "signal": "F16/Contact_left/fn", "value": ld["max_fn_left"], "rtol": 0.05,
+         "note": ref + f": no flare, {GEAR['touchdown_sink']:.2f} m/s of sink at the wheels: the peak main-wheel load"},
+        {"kind": "max_abs", "signal": "F16/Contact_nose/fn", "value": ld["max_fn_nose"], "rtol": 0.1,
+         "note": "the nose comes down by itself"},
+        {"kind": "cursor_value", "signal": "F16/Air/hdot", "t": td, "value": -GEAR["touchdown_sink"], "abs": 0.1,
+         "note": "the sink rate at touchdown"},
+        {"kind": "max_abs_le", "signal": "F16/Air/hdot", "value": GEAR["sink_limit"],
+         "note": "below the 10 ft/s limit of the gear (secondary source, README), all the way down"},
+        {"kind": "max_abs_le", "signal": "F16/Spring_left/compression", "from_t": td, "value": GEAR["stroke_max"]},
+        {"kind": "max_abs_le", "signal": "Status/ground", "value": 1e-9, "note": "no crash: ground_contact stays 0"},
+        {"kind": "final_value", "signal": "F16/Air/x", "t": ld["spec"]["t_end"], "value": ld["end"]["x"], "abs": 10.0,
+         "note": "where it stops"}]
+    for t in (5.0, 10.0):
+        checks_ld.append(_cursor(h, ld, "h", t, 0.3))
+    for t in (td + 1.0, td + 3.0, td + 6.0):
+        t = round(t, 1)
+        checks_ld.append(_cursor("Status/theta_deg", ld, "theta", t, 0.3))
+        checks_ld.append(_cursor("F16/Air/ui", ld, "vx", t, 0.3))
+    # nose-wheel steering: the kinematic turn of a tricycle
+    stc = GEAR["steer"]
+    checks_st = [NO_DIAG,
+                 {"kind": "cursor_value", "signal": "F16/Air/r_deg", "t": stc["t"], "value": stc["r_dps"],
+                  "abs": 0.15 * abs(stc["r_dps"]),
+                  "note": f"{stc['v']:.0f} m/s, pedal {stc['pedal']}: the kinematic yaw rate V tan(steer)/wheelbase "
+                          f"= {abs(stc['r_dps']):.2f} deg/s (a slipping tyre gives a little less)"}]
+    steer_doc = {"model": "f16-sim", "settings": {"t_end": stc["t_end"], "output": {"points": 1001}},
+                 "overrides": stc["overrides"], "checks": checks_st}
+    return {"f16-sim-rest": gear_entry("rest", checks_rest), "f16-sim-taxi": gear_entry("taxi", checks_taxi),
+            "f16-sim-takeoff": gear_entry("takeoff", checks_to), "f16-sim-landing": gear_entry("landing", checks_ld),
+            "f16-sim-steer": steer_doc}
+
+
 def expected_sim() -> dict:
     """f16-sim: the turn (the model's defaults) and the scenarios of design/simscen.py as overrides."""
     turn = SIMD["turn"]
@@ -1341,12 +1607,16 @@ def expected_sim() -> dict:
     export = {"inputs": {"stick_pitch": {"min": -0.1, "max": 0.1}, "stick_roll": {"min": -0.1, "max": 0.1},
                          "pedals": {"min": -0.1, "max": 0.1}, "throttle": {"min": 0.1, "max": 0.5},
                          "wind_n": {"min": -2.0, "max": 2.0}, "wind_e": {"min": -2.0, "max": 2.0},
-                         "wind_d": {"min": -2.0, "max": 2.0}},
+                         "wind_d": {"min": -2.0, "max": 2.0}, "gear_cmd": {"min": 0.0, "max": 0.0},
+                         "brake_l": {"min": 0.0, "max": 1.0}, "brake_r": {"min": 0.0, "max": 1.0}},
               "interface": {"inputs": [m for m, _, _ in SIM_INPUTS],
                             "outputs": [m for m, _, _ in SIM_OUTPUT_SOURCES]},
               "note": "the FMU of apps/f16-sim; its own acceptance (the host's settings and tunables, four "
                       "manoeuvres) is examples/export_f16_check.py"}
-    return {"f16-sim": {"checks": checks_turn, "export": export},
+    checks_turn.append({"kind": "max_abs_le", "signal": "F16/Contact_nose/fn", "value": 1.0,
+                        "note": "gear up: the retracted legs carry nothing (the strut's smooth contact leaves a few mN)"})
+    return {**expected_gear(),
+            "f16-sim": {"checks": checks_turn, "export": export},
             "f16-sim-roll-step": sim_entry("roll_step", checks_rs),
             "f16-sim-full-roll": sim_entry("full_roll", checks_fr),
             "f16-sim-dutch-open": sim_entry("dutch_open", checks_do),
@@ -1361,6 +1631,8 @@ def main() -> int:
     models = {"f16-open-loop": model_open_loop(), "f16-fbw": model_fbw(), "f16-envelope": model_envelope(),
               "f16-pio": model_pio(), "f16-sim": model_sim()}
     (EXAMPLE / "library" / "F16Trail.jl").write_text(trail_block(), encoding="utf-8", newline="\n")
+    for block in CESSNA_BLOCKS:
+        shutil.copyfile(EXAMPLE.parent / "cessna" / "library" / f"{block}.jl", EXAMPLE / "library" / f"{block}.jl")
     for name, doc in models.items():
         doc["dashboard"] = DASHBOARDS[name]
         path = EXAMPLE / "models" / f"{name}.bgmodel.json"

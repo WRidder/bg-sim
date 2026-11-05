@@ -649,6 +649,525 @@
         }
       ]
     },
+    "f16-sim-rest": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 5.0,
+        "output": {
+          "points": 501
+        }
+      },
+      "overrides": {
+        "global:vt0": 0.0,
+        "global:h0": 1.6231583378728471,
+        "global:alpha0": -0.07072523603713064,
+        "global:el0": 0.0,
+        "global:thtl0": 0.0,
+        "global:gear0": 1.0,
+        "global:roll_amp": 0.0,
+        "global:throttle_set": 0.0,
+        "global:gear_set": 1.0,
+        "global:brake_set": 1.0,
+        "global:brake_t": 0.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 5.0,
+          "value": 1.6227604,
+          "abs": 0.002,
+          "note": "the planar scipy reference with the book's coefficients (design/gear.py): at rest, idle, brakes set. Without thrust the analytic rest is h = 1.6232 m, nose 20.03 kN (22.0 %), mains 35.56 kN each; the idle thrust against the brakes shifts a little to the nose"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 5.0,
+          "value": -0.25403245,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Contact_nose/fn",
+          "t": 5.0,
+          "value": 22376.091,
+          "abs": 911.4604418021038,
+          "note": "nose wheel load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Contact_left/fn",
+          "t": 5.0,
+          "value": 34394.526,
+          "abs": 455.7302209010519,
+          "note": "main wheel load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Contact_right/fn",
+          "t": 5.0,
+          "value": 34394.526,
+          "abs": 455.7302209010519,
+          "note": "symmetric"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Status/on_ground",
+          "from_t": 1.0,
+          "value": 1.0,
+          "rtol": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/nz_total",
+          "t": 5.0,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "nz_g reads 1 g on the ramp"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/departed",
+          "t": 5.0,
+          "value": 0.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/ground",
+          "t": 5.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "ground_contact stays 0 on the wheels"
+        }
+      ]
+    },
+    "f16-sim-taxi": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 30.0,
+        "output": {
+          "points": 3001
+        }
+      },
+      "overrides": {
+        "global:vt0": 0.0,
+        "global:h0": 1.6231583378728471,
+        "global:alpha0": -0.07072523603713064,
+        "global:el0": 0.0,
+        "global:thtl0": 0.0,
+        "global:gear0": 1.0,
+        "global:roll_amp": 0.0,
+        "global:throttle_set": 0.25,
+        "global:throttle2_d": -0.25,
+        "global:throttle2_t": 14.0,
+        "global:gear_set": 1.0,
+        "global:brake_set": 1.0,
+        "global:brake_t": 15.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "F16/Air/ui",
+          "value": 26.796578,
+          "rtol": 0.01,
+          "note": "the planar scipy reference with the book's coefficients (design/gear.py): the speed when the brakes come on"
+        },
+        {
+          "kind": "final_value",
+          "signal": "F16/Air/x",
+          "t": 30.0,
+          "value": 324.71628,
+          "abs": 3.0,
+          "note": "where it stops (reference): the taxi and the stop together"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 30.0,
+          "value": 0.02701743,
+          "abs": 0.05,
+          "note": "stopped: idle thrust against the brakes creeps at the tanh regularisation speed"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 10.0,
+          "value": 17.21587,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 16.0,
+          "value": 24.590331,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 18.0,
+          "value": 19.388625,
+          "abs": 0.1
+        }
+      ]
+    },
+    "f16-sim-takeoff": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 26.0,
+        "output": {
+          "points": 2601
+        }
+      },
+      "overrides": {
+        "global:vt0": 0.0,
+        "global:h0": 1.6231583378728471,
+        "global:alpha0": -0.07072523603713064,
+        "global:el0": 0.0,
+        "global:thtl0": 0.0,
+        "global:gear0": 1.0,
+        "global:pitch_amp": 1.0,
+        "global:pitch_t": 12.0,
+        "global:pitch_dur": 1.8,
+        "global:roll_amp": 0.0,
+        "global:throttle_set": 1.0,
+        "global:gear_t": 16.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/theta_deg",
+          "value": 33.843536
+        },
+        {
+          "kind": "final_value",
+          "signal": "F16/GearAct/pos",
+          "t": 26.0,
+          "value": 0.0,
+          "abs": 0.001,
+          "note": "gear up: 5 s traverse (JSBSim f16.xml), then the loop's tail"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Contact_left/fn",
+          "from_t": 16.0,
+          "value": 1.0,
+          "note": "airborne"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 5.0,
+          "value": 10.204419,
+          "abs": 0.1,
+          "note": "the planar scipy reference with the book's coefficients (design/gear.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/x",
+          "t": 5.0,
+          "value": 13.988856,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 10.0,
+          "value": 57.295668,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/x",
+          "t": 10.0,
+          "value": 180.27523,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 12.0,
+          "value": 76.611496,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/x",
+          "t": 12.0,
+          "value": 314.19358,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 13.0,
+          "value": 4.0310887,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 13.0,
+          "value": 1.679861,
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 14.0,
+          "value": 29.392017,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 14.0,
+          "value": 4.5156834,
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 15.0,
+          "value": 28.427515,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 15.0,
+          "value": 22.610746,
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 20.0,
+          "value": 25.278122,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 20.0,
+          "value": 195.1032,
+          "abs": 1.0
+        }
+      ]
+    },
+    "f16-sim-landing": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 46.0,
+        "output": {
+          "points": 4601
+        }
+      },
+      "overrides": {
+        "global:vt0": 76.0,
+        "global:h0": 31.623158337872848,
+        "global:alpha0": 12.851511360594735,
+        "global:el0": -0.5809812136352077,
+        "global:thtl0": 0.15690657901214222,
+        "global:gamma0": -1.9,
+        "global:gear0": 1.0,
+        "global:roll_amp": 0.0,
+        "global:throttle_set": 0.0,
+        "global:throttle_t": 12.0,
+        "global:gear_set": 1.0,
+        "global:brake_set": 1.0,
+        "global:brake_t": 17.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "F16/Contact_left/fn",
+          "value": 113873.50339242356,
+          "rtol": 0.05,
+          "note": "the planar scipy reference with the book's coefficients (design/gear.py): no flare, 2.13 m/s of sink at the wheels: the peak main-wheel load"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "F16/Contact_nose/fn",
+          "value": 57357.29151199378,
+          "rtol": 0.1,
+          "note": "the nose comes down by itself"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/hdot",
+          "t": 13.39,
+          "value": -2.1271550745288743,
+          "abs": 0.1,
+          "note": "the sink rate at touchdown"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/hdot",
+          "value": 3.048,
+          "note": "below the 10 ft/s limit of the gear (secondary source, README), all the way down"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Spring_left/compression",
+          "from_t": 13.39,
+          "value": 0.4
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/ground",
+          "value": 1e-09,
+          "note": "no crash: ground_contact stays 0"
+        },
+        {
+          "kind": "final_value",
+          "signal": "F16/Air/x",
+          "t": 46.0,
+          "value": 2205.534640069952,
+          "abs": 10.0,
+          "note": "where it stops"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 5.0,
+          "value": 19.662135,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 10.0,
+          "value": 8.7760316,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 14.4,
+          "value": -1.2368028,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 14.4,
+          "value": 74.371006,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 16.4,
+          "value": -0.22571263,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 16.4,
+          "value": 73.70737,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/theta_deg",
+          "t": 19.4,
+          "value": -1.2826426,
+          "abs": 0.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/ui",
+          "t": 19.4,
+          "value": 66.001026,
+          "abs": 0.3
+        }
+      ]
+    },
+    "f16-sim-steer": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:vt0": 5.0,
+        "global:h0": 1.6231583378728471,
+        "global:alpha0": -0.07072523603713064,
+        "global:el0": 0.0,
+        "global:thtl0": 0.0,
+        "global:throttle_set": 0.0,
+        "global:gear0": 1.0,
+        "global:gear_set": 1.0,
+        "global:roll_amp": 0.0,
+        "global:pedal_amp": 0.5,
+        "global:pedal_dur": 100.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/r_deg",
+          "t": 5.0,
+          "value": 13.47496863160608,
+          "abs": 2.021245294740912,
+          "note": "7 m/s, pedal 0.5: the kinematic yaw rate V tan(steer)/wheelbase = 13.47 deg/s (a slipping tyre gives a little less)"
+        }
+      ]
+    },
     "f16-sim": {
       "checks": [
         {
@@ -745,6 +1264,12 @@
           "t": 3.0,
           "value": -0.7003436326778666,
           "abs": 0.2
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Contact_nose/fn",
+          "value": 1.0,
+          "note": "gear up: the retracted legs carry nothing (the strut's smooth contact leaves a few mN)"
         }
       ],
       "export": {
@@ -776,6 +1301,18 @@
           "wind_d": {
             "min": -2.0,
             "max": 2.0
+          },
+          "gear_cmd": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "brake_l": {
+            "min": 0.0,
+            "max": 1.0
+          },
+          "brake_r": {
+            "min": 0.0,
+            "max": 1.0
           }
         },
         "interface": {
@@ -786,7 +1323,10 @@
             "throttle",
             "wind_n",
             "wind_e",
-            "wind_d"
+            "wind_d",
+            "gear_cmd",
+            "brake_l",
+            "brake_r"
           ],
           "outputs": [
             "north_m",
@@ -824,7 +1364,13 @@
             "nz_cmd_g",
             "limiter_active",
             "departed",
-            "ground_contact"
+            "ground_contact",
+            "fn_nose",
+            "fn_left",
+            "fn_right",
+            "on_ground",
+            "steer_rad",
+            "gear_pos"
           ]
         },
         "note": "the FMU of apps/f16-sim; its own acceptance (the host's settings and tunables, four manoeuvres) is examples/export_f16_check.py"

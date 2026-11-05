@@ -117,6 +117,63 @@ def test_reset_restarts_from_the_trim(sim):
     assert math.isclose(m["alt_m"], sim.start.h0, abs_tol=1e-6)
 
 
+RUNWAY = 6      # index of the runway start in build/starts.json
+APPROACH = 7
+
+
+@needs_fmu
+def test_the_runway_start_rests_on_the_gear_and_stops_on_the_brakes(sim):
+    sim.reset(RUNWAY)
+    st = sim.start
+    sim.set_brakes(1.0)
+    run(sim, 3.0, (0.0, 0.0, 0.0, 0.0))
+    m = sim.model
+    assert m["on_ground"] > 0.5 and m["gear_pos"] == pytest.approx(1.0)
+    assert m["ground_contact"] < 0.5 and m["departed"] < 0.5 and not sim.crashed
+    assert m["fn_left"] == pytest.approx(m["fn_right"], rel=1e-3)
+    assert m["fn_nose"] + m["fn_left"] + m["fn_right"] == pytest.approx(91100.0, rel=0.03)
+    assert m["north_m"] - st.north0 < 0.2                  # the idle thrust only creeps against the brakes
+    sim.toggle_gear()
+    run(sim, 2.0, (0.0, 0.0, 0.0, 0.0))
+    assert sim.model["gear_pos"] == pytest.approx(1.0)     # the interlock holds it down on the ground
+    sim.set_brakes(0.0)
+
+
+@needs_fmu
+def test_taxi_steers_right_with_right_pedal(sim):
+    sim.reset(RUNWAY)
+    sim.set_brakes(0.0)
+    run(sim, 8.0, (0.0, 0.0, 0.0, 0.3))
+    run(sim, 4.0, (0.0, 0.0, 0.5, 0.0))
+    m = sim.model
+    assert m["steer_rad"] > 0.01 and m["east_m"] > sim.start.east0 + 1.0
+    assert not sim.crashed
+
+
+@needs_fmu
+def test_the_approach_lands_on_the_gear(sim):
+    sim.reset(APPROACH)
+    sim.set_brakes(0.0)
+    m = sim.model
+    for _ in range(round(120.0 / m.step_size)):
+        sim.set_controls(0.0, 0.0, 0.0, 0.0 if m["alt_m"] < 15.0 else sim.start.thtl0)
+        sim.step_once()
+        if m["on_ground"] > 0.5:
+            break
+    assert m["on_ground"] > 0.5 and not sim.crashed
+    assert m["vs_mps"] > -5.0
+    sim.set_brakes(0.0)
+    run(sim, 5.0, (0.0, 0.0, 0.0, 0.0))
+    assert not sim.crashed and sim.model["theta_deg"] < 5.0
+
+
+@needs_fmu
+def test_gear_up_ground_contact_is_still_a_crash(sim):
+    sim.reset(5)                                    # 350 ft/s at 2000 ft, gear up
+    run(sim, 30.0, (-0.6, 0.0, 0.0, 0.0))
+    assert sim.crashed and sim.crash_reason == "ground contact"
+
+
 def test_keyboard_works_next_to_a_bound_device():
     from f16sim.inputs import Mixer
     kb, mix = Keyboard({"stick_rate": 2.5, "spring": 4.0, "throttle_rate": 0.4}), Mixer()

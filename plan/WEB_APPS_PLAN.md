@@ -53,7 +53,7 @@ Port 8831 is the dev server the scripts expect (`GAMES_PORT` overrides it). Neve
 
 ## Not done
 
-- No landing on the F-16: its FMU has no gear, and touching the ground is a crash.
+- No landing on the F-16: its FMU now has a gear (`examples/f16/README.md`), but the game does not use it yet, so touching the ground is a crash.
 - Touch controls.
 - Device mapping beyond the standard gamepad layout: the desktop apps' per-device configuration did not carry over.
 - Real frame rates on a discrete GPU. On the Arc integrated GPU at 1600x900 and top quality the flight games take about 21 ms of GPU time a frame and the cars 14 ms; the automatic quality step was not seen to react in a headless browser.

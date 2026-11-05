@@ -15,21 +15,26 @@ from pathlib import Path
 
 import numpy as np
 
-INPUTS = ("stick_pitch", "stick_roll", "pedals", "throttle", "wind_n", "wind_e", "wind_d")
+INPUTS = ("stick_pitch", "stick_roll", "pedals", "throttle", "wind_n", "wind_e", "wind_d", "gear_cmd", "brake_l",
+          "brake_r")
 OUTPUTS = (
     "north_m", "east_m", "alt_m", "q_w", "q_x", "q_y", "q_z", "phi_deg", "theta_deg", "psi_deg", "gamma_deg",
     "p_dps", "q_dps", "r_dps", "u_mps", "v_mps", "w_mps", "vs_mps", "tas_mps", "cas_mps", "mach", "qbar_pa",
     "alpha_deg", "beta_deg", "nz_g", "ny_g", "stab_deg", "ail_deg", "rdr_deg", "power_pct", "thrust_n",
     "p_lim_dps", "nz_cmd_g", "limiter_active", "departed", "ground_contact",
+    "fn_nose", "fn_left", "fn_right", "on_ground", "steer_rad", "gear_pos",
 )
-TRIM = ("vt0", "h0", "alpha0", "el0", "thtl0")
+TRIM = ("vt0", "h0", "alpha0", "el0", "thtl0", "gamma0", "gear0", "north0", "east0")
 SWITCHES = ("limiter", "turn_comp", "roll_law", "yaw_damper", "beta_hold", "ari", "vv_roll")
 STEP = 0.005  # s, the communication step the FMU was exported for
 
 
 @dataclass
 class Start:
-    """A start condition: a level-flight trim (the five trim globals go together) and the CG."""
+    """A start condition: a trim (the five trim globals go together), the CG, and where it starts.
+
+    In the air it is a level-flight trim, or a steady descent with ``gamma0``. On the runway it is the
+    rest on the gear: ``vt0`` 0, ``h0`` the static CG height, ``alpha0`` the static pitch, gear down."""
 
     label: str
     vt0: float      # m/s
@@ -38,6 +43,10 @@ class Start:
     el0: float      # deg
     thtl0: float    # 0..1
     xcg: float = 0.35
+    gamma0: float = 0.0   # deg
+    gear0: float = 0.0    # 0 up .. 1 down
+    north0: float = 0.0   # m
+    east0: float = 0.0    # m
 
     @staticmethod
     def load_all(path: Path) -> list["Start"]:
@@ -91,7 +100,8 @@ class FlightModel:
                                modelIdentifier=self.md.coSimulation.modelIdentifier, instanceName="f16sim")
         self.slave.instantiate()
         params = {"vt0": start.vt0, "h0": start.h0, "alpha0": start.alpha0, "el0": start.el0, "thtl0": start.thtl0,
-                  "xcg": start.xcg, **{k: float(v) for k, v in settings.switches.items()}}
+                  "xcg": start.xcg, "gamma0": start.gamma0, "gear0": start.gear0, "north0": start.north0,
+                  "east0": start.east0, **{k: float(v) for k, v in settings.switches.items()}}
         if settings.mass is not None:
             params["mass"] = settings.mass
         self.slave.setReal([self.vr[k] for k in params], list(params.values()))
@@ -102,6 +112,7 @@ class FlightModel:
         self.start = start
         self.u[:] = 0.0
         self.u[INPUTS.index("throttle")] = start.thtl0
+        self.u[INPUTS.index("gear_cmd")] = start.gear0
         self.slave.setReal(self.in_vr, list(self.u))
         self.y[:] = self.slave.getReal(self.out_vr)
 

@@ -7245,6 +7245,30 @@
     "id": "c020",
     "kind": "signal",
     "from": {
+     "node": "n04",
+     "port": "y"
+    },
+    "to": {
+     "node": "n09",
+     "port": "w"
+    }
+   },
+   {
+    "id": "c021",
+    "kind": "signal",
+    "from": {
+     "node": "n04",
+     "port": "y"
+    },
+    "to": {
+     "node": "n09",
+     "port": "u_ground"
+    }
+   },
+   {
+    "id": "c022",
+    "kind": "signal",
+    "from": {
      "node": "n06",
      "port": "y"
     },
@@ -7254,7 +7278,7 @@
     }
    },
    {
-    "id": "c021",
+    "id": "c023",
     "kind": "signal",
     "from": {
      "node": "n07",
@@ -7266,7 +7290,7 @@
     }
    },
    {
-    "id": "c022",
+    "id": "c024",
     "kind": "signal",
     "from": {
      "node": "n08",
@@ -7278,7 +7302,7 @@
     }
    },
    {
-    "id": "c023",
+    "id": "c025",
     "kind": "signal",
     "from": {
      "node": "n09",
@@ -7290,7 +7314,7 @@
     }
    },
    {
-    "id": "c024",
+    "id": "c026",
     "kind": "signal",
     "from": {
      "node": "n10",
@@ -7302,7 +7326,7 @@
     }
    },
    {
-    "id": "c025",
+    "id": "c027",
     "kind": "signal",
     "from": {
      "node": "n13",
@@ -7314,7 +7338,7 @@
     }
    },
    {
-    "id": "c026",
+    "id": "c028",
     "kind": "signal",
     "from": {
      "node": "n11",
@@ -7326,39 +7350,15 @@
     }
    },
    {
-    "id": "c027",
-    "kind": "signal",
-    "from": {
-     "node": "n13",
-     "port": "vt"
-    },
-    "to": {
-     "node": "n12",
-     "port": "vt"
-    }
-   },
-   {
-    "id": "c028",
-    "kind": "signal",
-    "from": {
-     "node": "n13",
-     "port": "alpha"
-    },
-    "to": {
-     "node": "n12",
-     "port": "alpha"
-    }
-   },
-   {
     "id": "c029",
     "kind": "signal",
     "from": {
      "node": "n13",
-     "port": "nz"
+     "port": "vt"
     },
     "to": {
      "node": "n12",
-     "port": "nz"
+     "port": "vt"
     }
    },
    {
@@ -7366,6 +7366,30 @@
     "kind": "signal",
     "from": {
      "node": "n13",
+     "port": "alpha"
+    },
+    "to": {
+     "node": "n12",
+     "port": "alpha"
+    }
+   },
+   {
+    "id": "c031",
+    "kind": "signal",
+    "from": {
+     "node": "n13",
+     "port": "nz"
+    },
+    "to": {
+     "node": "n12",
+     "port": "nz"
+    }
+   },
+   {
+    "id": "c032",
+    "kind": "signal",
+    "from": {
+     "node": "n13",
      "port": "gamma"
     },
     "to": {
@@ -7374,7 +7398,7 @@
     }
    },
    {
-    "id": "c031",
+    "id": "c033",
     "kind": "signal",
     "from": {
      "node": "n13",
@@ -7386,7 +7410,7 @@
     }
    },
    {
-    "id": "c032",
+    "id": "c034",
     "kind": "signal",
     "from": {
      "node": "n14",
@@ -7398,7 +7422,7 @@
     }
    },
    {
-    "id": "c033",
+    "id": "c035",
     "kind": "signal",
     "from": {
      "node": "n14",
@@ -7410,7 +7434,7 @@
     }
    },
    {
-    "id": "c034",
+    "id": "c036",
     "kind": "signal",
     "from": {
      "node": "n15",
@@ -7422,30 +7446,6 @@
     }
    },
    {
-    "id": "c035",
-    "kind": "signal",
-    "from": {
-     "node": "n13",
-     "port": "qbar"
-    },
-    "to": {
-     "node": "n16",
-     "port": "u"
-    }
-   },
-   {
-    "id": "c036",
-    "kind": "signal",
-    "from": {
-     "node": "n13",
-     "port": "mach"
-    },
-    "to": {
-     "node": "n16",
-     "port": "v"
-    }
-   },
-   {
     "id": "c037",
     "kind": "signal",
     "from": {
@@ -7453,7 +7453,7 @@
      "port": "qbar"
     },
     "to": {
-     "node": "n17",
+     "node": "n16",
      "port": "u"
     }
    },
@@ -7465,7 +7465,7 @@
      "port": "mach"
     },
     "to": {
-     "node": "n17",
+     "node": "n16",
      "port": "v"
     }
    },
@@ -7477,7 +7477,7 @@
      "port": "qbar"
     },
     "to": {
-     "node": "n18",
+     "node": "n17",
      "port": "u"
     }
    },
@@ -7489,7 +7489,7 @@
      "port": "mach"
     },
     "to": {
-     "node": "n18",
+     "node": "n17",
      "port": "v"
     }
    },
@@ -7498,6 +7498,30 @@
     "kind": "signal",
     "from": {
      "node": "n13",
+     "port": "qbar"
+    },
+    "to": {
+     "node": "n18",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c042",
+    "kind": "signal",
+    "from": {
+     "node": "n13",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n18",
+     "port": "v"
+    }
+   },
+   {
+    "id": "c043",
+    "kind": "signal",
+    "from": {
+     "node": "n13",
      "port": "alpha"
     },
     "to": {
@@ -7506,7 +7530,7 @@
     }
    },
    {
-    "id": "c042",
+    "id": "c044",
     "kind": "signal",
     "from": {
      "node": "n13",
@@ -7518,7 +7542,7 @@
     }
    },
    {
-    "id": "c043",
+    "id": "c045",
     "kind": "signal",
     "from": {
      "node": "n12",
@@ -7530,7 +7554,31 @@
     }
    },
    {
-    "id": "c044",
+    "id": "c046",
+    "kind": "signal",
+    "from": {
+     "node": "n14",
+     "port": "y"
+    },
+    "to": {
+     "node": "n19",
+     "port": "w"
+    }
+   },
+   {
+    "id": "c047",
+    "kind": "signal",
+    "from": {
+     "node": "n14",
+     "port": "y"
+    },
+    "to": {
+     "node": "n19",
+     "port": "u_ground"
+    }
+   },
+   {
+    "id": "c048",
     "kind": "signal",
     "from": {
      "node": "n16",
@@ -7542,7 +7590,7 @@
     }
    },
    {
-    "id": "c045",
+    "id": "c049",
     "kind": "signal",
     "from": {
      "node": "n17",
@@ -7554,7 +7602,7 @@
     }
    },
    {
-    "id": "c046",
+    "id": "c050",
     "kind": "signal",
     "from": {
      "node": "n18",
@@ -7566,7 +7614,7 @@
     }
    },
    {
-    "id": "c047",
+    "id": "c051",
     "kind": "signal",
     "from": {
      "node": "n19",
@@ -7578,7 +7626,7 @@
     }
    },
    {
-    "id": "c048",
+    "id": "c052",
     "kind": "signal",
     "from": {
      "node": "n20",
@@ -7590,7 +7638,7 @@
     }
    },
    {
-    "id": "c049",
+    "id": "c053",
     "kind": "signal",
     "from": {
      "node": "n21",
@@ -7602,62 +7650,14 @@
     }
    },
    {
-    "id": "c050",
-    "kind": "signal",
-    "from": {
-     "node": "n03",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n22",
-     "port": "g"
-    }
-   },
-   {
-    "id": "c051",
-    "kind": "signal",
-    "from": {
-     "node": "n03",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n22",
-     "port": "g0"
-    }
-   },
-   {
-    "id": "c052",
-    "kind": "signal",
-    "from": {
-     "node": "n03",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n23",
-     "port": "g"
-    }
-   },
-   {
-    "id": "c053",
-    "kind": "signal",
-    "from": {
-     "node": "n03",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n23",
-     "port": "g0"
-    }
-   },
-   {
     "id": "c054",
     "kind": "signal",
     "from": {
-     "node": "n13",
+     "node": "n03",
      "port": "pose"
     },
     "to": {
-     "node": "n24",
+     "node": "n22",
      "port": "g"
     }
    },
@@ -7669,12 +7669,60 @@
      "port": "pose"
     },
     "to": {
-     "node": "n24",
+     "node": "n22",
      "port": "g0"
     }
    },
    {
     "id": "c056",
+    "kind": "signal",
+    "from": {
+     "node": "n03",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n23",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c057",
+    "kind": "signal",
+    "from": {
+     "node": "n03",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n23",
+     "port": "g0"
+    }
+   },
+   {
+    "id": "c058",
+    "kind": "signal",
+    "from": {
+     "node": "n13",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n24",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c059",
+    "kind": "signal",
+    "from": {
+     "node": "n03",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n24",
+     "port": "g0"
+    }
+   },
+   {
+    "id": "c060",
     "kind": "signal",
     "from": {
      "node": "n13",
@@ -7686,7 +7734,7 @@
     }
    },
    {
-    "id": "c057",
+    "id": "c061",
     "kind": "signal",
     "from": {
      "node": "n03",

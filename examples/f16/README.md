@@ -15,7 +15,7 @@ bg-sim; the design scripts work in the book's ft/slug units and convert.
 | `f16-open-loop` | Three aircraft trimmed at the book's point (502 ft/s, sea level) with the CG at 0.30, 0.35 and 0.38 of the mean chord, each released on its own mode. A30 (forward CG) has a stable short period, A35 and A38 a real unstable pole (+0.102 and +0.657 1/s), read live by `GrowthRate` blocks. A30 also carries an energy ledger. |
 | `f16-fbw` | The aft-CG (0.38, statically unstable) F-16 at 400 ft/s, 25 000 ft under a pitch-rate command law whose gains are scheduled on dynamic pressure and Mach (three stdlib `Lookup2D` tables), next to the same law with the gains of a 1000 ft/s, 2000 ft point frozen. Sliders for the step and the CG. |
 | `f16-envelope` | Full aft stick (11 g asked) at 900 ft/s, 5000 ft through a g-command path with a min-select alpha/g limiter, on and off. Protected: alpha stays below 17.3 deg and nz below 8.84 g through the loop. Unprotected: 10.1 g, then the slow top of the loop departs to more than 80 deg alpha. Sliders for the stick and the limiter; gauges. |
-| `f16-sim` | The flyable F-16: a three-axis fly-by-wire at 500 ft/s, 10 000 ft (CG 0.35). Pitch: g command with turn compensation and the alpha/g limiter. Roll: roll-rate command about the velocity vector, with a limit that falls with nz and at low qbar. Yaw: yaw damper, aileron-rudder interconnect and a pedal sideslip command. All gains are scheduled on qbar and Mach. Its inputs, outputs, trim, CG, mass and law switches are the FMU interface of `apps/f16-sim`. The default run is a coordinated 60 deg turn. Sliders for the sticks, pedals, throttle and switches; the flaperons and the rudder move in 3D. |
+| `f16-sim` | The flyable F-16: a three-axis fly-by-wire at 500 ft/s, 10 000 ft (CG 0.35). Pitch: g command with turn compensation and the alpha/g limiter. Roll: roll-rate command about the velocity vector, with a limit that falls with nz and at low qbar. Yaw: yaw damper, aileron-rudder interconnect and a pedal sideslip command. All gains are scheduled on qbar and Mach. Its inputs, outputs, trim, CG, mass and law switches are the FMU interface of `apps/f16-sim`. The default run is a coordinated 60 deg turn. Sliders for the sticks, pedals, throttle and switches; the flaperons and the rudder move in 3D. It has a landing gear: it rests, taxis, takes off and lands. |
 | `f16-pio` | An aggressive pilot (gain 3/s on the pitch-attitude error, 0.25 s delay) captures a 7 deg attitude change through the 60 deg/s rate-limited stabilator. Plain rate limit: a growing, rate-saturated oscillation (attitude error 29 -> 36 -> 41 deg peak-to-peak per 2 s). With a phase-compensated rate limiter: damped (7 -> 2.2 -> 0.45 -> 0.14 deg). |
 
 Every model has a 3D scene: an F-16 built from simple solids (`design/make_meshes.py`: lofted
@@ -105,38 +105,143 @@ times, central-difference linearisation. `design/simscen.py` runs the scenarios 
 `dutch roll` uses the run-check kind `damping`: a damped sinusoid fitted to a signal by variable
 projection (`examples/run_checks.py`).
 
+## Landing gear (f16-sim)
+
+`f16-sim` has a tricycle gear with the structure of `examples/cessna`: on each leg a `FixedTransform3DNeutral`
+to the contact point, the Cessna's `GearContact` (a modulated transformer), and 1-junctions with a nonlinear
+spring, a damper, rolling and brake friction, and a side force. `design/build_model.py` copies those five
+blocks unchanged from `examples/cessna/library` on every build (a project library belongs to its project, so
+they cannot be shared directly). The Cessna stays their source.
+
+New here:
+
+* **Retraction.** The strut sits below a 0-junction with an `MSf`, whose flow is the rate at which the
+  actuator lifts the contact point: stroke = penetration - L (1 - gear_pos). The stroke law itself is the
+  Cessna's. At L = 3 m the raised gear stays clear of the ground, so an aircraft with its gear up
+  reaches `ground_contact` (height below 0) first, as before.
+* **Steering.** `GearLogic` turns the pedals into the nose-wheel angle, with a limit over the ground speed
+  (32 deg at 10 ft/s, 16 deg at 20 ft/s, 3 deg at 50 ft/s, 0.5 deg at 150 ft/s). The aircraft tips over at about 0.75 g, half the track over the CG height, and a dry tyre can reach that, so full pedal stays near 0.35 g.
+* **Weight on wheels.** `w` runs from 0 to 1 as the force in the main struts' springs rises from 500 N to
+  10 % of the weight, and is exactly 0 in the air. It reads the springs because the wheel load holds the
+  damper force, which depends on the retraction's rate: through the interlock that would close an algebraic
+  loop, and the model would stop being an ODE that RK4 can step. It fades the laws to direct commands (stick to stabilator, stick to
+  aileron, pedals to rudder), brings the pitch integrator along with the direct command and fades the lateral
+  integrators to 0. The handle's interlock uses it too: with weight on the wheels the gear stays down.
+* **Gear drag.** `GearDrag` adds `gear_pos * CD * qbar * S` with its moment arm, 1.2 m below the CG.
+
+Two changes reach the airframe. `F16AirData` floors the airspeed at 1 m/s and fades alpha to 0 below it, since
+neither `sqrt` nor `atan2` has a derivative at rest. In `F16Status`, `nz_g` now adds the wheels' load (1 g when
+parked), `departed` stays 0 on the wheels, and `ground_contact` also fires when a strut bottoms at 0.40 m. In
+the air with the gear up all of these leave the numbers as they were.
+
+`gear_cmd` and `gear0` default to 0: a host that does not know the gear flies as before, and the ground is
+still a crash.
+
+### Data and sources
+
+| quantity | value | source |
+| --- | --- | --- |
+| contact points | nose x +2.797 m, z -1.699 m; mains x -0.785 m, y ±1.219 m, z -1.689 m from the CG at xcg 0.35 | JSBSim `aircraft/f16/f16.xml` (Erik Hofman, F-16A Block 32), stations relative to its AERORP |
+| spring rates | nose 251.8 kN/m, main 547.3 kN/m | same file, 17250 and 37500 lbf/ft |
+| damping | nose 31.0 kN s/m, main 54.7 kN s/m | same file, halved (below) |
+| friction | static 0.8, rolling 0.02 | same file |
+| brake friction | 0.5 | same file (its dynamic friction) |
+| retraction | 5 s | same file |
+| gear drag | CD 0.0270 | same file |
+| nose-wheel steering | 32 deg at taxi speed, then the limit above | assumed: no source found (JSBSim's file has 80 deg) |
+| strut stroke | 0.40 m | assumed: no source found, only used to flag bottoming |
+| retraction lift L, drag arm | 3 m, 1.2 m | model choices, no physical meaning for L |
+
+JSBSim's wheelbase and track are 3.58 m and 2.44 m. Secondary sources give about 4.0 m and 2.36 m, so the
+wheelbase here is about 10 % short, and the nose wheel's 22 % at xcg 0.35 is probably a little high. The JSBSim
+set is kept because its contact points, rates and damping belong together.
+
+The damping is half of JSBSim's. At 2 m/s of sink the full value alone gives 219 kN on a main wheel, 2.4 times
+the aircraft's weight, for a damping force that a real oleo meters. Half of it gives a damping ratio of about 0.5.
+
+The sink-rate limit of 10 ft/s (3.05 m/s) is the design value at about 19 500 lb that F-16 forum posts quote
+(6 ft/s at 27 500 lb). It is a secondary source, not a flight manual; the model's weight is 20 500 lb.
+The JSBSim file itself is under a copyleft licence. Only its numbers are used here, with attribution.
+
+### What the checks hold it to
+
+`design/gear.py` is an independent reference: a rigid aircraft in the vertical plane with the book's
+coefficients, the engine lag, the servo and the pitch law, and per axle the strut and tyre laws written from
+geometry. It writes `design/gear.json`, and `build_model.py` turns that into five more entries of
+`expected.json`.
+
+| run | quantity | reference | bg-sim |
+| --- | --- | --- | --- |
+| at rest, idle, brakes set | CG height | 1.6228 m | 1.6228 m |
+| | pitch | -0.254 deg | -0.254 deg |
+| | nose / main wheel load | 22.38 / 34.39 kN | 22.38 / 34.39 kN |
+| taxi at 25 % throttle, then brakes | peak speed | 26.8 m/s | 26.8 m/s |
+| | where it stops | 324.7 m | 324.7 m |
+| take-off, full afterburner | height at 26 s | 516.6 m | 516.6 m |
+| | peak pitch | 32.8 deg | 32.9 deg |
+| landing, no flare | peak main wheel | 113.9 kN | 115.3 kN |
+| | peak nose wheel | 57.4 kN | 57.4 kN |
+| | where it stops | 2205.5 m | 2205.5 m |
+| half pedal at 6.6 m/s | yaw rate | 13.47 deg/s (V tan(steer) / wheelbase) | 13.61 deg/s |
+
+Without thrust the analytic rest is 1.6232 m with 20.03 kN (22.0 %) on the nose wheel and 35.56 kN on each main
+wheel. The idle thrust against the brakes moves about 2.3 kN onto the nose wheel. With full afterburner, full
+aft stick at 12 s (152 kt) lifts off at about 87 m/s (170 kt) after 413 m. In the landing the aircraft comes
+down a 1.9 deg path at 76 m/s at the trim's alpha of 12.9 deg, with no flare, and touches down at 2.13 m/s of
+sink (7 ft/s), 74.9 m/s, 11.4 deg of pitch. The struts compress 10.5 cm (main) and 19.5 cm (nose).
+
 ## The FMU
 
 `f16-sim` has the host interface as export markers:
 
 * Inputs (`ExportInputPass`, which pass the model's test stimulus through in bg-sim): `stick_pitch`,
-  `stick_roll`, `pedals` (-1..1), `throttle` (0..1), and the wind `wind_n`, `wind_e`, `wind_d` (m/s).
+  `stick_roll`, `pedals` (-1..1), `throttle` (0..1), the wind `wind_n`, `wind_e`, `wind_d` (m/s),
+  `gear_cmd` (0 up, 1 down) and the wheel brakes `brake_l`, `brake_r` (0..1).
 * Outputs (`ExportOutput`): position (north, east, altitude), quaternion, Euler and path angles,
   body rates and velocities, vertical speed, TAS, CAS, Mach, qbar, alpha, beta, nz, ny, the three
-  surfaces, power, thrust, the roll-rate limit, the commanded nz, and the limiter, departure and
-  ground flags.
+  surfaces, power, thrust, the roll-rate limit, the commanded nz, the limiter, departure and
+  ground flags, the wheel loads `fn_nose`, `fn_left`, `fn_right` (N), `on_ground`, the nose-wheel
+  angle `steer_rad` and `gear_pos` (0 up, 1 down).
 * FMU parameters (exposed globals with ranges): `vt0`, `h0`, `alpha0`, `el0`, `thtl0` (a trim:
-  set them together), `xcg`, `mass`, and the switches `limiter`, `turn_comp`, `roll_law`,
-  `yaw_damper`, `beta_hold`, `ari`, `vv_roll`. The start state (quaternion, momenta, engine power)
-  is a set of expressions of these globals, recomputed at initialization.
+  set them together), `gamma0` (the start's path angle), `gear0` (the start's gear position),
+  `north0`, `east0` (the start's position), `xcg`, `mass`, and the switches `limiter`,
+  `turn_comp`, `roll_law`, `yaw_damper`, `beta_hold`, `ari`, `vv_roll`. The start state
+  (quaternion, momenta, engine power, gear position, strut compressions) is a set of expressions
+  of these globals, recomputed at initialization.
+
+For a start on the runway set `vt0` 0, `h0` and `alpha0` to the static values of `design/gear.json`,
+`el0` and `thtl0` 0, `gear0` 1, and drive `gear_cmd` at 1.
 
     uv run examples/export_f16_check.py        # export, references, build, fmpy comparison
 
-The analysis picks RK4 with one 5 ms step per 5 ms communication step. `doStep` takes 3.5 us on
-average (95 us at most), with no allocations after instantiation. fmpy drives the FMU through four
-manoeuvres and compares it with bg-sim runs that the same inputs drive. The worst deviation is
-relative to each signal's peak:
+`examples/export_f16.jl` sets RK4 at 2.5 ms, two substeps per 5 ms communication step, the Cessna's
+step. The analysis looks only at the model's own start, in the air with the gear up, where it would
+take 5 ms and not see the tyres and struts. From a start on the wheels it finds |lambda| = 124 /s:
+RK4 is stable up to 22 ms there, its accuracy bound is 2.4 ms, and rounded down to a fraction of the
+communication step that would be 1.25 ms. 2.5 ms sits just above that bound, at half the cost, and the
+comparison below is what shows it is accurate enough. `doStep` takes
+about 9 us on average (8.3 to 9.2 us over three builds, 100 us at most), with no allocations after
+instantiation, against 2.9 us and 50.7 us in the same harness before the gear. fmpy drives the FMU
+through seven runs and compares it
+with bg-sim runs that the same inputs drive. The worst deviation is relative to each signal's peak:
 
-| manoeuvre | worst output | alpha | phi | nz | altitude |
-| --- | --- | --- | --- | --- | --- |
-| pitch doublet | 8.3e-4 (stabilator) | 1.2e-3 deg | 9e-7 deg | 5.3e-4 g | 4.8 mm |
-| roll and roll back | 1.3e-3 (stabilator) | 3.9e-4 deg | 6.5e-4 deg | 2.7e-4 g | 0.2 mm |
-| coordinated turn | 5.6e-4 (aileron) | 2.5e-5 deg | 6.8e-4 deg | 1.1e-5 g | 0.8 mm |
-| throttle step and pedals | 7.4e-3 (power) | 5.7e-4 deg | 2.9e-4 deg | 5.8e-5 g | 1 cm |
+| run | worst output | alpha | theta | nz | altitude | main wheel load |
+| --- | --- | --- | --- | --- | --- | --- |
+| pitch doublet | 3.5e-5 (stabilator) | 3.1e-5 deg | 3.7e-5 deg | 1.4e-5 g | 0.1 mm | |
+| roll and roll back | 2.2e-4 (stabilator) | 8.1e-5 deg | 5.1e-5 deg | 5.0e-5 g | 0.4 mm | |
+| coordinated turn | 2.0e-5 (stabilator) | 4.7e-6 deg | 3.4e-6 deg | 1.5e-6 g | 0.1 mm | |
+| throttle step and pedals | 1.4e-3 (power) | 1.1e-4 deg | 4.7e-5 deg | 1.1e-5 g | 2 mm | |
+| taxi, steering and brakes in a crosswind | 5.2e-3 (alpha) | 7.4e-3 deg | 4.1e-8 deg | 6.4e-7 g | 2e-8 m | 0.03 N |
+| take-off, gear coming up | 4.4e-3 (rudder) | 0.025 deg | 0.031 deg | 3.4e-3 g | 15 cm | 99 N |
+| landing | 1.1e-2 (stabilator) | 1.3e-3 deg | 1.2e-3 deg | 3.4e-3 g | 0.03 mm | 29 N |
+
+The stabilator of the landing is the one number above the 1 % gate. Its peak in that run is small and the
+laws hand over within a few steps of touchdown, so one substep of timing shows; the check takes 0.05 deg
+as the floor for it, a fifth of what the stabilator moves in a 5 ms step.
 
 The power level crosses military power, where the engine lag switches its rate. The FMU evaluates
-that switch once per step, so it can come up to 5 ms late (W203). `apps/f16-sim` is the host: see
-its README.
+that switch once per step, so it can come up to one step late (W203). `on_ground` switches the same
+way, so the check holds it to its own bound. `apps/f16-sim` is the host: see its README.
 
 ## Limitations
 
@@ -163,6 +268,16 @@ its README.
 * The CG slider of `f16-fbw` keeps the start state of the 0.38 trim: another CG starts slightly out
   of trim and the integrator takes it out.
 * The wing-bending notch of the plan is not part of this example.
+* The gear: no ground effect, flaps or leading-edge flaps, so the approach flies at 12.9 deg of alpha and
+  the landing has no flare. There is no anti-skid, and the brake friction does not depend on speed.
+* The only crash conditions on the ground are the CG below 0 m and a strut compressed past 0.40 m. A tail
+  strike, a wingtip strike or a roll-over are not detected. The steering limit keeps the pedals away from a
+  roll-over, but the model does not rule one out.
+* The Cessna's smooth contact lets a strut pull for an instant while it extends through zero: up to 5 kN at
+  lift-off, over about a millimetre of travel. It scales with the damping and it has no effect on the path.
+* The ground is flat at 0 m. `tas_mps` reads the 1 m/s floor at rest, and `nz_g` includes the wheels' load.
+* The 3D scene of `f16-sim` does not draw the gear, and its floor is a reference plane below the start
+  altitude, so a run on the wheels looks odd in it. The host `apps/f16-sim` draws the gear.
 
 ## Files
 
@@ -173,13 +288,15 @@ its README.
 | `design/f16_si.py`, `f16_lin.py` | SI conversion, principal axes, start states; trim and linearisation |
 | `design/fbw.py`, `closedloop.py`, `scenarios.py` | the gain design and the nonlinear closed-loop references |
 | `design/lateral.py`, `sim3.py`, `simscen.py` | f16-sim: the lateral gain design, the three-axis reference and its scenarios |
+| `design/gear.py` | the gear's data and its pitch-plane reference; writes `design/gear.json` |
 | `design/design.py` | runs everything and writes `design/design.json` |
-| `design/build_model.py` | writes the models, scenes, `library/F16Trail.jl` and `expected.json` |
+| `design/build_model.py` | writes the models, scenes, `library/F16Trail.jl`, the copied gear blocks and `expected.json` |
 | `design/make_meshes.py` | writes `meshes/*.glb` |
-| `library/` | `F16AirData` (with wind inputs), `F16Forces`, `F16Engine`, `F16Energy`, `GrowthRate`, `GCommand`, `PitchFBW`, `F16View`, `F16Trail`; for f16-sim `PitchCommand`, `LateralFBW`, `F16Status` |
+| `library/` | `F16AirData` (with wind inputs), `F16Forces`, `F16Engine`, `F16Energy`, `GrowthRate`, `GCommand`, `PitchFBW`, `F16View`, `F16Trail`; for f16-sim `PitchCommand`, `LateralFBW`, `F16Status`; for its gear `GearLogic`, `GearActuator`, `GearDrag`, and `GearContact`, `StrutSpring`, `StrutDamper`, `WheelFriction`, `WheelSide` (copies of the Cessna's, written by `build_model.py`) |
 | `../export_f16.jl`, `../export_f16_check.py` | the f16-sim FMU: export, references and the fmpy acceptance |
 
     uv run examples/f16/design/design.py
+    uv run examples/f16/design/gear.py
     uv run examples/f16/design/build_model.py
     uv run examples/f16/design/make_meshes.py
     uv run examples/run_checks.py --only f16

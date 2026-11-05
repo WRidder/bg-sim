@@ -9,7 +9,10 @@
     # world. The world of the model is x north, y west, z up.
     #
     #   vt, alpha, beta    airspeed (m/s), angle of attack and sideslip (rad; also in deg, the unit
-    #                      of the NASA tables)
+    #                      of the NASA tables). Below `vf` (1 m/s) vt holds at vf and alpha turns to
+    #                      0, so an aircraft at rest on its gear keeps vt finite and alpha smooth:
+    #                      neither sqrt nor atan2 has a derivative at rest, which a Jacobian needs.
+    #                      Above vf nothing changes.
     #   p, q, r            body rates in FRD axes (rad/s; q > 0 is nose up), q_deg in deg/s
     #   phi, theta, psi    roll, pitch, heading (rad), gamma the flight-path angle
     #   h, mach, qbar      altitude (m), Mach number and dynamic pressure (Pa) from the book's
@@ -61,6 +64,7 @@
         klapse::Real = 2.3064304e-5, [description = "0.703e-5 per ft, in 1/m"]
         h_trop::Real = 10668.0, [description = "35000 ft: constant temperature above (m)"]
         a_gas::Real = 14.9408595, [description = "sqrt(1.4*1716.3 ft^2/(s^2 R))*0.3048: a = a_gas*sqrt(T/R) in m/s"]
+        vf::Real = 1.0, [unit = "m/s", min = 1.0e-6, description = "Floor of the airspeed (at rest on the gear)"]
     end
     @variables begin
         s::Real = 1.0
@@ -73,6 +77,8 @@
         ub::Real = 0.0, [description = "Air-relative body velocity x (forward), m/s"]
         vb::Real = 0.0, [description = "Air-relative body velocity y (right), m/s"]
         wb::Real = 0.0, [description = "Air-relative body velocity z (down), m/s"]
+        v2::Real = 0.0, [description = "Squared speed through the air (m^2/s^2)"]
+        dv::Real = 0.0, [description = "What the floor adds to v2 (m^2/s^2)"]
         tfac::Real = 1.0
         Tr::Real = 519.0, [description = "Ambient temperature (Rankine, as in the book)"]
         rho::Real = 1.2250554, [description = "Density (kg/m^3)"]
@@ -123,8 +129,10 @@
         q_deg ~ q * 57.29577951308232
         p_deg ~ p * 57.29577951308232
         r_deg ~ r * 57.29577951308232
-        vt ~ sqrt(ub * ub + vb * vb + wb * wb)
-        alpha ~ atan(wb, ub)
+        v2 ~ ub * ub + vb * vb + wb * wb
+        dv ~ max(vf * vf - v2, 0.0)
+        vt ~ sqrt(v2 + dv)
+        alpha ~ atan(wb, ub + dv / vf)
         beta ~ asin(vb / vt)
         alpha_deg ~ alpha * 57.29577951308232
         beta_deg ~ beta * 57.29577951308232

@@ -126,6 +126,7 @@ class Simulation:
         self.crash_reason = ""
         self.u[:] = 0.0
         self.u[IDX["throttle"]] = start.thtl0
+        self.u[IDX["gear_cmd"]] = start.gear0
         self.prev = self.position()
         if self.rings:
             self.start_rings()
@@ -155,6 +156,14 @@ class Simulation:
         self.u[IDX["stick_roll"]] = min(1.0, max(-1.0, stick_roll))
         self.u[IDX["pedals"]] = min(1.0, max(-1.0, pedals))
         self.u[IDX["throttle"]] = min(1.0, max(0.0, throttle))
+
+    def set_brakes(self, left: float, right: float | None = None) -> None:
+        self.u[IDX["brake_l"]] = min(1.0, max(0.0, left))
+        self.u[IDX["brake_r"]] = min(1.0, max(0.0, left if right is None else right))
+
+    def toggle_gear(self) -> None:
+        """The gear handle. On the ground the FMU's interlock holds the gear down."""
+        self.u[IDX["gear_cmd"]] = 0.0 if self.u[IDX["gear_cmd"]] > 0.5 else 1.0
 
     def advance(self, dt: float, control=None) -> int:
         """Advance by the frame time ``dt`` (s of real time): the paced number of FMU steps.

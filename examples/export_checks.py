@@ -59,7 +59,8 @@ def reference(ref_dir: Path):
     return ids, rows[keep]
 
 
-def run_driven(fmu: Path, names: list[str], inputs: dict, t_end: float, step: float) -> dict:
+def run_driven(fmu: Path, names: list[str], inputs: dict, t_end: float, step: float,
+               params: dict[str, float] | None = None) -> dict:
     """Run the FMU with its inputs set from ``inputs`` (X-EX1), in an explicit loop.
 
     ``inputs`` is ``inputs.json`` of ``export_examples.jl``: ``t`` (the communication instants
@@ -70,6 +71,7 @@ def run_driven(fmu: Path, names: list[str], inputs: dict, t_end: float, step: fl
     they sample k, not k+1). This is exactly what ``simulate(...; inputs)`` does.
     fmpy's ``simulate_fmu(input=...)`` is not used: it records each row before it sets the
     next input (the left limit) and interpolates a table linearly between its rows.
+    ``params`` are FMU parameters set before initialization (a run from another start).
     """
     from fmpy import extract, read_model_description
     from fmpy.fmi2 import FMU2Slave
@@ -90,6 +92,8 @@ def run_driven(fmu: Path, names: list[str], inputs: dict, t_end: float, step: fl
                       modelIdentifier=md.coSimulation.modelIdentifier, instanceName="gate")
     slave.instantiate()
     try:
+        if params:
+            slave.setReal([vr[k] for k in params], list(params.values()))
         slave.setupExperiment(startTime=0.0, stopTime=t_end)
         slave.enterInitializationMode()
         slave.exitInitializationMode()

@@ -12,7 +12,7 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.core import ClockObject, Filename, KeyboardButton, PNMImage, Point2, Point3, Vec3
 
 from .aircraft import Aircraft
-from .core import Simulation
+from .core import IDX, Simulation
 from .fmu import OUTPUTS, Settings, Start, body_to_ned
 from .hud import Hud
 from .inputs import Joysticks, Keyboard, Mixer, load_config
@@ -22,7 +22,7 @@ from .world import HORIZON, World
 IX = {n: k for k, n in enumerate(OUTPUTS)}
 CHASE_BACK, CHASE_UP, CHASE_TAU = 26.0, 6.0, 0.35
 HELP = ("P pause   R reset   1-9 start   C view   G ring course   T turbulence   F1 help   Esc quit\n"
-        "arrows or W/S, A/D stick   Q/E or Z/X pedals   PgUp/PgDn or +/- throttle\n"
+        "arrows or W/S, A/D stick   Q/E or Z/X pedals   PgUp/PgDn or +/- throttle   U gear   B brakes\n"
         "L limiter, V velocity-vector roll, Y yaw damper: on/off (restarts the flight)")
 
 
@@ -78,6 +78,7 @@ class Game(ShowBase):
             self.accept(str(k), self.reset, [k - 1])
         self.accept("c", self.toggle_view)
         self.accept("g", self.toggle_rings)
+        self.accept("u", self.sim.toggle_gear)
         self.accept("t", self.toggle_turbulence)
         self.accept("l", self.toggle_switch, ["limiter"])
         self.accept("v", self.toggle_switch, ["vv_roll"])
@@ -142,12 +143,14 @@ class Game(ShowBase):
             "yaw_right": down(a("e")) or down(a("x")),
             "throttle_up": down(KeyboardButton.page_up()) or down(a("+")) or down(a("=")),
             "throttle_down": down(KeyboardButton.page_down()) or down(a("-")),
+            "brakes": down(a("b")),
         }
 
     def _pilot(self, dt: float) -> None:
         held = self._held()
         self.kb.update(held, dt)
         self.sim.set_controls(*self.mixer.mix(self.joy.poll(), self.kb, held))
+        self.sim.set_brakes(1.0 if held.get("brakes") else 0.0)
 
     # ---- frame
     def frame(self, dt: float, script=None) -> None:
@@ -202,6 +205,7 @@ class Game(ShowBase):
         y = m.snapshot()
         y["throttle"] = float(sim.u[3])
         y["agl"] = sim.agl()
+        y["brakes"] = float(max(sim.u[IDX["brake_l"]], sim.u[IDX["brake_r"]]))
         info = (f"{'REC' if self.recording else 'FPS'} {self.fps:3.0f}   RT {self.rt:4.2f}x   t {m.time:6.1f} s   "
                 f"{self.view}   {sim.start.label}" + (f"   behind {sim.pacer.behind}" if sim.pacer.behind else "")
                 + ("   turbulence" if sim.wind.intensity > 0 else ""))

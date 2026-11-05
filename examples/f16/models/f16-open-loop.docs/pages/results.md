@@ -1,6 +1,6 @@
 # Results
 
-![alpha, q and the growth rates|900](assets/56307e312d81.png)
+![alpha, q and the growth rates|900](assets/1d724142b2c1.png)
 
 | quantity | bg-sim | reference |
 | --- | --- | --- |

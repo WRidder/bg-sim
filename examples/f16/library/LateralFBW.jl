@@ -18,6 +18,9 @@
     # The sideslip integral holds beta = beta_cmd, so a turn with the pedals centred is
     # coordinated (beta = 0). Signs of the book: a positive aileron rolls left, a positive rudder
     # yaws left; right pedal yaws the nose right, which is a negative sideslip.
+    # On the ground (`w`, the weight on wheels, from GearLogic) the law fades into direct surface
+    # commands, ail = -ail_max stick and rdr = -rdr_max pedal, and its integrators fade to zero:
+    # at taxi speed beta and the gains mean nothing. In the air w is exactly 0.
     # The switches roll_law, yaw_damper, beta_hold, ari and vv_roll (1 on, 0 off) take parts of the
     # law out, for the comparisons of the example.
     @inputs begin
@@ -35,6 +38,7 @@
         Kb::Real, [description = "Sideslip gain (deg per deg)"]
         Kib::Real, [description = "Sideslip integral gain (deg/s per deg)"]
         Kari::Real, [description = "ARI: rudder per aileron (deg/deg)"]
+        w::Real, [description = "Weight on wheels, 0 .. 1"]
     end
     @outputs begin
         ail::Real, [description = "Aileron command, limited (deg)"]
@@ -58,6 +62,7 @@
         ail_max::Real = 21.5, [description = "Aileron travel (deg)"]
         rdr_max::Real = 30.0, [description = "Rudder travel (deg)"]
         t_aw::Real = 0.1, [unit = "s", min = 1.0e-6, description = "Anti-windup time constant"]
+        t_track::Real = 0.1, [unit = "s", min = 1.0e-6, description = "Time constant of the integrators on the ground"]
         roll_law::Real = 1.0, [description = "1: roll law on, 0: off (no aileron)"]
         yaw_damper::Real = 1.0, [description = "1: yaw damper on, 0: off"]
         beta_hold::Real = 1.0, [description = "1: sideslip loop on, 0: off"]
@@ -74,6 +79,8 @@
         fn::Real = 1.0, [description = "Load-factor share of the roll-rate limit"]
         ail_raw::Real = 0.0, [description = "Aileron command before the limit (deg)"]
         rdr_raw::Real = 0.0, [description = "Rudder command before the limit (deg)"]
+        ail_lim::Real = 0.0, [description = "Aileron command of the law, limited (deg)"]
+        rdr_lim::Real = 0.0, [description = "Rudder command of the law, limited (deg)"]
     end
     @equations begin
         ca ~ vv_roll * cos(alpha / 57.29577951308232) + (1.0 - vv_roll)
@@ -85,13 +92,15 @@
         p_lim ~ p_max * fq * fn
         p_cmd ~ p_lim * stick
         ail_raw ~ roll_law * Kp * (ps - kff * p_cmd) + xi_p
-        ail ~ clamp(ail_raw, -ail_max, ail_max)
-        ddt(xi_p) ~ roll_law * Kip * (ps - p_cmd) + (ail - ail_raw) / t_aw
+        ail_lim ~ clamp(ail_raw, -ail_max, ail_max)
+        ail ~ (1.0 - w) * ail_lim - w * ail_max * stick
+        ddt(xi_p) ~ (1.0 - w) * (roll_law * Kip * (ps - p_cmd) + (ail_lim - ail_raw) / t_aw) - w * xi_p / t_track
         beta_cmd ~ -beta_per_pedal * pedal
         r_wo ~ rs - xw
         ddt(xw) ~ r_wo / tau_wo
-        rdr_raw ~ ari * Kari * ail + yaw_damper * Kr * r_wo + beta_hold * Kb * (beta - beta_cmd) + xi_b
-        rdr ~ clamp(rdr_raw, -rdr_max, rdr_max)
-        ddt(xi_b) ~ beta_hold * Kib * (beta - beta_cmd) + (rdr - rdr_raw) / t_aw
+        rdr_raw ~ ari * Kari * ail_lim + yaw_damper * Kr * r_wo + beta_hold * Kb * (beta - beta_cmd) + xi_b
+        rdr_lim ~ clamp(rdr_raw, -rdr_max, rdr_max)
+        rdr ~ (1.0 - w) * rdr_lim - w * rdr_max * pedal
+        ddt(xi_b) ~ (1.0 - w) * (beta_hold * Kib * (beta - beta_cmd) + (rdr_lim - rdr_raw) / t_aw) - w * xi_b / t_track
     end
 end
