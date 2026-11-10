@@ -13,7 +13,8 @@ import BGSim.Compile
 import JSON3
 
 const _F16_PROJECT = normpath(joinpath(@__DIR__, "..", "..", "..", "examples", "f16"))
-const _F16_INPUTS = ["stick_pitch", "stick_roll", "pedals", "throttle", "wind_n", "wind_e", "wind_d"]
+const _F16_INPUTS = ["stick_pitch", "stick_roll", "pedals", "throttle", "wind_n", "wind_e", "wind_d",
+                     "gear_cmd", "brake_l", "brake_r"]
 const _F16_GLOBALS = ["vt0", "h0", "alpha0", "el0", "thtl0", "xcg", "mass", "limiter", "turn_comp",
                       "roll_law", "yaw_damper", "beta_hold", "ari", "vv_roll"]
 
@@ -44,7 +45,7 @@ _f16_todict(x) = x
         @test r.report["substeps"] == 1
         @test [i["name"] for i in r.report["inputs"]] == _F16_INPUTS
         outs = [o["name"] for o in r.report["outputs"]]
-        @test length(outs) == 36
+        @test length(outs) == 42
         @test all(n -> n in outs, ["alt_m", "q_w", "alpha_deg", "nz_g", "cas_mps", "ail_deg", "rdr_deg",
                                     "thrust_n", "limiter_active", "departed", "ground_contact"])
         tu = r.report["tunables"]
