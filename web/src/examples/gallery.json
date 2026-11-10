@@ -55,6 +55,23 @@
       ]
     }
   },
+  "bicycle": {
+    "title": "Bicycle",
+    "description": "The Whipple benchmark bicycle (Meijaard et al. 2007): hands-off self-stability on a 3D multibond bond graph, the linearised model and a steer-torque balance controller.",
+    "hasScene": true,
+    "models": [
+      "whipple",
+      "linear",
+      "balance",
+      "balance-linear"
+    ],
+    "capture": {
+      "model": "whipple",
+      "run": true,
+      "time": 2,
+      "zoom": 3
+    }
+  },
   "bouncing-ball": {
     "title": "Bouncing ball",
     "description": "A continuous event with a velocity reinit.",
@@ -376,6 +393,27 @@
       "full"
     ]
   },
+  "ingenuity": {
+    "title": "Ingenuity Mars Helicopter",
+    "description": "NASA's Mars helicopter: a 3D multibond airframe, coaxial blade-element rotors fitted to the JPL hover test, and Flight One against the published flight data.",
+    "hasScene": true,
+    "models": [
+      "ingenuity",
+      "ingenuity-flight-one",
+      "ingenuity-rotor-stand"
+    ],
+    "capture": {
+      "model": "ingenuity-flight-one",
+      "run": true,
+      "time": 1,
+      "view": "front",
+      "zoom": 5,
+      "orbit": [
+        60,
+        40
+      ]
+    }
+  },
   "inverted-pendulum-cart": {
     "title": "Inverted pendulum cart",
     "description": "A bond-graph cart-pole with an LQR balance controller.",
@@ -383,6 +421,22 @@
     "models": [
       "inverted-pendulum-cart"
     ]
+  },
+  "lunar-module": {
+    "title": "Apollo 11 Lunar Module",
+    "description": "Apollo 11's Eagle on a variable-mass 3D bond graph: powered descent to touchdown, a landing flown from the dashboard, and the ascent to orbit, against the Mission Report.",
+    "hasScene": true,
+    "models": [
+      "lm-descent",
+      "lm-hover",
+      "lm-ascent"
+    ],
+    "capture": {
+      "model": "lm-descent",
+      "run": true,
+      "time": 700,
+      "zoom": 5
+    }
   },
   "maglev": {
     "title": "Maglev",
@@ -392,6 +446,16 @@
       "maglev-current-driven",
       "maglev-open-loop-and-linear",
       "maglev-bondgraph"
+    ]
+  },
+  "maglev-train": {
+    "title": "Maglev train",
+    "description": "A Transrapid-style EMS train: unstable levitation magnets under state feedback, then a 3D car body on two modules driven to 430 km/h over sagging guideway spans.",
+    "hasScene": true,
+    "models": [
+      "maglev-module",
+      "maglev-module-open-loop",
+      "maglev-vehicle"
     ]
   },
   "motion-servo": {
@@ -614,6 +678,38 @@
       "rrr-multibond-soft",
       "rrr-multibond-stiff"
     ]
+  },
+  "rocket": {
+    "title": "Rockets: V-2 and Saturn V",
+    "description": "Variable-mass launch vehicles on a 3D bond graph: a V-2 vertical shot and Apollo 11's Saturn V to orbit, against the AS-506 flight evaluation report.",
+    "hasScene": true,
+    "models": [
+      "rocket-v2",
+      "rocket-saturn-v"
+    ],
+    "capture": {
+      "model": "rocket-v2",
+      "run": true,
+      "time": 2,
+      "zoom": 4
+    }
+  },
+  "segway": {
+    "title": "Segway: self-balancing transporter",
+    "description": "A two-wheeled transporter with a rider as a 3D bond graph: an LQR that balances, follows a speed set-point and rejects a push, and steers a figure of eight.",
+    "hasScene": true,
+    "models": [
+      "balance",
+      "open-loop",
+      "top-speed",
+      "figure-eight"
+    ],
+    "capture": {
+      "model": "open-loop",
+      "run": true,
+      "time": 0.4,
+      "zoom": 1
+    }
   },
   "suction-cup": {
     "title": "Suction cup",

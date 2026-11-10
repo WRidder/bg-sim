@@ -1,0 +1,19 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Maglev train: what is modelled",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "parameters",
+          "title": "Parameters and sources",
+          "file": "pages/parameters.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

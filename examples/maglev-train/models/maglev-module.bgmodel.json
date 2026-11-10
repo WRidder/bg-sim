@@ -1,0 +1,1491 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "maglev-module",
+  "$comment": "One EMS levitation module carrying a quarter of a car.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Ctl",
+        "block": {
+          "ref": "project:GapController"
+        },
+        "position": {
+          "x": 740,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "a1": "a1",
+          "a2": "a2",
+          "a3": "a3",
+          "a4": "a4",
+          "Tf": "Tf",
+          "R": "R_coil",
+          "c_trim": "c_trim",
+          "v_max": "V_max"
+        },
+        "constants": {},
+        "starts": {
+          "xf": "h_rest"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Amp",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 960,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Jc",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 960,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Rc",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 800,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "R_coil"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Imeas",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 800,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Jv",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 960,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Vcoil",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": 800,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "EM",
+        "block": {
+          "ref": "stdlib:converters/Electromagnet"
+        },
+        "position": {
+          "x": 960,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "alpha": "alpha",
+          "L_inf": "L_inf",
+          "h0": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "i": "0.0",
+          "h": "h_rest"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Gnd",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 1140,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Rail",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": 740,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Jr",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 960,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Skid",
+        "block": {
+          "ref": "stdlib:translation/HardStop"
+        },
+        "position": {
+          "x": 960,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "lower": "h_stop",
+          "upper": "h_skid",
+          "k": "k_c",
+          "d": "d_c"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_rest"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Jb",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1180,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "Chassis",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1340,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "m_b"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Weight",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 1340,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "m_b*g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Jg",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1080,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "GapRate",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 1080,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "Gap",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1240,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "h_rest"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "Sus",
+        "block": {
+          "ref": "stdlib:translation/SpringDamper"
+        },
+        "position": {
+          "x": 1400,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "k_s",
+          "d": "c_s"
+        },
+        "constants": {},
+        "starts": {
+          "x": "e_spring"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Jq",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1600,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "Err",
+        "block": {
+          "ref": "project:Bias"
+        },
+        "position": {
+          "x": 1400,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "b": "-h_nom"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "Body",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1700,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "m_c"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "BodyWeight",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 1700,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "m_c*g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "Load",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1700,
+          "y": 720
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "LoadStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 1500,
+          "y": 720
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_load",
+          "initial": "0.0",
+          "final": "dm_load*g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "RefStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_ref",
+          "initial": "h_skid",
+          "final": "h_nom"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "RefLag",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 240,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "tau_ref"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_skid"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "RailStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_rail",
+          "initial": "0.0",
+          "final": "-dz_rail"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "RailVel",
+        "block": {
+          "ref": "stdlib:continuous/TransferFunction"
+        },
+        "position": {
+          "x": 240,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "num": "[w_rail*w_rail, 0.0]",
+          "den": "[1.0, 2.0*w_rail, w_rail*w_rail]"
+        },
+        "constants": {
+          "n": "2",
+          "m": "1"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "BodyV",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 1900,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n02",
+          "port": "p"
+        },
+        "to": {
+          "node": "n03"
+        }
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n03"
+        },
+        "to": {
+          "node": "n04",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": {
+          "node": "n03"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n03"
+        },
+        "to": {
+          "node": "n06"
+        }
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c07",
+        "kind": "wire",
+        "from": {
+          "node": "n08",
+          "port": "n"
+        },
+        "to": {
+          "node": "n09",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c08",
+        "kind": "bond",
+        "from": {
+          "node": "n11"
+        },
+        "to": {
+          "node": "n10",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c09",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n08",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c10",
+        "kind": "bond",
+        "from": {
+          "node": "n11"
+        },
+        "to": {
+          "node": "n08",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c11",
+        "kind": "bond",
+        "from": {
+          "node": "n11"
+        },
+        "to": {
+          "node": "n12",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c12",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n12",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c13",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n14",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c14",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n15",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c15",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n19",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c16",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n19",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c17",
+        "kind": "bond",
+        "from": {
+          "node": "n11"
+        },
+        "to": {
+          "node": "n16"
+        }
+      },
+      {
+        "id": "c18",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n13"
+        }
+      },
+      {
+        "id": "c19",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n17",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "y"
+        },
+        "to": {
+          "node": "n18",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "y"
+        },
+        "to": {
+          "node": "n21",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "y"
+        },
+        "to": {
+          "node": "n01",
+          "port": "h"
+        }
+      },
+      {
+        "id": "c23",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n01",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c24",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "v"
+        },
+        "to": {
+          "node": "n02",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c25",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n22",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c26",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n23",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c27",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n24",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c28",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c29",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n27",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c30",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n01",
+          "port": "h_ref"
+        }
+      },
+      {
+        "id": "c31",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "y"
+        },
+        "to": {
+          "node": "n29",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c32",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c33",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n30",
+          "port": "p"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "**Levitation module.** Left: chopper (MSe) driving the coil 1-junction Jc with the coil resistance, a current detector and the coil port of EM, the electromagnet IC-field (L(h) = L_inf + 2 alpha/h, F = alpha i^2/h^2). Right: the bogie 1-junction Jb (chassis mass, weight, EM armature, skid contact and the secondary suspension Sus) and the body junction Jq. Velocities are positive upward. The guideway moves with the flow source Rail on Jr.",
+        "x": 40,
+        "y": 900,
+        "w": 1500,
+        "h": 90
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 8.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 8001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Gap and reference [m]",
+      "signals": [
+        "Gap/y",
+        "RefLag/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Coil current [A]",
+      "signals": [
+        "EM/i",
+        "Ctl/i_ff"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Chopper voltage [V]",
+      "signals": [
+        "Ctl/v"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Magnet force and total weight [N]",
+      "signals": [
+        "EM/F"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/maglev-module.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:gap",
+      "property": "position",
+      "signal": "Gap/y",
+      "gain": 20.0,
+      "offset": -0.19
+    },
+    {
+      "target": "joint:suspension",
+      "property": "position",
+      "signal": "Sus/x",
+      "gain": 5.0,
+      "offset": -1.2424510144141672
+    },
+    {
+      "target": "visual:coil",
+      "property": "color",
+      "signal": "EM/i",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        250.0
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "g0",
+      "value": "9.81",
+      "unit": "m/s^2",
+      "description": "Gravitational acceleration"
+    },
+    {
+      "name": "h_nom",
+      "value": "0.01",
+      "unit": "m",
+      "description": "Nominal gap (Transrapid: 10 mm)"
+    },
+    {
+      "name": "h_skid",
+      "value": "0.016",
+      "unit": "m",
+      "description": "Gap while the module rests on its skids (estimate)"
+    },
+    {
+      "name": "h_stop",
+      "value": "0.004",
+      "unit": "m",
+      "description": "Touch-down stop: the pole face would hit the rail below this gap (estimate)"
+    },
+    {
+      "name": "m_b",
+      "value": "1500.0",
+      "unit": "kg",
+      "description": "Levitation chassis (bogie) mass"
+    },
+    {
+      "name": "k_s",
+      "value": "463871.4068511998",
+      "unit": "N/m",
+      "description": "Secondary suspension stiffness"
+    },
+    {
+      "name": "c_s",
+      "value": "44296.456415616085",
+      "unit": "N*s/m",
+      "description": "Secondary suspension damping"
+    },
+    {
+      "name": "alpha",
+      "value": "0.0005777",
+      "unit": "H*m",
+      "description": "Magnet force constant: F = alpha*i^2/h^2 (= mu0 N^2 A_pole/4)"
+    },
+    {
+      "name": "L_inf",
+      "value": "0.03",
+      "unit": "H",
+      "description": "Coil leakage inductance; L(h) = L_inf + 2 alpha/h"
+    },
+    {
+      "name": "R_coil",
+      "value": "0.55",
+      "unit": "Ohm",
+      "description": "Coil resistance"
+    },
+    {
+      "name": "V_max",
+      "value": "800.0",
+      "unit": "V",
+      "description": "Chopper voltage limit"
+    },
+    {
+      "name": "k_c",
+      "value": "200000000.0",
+      "unit": "N/m",
+      "description": "Skid and stop contact stiffness"
+    },
+    {
+      "name": "d_c",
+      "value": "1000000.0",
+      "unit": "N*s/m",
+      "description": "Skid and stop contact damping"
+    },
+    {
+      "name": "h_rest",
+      "value": "h_skid + (m_b + m_c)*g0/k_c",
+      "unit": "m",
+      "description": "Gap at rest: the skids carry the weight on the contact stiffness"
+    },
+    {
+      "name": "c_trim",
+      "value": "sqrt((m_b + m_c)*g0/alpha)",
+      "unit": "A/m",
+      "description": "Trim law i = c_trim*h that carries the weight at any gap"
+    },
+    {
+      "name": "e_spring",
+      "value": "m_c*g0/k_s",
+      "unit": "m",
+      "description": "Static stretch of the secondary spring under the body weight"
+    },
+    {
+      "name": "Tf",
+      "value": "0.001",
+      "unit": "s",
+      "description": "Derivative filter of the gap controller"
+    },
+    {
+      "name": "a1",
+      "value": "1028134.2080712458",
+      "unit": "V/m",
+      "description": "Gap feedback gain (LQR design)"
+    },
+    {
+      "name": "a2",
+      "value": "7024.5395040366975",
+      "unit": "V*s/m",
+      "description": "Gap-rate feedback gain (LQR design)"
+    },
+    {
+      "name": "a3",
+      "value": "-49.07612516243621",
+      "unit": "V/A",
+      "description": "Current feedback gain (LQR design)"
+    },
+    {
+      "name": "a4",
+      "value": "2000000.0000000757",
+      "unit": "V/(m*s)",
+      "description": "Gap-error integral gain (LQR design)"
+    },
+    {
+      "name": "m_c",
+      "value": "11750.0",
+      "unit": "kg",
+      "description": "Body mass carried by the module (a quarter of the car body)"
+    },
+    {
+      "name": "t_ref",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Time the gap reference steps from the skid gap to the nominal gap"
+    },
+    {
+      "name": "tau_ref",
+      "value": "0.15",
+      "unit": "s",
+      "description": "Reference prefilter time constant"
+    },
+    {
+      "name": "t_rail",
+      "value": "2.0",
+      "unit": "s",
+      "description": "Time of the guideway step"
+    },
+    {
+      "name": "dz_rail",
+      "value": "0.001",
+      "unit": "m",
+      "description": "Guideway step: the rail sinks towards the vehicle by this much (the gap closes)"
+    },
+    {
+      "name": "w_rail",
+      "value": "150.0",
+      "unit": "rad/s",
+      "description": "Smoothing of the guideway step 1/(1 + s/w)^2"
+    },
+    {
+      "name": "t_load",
+      "value": "4.0",
+      "unit": "s",
+      "description": "Time of the payload step"
+    },
+    {
+      "name": "dm_load",
+      "value": "2000.0",
+      "unit": "kg",
+      "description": "Payload added to the body share"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Levitation module",
+        "options": {
+          "markdown": true,
+          "text": "A quarter of a car on one EMS magnet. At 0.1 s the gap reference drops from the skid gap to **10 mm**; at 2 s the guideway sinks 1 mm; at 4 s a payload is added. Change an input and the model runs again."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Nominal gap",
+        "parameter": "global:h_nom",
+        "options": {
+          "min": 0.008,
+          "max": 0.014,
+          "step": 0.0005,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Gap",
+        "signals": [
+          "Gap/y"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 0.02,
+          "decimals": 4,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.006,
+              "tone": "bad"
+            },
+            {
+              "from": 0.006,
+              "to": 0.008,
+              "tone": "warn"
+            },
+            {
+              "from": 0.008,
+              "to": 0.013,
+              "tone": "good"
+            },
+            {
+              "from": 0.013,
+              "to": 0.02,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Guideway step (+ = rail sinks, gap closes)",
+        "parameter": "global:dz_rail",
+        "options": {
+          "min": -0.003,
+          "max": 0.003,
+          "step": 0.0002,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Payload step",
+        "parameter": "global:dm_load",
+        "options": {
+          "min": 0.0,
+          "max": 4000.0,
+          "step": 100.0,
+          "decimals": 0,
+          "unit": "kg"
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Coil current",
+        "signals": [
+          "EM/i"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 400.0,
+          "decimals": 1,
+          "unit": "A",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 300.0,
+              "tone": "good"
+            },
+            {
+              "from": 300.0,
+              "to": 400.0,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d7",
+        "kind": "bar",
+        "size": "1x1",
+        "title": "Chopper voltage",
+        "signals": [
+          "Ctl/v"
+        ],
+        "options": {
+          "min": -800.0,
+          "max": 800.0,
+          "decimals": 0,
+          "unit": "V",
+          "orientation": "horizontal",
+          "zones": [
+            {
+              "from": -800.0,
+              "to": -700.0,
+              "tone": "warn"
+            },
+            {
+              "from": -700.0,
+              "to": 700.0,
+              "tone": "good"
+            },
+            {
+              "from": 700.0,
+              "to": 800.0,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d8",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Gap and reference",
+        "signals": [
+          "Gap/y",
+          "RefLag/y"
+        ]
+      },
+      {
+        "id": "d9",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Coil current and chopper voltage",
+        "signals": [
+          "EM/i",
+          "Ctl/v"
+        ]
+      }
+    ]
+  }
+}

@@ -204,6 +204,8 @@ _key_unit(u) = u === nothing ? "" : Units.unit_string(u)
 function _key_attrs(attrs::AbstractDict)
     io = IOBuffer()
     for k in sort!(collect(keys(attrs)); by = string)
+        # Whether a start was set on the instance is start-value data, not structure.
+        k === START_SET && continue
         print(io, string(k), '=', repr(attrs[k]), ';')
     end
     return String(take!(io))
@@ -446,52 +448,109 @@ function _u0_pairs(flat::Flat.FlatModel, system, int_states::Vector{Pair{Num,Any
     return out
 end
 
-"""    _alias_map(system) -> Dict{String,Vector{String}}
+"""    _alias_map(system) -> Dict{String,Vector{Tuple{String,Int}}}
 
-The pure alias relations among the compiled unknowns (`u ~ v` in the observed equations, both
-directions), used to follow a start value to the variable MTK kept.
+The alias relations among the compiled unknowns (`u ~ v` and `u ~ -v` in the observed
+equations, both directions, each with its sign `+1` or `-1`), used to follow a start value to
+the variable MTK kept.
 
 A composite body wires `IPlanar/Pm` into `CoriolisPlanar/P`; MTK then eliminates the momentum
 in favour of one of the aliases (and, for a rigid joint, in favour of the twist), so the state
 a start value was written on is no longer an unknown. Without this the initial momentum of a
-composite body would be silently lost (J-MB6, `Free2D`)."""
+composite body would be silently lost (J-MB6, `Free2D`).
+
+The negated form is what a 1-junction leaves behind: MTK keeps the flow of one bond
+(`Amp/p.f`) and writes the state of the element on another bond as `EM/i ~ -Amp/p.f`."""
 function _alias_map(system)
-    out = Dict{String,Vector{String}}()
+    out = Dict{String,Vector{Tuple{String,Int}}}()
     for equation in ModelingToolkit.observed(system)
         lhs = equation.lhs
         lhs isa Num && (lhs = Symbolics.unwrap(lhs))
         rhs = equation.rhs
         rhs isa Num && (rhs = Symbolics.unwrap(rhs))
         ModelingToolkit.isvariable(lhs) || continue
-        ModelingToolkit.isvariable(rhs) || continue
+        target = _signed_variable(rhs)
+        target === nothing && continue
         a = _var_name(lhs)
-        b = _var_name(rhs)
-        push!(get!(out, a, String[]), b)
-        push!(get!(out, b, String[]), a)
+        b = _var_name(target[1])
+        push!(get!(out, a, Tuple{String,Int}[]), (b, target[2]))
+        push!(get!(out, b, Tuple{String,Int}[]), (a, target[2]))
     end
     return out
 end
 
-"""    _start_value(by_id, alias, key) -> Union{Nothing,Float64}
-
-The start value of a compiled state: its own flat variable's start, or the nearest one found
-along the alias chain (breadth first, so the closest definition wins)."""
-function _start_value(by_id, alias, key::String)
-    queue = String[key]
-    seen = Set{String}([key])
-    while !isempty(queue)
-        current = popfirst!(queue)
-        v = get(by_id, current, nothing)
-        if v !== nothing && v.start !== nothing
-            return _number(v.start, "the start of `$(v.id)`")
-        end
-        for next in get(alias, current, String[])
-            next in seen && continue
-            push!(seen, next)
-            push!(queue, next)
-        end
+"""`(v, +1)` for a variable `v`, `(v, -1)` for `-v` (the product `-1 * v`), else `nothing`."""
+function _signed_variable(x)
+    ModelingToolkit.isvariable(x) && return (x, 1)
+    Symbolics.iscall(x) || return nothing
+    Symbolics.operation(x) === (*) || return nothing
+    args = Symbolics.arguments(x)
+    length(args) == 2 || return nothing
+    for (c, v) in ((args[1], args[2]), (args[2], args[1]))
+        _minus_one(c) && ModelingToolkit.isvariable(v) && return (v, -1)
     end
     return nothing
+end
+
+# The factor of a product is a plain number or, in newer SymbolicUtils, a wrapped constant.
+function _minus_one(c)
+    su = Symbolics.SymbolicUtils
+    if !(c isa Number) && isdefined(su, :isconst) && su.isconst(c)
+        c = su.unwrap_const(c)
+    end
+    return c isa Real && c == -1
+end
+
+"""Attribute of a flat variable whose start was set on the instance (the node's `starts`, or
+`set_start_values`), as opposed to the default of its declaration. Not part of `compile_key`."""
+const START_SET = :start_set
+
+"""    _start_source(by_id, alias, key) -> Union{Nothing,Tuple{String,Int}}
+
+The flat variable whose start a compiled state takes, with the sign that carries the value
+over (`-1` when the state is the negated alias): the state's own flat variable or one of its
+aliases (breadth first along the alias chain, so the closest definition wins), in this order
+of preference:
+
+1. a start that was set on the instance (`START_SET`);
+2. the declared default of a flat state (a variable under `ddt`);
+3. any other declared default (an output's or an algebraic variable's `= 0.0`).
+
+MTK is free to keep any member of an alias class as the state. Without the order, a
+`PositionSensor/x` start lost to the `= 0.0` default of its own output `y`, and a current
+`EM/i` started at 150 A lost its start to the default of the detector output `Imeas/y` on
+the same 1-junction."""
+function _start_source(by_id, alias, key::String)
+    order = Tuple{String,Int}[(key, 1)]
+    seen = Set{String}([key])
+    index = 1
+    while index <= length(order)
+        current, sign = order[index]
+        for (next, s) in get(alias, current, Tuple{String,Int}[])
+            next in seen && continue
+            push!(seen, next)
+            push!(order, (next, sign * s))
+        end
+        index += 1
+    end
+    started = [item for item in order if haskey(by_id, item[1]) && by_id[item[1]].start !== nothing]
+    for item in started
+        get(by_id[item[1]].attrs, START_SET, false) === true && return item
+    end
+    for item in started
+        by_id[item[1]].kind === :state && return item
+    end
+    return isempty(started) ? nothing : first(started)
+end
+
+"""    _start_value(by_id, alias, key) -> Union{Nothing,Float64}
+
+The start value of a compiled state, from the flat variable `_start_source` picks."""
+function _start_value(by_id, alias, key::String)
+    source = _start_source(by_id, alias, key)
+    source === nothing && return nothing
+    v = by_id[source[1]]
+    return source[2] * _number(v.start, "the start of `$(v.id)`")
 end
 
 # A start value of an algebraic variable is an initialisation *guess*, not a constraint.
@@ -830,8 +889,10 @@ function set_start_values(flat::Flat.FlatModel, updates)
     variables = Flat.FlatVar[]
     for v in flat.variables
         if haskey(wanted, v.id)
+            attrs = copy(v.attrs)
+            attrs[START_SET] = true
             push!(variables, Flat.FlatVar(
-                v.id, v.kind, v.type, v.unit, wanted[v.id], v.attrs, v.origin
+                v.id, v.kind, v.type, v.unit, wanted[v.id], attrs, v.origin
             ))
         else
             push!(variables, v)

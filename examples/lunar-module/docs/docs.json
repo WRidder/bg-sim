@@ -1,0 +1,25 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "vehicle",
+      "title": "The Apollo 11 lunar module",
+      "file": "pages/vehicle.md",
+      "children": [
+        {
+          "id": "parameters",
+          "title": "Parameters and sources",
+          "file": "pages/parameters.md",
+          "children": []
+        },
+        {
+          "id": "validation",
+          "title": "Validation",
+          "file": "pages/validation.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

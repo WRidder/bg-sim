@@ -1,0 +1,1648 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "balance-linear",
+  "$comment": "The balance controller of model `balance` on the linearised benchmark bicycle.",
+  "parameters": [
+    {
+      "name": "v",
+      "value": "3.0",
+      "unit": "m/s",
+      "description": "Forward speed at the start; below the weave speed (4.29 m/s) the free bicycle falls over"
+    },
+    {
+      "name": "phid0",
+      "value": "0.3",
+      "unit": "rad/s",
+      "description": "Lean rate at the start (a sideways push)"
+    },
+    {
+      "name": "lean_ref",
+      "value": "0.1",
+      "unit": "rad",
+      "description": "Lean set-point after 2 s (positive = to the right): the bicycle settles in a steady right turn"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "LeanRef",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 100,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "2.0",
+          "initial": "0.0",
+          "final": "lean_ref"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "L_phi",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "28.45349021368805"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "L_delta",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 970
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-18.700579620616658"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "L_phid",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 1040
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "7.667588746764868"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "L_deltad",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 1110
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-1.9702891579954005"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "FeedbackMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux4"
+        },
+        "position": {
+          "x": 460,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Feedback",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 580,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0, 1.0, 1.0]"
+        },
+        "constants": {
+          "N": "4"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "N_ref",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-12.436129647792196"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "CtrlMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 720,
+          "y": 1050
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Ctrl",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 840,
+          "y": 1050
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0]"
+        },
+        "constants": {
+          "N": "2"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "LeanRate",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 900,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "phid0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Lean",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1080,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "K_phi_phi",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": -150
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "9.489774446773554"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "K_phi_delta",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": -80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-0.5715231737292453 - 0.8911977380590892*v*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "C_phi_phid",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": -10
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-0.10552244980569092*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "C_phi_deltad",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-0.3305153989923108*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "LeanAccFreeMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux4"
+        },
+        "position": {
+          "x": 460,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "LeanAccFree",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 580,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0, 1.0, 1.0]"
+        },
+        "constants": {
+          "N": "4"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "B_phi",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-0.12409202541157667"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "LeanAccMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 700,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "LeanAcc",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 820,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0]"
+        },
+        "constants": {
+          "N": "2"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "SteerRate",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 900,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "Steer",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1080,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "K_delta_phi",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 250
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "11.719476871963318"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "K_delta_delta",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "30.9087533932407 - 1.9717150849997225*v*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "C_delta_phid",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "3.6768052333215264*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "C_delta_deltad",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-3.0848655274331107*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "SteerAccFreeMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux4"
+        },
+        "position": {
+          "x": 460,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "SteerAccFree",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 580,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0, 1.0, 1.0]"
+        },
+        "constants": {
+          "N": "4"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "B_delta",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 300,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "4.323840180804315"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n31",
+        "name": "SteerAccMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 700,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n32",
+        "name": "SteerAcc",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 820,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0]"
+        },
+        "constants": {
+          "N": "2"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n33",
+        "name": "YawV",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 1060,
+          "y": 660
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "0.932408349308974*v"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n34",
+        "name": "YawC",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 1060,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "0.07459266794471793"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n35",
+        "name": "Heading",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1500,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n36",
+        "name": "YawRateMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 1240,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n37",
+        "name": "YawRate",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 1360,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0]"
+        },
+        "constants": {
+          "N": "2"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "y"
+        },
+        "to": {
+          "node": "n03",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c004",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "y"
+        },
+        "to": {
+          "node": "n06",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "y"
+        },
+        "to": {
+          "node": "n06",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "y"
+        },
+        "to": {
+          "node": "n06",
+          "port": "u3"
+        },
+        "label": null
+      },
+      {
+        "id": "c008",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n06",
+          "port": "u4"
+        },
+        "label": null
+      },
+      {
+        "id": "c009",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n07",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c010",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n08",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c011",
+        "kind": "signal",
+        "from": {
+          "node": "n07",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c012",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c013",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c014",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c015",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n17",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c016",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n17",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c017",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n17",
+          "port": "u3"
+        },
+        "label": null
+      },
+      {
+        "id": "c018",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "y"
+        },
+        "to": {
+          "node": "n17",
+          "port": "u4"
+        },
+        "label": null
+      },
+      {
+        "id": "c019",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "y"
+        },
+        "to": {
+          "node": "n18",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c020",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "y"
+        },
+        "to": {
+          "node": "n20",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c021",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "n20",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c022",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "y"
+        },
+        "to": {
+          "node": "n21",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c023",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c024",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n23",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c025",
+        "kind": "signal",
+        "from": {
+          "node": "n24",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c026",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c027",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "u3"
+        },
+        "label": null
+      },
+      {
+        "id": "c028",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "u4"
+        },
+        "label": null
+      },
+      {
+        "id": "c029",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "y"
+        },
+        "to": {
+          "node": "n29",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c030",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c031",
+        "kind": "signal",
+        "from": {
+          "node": "n30",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c032",
+        "kind": "signal",
+        "from": {
+          "node": "n31",
+          "port": "y"
+        },
+        "to": {
+          "node": "n32",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c033",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c034",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n13",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c035",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c036",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c037",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c038",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c039",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "y"
+        },
+        "to": {
+          "node": "n25",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c040",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n26",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c041",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n27",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c042",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c043",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n30",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c044",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "y"
+        },
+        "to": {
+          "node": "n33",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c045",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n34",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c046",
+        "kind": "signal",
+        "from": {
+          "node": "n33",
+          "port": "y"
+        },
+        "to": {
+          "node": "n36",
+          "port": "u1"
+        },
+        "label": null
+      },
+      {
+        "id": "c047",
+        "kind": "signal",
+        "from": {
+          "node": "n34",
+          "port": "y"
+        },
+        "to": {
+          "node": "n36",
+          "port": "u2"
+        },
+        "label": null
+      },
+      {
+        "id": "c048",
+        "kind": "signal",
+        "from": {
+          "node": "n36",
+          "port": "y"
+        },
+        "to": {
+          "node": "n37",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c049",
+        "kind": "signal",
+        "from": {
+          "node": "n37",
+          "port": "y"
+        },
+        "to": {
+          "node": "n35",
+          "port": "u"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 10.0,
+    "solver": "Tsit5",
+    "reltol": 1e-09,
+    "abstol": 1e-12,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "lean",
+      "title": "Lean and steer angle (linearised benchmark)",
+      "signals": [
+        "Lean/y",
+        "Steer/y"
+      ]
+    },
+    {
+      "id": "rates",
+      "title": "Lean rate and steer rate",
+      "signals": [
+        "LeanRate/y",
+        "SteerRate/y"
+      ]
+    },
+    {
+      "id": "heading",
+      "title": "Heading (linear kinematics)",
+      "signals": [
+        "Heading/y"
+      ]
+    },
+    {
+      "id": "torque",
+      "title": "Steer torque",
+      "signals": [
+        "Ctrl/y"
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "ref",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Lean set-point after 2 s (global)",
+        "parameter": "global:lean_ref",
+        "options": {
+          "min": -0.3,
+          "max": 0.3,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "rad"
+        }
+      },
+      {
+        "id": "push",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Initial lean rate (push)",
+        "parameter": "global:phid0",
+        "options": {
+          "min": -1.0,
+          "max": 1.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "rad/s"
+        }
+      },
+      {
+        "id": "lean",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Lean",
+        "signals": [
+          "Lean/y"
+        ],
+        "options": {
+          "min": -0.5,
+          "max": 0.5,
+          "decimals": 3,
+          "unit": "rad",
+          "zones": [
+            {
+              "from": -0.5,
+              "to": -0.3,
+              "tone": "bad"
+            },
+            {
+              "from": -0.3,
+              "to": -0.15,
+              "tone": "warn"
+            },
+            {
+              "from": -0.15,
+              "to": 0.15,
+              "tone": "good"
+            },
+            {
+              "from": 0.15,
+              "to": 0.3,
+              "tone": "warn"
+            },
+            {
+              "from": 0.3,
+              "to": 0.5,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "steer",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Steer",
+        "signals": [
+          "Steer/y"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "rad",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "torque",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Steer torque",
+        "signals": [
+          "Ctrl/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "N m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "lean_plot",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Lean and set-point",
+        "signals": [
+          "Lean/y",
+          "LeanRef/y"
+        ]
+      },
+      {
+        "id": "torque_plot",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Steer torque",
+        "signals": [
+          "Ctrl/y"
+        ]
+      }
+    ]
+  }
+}

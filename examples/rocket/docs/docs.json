@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "variable-mass",
+      "title": "Variable mass on a bond graph",
+      "file": "pages/variable-mass.md",
+      "children": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "benchmark",
+      "title": "The benchmark bicycle",
+      "file": "pages/benchmark.md",
+      "children": []
+    }
+  ]
+}

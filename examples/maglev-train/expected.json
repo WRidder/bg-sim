@@ -1,0 +1,886 @@
+{
+  "project": "maglev-train",
+  "description": "EMS maglev train. Analytic trim and weight balance, the open-loop pole from the linearisation, and nonlinear scipy simulations of the same equations (design/design.py) are the references; no published test data of a Transrapid levitation loop could be found to compare with.",
+  "models": {
+    "maglev-module": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 1.9,
+          "value": 150.0,
+          "rtol": 0.002,
+          "note": "trim current i = c_trim*h0 = sqrt((m_b + m_c) g/alpha)*h0 (analytic): the integral action finds it. 1.4 s after lift-off the secondary-suspension mode (-1.8 +- 6.1j 1/s) has not quite decayed: 0.12 % left"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/F",
+          "t": 1.9,
+          "value": 129982.5,
+          "rtol": 0.002,
+          "note": "the magnet carries the whole module weight (m_b + m_c) g (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 1.9,
+          "value": 0.01,
+          "abs": 8e-06,
+          "note": "gap error below 8 um (0.08 %) before the guideway step: the decaying body mode again"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 7.9,
+          "value": 160.92304500939056,
+          "rtol": 0.0006,
+          "note": "after the payload step the trim current rises with sqrt(weight): c_trim*h0*sqrt((W + dm g)/W) (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/F",
+          "t": 7.9,
+          "value": 149602.5,
+          "rtol": 0.0006,
+          "note": "magnet force = weight with the payload (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Err/y",
+          "t": 7.9,
+          "value": -1.2146420539024816e-06,
+          "abs": 1.5e-06,
+          "note": "gap error 6 s after the payload step: the slow integral tail of the scipy design simulation"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/y",
+          "from_t": 1.8,
+          "to_t": 1.99,
+          "value": 2e-05,
+          "note": "gap error before the guideway step stays below 20 um (0.2 %)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Err/y",
+          "from_t": 2.0,
+          "to_t": 3.0,
+          "value": 0.0003420015841273244,
+          "rtol": 0.03,
+          "note": "peak gap deviation after the 1 mm guideway step (scipy nonlinear simulation of the same loop)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Err/y",
+          "from_t": 4.0,
+          "to_t": 5.0,
+          "value": 0.0012453949384901679,
+          "rtol": 0.03,
+          "note": "peak gap deviation after the payload step (scipy)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "EM/i",
+          "value": 241.26899441369125,
+          "rtol": 0.003,
+          "note": "peak coil current of the lift-off (scipy)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "EM/i",
+          "value": 300.0,
+          "note": "coil current within twice the trim current (design limit of this model, estimate)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctl/v",
+          "value": 800.0000008000001,
+          "note": "chopper rail"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Vcoil/y",
+          "value": 800.0000008000001,
+          "note": "coil terminal voltage within the rail"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Skid/a.e",
+          "from_t": 1.5,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "after lift-off the skids and the touch-down stop carry nothing"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "EM/h",
+          "signal_b": "Gap/y",
+          "max_abs": 1e-09,
+          "note": "the field's gap state and the sensor integrate the same relative velocity"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 0.3,
+          "value": 0.016023553043752727,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 0.3,
+          "value": 237.08515907290817,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 0.5,
+          "value": 0.01150281534853252,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 0.5,
+          "value": 172.89784651984232,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 1.0,
+          "value": 0.010057396128437564,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 1.0,
+          "value": 150.61442865246252,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 1.9,
+          "value": 0.009994667808914184,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 1.9,
+          "value": 149.82363995402855,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 2.1,
+          "value": 0.010026143181096398,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 2.1,
+          "value": 150.33736057236732,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 2.2,
+          "value": 0.01003392925876557,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 2.2,
+          "value": 150.62103145381917,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 3.0,
+          "value": 0.009999881389610341,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 3.0,
+          "value": 149.94475575964657,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 4.1,
+          "value": 0.01059957109075532,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 4.1,
+          "value": 164.21120766113523,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 4.2,
+          "value": 0.011157689129274426,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 4.2,
+          "value": 178.9255168094775,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 5.0,
+          "value": 0.009889235525150778,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 5.0,
+          "value": 157.26905163505793,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gap/y",
+          "t": 7.9,
+          "value": 0.009998179706649664,
+          "abs": 4e-05,
+          "note": "gap of the scipy nonlinear simulation of the same loop (lift-off, guideway step, payload step)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/i",
+          "t": 7.9,
+          "value": 160.8887584618329,
+          "rtol": 0.004,
+          "abs": 0.5,
+          "note": "coil current of the scipy simulation"
+        }
+      ]
+    },
+    "maglev-module-open-loop": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Growth/y",
+          "t": 0.15,
+          "value": 52.68371435835834,
+          "rtol": 0.005,
+          "note": "growth rate of the open-loop gap deviation = the unstable pole 52.6837 1/s of the 5-state linearisation (module, secondary suspension and coil; scipy eigenvalue), up to the excitation of the stable modes and the nonlinearity of a 30 um deviation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Growth/y",
+          "t": 0.1,
+          "value": 52.68371435835834,
+          "rtol": 0.005
+        }
+      ]
+    },
+    "maglev-vehicle": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 3.0,
+          "value": 150.0,
+          "rtol": 0.0006,
+          "note": "trim current c_trim*h0 of each module at rest, levitated (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/F",
+          "t": 3.0,
+          "value": 259965.0,
+          "rtol": 0.0006,
+          "note": "each module carries half the car body and its own chassis, (m_body/2 + m_b) g (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/EM/F",
+          "t": 3.0,
+          "value": 259965.0,
+          "rtol": 0.0006
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 3.9,
+          "value": 0.006649912499999999,
+          "abs": 3e-05,
+          "note": "the car body has risen from its rest on the skids (gap h_rest) to the nominal gap (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 3.0,
+          "value": 0.01,
+          "abs": 3e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 60.0,
+          "value": 56.0,
+          "rtol": 0.0002,
+          "note": "constant acceleration a_acc from t_go: v = a (t - t_go) (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 148.0,
+          "value": 119.44444444444444,
+          "rtol": 0.0001,
+          "note": "cruise speed 430 km/h"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Lsm/p.e",
+          "signal_b": "Drag/p.e",
+          "t": 148.0,
+          "value": 1.0,
+          "rtol": 0.003,
+          "note": "at cruise the LSM thrust balances the aerodynamic drag"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drag/p.e",
+          "t": 148.0,
+          "value": 35610.37037037037,
+          "rtol": 0.001,
+          "note": "drag force 0.5 rho Cd A v^2 at 430 km/h (analytic)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drag/p.P",
+          "t": 115.11111111111111,
+          "value": 3530000.0,
+          "rtol": 0.04,
+          "note": "published: aerodynamic drag needs about 3.53 MW at 400 km/h (Wikipedia 'Transrapid'); the model, with the same Cd and area, gives 3.42 MW. Not an independent check of Cd and the area, only of the drag law and the units."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 275.8388888888889,
+          "value": 17850.30864197531,
+          "rtol": 0.0002,
+          "note": "the car has covered the distance of the speed profile"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Lsm/p.e",
+          "value": 150000.00015,
+          "note": "LSM thrust limit"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ModF/Ctl/v",
+          "value": 1600.0000016000001,
+          "note": "chopper rail"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ModR/Ctl/v",
+          "value": 1600.0000016000001
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ModF/EM/i",
+          "value": 600.0,
+          "note": "coil current within twice the trim current of a 2-chassis module (estimate)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "ModF/Gap/y",
+          "from_t": 2.0,
+          "value": 0.008,
+          "note": "the gap stays above 8 mm once the car has lifted off (never near the 4 mm touch-down stop)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "ModR/Gap/y",
+          "from_t": 2.0,
+          "value": 0.008
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ModF/Gap/y",
+          "from_t": 2.0,
+          "value": 0.012
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ModF/Skid/a.e",
+          "from_t": 2.0,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "the skids carry nothing during the whole run"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Free/py",
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "lateral, roll and yaw motion are not excited: the symmetric 3D body only heaves, pitches and travels"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Free/qx",
+          "value": 0.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Free/qz",
+          "value": 0.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/s",
+          "t": 275.8388888888889,
+          "value": 1.0,
+          "abs": 1e-06,
+          "note": "the pose quaternion stays a unit quaternion"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "ModF/EM/h",
+          "signal_b": "ModF/Gap/y",
+          "max_abs": 1e-09,
+          "note": "the field's gap state and the sensor integrate the same relative velocity"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AccZ/y",
+          "from_t": 10.0,
+          "value": 0.5,
+          "note": "body acceleration below 0.5 m/s^2 over sag and bump (a ride-comfort bound: ISO 2631-1 puts 0.315 to 0.63 m/s^2 weighted rms at 'a little uncomfortable'; this is a peak bound on an unweighted signal)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ModF/Err/y",
+          "from_t": 134.31,
+          "to_t": 137.81,
+          "value": 0.0005959002165612497,
+          "rtol": 0.15,
+          "note": "peak front gap deviation while the car crosses the bump (scipy planar simulation of the same car, sampled every 5 ms; bgsim records about every 18 ms, so its sampled peak of this 30 ms feature is up to 10 % lower)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ModR/Err/y",
+          "from_t": 134.31,
+          "to_t": 137.81,
+          "value": 0.0005788562602267091,
+          "rtol": 0.15
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Free/qy",
+          "from_t": 134.31,
+          "to_t": 137.81,
+          "value": 2.769022471132778e-05,
+          "rtol": 0.05,
+          "note": "peak pitch (q_y = theta/2) while crossing the bump (scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "scipy planar simulation of the same car (heave, pitch, two modules, LSM, guideway)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 3.0,
+          "value": 0.01000008069144448,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/Gap/y",
+          "t": 3.0,
+          "value": 0.010000080691444483,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 3.0,
+          "value": 149.98978576744327,
+          "rtol": 0.0025,
+          "abs": 0.01,
+          "note": "linear interpolation between the recorded samples is part of the tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 3.0,
+          "value": 0.006701899444419295,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/qy",
+          "t": 3.0,
+          "value": 4.2275337888100485e-18,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 60.0,
+          "value": 1567.998270590328,
+          "abs": 0.01,
+          "note": "scipy planar simulation of the same car (heave, pitch, two modules, LSM, guideway)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 60.0,
+          "value": 55.9999667423912,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 60.0,
+          "value": 0.010146992964306479,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/Gap/y",
+          "t": 60.0,
+          "value": 0.010026523504345467,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 60.0,
+          "value": 153.01067081969452,
+          "rtol": 0.0025,
+          "abs": 0.01,
+          "note": "linear interpolation between the recorded samples is part of the tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 60.0,
+          "value": 0.007325025442807585,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/qy",
+          "t": 60.0,
+          "value": 3.923197168180528e-06,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 130.0,
+          "value": 7916.537141557567,
+          "abs": 0.01,
+          "note": "scipy planar simulation of the same car (heave, pitch, two modules, LSM, guideway)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 130.0,
+          "value": 119.43660855463773,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 130.0,
+          "value": 0.009947445204393272,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/Gap/y",
+          "t": 130.0,
+          "value": 0.009748680442168246,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 130.0,
+          "value": 148.3555583750106,
+          "rtol": 0.0025,
+          "abs": 0.01,
+          "note": "linear interpolation between the recorded samples is part of the tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 130.0,
+          "value": 0.007832908182534208,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/qy",
+          "t": 130.0,
+          "value": 9.703486421962745e-06,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 140.0,
+          "value": 9110.9562146296,
+          "abs": 0.01,
+          "note": "scipy planar simulation of the same car (heave, pitch, two modules, LSM, guideway)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 140.0,
+          "value": 119.44447489288498,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 140.0,
+          "value": 0.009740999256829933,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/Gap/y",
+          "t": 140.0,
+          "value": 0.009992618302071168,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 140.0,
+          "value": 144.59683959219163,
+          "rtol": 0.0025,
+          "abs": 0.01,
+          "note": "linear interpolation between the recorded samples is part of the tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 140.0,
+          "value": 0.007917986103689701,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/qy",
+          "t": 140.0,
+          "value": -3.572712790664791e-06,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 200.0,
+          "value": 15193.91614076794,
+          "abs": 0.01,
+          "note": "scipy planar simulation of the same car (heave, pitch, two modules, LSM, guideway)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 200.0,
+          "value": 72.8888556006962,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 200.0,
+          "value": 0.010136071539777714,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/Gap/y",
+          "t": 200.0,
+          "value": 0.009909014429296866,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 200.0,
+          "value": 152.83456044759214,
+          "rtol": 0.0025,
+          "abs": 0.01,
+          "note": "linear interpolation between the recorded samples is part of the tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 200.0,
+          "value": 0.0075757815960148835,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/qy",
+          "t": 200.0,
+          "value": 1.7250645919558206e-05,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/px",
+          "t": 270.0,
+          "value": 17846.13603188287,
+          "abs": 0.01,
+          "note": "scipy planar simulation of the same car (heave, pitch, two modules, LSM, guideway)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Speed/y",
+          "t": 270.0,
+          "value": 2.8888555867229617,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/Gap/y",
+          "t": 270.0,
+          "value": 0.010000082875338063,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModR/Gap/y",
+          "t": 270.0,
+          "value": 0.010000190415014645,
+          "abs": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ModF/EM/i",
+          "t": 270.0,
+          "value": 149.99514097689166,
+          "rtol": 0.0025,
+          "abs": 0.01,
+          "note": "linear interpolation between the recorded samples is part of the tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/pz",
+          "t": 270.0,
+          "value": 0.008874797653764402,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Free/qy",
+          "t": 270.0,
+          "value": -1.084032231056963e-05,
+          "abs": 1e-06
+        }
+      ]
+    }
+  }
+}

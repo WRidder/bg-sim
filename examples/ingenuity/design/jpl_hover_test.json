@@ -1,0 +1,16 @@
+{
+  "source": "Koning, W. J. F., Johnson, W., Grip, H. F., \"Improved Mars Helicopter Aerodynamic Rotor Model for Comprehensive Analyses\", AIAA Journal 57(9), 2019, pp. 3969-3979, doi:10.2514/1.J058045, Fig. 25 (open circles: JPL Space Simulator measurements).",
+  "conditions": {
+    "facility": "JPL 25-ft Space Simulator, CO2 backfill",
+    "rho": 0.0175,
+    "T_K": 293.15,
+    "rpm": 2600.0,
+    "radius_m": 0.605,
+    "note": "Coaxial pair, full-scale rotor. C_T = T_total / (rho A (Omega R)^2), C_P = P_total / (rho A (Omega R)^3) with the area A of ONE disk (checked: the paper's maximum thrust 13.25 N gives C_T = 0.0243, the last point). The measured shaft power is the motor power times a constant 78 % motor/drive efficiency (Koning, Johnson, Allan 2018)."
+  },
+  "method": "Digitised from the published figure (rendered at 300 dpi): marker centres by ring-template correlation, axes from the detected grid lines (C_T 0.005 per 122.8 px, C_P 1e-3 per 58.7 px). Estimated digitising uncertainty: +-0.0002 in C_T and +-0.03e-3 in C_P.",
+  "CT": [0.00132, 0.00283, 0.00552, 0.00837, 0.01154, 0.0148, 0.01557, 0.01639, 0.01712, 0.01777,
+         0.01859, 0.01908, 0.01981, 0.02062, 0.02119, 0.02193, 0.02254, 0.02323, 0.02368, 0.02425],
+  "CP": [0.000988, 0.001107, 0.001158, 0.001397, 0.001772, 0.002249, 0.002317, 0.002504, 0.002555, 0.002709,
+         0.002896, 0.003032, 0.003169, 0.003339, 0.003441, 0.003731, 0.003918, 0.004106, 0.004242, 0.004412]
+}

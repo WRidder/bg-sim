@@ -262,27 +262,12 @@ function start_targets(flat, lowered, tp::TunablePlan, xs, names_x, psym)
                 BGSim.LowerCtx(Dict{String,Num}(), penv))))))
             continue
         end
-        id = _start_source(by_id, alias, key)
-        id !== nothing && haskey(tp.starts, id) && push!(out, (i, tp.starts[id]))
+        source = BGSim._start_source(by_id, alias, key)
+        source === nothing && continue
+        id, sign = source
+        haskey(tp.starts, id) && push!(out, (i, sign == 1 ? tp.starts[id] : -tp.starts[id]))
     end
     return out
-end
-
-"""The flat variable whose start a compiled state takes (`BGSim._start_value`'s search)."""
-function _start_source(by_id, alias, key::String)
-    queue = String[key]
-    seen = Set{String}([key])
-    while !isempty(queue)
-        current = popfirst!(queue)
-        v = get(by_id, current, nothing)
-        v !== nothing && v.start !== nothing && return current
-        for next in get(alias, current, String[])
-            next in seen && continue
-            push!(seen, next)
-            push!(queue, next)
-        end
-    end
-    return nothing
 end
 
 """A value to try for `v0` inside `[lo, hi]`: half way to an end of the range, else 10 %

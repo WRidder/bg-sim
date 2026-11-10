@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "segway",
+      "title": "The balancing transporter",
+      "file": "pages/segway.md",
+      "children": []
+    }
+  ]
+}

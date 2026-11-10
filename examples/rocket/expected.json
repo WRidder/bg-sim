@@ -1,0 +1,598 @@
+{
+  "project": "rocket",
+  "description": "Variable-mass launch vehicles as 3D bond graphs: a V-2 vertical shot and the Saturn V AS-506 ascent to parking orbit. Checks against an independent scipy integration (tight), Tsiolkovsky (exact, in vacuum) and published data (V-2: Wikipedia; Saturn V: the AS-506 flight evaluation report MPR-SAT-FE-69-9), with the tolerances and fitted quantities named in each note.",
+  "models": {
+    "rocket-v2": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative causality, no algebraic loop warning, no event storm and no solver failure"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 65.0,
+          "value": 1422.0439994918613,
+          "note": "burnout speed of the scipy reference (design/reference.py, the same equations integrated as a planar point mass with DOP853)",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 65.0,
+          "value": 33267.30243370682,
+          "note": "burnout altitude, scipy reference",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Air/h",
+          "value": 141674.87859796267,
+          "rtol": 0.0001,
+          "note": "apogee of the scipy reference"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Air/fpa",
+          "n": 1,
+          "direction": "down",
+          "value": 216.59999999999138,
+          "abs": 0.2,
+          "note": "time of apogee (the flight-path angle turns from +90 to -90 deg), scipy reference on a 0.1 s output grid"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Drag/mach",
+          "level": 1.0,
+          "n": 1,
+          "direction": "up",
+          "value": 25.71310820003218,
+          "abs": 0.02,
+          "note": "Mach 1, scipy reference"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Drag/qbar",
+          "from_t": 0.0,
+          "to_t": 150.0,
+          "value": 64803.09906127878,
+          "rtol": 0.002,
+          "note": "max Q on the way up, scipy reference (0.1 s grid: the peak is sampled, hence 2e-3)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 65.0,
+          "value": 4504.999999999994,
+          "note": "mass at burnout: m0 - mdot t_burn = 4505 kg (the flow lag starts the decay only at t_burn)",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 65.0,
+          "value": 1500.0,
+          "note": "PUBLISHED: burnout speed 'about 5,000 ft/s (1,500 m/s)' (Wikipedia, V-2 sounding rocket). Different payloads and loads flew; the model gives 1422 m/s (5 % low). Loose tolerance 10 %.",
+          "rtol": 0.1
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Air/h",
+          "value": 160000.0,
+          "rtol": 0.15,
+          "note": "PUBLISHED: White Sands design profile 'about 100 miles (160 km) high' (Wikipedia, V-2 sounding rocket). The model reaches 141.7 km (11 % low: the drag table and the propellant load are estimates). Loose tolerance 15 %."
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/h",
+          "value": 206000.0,
+          "note": "PUBLISHED: never above the 206 km maximum for a vertical launch (Wikipedia, V-2 rocket)"
+        }
+      ]
+    },
+    "rocket-v2-vacuum": {
+      "model": "rocket-v2",
+      "settings": {
+        "t_end": 80.0,
+        "output": {
+          "points": 801
+        }
+      },
+      "overrides": [
+        {
+          "target": "global:drag_scale",
+          "value": 0.0
+        },
+        {
+          "target": "global:gravity_scale",
+          "value": 0.0
+        },
+        {
+          "target": "global:ambient_scale",
+          "value": 0.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 80.0,
+          "value": 2380.5567730142607,
+          "note": "TSIOLKOVSKY: without gravity, drag and atmosphere the speed is c_vac ln(m0/mf) = 2312.14 m/s * ln(12500/4464.41) (mf includes the lagged thrust decay mdot tau). Exact: tests the variable-mass bond graph (MI + outflow MR).",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv",
+          "t": 80.0,
+          "value": 2380.5567730142607,
+          "note": "ideal velocity gain = Tsiolkovsky in vacuum",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 80.0,
+          "value": 4464.41,
+          "note": "final mass m0 - mdot (t_burn + tau (1 - exp(-15/tau)))",
+          "rtol": 1e-08
+        }
+      ]
+    },
+    "rocket-saturn-v": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative causality, no algebraic loop warning, no event storm and no solver failure"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 135.2,
+          "value": 1964.9639274579088,
+          "note": "S-IC CECO: space-fixed speed, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 135.2,
+          "value": 44662.294200812445,
+          "note": "S-IC CECO: altitude, scipy reference",
+          "abs": 30.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 135.2,
+          "value": 1110189.000000003,
+          "note": "S-IC CECO: mass, scipy reference (the cutoffs sit on the events: 1e-4 allows the sampling of the flow step)",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 161.63,
+          "value": 2750.60704343568,
+          "note": "S-IC OECO: space-fixed speed, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 161.63,
+          "value": 66511.0345468951,
+          "note": "S-IC OECO: altitude, scipy reference",
+          "abs": 30.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 161.63,
+          "value": 826470.5285437392,
+          "note": "S-IC OECO: mass, scipy reference (the cutoffs sit on the events: 1e-4 allows the sampling of the flow step)",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 460.62,
+          "value": 5722.169747400662,
+          "note": "S-II CECO: space-fixed speed, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 460.62,
+          "value": 180209.52404295746,
+          "note": "S-II CECO: altitude, scipy reference",
+          "abs": 30.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 460.62,
+          "value": 285378.9283562758,
+          "note": "S-II CECO: mass, scipy reference (the cutoffs sit on the events: 1e-4 allows the sampling of the flow step)",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 548.22,
+          "value": 6939.110365127605,
+          "note": "S-II OECO: space-fixed speed, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 548.22,
+          "value": 187422.83892750158,
+          "note": "S-II OECO: altitude, scipy reference",
+          "abs": 30.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 548.22,
+          "value": 211664.79158558993,
+          "note": "S-II OECO: mass, scipy reference (the cutoffs sit on the events: 1e-4 allows the sampling of the flow step)",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 699.34,
+          "value": 7826.92254848224,
+          "note": "S-IVB ECO: space-fixed speed, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 699.34,
+          "value": 190977.33238449722,
+          "note": "S-IVB ECO: altitude, scipy reference",
+          "abs": 30.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 699.34,
+          "value": 132871.11345549405,
+          "note": "S-IVB ECO: mass, scipy reference (the cutoffs sit on the events: 1e-4 allows the sampling of the flow step)",
+          "rtol": 0.0001
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Drag/mach",
+          "level": 1.0,
+          "n": 1,
+          "direction": "up",
+          "value": 64.43509343721625,
+          "abs": 0.05,
+          "note": "Mach 1, scipy reference"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Drag/qbar",
+          "from_t": 0.0,
+          "to_t": 200.0,
+          "value": 31698.95317541326,
+          "rtol": 0.002,
+          "note": "max Q, scipy reference (0.1 s grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 135.2,
+          "value": 1979.0,
+          "note": "PUBLISHED (validation): S-IC CECO space-fixed velocity 1979.0 m/s, AS-506 report Table 4-2. Model 1965.0 m/s (-0.7 %). Not fitted: set by the thrust, flow and mass data. The planar model omits the 126 m/s cross-plane part of the pad's eastward speed (0.1 % of the speed at S-IC CECO).",
+          "rtol": 0.025
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 135.2,
+          "value": 44000.0,
+          "note": "PUBLISHED (fitted): S-IC CECO altitude 44.0 km, AS-506 Table 4-2. The pitch program is fitted to it (design.py). Model +0.7 km.",
+          "abs": 3000.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/fpa_deg",
+          "t": 135.2,
+          "value": 22.957,
+          "note": "PUBLISHED (fitted): S-IC CECO space-fixed flight-path angle 22.957 deg, AS-506 Table 4-2; pitch program fitted. Model 22.91 deg.",
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/s",
+          "t": 135.2,
+          "value": 46400.0,
+          "note": "PUBLISHED (fitted): S-IC CECO surface range 46.4 km, AS-506 Table 4-2; pitch program fitted. Model 45.7 km.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 161.63,
+          "value": 2764.1,
+          "note": "PUBLISHED (validation): S-IC OECO space-fixed velocity 2764.1 m/s, AS-506 report Table 4-2. Model 2750.6 m/s (-0.5 %). Not fitted: set by the thrust, flow and mass data. The planar model omits the 126 m/s cross-plane part of the pad's eastward speed (0.1 % of the speed at S-IC CECO).",
+          "rtol": 0.025
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 161.63,
+          "value": 66100.0,
+          "note": "PUBLISHED (fitted): S-IC OECO altitude 66.1 km, AS-506 Table 4-2. The pitch program is fitted to it (design.py). Model +0.4 km.",
+          "abs": 3000.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/fpa_deg",
+          "t": 161.63,
+          "value": 19.114,
+          "note": "PUBLISHED (fitted): S-IC OECO space-fixed flight-path angle 19.114 deg, AS-506 Table 4-2; pitch program fitted. Model 19.19 deg.",
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/s",
+          "t": 161.63,
+          "value": 93600.0,
+          "note": "PUBLISHED (fitted): S-IC OECO surface range 93.6 km, AS-506 Table 4-2; pitch program fitted. Model 92.7 km.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 460.62,
+          "value": 5707.5,
+          "note": "PUBLISHED (validation): S-II CECO space-fixed velocity 5707.5 m/s, AS-506 report Table 4-2. Model 5722.2 m/s (+0.3 %). Not fitted: set by the thrust, flow and mass data. The planar model omits the 126 m/s cross-plane part of the pad's eastward speed (0.1 % of the speed at S-IC CECO).",
+          "rtol": 0.025
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 460.62,
+          "value": 180200.0,
+          "note": "PUBLISHED (fitted): S-II CECO altitude 180.2 km, AS-506 Table 4-2. The pitch program is fitted to it (design.py). Model +0.0 km.",
+          "abs": 3000.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/fpa_deg",
+          "t": 460.62,
+          "value": 0.897,
+          "note": "PUBLISHED (fitted): S-II CECO space-fixed flight-path angle 0.897 deg, AS-506 Table 4-2; pitch program fitted. Model 0.98 deg.",
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/s",
+          "t": 460.62,
+          "value": 1114300.0,
+          "note": "PUBLISHED (fitted): S-II CECO surface range 1114.3 km, AS-506 Table 4-2; pitch program fitted. Model 1114.9 km.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 548.22,
+          "value": 6917.3,
+          "note": "PUBLISHED (validation): S-II OECO space-fixed velocity 6917.3 m/s, AS-506 report Table 4-2. Model 6939.1 m/s (+0.3 %). Not fitted: set by the thrust, flow and mass data. The planar model omits the 126 m/s cross-plane part of the pad's eastward speed (0.1 % of the speed at S-IC CECO).",
+          "rtol": 0.025
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 548.22,
+          "value": 187300.0,
+          "note": "PUBLISHED (fitted): S-II OECO altitude 187.3 km, AS-506 Table 4-2. The pitch program is fitted to it (design.py). Model +0.1 km.",
+          "abs": 3000.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/fpa_deg",
+          "t": 548.22,
+          "value": 0.608,
+          "note": "PUBLISHED (fitted): S-II OECO space-fixed flight-path angle 0.608 deg, AS-506 Table 4-2; pitch program fitted. Model 0.67 deg.",
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/s",
+          "t": 548.22,
+          "value": 1617000.0,
+          "note": "PUBLISHED (fitted): S-II OECO surface range 1617.0 km, AS-506 Table 4-2; pitch program fitted. Model 1620.8 km.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 699.34,
+          "value": 7791.2,
+          "note": "PUBLISHED (validation): S-IVB ECO space-fixed velocity 7791.2 m/s, AS-506 report Table 4-2. Model 7826.9 m/s (+0.5 %). Not fitted: set by the thrust, flow and mass data. The planar model omits the 126 m/s cross-plane part of the pad's eastward speed (0.1 % of the speed at S-IC CECO).",
+          "rtol": 0.025
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/h",
+          "t": 699.34,
+          "value": 191100.0,
+          "note": "PUBLISHED (fitted): S-IVB ECO altitude 191.1 km, AS-506 Table 4-2. The pitch program is fitted to it (design.py). Model -0.1 km.",
+          "abs": 3000.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/fpa_deg",
+          "t": 699.34,
+          "value": 0.015,
+          "note": "PUBLISHED (fitted): S-IVB ECO space-fixed flight-path angle 0.015 deg, AS-506 Table 4-2; pitch program fitted. Model 0.06 deg.",
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/s",
+          "t": 699.34,
+          "value": 2634000.0,
+          "note": "PUBLISHED (fitted): S-IVB ECO surface range 2634.0 km, AS-506 Table 4-2; pitch program fitted. Model 2641.3 km.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Drag/mach",
+          "level": 1.0,
+          "n": 1,
+          "direction": "up",
+          "value": 66.3,
+          "abs": 3.0,
+          "note": "PUBLISHED (validation): Mach 1 at 66.3 s, AS-506 Table 4-1. Model 64.4 s. Depends on the S-IC thrust at low altitude and the altitude profile."
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Drag/qbar",
+          "from_t": 0.0,
+          "to_t": 200.0,
+          "value": 35200.0,
+          "rtol": 0.15,
+          "note": "PUBLISHED (validation): max Q 3.52 N/cm^2 = 35.2 kPa at 83.0 s and 13.6 km, AS-506 Table 4-1. Model 31.7 kPa at 75.3 s. The report's Q is computed with the measured winds and the day's atmosphere; the model has the US76 standard and no wind. Tolerance 15 %."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/acc",
+          "t": 161.5,
+          "value": 38.61,
+          "note": "PUBLISHED (validation): S-IC maximum acceleration 38.61 m/s^2 at 161.7 s, AS-506 Table 4-1. Model 38.53. Thrust from the F-1 Isp (Table 5-1) and the mass history (Table 20-1).",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/acc",
+          "t": 460.5,
+          "value": 17.84,
+          "note": "PUBLISHED (validation): S-II maximum acceleration 17.84 m/s^2 at 460.70 s, AS-506 Table 4-1. Model 18.01.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/acc",
+          "t": 699.3,
+          "value": 6.73,
+          "note": "PUBLISHED (validation): S-IVB first burn maximum acceleration 6.73 m/s^2 at 699.41 s, AS-506 Table 4-1. Model 6.78.",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 161.63,
+          "value": 827292.0,
+          "note": "PUBLISHED (validation): mass at S-IC OECO 827,292 kg, AS-506 Table 20-1. Model 826471 kg.",
+          "rtol": 0.005
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 548.22,
+          "value": 213888.0,
+          "note": "PUBLISHED (validation): mass at S-II OECO 213,888 kg, AS-506 Table 20-3. Model 211665 kg: the S-II flow from the published thrust levels and specific impulse burns about 2 t more than the mass history shows.",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 699.34,
+          "value": 135182.0,
+          "note": "PUBLISHED (validation): mass at S-IVB first cutoff 135,182 kg, AS-506 Table 20-5. Model 132871 kg (carries the S-II deficit: the drop at S-II/S-IVB separation is the published difference).",
+          "rtol": 0.03
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/speed",
+          "t": 709.33,
+          "value": 7793.1,
+          "note": "PUBLISHED (validation): insertion velocity 7793.1 m/s at 709.33 s, AS-506 Table 4-5. Model 7829.1 m/s.",
+          "rtol": 0.01
+        }
+      ],
+      "run_timeout": 900
+    },
+    "rocket-saturn-v-vacuum": {
+      "model": "rocket-saturn-v",
+      "overrides": [
+        {
+          "target": "global:drag_scale",
+          "value": 0.0
+        },
+        {
+          "target": "global:gravity_scale",
+          "value": 0.0
+        },
+        {
+          "target": "global:ambient_scale",
+          "value": 0.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv",
+          "t": 160.0,
+          "value": 3682.3831014934617,
+          "note": "TSIOLKOVSKY (analytic): S-IC in vacuum, c_vac ln(m0/m(160 s)) = 2980.56 m/s * ln(2902986/843895); m(160 s) is the schedule's mass (flow steps with the first-order lag), no jettison before 160 s.",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/m",
+          "t": 160.0,
+          "value": 843895.2091012051,
+          "note": "S-IC mass at 160 s, analytic from the schedule",
+          "rtol": 1e-08
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv",
+          "t": 460.0,
+          "value": 7169.807654861866,
+          "note": "ideal velocity gain in vacuum through the S-II burn, scipy quadrature (piecewise Tsiolkovsky across the jettisons)",
+          "rtol": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv",
+          "t": 699.0,
+          "value": 9325.549845214471,
+          "note": "ideal velocity gain in vacuum through the S-IVB burn, scipy",
+          "rtol": 1e-05
+        }
+      ],
+      "run_timeout": 900
+    }
+  }
+}

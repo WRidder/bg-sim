@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "lunar-module",
+  "models": [
+    "lm-descent",
+    "lm-hover",
+    "lm-ascent"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

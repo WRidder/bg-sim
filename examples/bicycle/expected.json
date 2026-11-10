@@ -1,0 +1,531 @@
+{
+  "project": "bicycle",
+  "description": "Acceptance of the bicycle example: the benchmark bicycle of Meijaard, Papadopoulos, Ruina and Schwab (Proc. R. Soc. A 463, 2007). The linear model is checked against the matrix exponential of the paper's matrices and the weave speed of table 2; the 3D multibond bond graph against the table 2 weave eigenvalues at 3 to 6 m/s, the linearised capsize growth at 8 m/s, the linear model at a small push (compare) and its own energy book.",
+  "models": {
+    "whipple": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "rear frame, fork and both wheels follow their composed body poses"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "compliant joints and explicit contacts: no derivative causality, connected and frame-consistent"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/v",
+          "value": 4.7,
+          "note": "the paper's figure 4 (same start: 4.6 m/s, lean rate 0.5 rad/s) plots the forward speed on a 4.60-4.70 m/s axis; measured 4.599 to 4.688 m/s (the figure is not tabulated, so this is only its range)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Sense/v",
+          "value": 4.59,
+          "note": "lower end of the figure 4 speed axis (measured 4.599)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/phi",
+          "from_t": 4.0,
+          "value": 0.025,
+          "note": "self-stable at 4.6 m/s (between the weave speed 4.29 and the capsize speed 6.02 m/s): the lean of 0.116 rad after the push has decayed to at most 0.018 rad after 4 s"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "TyreR/f_n",
+          "value": 550.0,
+          "note": "the rear tyre stays loaded (static 612.8 N; measured 588 to 623 N)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "TyreF/f_n",
+          "value": 250.0,
+          "note": "the front tyre stays loaded (static 309.3 N; measured 296 to 324 N)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreR/s_lat",
+          "value": 0.0005,
+          "note": "rolling without slip up to a creep below 0.5 mm/s (measured 0.36 mm/s at the start: the lean rate turns the 0.7 mm deep contact point sideways)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreF/s_lon",
+          "value": 1e-05,
+          "note": "longitudinal creep (measured 3.6 um/s)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/Ebal",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 0.0002,
+          "note": "energy book with the joint dampers on: E + tyre loss stays within 0.37 J of 1837 J (measured drift 0.24 J, the work of the dampers of the joints' held directions, not counted in the book)"
+        }
+      ]
+    },
+    "whipple-energy": {
+      "model": "whipple",
+      "overrides": [
+        {
+          "target": "RearHub/br",
+          "value": 0.0
+        },
+        {
+          "target": "RearHub/bt",
+          "value": 0.0
+        },
+        {
+          "target": "Steer/br",
+          "value": 0.0
+        },
+        {
+          "target": "Steer/bt",
+          "value": 0.0
+        },
+        {
+          "target": "FrontHub/br",
+          "value": 0.0
+        },
+        {
+          "target": "FrontHub/bt",
+          "value": 0.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/Ebal",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-06,
+          "note": "joint dampers off: the Whipple bicycle is conservative, so kinetic + potential + tyre and joint springs + tyre loss is constant to 1.8 mJ in 1837 J (measured 0.07 mJ while the tyres dissipate 2.8 J)"
+        }
+      ]
+    },
+    "whipple-3ms": {
+      "model": "whipple",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 3.0
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.002
+        }
+      ],
+      "settings": {
+        "t_end": 3.0,
+        "output": {
+          "points": 601
+        }
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "Sense/delta",
+          "from_t": 0.3,
+          "to_t": 3.0,
+          "zeta": -0.59328,
+          "zeta_abs": 0.01,
+          "wn": 2.87681,
+          "wn_rtol": 0.01,
+          "note": "weave eigenvalue at 3 m/s from Meijaard et al. 2007 table 2: 1.70676 +- 2.31582 i (zeta -0.5933, wn 2.8768 rad/s); measured zeta -0.5935, wn 2.8801"
+        }
+      ]
+    },
+    "whipple-4ms": {
+      "model": "whipple",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 4.0
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.01
+        }
+      ],
+      "settings": {
+        "t_end": 5.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "Sense/deltad",
+          "from_t": 0.3,
+          "to_t": 5.0,
+          "zeta": -0.13302,
+          "zeta_abs": 0.01,
+          "wn": 3.10672,
+          "wn_rtol": 0.01,
+          "note": "weave eigenvalue at 4 m/s from Meijaard et al. 2007 table 2: 0.41325 +- 3.07911 i (zeta -0.1330, wn 3.1067 rad/s); measured zeta -0.1353, wn 3.1045"
+        }
+      ]
+    },
+    "whipple-5ms": {
+      "model": "whipple",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 5.0
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.05
+        }
+      ],
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "Sense/deltad",
+          "from_t": 0.3,
+          "to_t": 6.0,
+          "zeta": 0.17109,
+          "zeta_abs": 0.01,
+          "wn": 4.53169,
+          "wn_rtol": 0.01,
+          "note": "weave eigenvalue at 5 m/s from Meijaard et al. 2007 table 2: -0.77534 +- 4.46487 i (zeta 0.1711, wn 4.5317 rad/s); measured zeta 0.1702, wn 4.5153"
+        }
+      ]
+    },
+    "whipple-6ms": {
+      "model": "whipple",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 6.0
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.05
+        }
+      ],
+      "settings": {
+        "t_end": 4.0,
+        "output": {
+          "points": 801
+        }
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "Sense/phid",
+          "from_t": 0.2,
+          "to_t": 4.0,
+          "zeta": 0.2514,
+          "zeta_abs": 0.01,
+          "wn": 6.07174,
+          "wn_rtol": 0.01,
+          "note": "weave eigenvalue at 6 m/s from Meijaard et al. 2007 table 2: -1.52644 +- 5.87673 i (zeta 0.2514, wn 6.0717 rad/s); measured zeta 0.2508, wn 6.0596"
+        }
+      ]
+    },
+    "whipple-8ms": {
+      "model": "whipple",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 8.0
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.05
+        }
+      ],
+      "settings": {
+        "t_end": 12.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/phi",
+          "t": 6.0,
+          "value": 0.00717925122195901,
+          "rtol": 0.01,
+          "note": "above the capsize speed the lean grows slowly (table 2: capsize eigenvalue +0.14328/s at 8 m/s); value: the linearised benchmark from the same start (design.py, matrix exponential); measured 0.0071575 (-0.3 %)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/phi",
+          "t": 12.0,
+          "value": 0.016960173860704454,
+          "rtol": 0.01,
+          "note": "the same at 12 s (measured 0.0168516, -0.6 %)"
+        }
+      ]
+    },
+    "linear": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Lean/y",
+          "t": 0.5,
+          "value": 0.10718719063622067,
+          "abs": 1e-08,
+          "note": "the paper's matrices (6.1)-(6.4) at 4.6 m/s from a 0.5 rad/s lean rate, exact solution by the matrix exponential in design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Lean/y",
+          "t": 1.0,
+          "value": -0.052951429420048476,
+          "abs": 1e-08,
+          "note": "the paper's matrices (6.1)-(6.4) at 4.6 m/s from a 0.5 rad/s lean rate, exact solution by the matrix exponential in design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Lean/y",
+          "t": 2.0,
+          "value": 0.06227863682511935,
+          "abs": 1e-08,
+          "note": "the paper's matrices (6.1)-(6.4) at 4.6 m/s from a 0.5 rad/s lean rate, exact solution by the matrix exponential in design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Lean/y",
+          "t": 3.0,
+          "value": -0.03428574605631117,
+          "abs": 1e-08,
+          "note": "the paper's matrices (6.1)-(6.4) at 4.6 m/s from a 0.5 rad/s lean rate, exact solution by the matrix exponential in design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Steer/y",
+          "t": 1.0,
+          "value": -0.04375017636809066,
+          "abs": 1e-08,
+          "note": "steer angle, same reference"
+        }
+      ]
+    },
+    "linear-weave-speed": {
+      "model": "linear",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 4.29238253634111
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.1
+        }
+      ],
+      "settings": {
+        "t_end": 10.0,
+        "output": {
+          "points": 2001
+        }
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "LeanRate/y",
+          "from_t": 3.0,
+          "to_t": 10.0,
+          "zeta": 0.0,
+          "zeta_abs": 0.002,
+          "wn": 3.43503384866144,
+          "wn_rtol": 0.002,
+          "note": "at the weave speed v_w = 4.29238253634111 m/s (Meijaard et al. 2007 table 2a) the weave pair sits on the imaginary axis at +- 3.43503384866144 i: an undamped oscillation once the capsize and castering modes have died out"
+        }
+      ]
+    },
+    "linear-5ms": {
+      "model": "linear",
+      "overrides": [
+        {
+          "target": "global:v",
+          "value": 5.0
+        },
+        {
+          "target": "global:phid0",
+          "value": 0.05
+        }
+      ],
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "SteerRate/y",
+          "from_t": 0.3,
+          "to_t": 6.0,
+          "zeta": 0.17109,
+          "zeta_abs": 0.005,
+          "wn": 4.53169,
+          "wn_rtol": 0.005,
+          "note": "weave eigenvalue at 5 m/s from Meijaard et al. 2007 table 2: -0.77534 +- 4.46487 i (zeta 0.1711, wn 4.5317 rad/s); measured zeta 0.1713, wn 4.5258"
+        }
+      ]
+    },
+    "balance": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "rear frame, fork and both wheels follow their composed body poses"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "compliant joints and explicit contacts: no derivative causality, connected and frame-consistent"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/phi",
+          "t": 10.0,
+          "value": 0.1,
+          "abs": 0.003,
+          "note": "the lean settles on the set-point; the LQR has no integral action, and on the nonlinear bicycle (which speeds up to 3.05 m/s as it leans) it settles 1.6 % high (measured 0.10160)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/delta",
+          "t": 10.0,
+          "value": 0.11961885537976696,
+          "abs": 0.004,
+          "note": "steady-turn steer angle of the linearised benchmark at 3 m/s and 0.1 rad lean (0.11962 rad, design.py); measured 0.11767 at 3.05 m/s"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/psid",
+          "t": 10.0,
+          "value": 0.33816,
+          "abs": 0.001,
+          "note": "heading rate of the steady turn from the measured speed, steer and lean through the rolling kinematics v tan(delta) cos(lambda) / (w cos(phi)) = 3.05196 tan(0.117668) cos(pi/10) / (1.02 cos(0.101602)) = 0.33816 rad/s (measured 0.33809); the linear model gives 0.33460 at 3 m/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/y",
+          "value": 2.5,
+          "note": "steer torque (measured peak 2.30 N m, the reaction to the 0.3 rad/s push)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "TyreF/f_n",
+          "value": 250.0,
+          "note": "the front tyre stays loaded (measured 305 N)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/Ebal",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 0.0003,
+          "note": "energy book with the steer torque's work counted: constant within 0.37 J of 1237 J (measured drift 0.21 J, the joint dampers)"
+        }
+      ]
+    },
+    "balance-linear": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Lean/y",
+          "t": 10.0,
+          "value": 0.1,
+          "abs": 0.0001,
+          "note": "the reference gain N of design.py makes the set-point the closed loop's steady state"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Steer/y",
+          "t": 10.0,
+          "value": 0.11961885537976696,
+          "abs": 0.0001,
+          "note": "steady-turn steer angle from the paper's matrices (design.py)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "YawRate/y",
+          "t": 10.0,
+          "value": 0.3346008584726322,
+          "abs": 0.0001,
+          "note": "heading rate v delta cos(lambda) / w of that steady turn (design.py)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Ctrl/y",
+          "t": 10.0,
+          "value": -0.6352058725667761,
+          "abs": 0.001,
+          "note": "steady steer torque (design.py): negative, i.e. the rider holds the bar against the turn"
+        }
+      ]
+    }
+  },
+  "compare": [
+    {
+      "a": "whipple-5ms",
+      "b": "linear-5ms",
+      "signal_a": "Sense/phi",
+      "signal_b": "Lean/y",
+      "from_t": 0.0,
+      "max_abs": 0.0002,
+      "note": "3D bond graph against the linearised benchmark at 5 m/s after a 0.05 rad/s push: lean within 2e-4 rad of a 0.0106 rad motion (measured 7.5e-5)"
+    },
+    {
+      "a": "whipple-5ms",
+      "b": "linear-5ms",
+      "signal_a": "Sense/delta",
+      "signal_b": "Steer/y",
+      "from_t": 0.0,
+      "max_abs": 0.0002,
+      "note": "steer angle, same runs (measured 7.4e-5 of 0.0115 rad)"
+    },
+    {
+      "a": "balance",
+      "b": "balance-linear",
+      "signal_a": "Sense/phi",
+      "signal_b": "Lean/y",
+      "from_t": 0.0,
+      "max_abs": 0.003,
+      "note": "the controller on the 3D bicycle and on the linear model (measured 0.0016 rad)"
+    }
+  ]
+}

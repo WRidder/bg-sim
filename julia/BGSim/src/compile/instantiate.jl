@@ -950,7 +950,10 @@ function _bind_starts!(b::Builder, st::BlockState, node::IR.ModelNode)
         _file_global_value!(b, gvalue, :start, "start of `$key` of `$(st.path)`", st.ids[name])
         for (k, id) in enumerate(st.ids[name])
             v = var_by_id(b, id)
-            v === nothing || (v.start = values[k])
+            v === nothing && continue
+            v.start = values[k]
+            # An instance start outranks declared defaults along an alias chain (`_start_source`).
+            v.attrs[BGSim.START_SET] = true
         end
     end
     return nothing

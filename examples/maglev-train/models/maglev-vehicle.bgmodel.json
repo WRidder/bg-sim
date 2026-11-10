@@ -1,0 +1,3743 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "maglev-vehicle",
+  "$comment": "A car section on two EMS modules.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Free",
+        "block": {
+          "ref": "stdlib:spatial/Free3D"
+        },
+        "position": {
+          "x": 240,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Body",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 480,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_body",
+          "J": "[J_roll, J_pitch, J_yaw]",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Jx",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Lsm",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 40,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "LsmLag",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 40,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "tau_lsm"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Drag",
+        "block": {
+          "ref": "stdlib:bondgraph/MR"
+        },
+        "position": {
+          "x": 240,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "DragK",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 60,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "k_aero"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Speed",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 440,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "SpeedAbs",
+        "block": {
+          "ref": "stdlib:continuous/Abs"
+        },
+        "position": {
+          "x": 240,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Profile",
+        "block": {
+          "ref": "stdlib:motion/TrapezoidalProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "q_end",
+          "t_start": "t_go",
+          "v_max": "v_cruise",
+          "a_max": "a_acc"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "LsmCtl",
+        "block": {
+          "ref": "project:LsmController"
+        },
+        "position": {
+          "x": 240,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_body",
+          "k_aero": "k_aero",
+          "Kp": "Kp_v",
+          "Ti": "Ti_v",
+          "F_max": "F_max"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "JLat",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "KLat",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 400,
+          "y": 730
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "1.0/k_guide"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "DLat",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 400,
+          "y": 790
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "c_guide"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "JRoll",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "KRoll",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 400,
+          "y": 830
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "1.0/kr_guide"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "DRoll",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 400,
+          "y": 890
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "cr_guide"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "JYaw",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "KYaw",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 400,
+          "y": 930
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "1.0/kr_guide"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "DYaw",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 400,
+          "y": 990
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "cr_guide"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "Jz",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 760,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "Jt",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 760,
+          "y": 520
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "AccZ",
+        "block": {
+          "ref": "stdlib:continuous/FilteredDerivative"
+        },
+        "position": {
+          "x": 1100,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Tf": "0.005"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "HeaveV",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 960,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "PitchRate",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 960,
+          "y": 520
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "PoseX",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 480,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": "7",
+          "index": "5"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "PoseQy",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 480,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": "7",
+          "index": "3"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "PoseZ",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 480,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": "7",
+          "index": "7"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "R31",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 700,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-2.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n31",
+        "name": "RefStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 1100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_ref",
+          "initial": "h_skid",
+          "final": "h_nom"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n32",
+        "name": "RefLag",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 240,
+          "y": 1100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "tau_ref"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_skid"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n33",
+        "name": "ModF",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "body",
+                "kind": "power",
+                "domain": "Translation",
+                "size": [
+                  1
+                ],
+                "node": "n19",
+                "port": "b"
+              },
+              {
+                "name": "h_ref",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "m",
+                "node": "n01",
+                "port": "h_ref"
+              },
+              {
+                "name": "v_rail",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "m/s",
+                "node": "n10",
+                "port": "u"
+              },
+              {
+                "name": "gap",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "m",
+                "node": "n18",
+                "port": "y"
+              },
+              {
+                "name": "i",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "A",
+                "node": "n05",
+                "port": "y"
+              },
+              {
+                "name": "v",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "V",
+                "node": "n01",
+                "port": "v"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "n01",
+                  "name": "Ctl",
+                  "block": {
+                    "ref": "project:GapController"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "a1": "a1",
+                    "a2": "a2",
+                    "a3": "a3",
+                    "a4": "a4",
+                    "Tf": "Tf",
+                    "R": "R_coil",
+                    "c_trim": "c_trim",
+                    "v_max": "V_max"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "xf": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n02",
+                  "name": "Amp",
+                  "block": {
+                    "ref": "stdlib:bondgraph/MSe"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "gain": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n03",
+                  "name": "Jc",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 180
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n04",
+                  "name": "Rc",
+                  "block": {
+                    "ref": "stdlib:bondgraph/R"
+                  },
+                  "position": {
+                    "x": 100,
+                    "y": 180
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "r": "R_coil"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n05",
+                  "name": "Imeas",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Df"
+                  },
+                  "position": {
+                    "x": 100,
+                    "y": 280
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n06",
+                  "name": "Jv",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 260
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n07",
+                  "name": "Vcoil",
+                  "block": {
+                    "ref": "stdlib:bondgraph/De"
+                  },
+                  "position": {
+                    "x": 100,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n08",
+                  "name": "EM",
+                  "block": {
+                    "ref": "stdlib:converters/Electromagnet"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 400
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "alpha": "alpha",
+                    "L_inf": "L_inf",
+                    "h0": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "i": "0.0",
+                    "h": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n09",
+                  "name": "Gnd",
+                  "block": {
+                    "ref": "stdlib:electrical/Ground"
+                  },
+                  "position": {
+                    "x": 440,
+                    "y": 280
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n10",
+                  "name": "Rail",
+                  "block": {
+                    "ref": "stdlib:bondgraph/MSf"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 600
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "gain": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n11",
+                  "name": "Jr",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 600
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n12",
+                  "name": "Skid",
+                  "block": {
+                    "ref": "stdlib:translation/HardStop"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 760
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "lower": "h_stop",
+                    "upper": "h_skid",
+                    "k": "k_c",
+                    "d": "d_c"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "x": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n13",
+                  "name": "Jb",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 480,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n14",
+                  "name": "Chassis",
+                  "block": {
+                    "ref": "stdlib:bondgraph/I"
+                  },
+                  "position": {
+                    "x": 640,
+                    "y": 400
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "i": "m_b"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n15",
+                  "name": "Weight",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Se"
+                  },
+                  "position": {
+                    "x": 640,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "e": "m_b*g0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n16",
+                  "name": "Jg",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 380,
+                    "y": 540
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n17",
+                  "name": "GapRate",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Df"
+                  },
+                  "position": {
+                    "x": 380,
+                    "y": 680
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n18",
+                  "name": "Gap",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 540,
+                    "y": 680
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n19",
+                  "name": "Sus",
+                  "block": {
+                    "ref": "stdlib:translation/SpringDamper"
+                  },
+                  "position": {
+                    "x": 700,
+                    "y": 600
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "k_s",
+                    "d": "c_s"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "x": "e_spring"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n20",
+                  "name": "Err",
+                  "block": {
+                    "ref": "project:Bias"
+                  },
+                  "position": {
+                    "x": 700,
+                    "y": 680
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "b": "-h_nom"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "c01",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n02",
+                    "port": "p"
+                  },
+                  "to": {
+                    "node": "n03"
+                  }
+                },
+                {
+                  "id": "c02",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n03"
+                  },
+                  "to": {
+                    "node": "n04",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c03",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n03"
+                  },
+                  "to": {
+                    "node": "n05",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c04",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n03"
+                  },
+                  "to": {
+                    "node": "n06"
+                  }
+                },
+                {
+                  "id": "c05",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n06"
+                  },
+                  "to": {
+                    "node": "n07",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c06",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n06"
+                  },
+                  "to": {
+                    "node": "n08",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c07",
+                  "kind": "wire",
+                  "from": {
+                    "node": "n08",
+                    "port": "n"
+                  },
+                  "to": {
+                    "node": "n09",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c08",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n10",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c09",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n08",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "c10",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n08",
+                    "port": "b"
+                  }
+                },
+                {
+                  "id": "c11",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n12",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "c12",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n12",
+                    "port": "b"
+                  }
+                },
+                {
+                  "id": "c13",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n14",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c14",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n15",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c15",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n19",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "c16",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n16"
+                  }
+                },
+                {
+                  "id": "c17",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n16"
+                  },
+                  "to": {
+                    "node": "n13"
+                  }
+                },
+                {
+                  "id": "c18",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n16"
+                  },
+                  "to": {
+                    "node": "n17",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c19",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n17",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n18",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c20",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n18",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n20",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c21",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n18",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n01",
+                    "port": "h"
+                  }
+                },
+                {
+                  "id": "c22",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n01",
+                    "port": "i"
+                  }
+                },
+                {
+                  "id": "c23",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n01",
+                    "port": "v"
+                  },
+                  "to": {
+                    "node": "n02",
+                    "port": "u"
+                  }
+                }
+              ],
+              "annotations": []
+            }
+          }
+        },
+        "position": {
+          "x": 1200,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n34",
+        "name": "LeverF",
+        "block": {
+          "ref": "stdlib:converters/RackAndPinion"
+        },
+        "position": {
+          "x": 960,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "x_m"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n35",
+        "name": "ZF",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1100,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n36",
+        "name": "ClimbF",
+        "block": {
+          "ref": "stdlib:bondgraph/MTF"
+        },
+        "position": {
+          "x": 960,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n37",
+        "name": "GwF",
+        "block": {
+          "ref": "project:Guideway"
+        },
+        "position": {
+          "x": 700,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L_span": "L_span",
+          "A_sag": "A_sag",
+          "s_b": "s_bump",
+          "A_b": "A_bump",
+          "lam_b": "lam_bump",
+          "x_off": "x_m"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n38",
+        "name": "ModR",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "body",
+                "kind": "power",
+                "domain": "Translation",
+                "size": [
+                  1
+                ],
+                "node": "n19",
+                "port": "b"
+              },
+              {
+                "name": "h_ref",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "m",
+                "node": "n01",
+                "port": "h_ref"
+              },
+              {
+                "name": "v_rail",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "m/s",
+                "node": "n10",
+                "port": "u"
+              },
+              {
+                "name": "gap",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "m",
+                "node": "n18",
+                "port": "y"
+              },
+              {
+                "name": "i",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "A",
+                "node": "n05",
+                "port": "y"
+              },
+              {
+                "name": "v",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": "V",
+                "node": "n01",
+                "port": "v"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "n01",
+                  "name": "Ctl",
+                  "block": {
+                    "ref": "project:GapController"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "a1": "a1",
+                    "a2": "a2",
+                    "a3": "a3",
+                    "a4": "a4",
+                    "Tf": "Tf",
+                    "R": "R_coil",
+                    "c_trim": "c_trim",
+                    "v_max": "V_max"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "xf": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n02",
+                  "name": "Amp",
+                  "block": {
+                    "ref": "stdlib:bondgraph/MSe"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "gain": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n03",
+                  "name": "Jc",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 180
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n04",
+                  "name": "Rc",
+                  "block": {
+                    "ref": "stdlib:bondgraph/R"
+                  },
+                  "position": {
+                    "x": 100,
+                    "y": 180
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "r": "R_coil"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n05",
+                  "name": "Imeas",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Df"
+                  },
+                  "position": {
+                    "x": 100,
+                    "y": 280
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n06",
+                  "name": "Jv",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 260
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n07",
+                  "name": "Vcoil",
+                  "block": {
+                    "ref": "stdlib:bondgraph/De"
+                  },
+                  "position": {
+                    "x": 100,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n08",
+                  "name": "EM",
+                  "block": {
+                    "ref": "stdlib:converters/Electromagnet"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 400
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "alpha": "alpha",
+                    "L_inf": "L_inf",
+                    "h0": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "i": "0.0",
+                    "h": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n09",
+                  "name": "Gnd",
+                  "block": {
+                    "ref": "stdlib:electrical/Ground"
+                  },
+                  "position": {
+                    "x": 440,
+                    "y": 280
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n10",
+                  "name": "Rail",
+                  "block": {
+                    "ref": "stdlib:bondgraph/MSf"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 600
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "gain": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n11",
+                  "name": "Jr",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 600
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n12",
+                  "name": "Skid",
+                  "block": {
+                    "ref": "stdlib:translation/HardStop"
+                  },
+                  "position": {
+                    "x": 260,
+                    "y": 760
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "lower": "h_stop",
+                    "upper": "h_skid",
+                    "k": "k_c",
+                    "d": "d_c"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "x": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n13",
+                  "name": "Jb",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 480,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n14",
+                  "name": "Chassis",
+                  "block": {
+                    "ref": "stdlib:bondgraph/I"
+                  },
+                  "position": {
+                    "x": 640,
+                    "y": 400
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "i": "m_b"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n15",
+                  "name": "Weight",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Se"
+                  },
+                  "position": {
+                    "x": 640,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "e": "m_b*g0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n16",
+                  "name": "Jg",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 380,
+                    "y": 540
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n17",
+                  "name": "GapRate",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Df"
+                  },
+                  "position": {
+                    "x": 380,
+                    "y": 680
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n18",
+                  "name": "Gap",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 540,
+                    "y": 680
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "h_rest"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n19",
+                  "name": "Sus",
+                  "block": {
+                    "ref": "stdlib:translation/SpringDamper"
+                  },
+                  "position": {
+                    "x": 700,
+                    "y": 600
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "k_s",
+                    "d": "c_s"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "x": "e_spring"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n20",
+                  "name": "Err",
+                  "block": {
+                    "ref": "project:Bias"
+                  },
+                  "position": {
+                    "x": 700,
+                    "y": 680
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "b": "-h_nom"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "c01",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n02",
+                    "port": "p"
+                  },
+                  "to": {
+                    "node": "n03"
+                  }
+                },
+                {
+                  "id": "c02",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n03"
+                  },
+                  "to": {
+                    "node": "n04",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c03",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n03"
+                  },
+                  "to": {
+                    "node": "n05",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c04",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n03"
+                  },
+                  "to": {
+                    "node": "n06"
+                  }
+                },
+                {
+                  "id": "c05",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n06"
+                  },
+                  "to": {
+                    "node": "n07",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c06",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n06"
+                  },
+                  "to": {
+                    "node": "n08",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c07",
+                  "kind": "wire",
+                  "from": {
+                    "node": "n08",
+                    "port": "n"
+                  },
+                  "to": {
+                    "node": "n09",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c08",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n10",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c09",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n08",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "c10",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n08",
+                    "port": "b"
+                  }
+                },
+                {
+                  "id": "c11",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n12",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "c12",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n12",
+                    "port": "b"
+                  }
+                },
+                {
+                  "id": "c13",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n14",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c14",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n15",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c15",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n13"
+                  },
+                  "to": {
+                    "node": "n19",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "c16",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n11"
+                  },
+                  "to": {
+                    "node": "n16"
+                  }
+                },
+                {
+                  "id": "c17",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n16"
+                  },
+                  "to": {
+                    "node": "n13"
+                  }
+                },
+                {
+                  "id": "c18",
+                  "kind": "bond",
+                  "from": {
+                    "node": "n16"
+                  },
+                  "to": {
+                    "node": "n17",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "c19",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n17",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n18",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c20",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n18",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n20",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c21",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n18",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n01",
+                    "port": "h"
+                  }
+                },
+                {
+                  "id": "c22",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n01",
+                    "port": "i"
+                  }
+                },
+                {
+                  "id": "c23",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n01",
+                    "port": "v"
+                  },
+                  "to": {
+                    "node": "n02",
+                    "port": "u"
+                  }
+                }
+              ],
+              "annotations": []
+            }
+          }
+        },
+        "position": {
+          "x": 1200,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n39",
+        "name": "LeverR",
+        "block": {
+          "ref": "stdlib:converters/RackAndPinion"
+        },
+        "position": {
+          "x": 960,
+          "y": 880
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "x_m"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n40",
+        "name": "ZR",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1100,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n41",
+        "name": "ClimbR",
+        "block": {
+          "ref": "stdlib:bondgraph/MTF"
+        },
+        "position": {
+          "x": 960,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n42",
+        "name": "GwR",
+        "block": {
+          "ref": "project:Guideway"
+        },
+        "position": {
+          "x": 700,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L_span": "L_span",
+          "A_sag": "A_sag",
+          "s_b": "s_bump",
+          "A_b": "A_bump",
+          "lam_b": "lam_bump",
+          "x_off": "-x_m"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n02",
+          "port": "child"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c03",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n03",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive4"
+        }
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n05",
+          "port": "p"
+        },
+        "to": {
+          "node": "n04"
+        }
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c07",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n09",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c08",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c09",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n08",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n07",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "v"
+        },
+        "to": {
+          "node": "n12",
+          "port": "v_ref"
+        }
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "a"
+        },
+        "to": {
+          "node": "n12",
+          "port": "a_ref"
+        }
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c15",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "F_cmd"
+        },
+        "to": {
+          "node": "n06",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c16",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive5"
+        }
+      },
+      {
+        "id": "c17",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n14",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c18",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n15",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c19",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive1"
+        }
+      },
+      {
+        "id": "c20",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n17",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c21",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n18",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c22",
+        "kind": "bond",
+        "from": {
+          "node": "n19"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive3"
+        }
+      },
+      {
+        "id": "c23",
+        "kind": "bond",
+        "from": {
+          "node": "n19"
+        },
+        "to": {
+          "node": "n20",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c24",
+        "kind": "bond",
+        "from": {
+          "node": "n19"
+        },
+        "to": {
+          "node": "n21",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c25",
+        "kind": "bond",
+        "from": {
+          "node": "n22"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive6"
+        }
+      },
+      {
+        "id": "c26",
+        "kind": "bond",
+        "from": {
+          "node": "n23"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive2"
+        }
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c28",
+        "kind": "bond",
+        "from": {
+          "node": "n22"
+        },
+        "to": {
+          "node": "n25",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c29",
+        "kind": "bond",
+        "from": {
+          "node": "n23"
+        },
+        "to": {
+          "node": "n26",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c30",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n27",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c31",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n28",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c32",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n29",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c33",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "y"
+        },
+        "to": {
+          "node": "n30",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c34",
+        "kind": "signal",
+        "from": {
+          "node": "n31",
+          "port": "y"
+        },
+        "to": {
+          "node": "n32",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c35",
+        "kind": "bond",
+        "from": {
+          "node": "n22"
+        },
+        "to": {
+          "node": "n35"
+        }
+      },
+      {
+        "id": "c36",
+        "kind": "bond",
+        "from": {
+          "node": "n23"
+        },
+        "to": {
+          "node": "n34",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c37",
+        "kind": "bond",
+        "from": {
+          "node": "n34",
+          "port": "b"
+        },
+        "to": {
+          "node": "n35"
+        }
+      },
+      {
+        "id": "c38",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n36",
+          "port": "p1"
+        }
+      },
+      {
+        "id": "c39",
+        "kind": "bond",
+        "from": {
+          "node": "n36",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n35"
+        }
+      },
+      {
+        "id": "c40",
+        "kind": "signal",
+        "from": {
+          "node": "n30",
+          "port": "y"
+        },
+        "to": {
+          "node": "n36",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c41",
+        "kind": "bond",
+        "from": {
+          "node": "n35"
+        },
+        "to": {
+          "node": "n33",
+          "port": "body"
+        }
+      },
+      {
+        "id": "c42",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "y"
+        },
+        "to": {
+          "node": "n33",
+          "port": "h_ref"
+        }
+      },
+      {
+        "id": "c43",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n37",
+          "port": "s"
+        }
+      },
+      {
+        "id": "c44",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n37",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c45",
+        "kind": "signal",
+        "from": {
+          "node": "n37",
+          "port": "w"
+        },
+        "to": {
+          "node": "n33",
+          "port": "v_rail"
+        }
+      },
+      {
+        "id": "c46",
+        "kind": "bond",
+        "from": {
+          "node": "n22"
+        },
+        "to": {
+          "node": "n40"
+        }
+      },
+      {
+        "id": "c47",
+        "kind": "bond",
+        "from": {
+          "node": "n39",
+          "port": "a"
+        },
+        "to": {
+          "node": "n23"
+        }
+      },
+      {
+        "id": "c48",
+        "kind": "bond",
+        "from": {
+          "node": "n39",
+          "port": "b"
+        },
+        "to": {
+          "node": "n40"
+        }
+      },
+      {
+        "id": "c49",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n41",
+          "port": "p1"
+        }
+      },
+      {
+        "id": "c50",
+        "kind": "bond",
+        "from": {
+          "node": "n41",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n40"
+        }
+      },
+      {
+        "id": "c51",
+        "kind": "signal",
+        "from": {
+          "node": "n30",
+          "port": "y"
+        },
+        "to": {
+          "node": "n41",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c52",
+        "kind": "bond",
+        "from": {
+          "node": "n40"
+        },
+        "to": {
+          "node": "n38",
+          "port": "body"
+        }
+      },
+      {
+        "id": "c53",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "y"
+        },
+        "to": {
+          "node": "n38",
+          "port": "h_ref"
+        }
+      },
+      {
+        "id": "c54",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n42",
+          "port": "s"
+        }
+      },
+      {
+        "id": "c55",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n42",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c56",
+        "kind": "signal",
+        "from": {
+          "node": "n42",
+          "port": "w"
+        },
+        "to": {
+          "node": "n38",
+          "port": "v_rail"
+        }
+      }
+    ],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 275.8888888888889,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 13501
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Speed and reference [m/s]",
+      "signals": [
+        "Speed/y",
+        "Profile/v"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Front and rear gap [m]",
+      "signals": [
+        "ModF/Gap/y",
+        "ModR/Gap/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Coil currents [A]",
+      "signals": [
+        "ModF/EM/i",
+        "ModR/EM/i"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "LSM thrust and aerodynamic drag [N]",
+      "signals": [
+        "Lsm/p.e",
+        "Drag/p.e"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Body heave [m], vertical acceleration [m/s^2] and pitch rate [rad/s]",
+      "signals": [
+        "Free/pz",
+        "AccZ/y",
+        "PitchRate/y"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Guideway deflection under the two modules [m]",
+      "signals": [
+        "GwF/z",
+        "GwR/z"
+      ]
+    },
+    {
+      "id": "p7",
+      "title": "Track position [m]",
+      "signals": [
+        "Free/px",
+        "Profile/q"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/maglev-train.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:scroll",
+      "property": "position",
+      "signal": "GwF/ph",
+      "gain": -1.0,
+      "offset": 0.0
+    },
+    {
+      "target": "joint:heave",
+      "property": "position",
+      "signal": "Free/pz",
+      "gain": 100.0,
+      "offset": -0.6583413374999999
+    },
+    {
+      "target": "joint:pitch",
+      "property": "position",
+      "signal": "Free/qy",
+      "gain": 200.0,
+      "offset": 0.0
+    },
+    {
+      "target": "joint:gap_f",
+      "property": "position",
+      "signal": "ModF/Gap/y",
+      "gain": 100.0,
+      "offset": -0.99
+    },
+    {
+      "target": "joint:gap_r",
+      "property": "position",
+      "signal": "ModR/Gap/y",
+      "gain": 100.0,
+      "offset": -0.99
+    },
+    {
+      "target": "visual:coil_f_l",
+      "property": "color",
+      "signal": "ModF/EM/i",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        250.0
+      ]
+    },
+    {
+      "target": "visual:coil_f_r",
+      "property": "color",
+      "signal": "ModF/EM/i",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        250.0
+      ]
+    },
+    {
+      "target": "visual:coil_r_l",
+      "property": "color",
+      "signal": "ModR/EM/i",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        250.0
+      ]
+    },
+    {
+      "target": "visual:coil_r_r",
+      "property": "color",
+      "signal": "ModR/EM/i",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        250.0
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "g0",
+      "value": "9.81",
+      "unit": "m/s^2",
+      "description": "Gravitational acceleration"
+    },
+    {
+      "name": "h_nom",
+      "value": "0.01",
+      "unit": "m",
+      "description": "Nominal gap (Transrapid: 10 mm)"
+    },
+    {
+      "name": "h_skid",
+      "value": "0.016",
+      "unit": "m",
+      "description": "Gap while the module rests on its skids (estimate)"
+    },
+    {
+      "name": "h_stop",
+      "value": "0.004",
+      "unit": "m",
+      "description": "Touch-down stop: the pole face would hit the rail below this gap (estimate)"
+    },
+    {
+      "name": "m_b",
+      "value": "3000.0",
+      "unit": "kg",
+      "description": "Levitation chassis (bogie) mass"
+    },
+    {
+      "name": "k_s",
+      "value": "927742.8137023996",
+      "unit": "N/m",
+      "description": "Secondary suspension stiffness"
+    },
+    {
+      "name": "c_s",
+      "value": "88592.91283123217",
+      "unit": "N*s/m",
+      "description": "Secondary suspension damping"
+    },
+    {
+      "name": "alpha",
+      "value": "0.0011554",
+      "unit": "H*m",
+      "description": "Magnet force constant: F = alpha*i^2/h^2 (= mu0 N^2 A_pole/4)"
+    },
+    {
+      "name": "L_inf",
+      "value": "0.06",
+      "unit": "H",
+      "description": "Coil leakage inductance; L(h) = L_inf + 2 alpha/h"
+    },
+    {
+      "name": "R_coil",
+      "value": "1.1",
+      "unit": "Ohm",
+      "description": "Coil resistance"
+    },
+    {
+      "name": "V_max",
+      "value": "1600.0",
+      "unit": "V",
+      "description": "Chopper voltage limit"
+    },
+    {
+      "name": "k_c",
+      "value": "400000000.0",
+      "unit": "N/m",
+      "description": "Skid and stop contact stiffness"
+    },
+    {
+      "name": "d_c",
+      "value": "2000000.0",
+      "unit": "N*s/m",
+      "description": "Skid and stop contact damping"
+    },
+    {
+      "name": "h_rest",
+      "value": "h_skid + (m_b + m_c)*g0/k_c",
+      "unit": "m",
+      "description": "Gap at rest: the skids carry the weight on the contact stiffness"
+    },
+    {
+      "name": "c_trim",
+      "value": "sqrt((m_b + m_c)*g0/alpha)",
+      "unit": "A/m",
+      "description": "Trim law i = c_trim*h that carries the weight at any gap"
+    },
+    {
+      "name": "e_spring",
+      "value": "m_c*g0/k_s",
+      "unit": "m",
+      "description": "Static stretch of the secondary spring under the body weight"
+    },
+    {
+      "name": "Tf",
+      "value": "0.001",
+      "unit": "s",
+      "description": "Derivative filter of the gap controller"
+    },
+    {
+      "name": "a1",
+      "value": "2056268.416142912",
+      "unit": "V/m",
+      "description": "Gap feedback gain (LQR design)"
+    },
+    {
+      "name": "a2",
+      "value": "14049.07900807621",
+      "unit": "V*s/m",
+      "description": "Gap-rate feedback gain (LQR design)"
+    },
+    {
+      "name": "a3",
+      "value": "-98.15225032489558",
+      "unit": "V/A",
+      "description": "Current feedback gain (LQR design)"
+    },
+    {
+      "name": "a4",
+      "value": "4000000.0000005076",
+      "unit": "V/(m*s)",
+      "description": "Gap-error integral gain (LQR design)"
+    },
+    {
+      "name": "m_c",
+      "value": "23500.0",
+      "unit": "kg",
+      "description": "Body mass carried by one module (half the car body)"
+    },
+    {
+      "name": "m_body",
+      "value": "2*m_c",
+      "unit": "kg",
+      "description": "Car body mass"
+    },
+    {
+      "name": "J_roll",
+      "value": "122709.16666666667",
+      "unit": "kg*m^2",
+      "description": "Roll inertia of the car body (homogeneous box)"
+    },
+    {
+      "name": "J_pitch",
+      "value": "2924340.0",
+      "unit": "kg*m^2",
+      "description": "Pitch inertia of the car body"
+    },
+    {
+      "name": "J_yaw",
+      "value": "2908869.1666666665",
+      "unit": "kg*m^2",
+      "description": "Yaw inertia of the car body"
+    },
+    {
+      "name": "x_m",
+      "value": "9.5",
+      "unit": "m",
+      "description": "Module position from the centre of mass (front +, rear -)"
+    },
+    {
+      "name": "k_guide",
+      "value": "50000000.0",
+      "unit": "N/m",
+      "description": "Lateral guidance stiffness"
+    },
+    {
+      "name": "c_guide",
+      "value": "1000000.0",
+      "unit": "N*s/m",
+      "description": "Lateral guidance damping"
+    },
+    {
+      "name": "kr_guide",
+      "value": "5000000000.0",
+      "unit": "N*m/rad",
+      "description": "Roll and yaw guidance stiffness"
+    },
+    {
+      "name": "cr_guide",
+      "value": "5000000.0",
+      "unit": "N*m*s/rad",
+      "description": "Roll and yaw guidance damping"
+    },
+    {
+      "name": "k_aero",
+      "value": "2.496",
+      "unit": "N*s^2/m^2",
+      "description": "0.5*rho*Cd*A"
+    },
+    {
+      "name": "v_cruise",
+      "value": "119.44444444444444",
+      "unit": "m/s",
+      "description": "Cruise speed (430 km/h)"
+    },
+    {
+      "name": "a_acc",
+      "value": "1.0",
+      "unit": "m/s^2",
+      "description": "Acceleration and braking"
+    },
+    {
+      "name": "t_go",
+      "value": "4.0",
+      "unit": "s",
+      "description": "Time the speed profile starts"
+    },
+    {
+      "name": "T_cruise",
+      "value": "30.0",
+      "unit": "s",
+      "description": "Duration of the cruise phase"
+    },
+    {
+      "name": "q_end",
+      "value": "v_cruise*v_cruise/a_acc + v_cruise*T_cruise",
+      "unit": "m",
+      "description": "Distance of the move: accelerate, cruise for T_cruise, brake"
+    },
+    {
+      "name": "tau_lsm",
+      "value": "0.05",
+      "unit": "s",
+      "description": "Thrust response of the long stator"
+    },
+    {
+      "name": "F_max",
+      "value": "150000.0",
+      "unit": "N",
+      "description": "Thrust limit"
+    },
+    {
+      "name": "Kp_v",
+      "value": "30000.0",
+      "unit": "N*s/m",
+      "description": "Speed controller gain"
+    },
+    {
+      "name": "Ti_v",
+      "value": "4.0",
+      "unit": "s",
+      "description": "Speed controller integral time"
+    },
+    {
+      "name": "L_span",
+      "value": "24.768",
+      "unit": "m",
+      "description": "Span length"
+    },
+    {
+      "name": "A_sag",
+      "value": "0.003",
+      "unit": "m",
+      "description": "Sag at mid-span"
+    },
+    {
+      "name": "s_bump",
+      "value": "8500.0",
+      "unit": "m",
+      "description": "Track position of the bump"
+    },
+    {
+      "name": "A_bump",
+      "value": "0.002",
+      "unit": "m",
+      "description": "Bump height"
+    },
+    {
+      "name": "lam_bump",
+      "value": "12.0",
+      "unit": "m",
+      "description": "Bump length"
+    },
+    {
+      "name": "t_ref",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Time the gap reference steps to the nominal gap"
+    },
+    {
+      "name": "tau_ref",
+      "value": "0.15",
+      "unit": "s",
+      "description": "Reference prefilter"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Maglev car",
+        "options": {
+          "markdown": true,
+          "text": "A 53 t car section on two EMS modules: lift-off at 0.1 s, then the long stator accelerates it to 430 km/h, it cruises and brakes. The guideway sags between its pillars and has one 2 mm bump at 8.5 km. The 3D view exaggerates gap, heave and pitch 100 times."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Cruise speed",
+        "parameter": "global:v_cruise",
+        "options": {
+          "min": 30.0,
+          "max": 119.5,
+          "step": 5.0,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Speed",
+        "signals": [
+          "Speed/y"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "m/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Guideway sag at mid-span",
+        "parameter": "global:A_sag",
+        "options": {
+          "min": 0.0,
+          "max": 0.008,
+          "step": 0.0005,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Bump height",
+        "parameter": "global:A_bump",
+        "options": {
+          "min": 0.0,
+          "max": 0.006,
+          "step": 0.0005,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Front gap",
+        "signals": [
+          "ModF/Gap/y"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 0.02,
+          "decimals": 4,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.006,
+              "tone": "bad"
+            },
+            {
+              "from": 0.006,
+              "to": 0.008,
+              "tone": "warn"
+            },
+            {
+              "from": 0.008,
+              "to": 0.013,
+              "tone": "good"
+            },
+            {
+              "from": 0.013,
+              "to": 0.02,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d7",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Body acceleration",
+        "signals": [
+          "AccZ/y"
+        ],
+        "options": {
+          "min": -1.0,
+          "max": 1.0,
+          "decimals": 3,
+          "unit": "m/s^2",
+          "zones": [
+            {
+              "from": -0.3,
+              "to": 0.3,
+              "tone": "good"
+            },
+            {
+              "from": -0.6,
+              "to": -0.3,
+              "tone": "warn"
+            },
+            {
+              "from": 0.3,
+              "to": 0.6,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d8",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Speed and reference",
+        "signals": [
+          "Speed/y",
+          "Profile/v"
+        ]
+      },
+      {
+        "id": "d9",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Front and rear gap",
+        "signals": [
+          "ModF/Gap/y",
+          "ModR/Gap/y"
+        ]
+      },
+      {
+        "id": "d10",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Body vertical acceleration and pitch rate",
+        "signals": [
+          "AccZ/y",
+          "PitchRate/y"
+        ]
+      }
+    ]
+  }
+}

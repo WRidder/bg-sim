@@ -1,0 +1,1638 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "balance",
+  "$comment": "A rider on the transporter, released 0.03 rad (1.7 deg) off upright. The LQR holds it up, follows a 1.5 m/s speed set-point (ramped from t = 3 s) and rejects a 150 N push at the centre of mass at t = 9 s.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Body",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 600,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_b",
+          "J": "[J_bx, J_by, J_bz]",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Pose",
+        "block": {
+          "ref": "stdlib:multibond/PoseIntegrator3D"
+        },
+        "position": {
+          "x": 600,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "qw": "0.9998875021093592",
+          "qx": "0.0",
+          "qy": "0.01499943750632809",
+          "qz": "0.0",
+          "px": "0.015597660105297744",
+          "py": "0.0",
+          "pz": "0.7586823121634435"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:contact/ContactSurface"
+        },
+        "position": {
+          "x": 200,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "MountL",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 820,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.7071067811865476",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "-l",
+          "z": "-(b/2)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "AxleL",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "br": "200.0",
+          "bt": "4000.0",
+          "kr": "1.0e6",
+          "kt": "1.0e6"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "WheelL",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_w",
+          "J": "[J_wt, J_wt, J_wa]",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "TyreL",
+        "block": {
+          "ref": "stdlib:contact/RollingDisk"
+        },
+        "position": {
+          "x": 1420,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "radius": "r",
+          "k": "500000.0",
+          "xref": "0.001",
+          "c": "1.0",
+          "mu": "0.9",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "LocalL",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 820,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865476",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "b/2",
+          "z": "-l"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "PoseAL",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "PoseWL",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "MotorL",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1020,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "MountR",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 820,
+          "y": 620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.7071067811865476",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "-l",
+          "z": "b/2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "AxleR",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "br": "200.0",
+          "bt": "4000.0",
+          "kr": "1.0e6",
+          "kt": "1.0e6"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "WheelR",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_w",
+          "J": "[J_wt, J_wt, J_wa]",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "TyreR",
+        "block": {
+          "ref": "stdlib:contact/RollingDisk"
+        },
+        "position": {
+          "x": 1420,
+          "y": 620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "radius": "r",
+          "k": "500000.0",
+          "xref": "0.001",
+          "c": "1.0",
+          "mu": "0.9",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "LocalR",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 820,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865476",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "-b/2",
+          "z": "-l"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "PoseAR",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "PoseWR",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "MotorR",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1020,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Sense",
+        "block": {
+          "ref": "project:SegwaySense"
+        },
+        "position": {
+          "x": 600,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "l": "l"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "VRef",
+        "block": {
+          "ref": "stdlib:sources/Ramp"
+        },
+        "position": {
+          "x": 200,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_start": "3.0",
+          "slope": "v_slope",
+          "duration": "1.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "PsiRef",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 200,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:SegwayCtrl"
+        },
+        "position": {
+          "x": 600,
+          "y": 800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "K_xi": "K_xi",
+          "K_v": "K_v",
+          "K_th": "K_th",
+          "K_w": "K_w",
+          "kp_psi": "kp_psi",
+          "kd_psi": "kd_psi",
+          "tau_max": "tau_max",
+          "r": "r",
+          "n": "n",
+          "k_t": "k_t",
+          "R": "R_w"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "Push",
+        "block": {
+          "ref": "stdlib:multibond/ExternalWrenchSpatial"
+        },
+        "position": {
+          "x": 400,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "PushPulse",
+        "block": {
+          "ref": "stdlib:sources/Pulse"
+        },
+        "position": {
+          "x": 200,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "push_F",
+          "period": "1000.0",
+          "duty": "0.00015",
+          "t_start": "push_t0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "Zero",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 200,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "V"
+        },
+        "to": {
+          "node": "n02",
+          "port": "tw"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n01",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "bond",
+        "from": {
+          "node": "n04",
+          "port": "b"
+        },
+        "to": {
+          "node": "n01",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c004",
+        "kind": "bond",
+        "from": {
+          "node": "n04",
+          "port": "a"
+        },
+        "to": {
+          "node": "n05",
+          "port": "parent"
+        },
+        "label": null
+      },
+      {
+        "id": "c005",
+        "kind": "bond",
+        "from": {
+          "node": "n05",
+          "port": "child"
+        },
+        "to": {
+          "node": "n06",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c006",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "p"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "o"
+        },
+        "to": {
+          "node": "n07",
+          "port": "o"
+        },
+        "label": null
+      },
+      {
+        "id": "c008",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "fr"
+        },
+        "to": {
+          "node": "n07",
+          "port": "fr"
+        },
+        "label": null
+      },
+      {
+        "id": "c009",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n09",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c010",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "g"
+        },
+        "to": {
+          "node": "n09",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c011",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "g"
+        },
+        "to": {
+          "node": "n10",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c012",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n10",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c013",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "g"
+        },
+        "to": {
+          "node": "n06",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c014",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "g"
+        },
+        "to": {
+          "node": "n07",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c015",
+        "kind": "bond",
+        "from": {
+          "node": "n11",
+          "port": "p"
+        },
+        "to": {
+          "node": "n05",
+          "port": "drive"
+        },
+        "label": null
+      },
+      {
+        "id": "c016",
+        "kind": "bond",
+        "from": {
+          "node": "n12",
+          "port": "b"
+        },
+        "to": {
+          "node": "n01",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c017",
+        "kind": "bond",
+        "from": {
+          "node": "n12",
+          "port": "a"
+        },
+        "to": {
+          "node": "n13",
+          "port": "parent"
+        },
+        "label": null
+      },
+      {
+        "id": "c018",
+        "kind": "bond",
+        "from": {
+          "node": "n13",
+          "port": "child"
+        },
+        "to": {
+          "node": "n14",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c019",
+        "kind": "bond",
+        "from": {
+          "node": "n14",
+          "port": "p"
+        },
+        "to": {
+          "node": "n15",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c020",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "o"
+        },
+        "to": {
+          "node": "n15",
+          "port": "o"
+        },
+        "label": null
+      },
+      {
+        "id": "c021",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "fr"
+        },
+        "to": {
+          "node": "n15",
+          "port": "fr"
+        },
+        "label": null
+      },
+      {
+        "id": "c022",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n17",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c023",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "g"
+        },
+        "to": {
+          "node": "n17",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c024",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "g"
+        },
+        "to": {
+          "node": "n18",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c025",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n18",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c026",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "g"
+        },
+        "to": {
+          "node": "n14",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c027",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "g"
+        },
+        "to": {
+          "node": "n15",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c028",
+        "kind": "bond",
+        "from": {
+          "node": "n19",
+          "port": "p"
+        },
+        "to": {
+          "node": "n13",
+          "port": "drive"
+        },
+        "label": null
+      },
+      {
+        "id": "c029",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n20",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c030",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "V"
+        },
+        "to": {
+          "node": "n20",
+          "port": "V"
+        },
+        "label": null
+      },
+      {
+        "id": "c031",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "theta"
+        },
+        "to": {
+          "node": "n23",
+          "port": "theta"
+        },
+        "label": null
+      },
+      {
+        "id": "c032",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "w"
+        },
+        "to": {
+          "node": "n23",
+          "port": "w"
+        },
+        "label": null
+      },
+      {
+        "id": "c033",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n23",
+          "port": "qd_l"
+        },
+        "label": null
+      },
+      {
+        "id": "c034",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n23",
+          "port": "qd_r"
+        },
+        "label": null
+      },
+      {
+        "id": "c035",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "heading"
+        },
+        "to": {
+          "node": "n23",
+          "port": "psi"
+        },
+        "label": null
+      },
+      {
+        "id": "c036",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "wz"
+        },
+        "to": {
+          "node": "n23",
+          "port": "wz"
+        },
+        "label": null
+      },
+      {
+        "id": "c037",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n23",
+          "port": "v_ref"
+        },
+        "label": null
+      },
+      {
+        "id": "c038",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n23",
+          "port": "psi_ref"
+        },
+        "label": null
+      },
+      {
+        "id": "c039",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "tau_l"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c040",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "tau_r"
+        },
+        "to": {
+          "node": "n19",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c041",
+        "kind": "bond",
+        "from": {
+          "node": "n24",
+          "port": "p"
+        },
+        "to": {
+          "node": "n01",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c042",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "fx"
+        },
+        "label": null
+      },
+      {
+        "id": "c043",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "tx"
+        },
+        "label": null
+      },
+      {
+        "id": "c044",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "ty"
+        },
+        "label": null
+      },
+      {
+        "id": "c045",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "tz"
+        },
+        "label": null
+      },
+      {
+        "id": "c046",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "fy"
+        },
+        "label": null
+      },
+      {
+        "id": "c047",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "fz"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 14.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1401
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "pitch",
+      "title": "Body pitch (rad)",
+      "signals": [
+        "Sense/theta"
+      ]
+    },
+    {
+      "id": "speed",
+      "title": "Speed and set-point (m/s)",
+      "signals": [
+        "Ctrl/v",
+        "VRef/y"
+      ]
+    },
+    {
+      "id": "torque",
+      "title": "Wheel torque commands (N m)",
+      "signals": [
+        "Ctrl/tau_l",
+        "Ctrl/tau_r"
+      ]
+    },
+    {
+      "id": "voltage",
+      "title": "Voltage the motors need (V)",
+      "signals": [
+        "Ctrl/vreq_l",
+        "Ctrl/vreq_r"
+      ]
+    },
+    {
+      "id": "current",
+      "title": "Motor current references (A)",
+      "signals": [
+        "Ctrl/i_l",
+        "Ctrl/i_r"
+      ]
+    },
+    {
+      "id": "wheels",
+      "title": "Contact force of each wheel (N)",
+      "signals": [
+        "TyreL/f_n",
+        "TyreR/f_n"
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "g0",
+      "value": "9.81",
+      "unit": "m/s^2",
+      "description": "Gravitational acceleration"
+    },
+    {
+      "name": "m_b",
+      "value": "105.0",
+      "unit": "kg",
+      "description": "Body mass: rider plus platform, frame and batteries"
+    },
+    {
+      "name": "l",
+      "value": "0.52",
+      "unit": "m",
+      "description": "Height of the body's centre of mass above the axle"
+    },
+    {
+      "name": "J_bx",
+      "value": "12.0",
+      "unit": "kg*m^2",
+      "description": "Body roll inertia about its centre of mass"
+    },
+    {
+      "name": "J_by",
+      "value": "16.0",
+      "unit": "kg*m^2",
+      "description": "Body pitch inertia about its centre of mass"
+    },
+    {
+      "name": "J_bz",
+      "value": "3.0",
+      "unit": "kg*m^2",
+      "description": "Body yaw inertia about its centre of mass"
+    },
+    {
+      "name": "r",
+      "value": "0.24",
+      "unit": "m",
+      "description": "Wheel radius"
+    },
+    {
+      "name": "m_w",
+      "value": "5.0",
+      "unit": "kg",
+      "description": "Mass of one wheel"
+    },
+    {
+      "name": "J_wa",
+      "value": "0.15",
+      "unit": "kg*m^2",
+      "description": "Wheel inertia about its axle"
+    },
+    {
+      "name": "J_wt",
+      "value": "0.08",
+      "unit": "kg*m^2",
+      "description": "Wheel inertia about a diameter"
+    },
+    {
+      "name": "b",
+      "value": "0.45",
+      "unit": "m",
+      "description": "Distance between the wheel centres"
+    },
+    {
+      "name": "n",
+      "value": "24.0",
+      "unit": "1",
+      "description": "Gear ratio, motor : wheel"
+    },
+    {
+      "name": "k_t",
+      "value": "0.12",
+      "unit": "N*m/A",
+      "description": "Motor torque constant"
+    },
+    {
+      "name": "R_w",
+      "value": "0.15",
+      "unit": "Ohm",
+      "description": "Motor winding resistance"
+    },
+    {
+      "name": "J_m",
+      "value": "0.0",
+      "unit": "kg*m^2",
+      "description": "Motor rotor inertia"
+    },
+    {
+      "name": "tau_max",
+      "value": "80.0",
+      "unit": "N*m",
+      "description": "Torque limit per wheel"
+    },
+    {
+      "name": "U_bus",
+      "value": "72.0",
+      "unit": "V",
+      "description": "Battery bus voltage"
+    },
+    {
+      "name": "K_xi",
+      "value": "-375.00000000000364",
+      "unit": "N*m/m",
+      "description": "LQR gain on the integral of the speed error"
+    },
+    {
+      "name": "K_v",
+      "value": "-672.729985293459",
+      "unit": "N*m*s/m",
+      "description": "LQR gain on the speed error"
+    },
+    {
+      "name": "K_th",
+      "value": "-2854.7732554702957",
+      "unit": "N*m/rad",
+      "description": "LQR gain on the body pitch"
+    },
+    {
+      "name": "K_w",
+      "value": "-868.9991875713305",
+      "unit": "N*m*s/rad",
+      "description": "LQR gain on the pitch rate"
+    },
+    {
+      "name": "kp_psi",
+      "value": "75.4545",
+      "unit": "N*m/rad",
+      "description": "Heading gain"
+    },
+    {
+      "name": "kd_psi",
+      "value": "22.63635",
+      "unit": "N*m*s/rad",
+      "description": "Yaw-rate gain"
+    },
+    {
+      "name": "v_slope",
+      "value": "1.0",
+      "unit": "m/s^2",
+      "description": "Acceleration of the speed set-point ramp"
+    },
+    {
+      "name": "push_F",
+      "value": "150.0",
+      "unit": "N",
+      "description": "Force of the push on the body"
+    },
+    {
+      "name": "push_t0",
+      "value": "9.0",
+      "unit": "s",
+      "description": "Time of the push"
+    }
+  ],
+  "scene": {
+    "file": "scenes/segway.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:body",
+      "property": "pose",
+      "signal": [
+        "Pose/qw",
+        "Pose/qx",
+        "Pose/qy",
+        "Pose/qz",
+        "Pose/px",
+        "Pose/py",
+        "Pose/pz"
+      ]
+    },
+    {
+      "target": "link:wheel_l",
+      "property": "pose",
+      "signal": [
+        "PoseWL/g[1]",
+        "PoseWL/g[2]",
+        "PoseWL/g[3]",
+        "PoseWL/g[4]",
+        "PoseWL/g[5]",
+        "PoseWL/g[6]",
+        "PoseWL/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_r",
+      "property": "pose",
+      "signal": [
+        "PoseWR/g[1]",
+        "PoseWR/g[2]",
+        "PoseWR/g[3]",
+        "PoseWR/g[4]",
+        "PoseWR/g[5]",
+        "PoseWR/g[6]",
+        "PoseWR/g[7]"
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "push",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Push force",
+        "parameter": "global:push_F",
+        "options": {
+          "min": 0,
+          "max": 400,
+          "step": 10,
+          "decimals": 0,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "mass",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Body mass (rider)",
+        "parameter": "global:m_b",
+        "options": {
+          "min": 70,
+          "max": 140,
+          "step": 5,
+          "decimals": 0,
+          "unit": "kg"
+        }
+      },
+      {
+        "id": "pitch",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Pitch",
+        "signals": [
+          "Sense/theta"
+        ],
+        "options": {
+          "min": -0.2,
+          "max": 0.2,
+          "decimals": 3,
+          "unit": "rad",
+          "zones": [
+            {
+              "from": -0.2,
+              "to": -0.12,
+              "tone": "bad"
+            },
+            {
+              "from": -0.12,
+              "to": 0.12,
+              "tone": "good"
+            },
+            {
+              "from": 0.12,
+              "to": 0.2,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "v",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Speed",
+        "signals": [
+          "Ctrl/v"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "m/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "tau",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Wheel torque",
+        "signals": [
+          "Ctrl/tau_l"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "N m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "volt",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Voltage needed",
+        "signals": [
+          "Ctrl/vreq_l"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "V",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "plot_speed",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Speed and set-point",
+        "signals": [
+          "Ctrl/v",
+          "VRef/y"
+        ]
+      },
+      {
+        "id": "plot_pitch",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Body pitch",
+        "signals": [
+          "Sense/theta"
+        ]
+      }
+    ]
+  }
+}

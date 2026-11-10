@@ -1,0 +1,75 @@
+{
+  "$comment": "Published Ingenuity data the checks of expected.json compare against (besides jpl_hover_test.json, which is the only data the rotor model is fitted to). Every entry names its source; 'kind' says whether a value is quoted from text (published) or read off a figure (digitised). build_model.py reads this file.",
+  "flight_one": {
+    "source": "H. F. Grip, 'What we're learning about Ingenuity's flight control and aerodynamic performance', NASA Mars Helicopter blog, 2021 (science.nasa.gov/blog/what-were-learning-about-ingenuitys-flight-control-and-aerodynamic-performance/); flight log of Flight One in the NASA Mars Helicopter flight log (science.nasa.gov/mission/mars-2020-perseverance/ingenuity/flight-log/).",
+    "date": "2021-04-19",
+    "kind": "published",
+    "rho_kg_m3": 0.0165,
+    "rotor_rpm": 2537,
+    "hover_altitude_m": 3.0,
+    "duration_s": 39.1,
+    "climb_rate_m_s": 1.0,
+    "descent_rate_m_s": 1.0,
+    "planned_turn_deg": 96,
+    "hover_rotor_electrical_power_W": 210,
+    "collective_upper_deg": 8.2,
+    "collective_lower_deg": 9.2,
+    "collective_predicted_upper_deg": 9.0,
+    "collective_predicted_lower_deg": 9.9,
+    "altitude_hold_m": 0.01,
+    "heading_hold_deg": 1.5,
+    "position_variation_m": 0.25,
+    "cyclic_typical_max_deg": 3.0,
+    "wind_m_s": "4-6 from the east/south-east, gusting to 8 (MEDA at 1.5 m)",
+    "notes": "The blog quotes the hover rotor power as 'about 210 W' (electrical, both motors), the measured collectives 'about 0.7-0.8 deg lower than predicted', altitude held 'within about 1 cm', heading 'within 1.5 deg', horizontal position variations 'about 25 cm' and cyclic 'generally below 3 deg'."
+  },
+  "flight_two": {
+    "source": "same blog as flight_one",
+    "kind": "published",
+    "takeoff_rotor_power_spike_W": 310,
+    "battery_power_peak_W": 510
+  },
+  "battery": {
+    "source": "J. Balaram et al., 'Mars Helicopter Technology Demonstrator', AIAA SciTech 2018, AIAA 2018-0023.",
+    "kind": "published",
+    "voltage_range_V": [15.0, 25.2],
+    "continuous_power_tested_W": 480,
+    "peak_power_W": 510,
+    "flight_budget": "80 % of the flight at 360 W, 20 % at 510 W"
+  },
+  "cyclic_torque_steps": {
+    "source": "H. F. Grip et al., 'Flight Dynamics of a Mars Helicopter', 43rd European Rotorcraft Forum, 2017, Fig. 15 (JPL system identification on the lower rotor, 25-ft Space Simulator, CO2 at 0.0175 kg/m^3, 2600 rpm).",
+    "kind": "digitised",
+    "cyclic_step_deg": 5.0,
+    "hub_torque_change_Nm": {"pitch_cosine": 0.53, "pitch_negative": 0.55, "roll_sine": 0.54, "roll_negative": 0.57},
+    "mean_Nm": 0.55,
+    "uncertainty": "+-0.03 N m from reading the step heights off the figure; the figure shows the measured hub torque responses to 5 deg steps"
+  },
+  "camrad_mc2_sweep": {
+    "source": "C. Dull, L. Wagner, L. Young, W. Johnson, 'Hover and Forward Flight Performance Modeling of the Ingenuity Mars Helicopter', VFS Aeromechanics for Advanced Vertical Flight Technical Meeting, 2022, Fig. 4 (CAMRAD II, Mars condition 2: rho 0.017 kg/m^3, 2800 rpm, torque-trimmed coaxial pair).",
+    "kind": "digitised",
+    "theta75_deg": [4.0, 15.0, 24.0],
+    "CT": [0.004, 0.0225, 0.028],
+    "uncertainty": "+-0.0005 in CT from the figure",
+    "note": "A comprehensive-analysis prediction, not a measurement: an independent model of the same rotor, used as a cross-check of the collective-to-thrust relation."
+  },
+  "camrad_forward_flight": {
+    "source": "Dull et al. 2022, Fig. 13 (trimmed fuselage pitch) and Fig. 15 (hover rotor power, CAMRAD II / RotCFD).",
+    "kind": "digitised",
+    "hover_shaft_power_W": [162, 175],
+    "trim_pitch_deg_at_5_m_s": 2.2,
+    "trim_pitch_deg_at_10_m_s": 3.8,
+    "note": "Reported in the README but not checked: the example's rotor has no H-force from induced drag, so it trims at a smaller pitch in forward flight."
+  },
+  "vehicle": {
+    "source": "JPL, 'Mars Helicopter Ingenuity' press kit / quick facts (2021); Dull et al. 2022 (blade mass).",
+    "kind": "published",
+    "mass_kg": 1.8,
+    "height_m": 0.49,
+    "rotor_diameter_m": 1.21,
+    "fuselage_cm": [13.6, 19.5, 16.3],
+    "leg_length_m": 0.384,
+    "ground_clearance_m": 0.13,
+    "blade_mass_kg": 0.028
+  }
+}
