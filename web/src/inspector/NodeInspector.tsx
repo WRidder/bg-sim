@@ -23,6 +23,7 @@ import { domainLetter } from "../editor/connectionRules";
 import { domainColor } from "../editor/geometry";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import { interfaceForNode, type PortSpec } from "../editor/nodeInterface";
+import { describeOrientation } from "../editor/portOrientation";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useCatalogStore } from "../library/catalogStore";
 import { useRunStore } from "../plot/runStore";
@@ -526,6 +527,16 @@ function PortRow({
               ) : null}
             </>
           )}
+        </p>
+      ) : null}
+      {port.kind === "power" && port.orientation !== undefined && port.orientation.kind !== "any" ? (
+        <p
+          className="inspector-port__frame inspector-port__orientation"
+          data-testid={`inspector-port-${port.name}-orientation`}
+          data-orientation={port.orientation.kind}
+        >
+          <span className="inspector-port__frame-label">orientation</span>
+          <code>{describeOrientation(port.orientation)}</code>
         </p>
       ) : null}
       {components !== null ? (

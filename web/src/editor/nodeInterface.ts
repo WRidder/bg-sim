@@ -6,12 +6,18 @@
  * read this one shape, so what is drawn is exactly what is checked.
  */
 
-import type { DomainName, ValueType } from "../contracts/catalog";
+import type { DomainName, OrientationDecl, ValueType } from "../contracts/catalog";
 import type { ModelNode } from "../contracts/model";
 import type { BlockInterface } from "../contracts/worker-rpc";
 import { inlineInterfaceFor, hasInlineInterface } from "../code/inlineInterfaces";
 import type { CatalogIndex } from "../library/catalogIndex";
 import type { PortDescriptor } from "./connectionRules";
+import {
+  ANY_ORIENTATION,
+  blockPortOrientation,
+  type BondArrival,
+  type PortOrientation,
+} from "./portOrientation";
 
 export interface PortSpec {
   name: string;
@@ -33,6 +39,11 @@ export interface PortSpec {
    */
   effortUnits?: readonly string[];
   flowUnits?: readonly string[];
+  /**
+   * The bond direction a power port declares (`@orientation`). Absent is `any`; a subsystem port
+   * forwards the orientation of the internal port it exposes.
+   */
+  orientation?: PortOrientation;
 }
 
 export interface NodeInterface {
@@ -59,8 +70,9 @@ export function interfaceForBlock(block: {
   ports: { name: string; domain: DomainName; size: number[]; frame?: string | null }[];
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
+  orientation?: readonly OrientationDecl[];
 }): NodeInterface {
-  const ports = portSpecs(block.ports, block.inputs, block.outputs);
+  const ports = portSpecs(block.ports, block.inputs, block.outputs, block.orientation);
   return {
     title: block.name,
     icon: block.icon,
@@ -80,9 +92,11 @@ function portSpecs(
   }[],
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
+  orientation?: readonly OrientationDecl[],
 ): PortSpec[] {
   const ports: PortSpec[] = [];
   for (const port of power) {
+    const declared = blockPortOrientation(orientation, port.name);
     ports.push({
       name: port.name,
       kind: "power",
@@ -91,6 +105,7 @@ function portSpecs(
       size: port.size,
       unit: null,
       frame: port.frame ?? null,
+      ...(declared.kind === "any" ? {} : { orientation: declared }),
     });
   }
   for (const input of inputs) {
@@ -126,10 +141,61 @@ export function interfaceFromBlockCheck(block: BlockInterface, title: string): N
   return {
     title,
     icon: INLINE_ICON,
-    ports: portSpecs(block.ports, block.inputs, block.outputs),
+    ports: portSpecs(block.ports, block.inputs, block.outputs, block.orientation),
     isJunction: false,
     ref: null,
     junction: null,
+  };
+}
+
+type SubsystemBlock = Extract<ModelNode["block"], { subsystem: unknown }>["subsystem"];
+
+/**
+ * The orientation a subsystem power port forwards: that of the internal port it exposes, through nested
+ * subsystems. A through pair keeps its relation across the boundary: the partner is the subsystem port
+ * that exposes the other internal port, or, when the other internal port is bonded inside, the direction
+ * of that bond (junctions have no orientation).
+ */
+function forwardedOrientation(
+  sub: SubsystemBlock,
+  port: { node: string; port: string },
+  index: CatalogIndex,
+): { orientation?: PortOrientation } {
+  const inner = sub.diagram.nodes.find((entry) => entry.id === port.node);
+  if (inner === undefined) {
+    return {};
+  }
+  const innerPort = interfaceForNode(inner, index).ports.find((entry) => entry.name === port.port);
+  const orientation = innerPort?.orientation ?? ANY_ORIENTATION;
+  if (orientation.kind === "any") {
+    return {};
+  }
+  if (orientation.kind !== "through") {
+    return { orientation };
+  }
+  const partnerName = orientation.partner ?? null;
+  const exposedAs =
+    partnerName === null
+      ? undefined
+      : sub.ports.find(
+          (entry) =>
+            entry.kind === "power" && entry.node === port.node && entry.port === partnerName,
+        );
+  let fixed: BondArrival | null = orientation.partnerFixed ?? null;
+  if (partnerName !== null) {
+    for (const connection of sub.diagram.connections) {
+      if (connection.kind !== "bond") {
+        continue;
+      }
+      if (connection.to.node === port.node && (connection.to.port ?? null) === partnerName) {
+        fixed = "arrives";
+      } else if (connection.from.node === port.node && (connection.from.port ?? null) === partnerName) {
+        fixed = "leaves";
+      }
+    }
+  }
+  return {
+    orientation: { kind: "through", partner: exposedAs?.name ?? null, partnerFixed: fixed },
   };
 }
 
@@ -160,7 +226,8 @@ export function interfaceForNode(node: ModelNode, index: CatalogIndex): NodeInte
     return interfaceForBlock(block);
   }
   if ("subsystem" in node.block) {
-    const ports: PortSpec[] = node.block.subsystem.ports.map((port) =>
+    const sub = node.block.subsystem;
+    const ports: PortSpec[] = sub.ports.map((port) =>
       port.kind === "power"
         ? {
             name: port.name,
@@ -172,6 +239,7 @@ export function interfaceForNode(node: ModelNode, index: CatalogIndex): NodeInte
             frame: port.frame ?? null,
             effortUnits: port.effortUnits,
             flowUnits: port.flowUnits,
+            ...forwardedOrientation(sub, port, index),
           }
         : {
             name: port.name,
@@ -265,6 +333,7 @@ export function portDescriptor(
       type: null,
       size: port.size,
       unit: port.unit,
+      ...(port.orientation === undefined ? {} : { orientation: port.orientation }),
     };
   }
   return {

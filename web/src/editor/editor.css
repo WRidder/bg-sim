@@ -786,6 +786,24 @@
   color: var(--color-accent-hover);
 }
 
+.editor-menu button[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.editor-menu button[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.editor-menu__note {
+  max-width: 260px;
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-1);
+  font-size: var(--font-size-xs, var(--font-size-sm));
+  color: var(--color-text-muted);
+}
+
 /* ------------------------------------------- drop-on-empty target suggestions */
 
 .target-suggest {
