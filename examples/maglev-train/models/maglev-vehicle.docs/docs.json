@@ -1,0 +1,33 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "body",
+          "title": "The 3D car body",
+          "file": "pages/body.md",
+          "children": [
+            {
+              "id": "track",
+              "title": "The guideway and the speed profile",
+              "file": "pages/track.md",
+              "children": [
+                {
+                  "id": "results",
+                  "title": "Results",
+                  "file": "pages/results.md",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

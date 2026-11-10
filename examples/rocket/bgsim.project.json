@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "rocket",
+  "models": [
+    "rocket-v2",
+    "rocket-saturn-v"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

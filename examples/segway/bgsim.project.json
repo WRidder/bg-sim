@@ -1,0 +1,13 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "segway",
+  "models": [
+    "balance",
+    "open-loop",
+    "top-speed",
+    "figure-eight"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

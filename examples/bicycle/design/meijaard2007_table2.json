@@ -1,0 +1,37 @@
+{
+  "$comment": "Table 2 of J. P. Meijaard, J. M. Papadopoulos, A. Ruina and A. L. Schwab, 'Linearized dynamics equations for the balance and steer of a bicycle: a benchmark and review', Proc. R. Soc. A 463 (2007) 1955-1982, doi:10.1098/rspa.2007.1857: the eigenvalues of the linearised benchmark bicycle (table 1 parameters) that the paper offers for benchmark comparisons, transcribed digit for digit. (a) special speeds, (b) the complex weave pair Re +- i Im, (c) the real capsize and castering eigenvalues. Units: v in m/s, eigenvalues in 1/s.",
+  "special": {
+    "v0_lambda_s1": 3.13164324790656,
+    "v0_lambda_s2": 5.53094371765393,
+    "v_d": 0.68428307889246,
+    "lambda_d": 3.78290405129320,
+    "v_w": 4.29238253634111,
+    "lambda_w_imag": 3.43503384866144,
+    "v_c": 6.02426201538837
+  },
+  "weave": [
+    {"v": 1, "re": 3.52696170990070, "im": 0.80774027519930},
+    {"v": 2, "re": 2.68234517512745, "im": 1.68066296590675},
+    {"v": 3, "re": 1.70675605663975, "im": 2.31582447384325},
+    {"v": 4, "re": 0.41325331521125, "im": 3.07910818603206},
+    {"v": 5, "re": -0.77534188219585, "im": 4.46486771378823},
+    {"v": 6, "re": -1.52644486584142, "im": 5.87673060598709},
+    {"v": 7, "re": -2.13875644258362, "im": 7.19525913329805},
+    {"v": 8, "re": -2.69348683581097, "im": 8.46037971396931},
+    {"v": 9, "re": -3.21675402252485, "im": 9.69377351531791},
+    {"v": 10, "re": -3.72016840437287, "im": 10.90681139476287}
+  ],
+  "real": [
+    {"v": 0, "capsize": -3.13164324790656, "castering": -5.53094371765393},
+    {"v": 1, "capsize": -3.13423125066578, "castering": -7.11008014637442},
+    {"v": 2, "capsize": -3.07158645641514, "castering": -8.67387984831735},
+    {"v": 3, "capsize": -2.63366137253667, "castering": -10.35101467245920},
+    {"v": 4, "capsize": -1.42944427361326, "castering": -12.15861426576447},
+    {"v": 5, "capsize": -0.32286642900409, "castering": -14.07838969279822},
+    {"v": 6, "capsize": -0.00406690076970, "castering": -16.08537123098026},
+    {"v": 7, "capsize": 0.10268170574766, "castering": -18.15788466125262},
+    {"v": 8, "capsize": 0.14327879765713, "castering": -20.27940894394569},
+    {"v": 9, "capsize": 0.15790184030917, "castering": -22.43788559040858},
+    {"v": 10, "capsize": 0.16105338653172, "castering": -24.62459635017404}
+  ]
+}

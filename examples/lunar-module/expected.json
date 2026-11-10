@@ -1,0 +1,976 @@
+{
+  "project": "lunar-module",
+  "description": "The Apollo 11 lunar module (Eagle) on a variable-mass 3D bond graph: powered descent from PDI to touchdown on the landing gear, the landing phase flown from the dashboard, and the ascent to orbit. Checks against an independent scipy integration of the same equations (tight), analytic rocket-equation cases (exact), and the Apollo 11 Mission Report, Apollo by the Numbers, TN D-6846/D-6850 and the ALSJ transcript (honest tolerances; each note says whether the quantity was fitted).",
+  "models": {
+    "lm-descent": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative causality, no algebraic loop warning, no event storm and no solver failure"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 100.0,
+          "value": 14692.372876631329,
+          "note": "altitude at 100 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 100.0,
+          "value": 1464.8746799834707,
+          "note": "inertial speed at 100 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 100.0,
+          "value": 14027.833327132505,
+          "note": "mass at 100 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 258.0,
+          "value": 11096.683966595214,
+          "note": "altitude at 258 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 258.0,
+          "value": 936.1904897883247,
+          "note": "inertial speed at 258 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 258.0,
+          "value": 11708.622975264772,
+          "note": "mass at 258 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 384.0,
+          "value": 6498.134275325807,
+          "note": "altitude at 384 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 384.0,
+          "value": 455.5090802023984,
+          "note": "inertial speed at 384 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 384.0,
+          "value": 9859.126112381487,
+          "note": "mass at 384 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 507.0,
+          "value": 2182.5004866649397,
+          "note": "altitude at 507 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 507.0,
+          "value": 144.27461710371583,
+          "note": "inertial speed at 507 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 507.0,
+          "value": 8729.029321906379,
+          "note": "mass at 507 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 596.0,
+          "value": 243.91424708580598,
+          "note": "altitude at 596 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 596.0,
+          "value": 31.259502281112617,
+          "note": "inertial speed at 596 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 596.0,
+          "value": 8146.919993607307,
+          "note": "mass at 596 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 650.0,
+          "value": 84.03167323558591,
+          "note": "altitude at 650 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 650.0,
+          "value": 12.405885300816339,
+          "note": "inertial speed at 650 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 650.0,
+          "value": 7878.7496775135605,
+          "note": "mass at 650 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 740.0,
+          "value": 13.516107805073261,
+          "note": "altitude at 740 s, scipy reference (design/reference.py: the same equations as a 6-DOF rigid body with DOP853 at rtol 1e-10)",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 740.0,
+          "value": 1.7032647723527756,
+          "note": "inertial speed at 740 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 740.0,
+          "value": 7500.734225783644,
+          "note": "mass at 740 s, scipy reference",
+          "rtol": 2e-05
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Throttle/throttle",
+          "level": 0.75,
+          "n": 1,
+          "direction": "down",
+          "value": 385.98755362643135,
+          "abs": 0.05,
+          "note": "throttle recovery (the engine leaves the fixed throttle position), scipy reference"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "State/h_pad",
+          "n": 1,
+          "direction": "down",
+          "value": 758.2577320358232,
+          "abs": 0.1,
+          "note": "touchdown (the lowest footpad reaches the surface), scipy reference"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 758.2077320358233,
+          "value": 7426.388612037751,
+          "note": "mass at touchdown, scipy reference",
+          "rtol": 5e-05
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Throttle/throttle",
+          "level": 0.75,
+          "n": 1,
+          "direction": "down",
+          "value": 386.0,
+          "abs": 2.0,
+          "note": "PUBLISHED (FITTED): throttle recovery 386 s after ignition (MR 5.3). The PDI range to the landing site is fitted to it (design.py): 481.3 km against the published 'approximately 260 n mi' (482 km)."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 507.0,
+          "value": 7129.000000000001,
+          "note": "PUBLISHED (FITTED): high gate at 7,129 ft (MR 5.3) at P64 entry 102:41:32 (507 s). The braking-phase target is fitted to it. Model 7160 ft.",
+          "abs": 120.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/rdot_fps",
+          "t": 507.0,
+          "value": -125.0,
+          "note": "PUBLISHED (FITTED): descent rate 125 ft/s at high gate (MR 5.3). Model -124.4 ft/s.",
+          "abs": 5.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 595.9899999999907,
+          "value": 750.0,
+          "note": "PUBLISHED (FITTED): Aldrin's callout '750 feet' at 596 s (ALSJ). The approach-phase (P64) target is fitted to the four callouts at 596 .. 611 s.",
+          "abs": 60.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 601.9899999999907,
+          "value": 700.0,
+          "note": "PUBLISHED (FITTED): Aldrin's callout '700 feet' at 602 s (ALSJ). The approach-phase (P64) target is fitted to the four callouts at 596 .. 611 s.",
+          "abs": 60.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 605.9899999999907,
+          "value": 600.0,
+          "note": "PUBLISHED (FITTED): Aldrin's callout '600 feet' at 606 s (ALSJ). The approach-phase (P64) target is fitted to the four callouts at 596 .. 611 s.",
+          "abs": 60.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 610.9899999999907,
+          "value": 540.0,
+          "note": "PUBLISHED (FITTED): Aldrin's callout '540 feet' at 611 s (ALSJ). The approach-phase (P64) target is fitted to the four callouts at 596 .. 611 s.",
+          "abs": 60.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 176.0,
+          "value": 1219.2,
+          "note": "PUBLISHED (validation, premission): inertial velocity 4000 ft/s at 'rotate to windows up' (176 s), TN D-6846 table I. Model 4003 ft/s. The braking phase flies at the fixed throttle position, so the speed is set by the thrust and the mass.",
+          "rtol": 0.04
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 176.0,
+          "value": 44934.0,
+          "note": "PUBLISHED (validation, premission): altitude 44934 ft at 'rotate to windows up' (176 s), TN D-6846 table I. Model 44339 ft. Apollo 11 flew lower than the premission profile (MR 5.2: a 2,800 ft altitude difference at radar lock-on); tolerance 15 %.",
+          "rtol": 0.15
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 258.0,
+          "value": 934.2120000000001,
+          "note": "PUBLISHED (validation, premission): inertial velocity 3065 ft/s at 'LR altitude update' (258 s), TN D-6846 table I. Model 3071 ft/s. The braking phase flies at the fixed throttle position, so the speed is set by the thrust and the mass.",
+          "rtol": 0.04
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 258.0,
+          "value": 39201.0,
+          "note": "PUBLISHED (validation, premission): altitude 39201 ft at 'LR altitude update' (258 s), TN D-6846 table I. Model 36406 ft. Apollo 11 flew lower than the premission profile (MR 5.2: a 2,800 ft altitude difference at radar lock-on); tolerance 15 %.",
+          "rtol": 0.15
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 384.0,
+          "value": 443.78880000000004,
+          "note": "PUBLISHED (validation, premission): inertial velocity 1456 ft/s at 'throttle recovery' (384 s), TN D-6846 table I. Model 1494 ft/s. The braking phase flies at the fixed throttle position, so the speed is set by the thrust and the mass.",
+          "rtol": 0.04
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 384.0,
+          "value": 24639.0,
+          "note": "PUBLISHED (validation, premission): altitude 24639 ft at 'throttle recovery' (384 s), TN D-6846 table I. Model 21319 ft. Apollo 11 flew lower than the premission profile (MR 5.2: a 2,800 ft altitude difference at radar lock-on); tolerance 15 %.",
+          "rtol": 0.15
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 402.0,
+          "value": 400.812,
+          "note": "PUBLISHED (validation, premission): inertial velocity 1315 ft/s at 'LR velocity update' (402 s), TN D-6846 table I. Model 1340 ft/s. The braking phase flies at the fixed throttle position, so the speed is set by the thrust and the mass.",
+          "rtol": 0.04
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 402.0,
+          "value": 22644.0,
+          "note": "PUBLISHED (validation, premission): altitude 22644 ft at 'LR velocity update' (402 s), TN D-6846 table I. Model 19704 ft. Apollo 11 flew lower than the premission profile (MR 5.2: a 2,800 ft altitude difference at radar lock-on); tolerance 15 %.",
+          "rtol": 0.15
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 620.9899999999907,
+          "value": 400.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '400 feet' at 621 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 627.9899999999907,
+          "value": 350.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '350 feet' at 628 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 629.9899999999907,
+          "value": 330.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '330 feet' at 630 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 640.9899999999907,
+          "value": 300.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '300 feet' at 641 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 646.9899999999907,
+          "value": 270.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '270 feet' at 647 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 661.9899999999907,
+          "value": 250.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '250 feet' at 662 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 670.9899999999907,
+          "value": 220.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '220 feet' at 671 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 678.9899999999907,
+          "value": 200.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '200 feet' at 679 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 685.9899999999907,
+          "value": 160.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '160 feet' at 686 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 694.9899999999907,
+          "value": 120.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '120 feet' at 695 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 699.9899999999907,
+          "value": 100.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '100 feet' at 700 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 708.9899999999907,
+          "value": 75.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '75 feet' at 709 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 731.9899999999907,
+          "value": 40.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '40 feet' at 732 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 735.9899999999907,
+          "value": 30.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '30 feet' at 736 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 739.9899999999907,
+          "value": 20.0,
+          "note": "PUBLISHED (validation): Aldrin's callout '20 feet' at 740 s (ALSJ). The P66 pilot model holds his called descent rates as a function of altitude, so the time at each altitude is an output (integrated rates). Tolerance 35 ft.",
+          "abs": 35.0
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "State/h_pad",
+          "n": 1,
+          "direction": "down",
+          "value": 754.890000000014,
+          "abs": 8.0,
+          "note": "PUBLISHED (validation): landing at 102:45:39.9, 754.9 s after ignition (MR 5.4). Model 758.3 s: the end of the landing phase follows from the P66 entry state and the pilot model's rates."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 758.2077320358233,
+          "value": 7373.416129772,
+          "note": "PUBLISHED (validation): propellant burned in the powered descent 17,146 lb (SP-2000-4029: 17,414 lb DPS total less the 268 lb DOI burn), so 7373 kg at engine cutoff. Model 7426 kg: it burns 53 kg less (0.7 %), with the published Isp of 305 s. The 43 kg of RCS propellant are not modelled.",
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/prop",
+          "t": 758.2077320358233,
+          "value": 305.72125738,
+          "note": "PUBLISHED (validation): usable DPS propellant at cutoff 674 lb = 306 kg (SP-2000-4029). Model 359 kg: the small difference of two large numbers (0.7 % of the burn); tolerance 25 %.",
+          "rtol": 0.25
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv_fps",
+          "t": 507.0,
+          "value": 5375.0,
+          "note": "PUBLISHED (validation, premission): velocity gained to high gate 5,375 ft/s (TN D-6846 table I). Model 5411 ft/s.",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv_fps",
+          "t": 606.0,
+          "value": 6176.0,
+          "note": "PUBLISHED (validation, premission): velocity gained to low gate 6,176 ft/s (TN D-6846 table I). Model 6157 ft/s.",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv_fps",
+          "t": 758.2077320358233,
+          "value": 6775.0,
+          "note": "PUBLISHED (validation): 'a velocity change of approximately 6775 ft/sec' (MR 9.8; the premission nominal to touchdown is also 6,775). Model 6997 ft/s: Armstrong's longer landing phase (140 s instead of 104 s nominal) costs about 2 ft/s of velocity per second of hover; tolerance 5 %.",
+          "rtol": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/rdot_fps",
+          "t": 758.2077320358233,
+          "value": -1.7000000000000002,
+          "note": "PUBLISHED (set, not independent): touchdown 1.7 ft/s vertical (MR 5.4); the pilot model's last breakpoint is that rate.",
+          "abs": 0.5
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "State/rdot_fps",
+          "from_t": 755.2577320358232,
+          "to_t": 775.0,
+          "value": 7.0,
+          "note": "PUBLISHED (design limit): the landing gear's touchdown envelope allows 7 ft/s vertical with 4 ft/s horizontal (up to 10 ft/s vertical at less horizontal speed), TN D-6850"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "State/vh_fps",
+          "from_t": 755.2577320358232,
+          "to_t": 775.0,
+          "value": 4.0,
+          "note": "PUBLISHED (design limit): horizontal touchdown velocity at most 4 ft/s, TN D-6850"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pad1/f_n",
+          "value": 42258.10534497475,
+          "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pad2/f_n",
+          "value": 42258.10534497475,
+          "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pad3/f_n",
+          "value": 42258.10534497475,
+          "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pad4/f_n",
+          "value": 42258.10534497475,
+          "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pad1/delta",
+          "t": 774.0,
+          "value": 0.07619999999999999,
+          "note": "PUBLISHED (FITTED): the footpads penetrated the surface 2.5 to 3.5 in (MR 5.4); the contact stiffness is chosen so that a pad settles 3 in under a quarter of the landing weight. Tolerance 0.75 in.",
+          "abs": 0.019049999999999997
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pad3/delta",
+          "t": 774.0,
+          "value": 0.07619999999999999,
+          "note": "PUBLISHED (FITTED): the footpads penetrated the surface 2.5 to 3.5 in (MR 5.4); the contact stiffness is chosen so that a pad settles 3 in under a quarter of the landing weight. Tolerance 0.75 in.",
+          "abs": 0.019049999999999997
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Pad1/f_n",
+          "signal_b": "Pad2/f_n",
+          "from_t": 770.0,
+          "to_t": 775.0,
+          "max_abs": 150.7756648991468,
+          "note": "at rest the two side pads carry the same load (within 5 %)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pad3/f_n",
+          "t": 774.0,
+          "value": 3015.5132979829355,
+          "note": "at rest on level ground each pad carries a quarter of the lunar weight m g(R + h) / 4 (statics; m from the scipy reference at touchdown)",
+          "rtol": 0.001
+        }
+      ],
+      "run_timeout": 1200
+    },
+    "lm-ascent": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative causality, no algebraic loop warning, no event storm and no solver failure"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 20.0,
+          "value": 265.5492742876522,
+          "note": "altitude at 20 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 20.0,
+          "value": 32.21531235238463,
+          "note": "speed at 20 s, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 20.0,
+          "value": 4786.616374252408,
+          "note": "mass at 20 s, scipy reference",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 120.0,
+          "value": 4081.0196512003895,
+          "note": "altitude at 120 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 120.0,
+          "value": 309.7289307007531,
+          "note": "speed at 120 s, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 120.0,
+          "value": 4278.780572804445,
+          "note": "mass at 120 s, scipy reference",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 300.0,
+          "value": 14073.017685139785,
+          "note": "altitude at 300 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 300.0,
+          "value": 987.6470909795319,
+          "note": "speed at 300 s, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 300.0,
+          "value": 3364.6761301981064,
+          "note": "mass at 300 s, scipy reference",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h",
+          "t": 430.0,
+          "value": 18206.637175058015,
+          "note": "altitude at 430 s, scipy reference",
+          "rtol": 0.0002,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 430.0,
+          "value": 1643.4021614405412,
+          "note": "speed at 430 s, scipy reference",
+          "rtol": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 430.0,
+          "value": 2704.4895883157537,
+          "note": "mass at 430 s, scipy reference",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Guid/T_cmd",
+          "level": 7704.319837631186,
+          "n": 1,
+          "direction": "down",
+          "value": 437.4346585175484,
+          "abs": 0.1,
+          "note": "engine cutoff on the target velocity, scipy reference"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "State/rdot_fps",
+          "level": 40.0,
+          "n": 1,
+          "direction": "up",
+          "value": 7.9114020713534385,
+          "abs": 0.05,
+          "note": "end of the vertical rise (radial rate 40 ft/s), scipy reference"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Orbit/apolune_km",
+          "t": 450.0,
+          "value": 88.25882136457088,
+          "note": "apolune after insertion and the thrust tail-off, scipy reference",
+          "rtol": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Orbit/perilune_km",
+          "t": 450.0,
+          "value": 16.908890171653592,
+          "note": "perilune after insertion and the thrust tail-off, scipy reference",
+          "rtol": 0.005
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Guid/T_cmd",
+          "level": 7704.319837631186,
+          "n": 1,
+          "direction": "down",
+          "value": 434.88,
+          "abs": 6.0,
+          "note": "PUBLISHED (validation): ascent burn 434.88 s (MR table 9.6-V; TN D-6846: insertion at 7:15 against 7:18 premission). Model 437.4 s with the predicted thrust and Isp of MR table 9.9-I; the report puts the 3 s difference down to a slightly higher thrust-to-weight ratio in flight."
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "State/rdot_fps",
+          "level": 40.0,
+          "n": 1,
+          "direction": "up",
+          "value": 10.0,
+          "abs": 3.0,
+          "note": "PUBLISHED (validation): the vertical rise ends about 10 s after lift-off (TN D-6846 table V). Model 7.9 s (the guidance switch; the report's 10 s includes the autopilot lag)."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 450.0,
+          "value": 2689.1677247820003,
+          "note": "PUBLISHED (validation): ascent stage at orbit insertion 5,928.6 lb = 2689 kg (MR appendix A). Model 2666 kg; the 69 lb of RCS propellant are not modelled.",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/dv_fps",
+          "t": 450.0,
+          "value": 6070.1,
+          "note": "PUBLISHED (validation): ascent velocity change 6,070.1 ft/s (MR table 7-V). Model 6036 ft/s.",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 450.0,
+          "value": 60300.00000000001,
+          "note": "PUBLISHED (target): insertion altitude 60,300 ft (postflight, TN D-6846 table V); the guidance targets 60,000 ft, so this checks that it gets there (model 59993 ft at cutoff; 450 s is 12 s into the coast).",
+          "rtol": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/vh_fps",
+          "t": 450.0,
+          "value": 5537.0,
+          "note": "PUBLISHED (target): down-range velocity at insertion 5,537 ft/s (postflight); the engine is cut at the 5,534.9 ft/s target.",
+          "rtol": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Orbit/apolune_km",
+          "t": 450.0,
+          "value": 88.896,
+          "note": "PUBLISHED (validation): orbit of the ascent burn 48.0 by 9.1 n mi (MR table 7-V); apolune 88.9 km. Model 88.3 km. Heights above the mean radius; Apollo quoted heights above the landing-site radius (1.8 km less). Tolerance 3 km.",
+          "abs": 3.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Orbit/perilune_km",
+          "t": 450.0,
+          "value": 16.8532,
+          "note": "PUBLISHED (validation): perilune 9.1 n mi = 16.9 km (MR table 7-V). Model 16.9 km. Tolerance 3 km.",
+          "abs": 3.0
+        }
+      ],
+      "run_timeout": 900
+    },
+    "lm-ascent-vacuum": {
+      "model": "lm-ascent",
+      "settings": {
+        "t_end": 300.0,
+        "output": {
+          "points": 601
+        }
+      },
+      "overrides": [
+        {
+          "target": "global:gravity_scale",
+          "value": 0.0
+        },
+        {
+          "target": "global:steer",
+          "value": 0.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 300.0,
+          "value": 1133.2320978325292,
+          "note": "TSIOLKOVSKY (analytic): no gravity, thrust held vertical, so the speed is c ln(m0/m) = 3034.18 m/s * ln(4888.2/3364.68); the engine burns at full thrust from t = 0, m(t) = m0 - T t / c. Tests the variable-mass bond graph (MI + outflow MR).",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tank/m",
+          "t": 300.0,
+          "value": 3364.6761301981087,
+          "note": "mass at 300 s, m0 - T t / c (analytic)",
+          "rtol": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/speed",
+          "t": 300.0,
+          "value": 1133.2320978325288,
+          "note": "scipy reference in vacuum",
+          "rtol": 1e-06
+        }
+      ],
+      "run_timeout": 900
+    },
+    "lm-hover": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative causality, no algebraic loop warning, no event storm and no solver failure"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "State/rdot_fps",
+          "from_t": 100.0,
+          "to_t": 200.0,
+          "value": 7.0,
+          "note": "the default flight lands within the gear's vertical design limit, 7 ft/s (TN D-6850)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Tank/prop",
+          "value": 0.0,
+          "note": "the default flight lands with propellant left"
+        }
+      ],
+      "run_timeout": 900
+    },
+    "lm-hover-hold": {
+      "model": "lm-hover",
+      "settings": {
+        "t_end": 120.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "overrides": [
+        {
+          "target": "global:h0_ft",
+          "value": 100.0
+        },
+        {
+          "target": "global:rod_fps",
+          "value": 0.0
+        },
+        {
+          "target": "global:td_fps",
+          "value": 0.0
+        },
+        {
+          "target": "global:fwd_fps",
+          "value": 0.0
+        },
+        {
+          "target": "global:prop_start",
+          "value": 300.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Status/tw",
+          "t": 30.0,
+          "value": 0.99996491401182,
+          "note": "hover: thrust equals the weight at 100 ft, T/(m g_surface) = (R/(R+h))^2 (analytic)",
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/h_ft",
+          "t": 60.0,
+          "value": 100.0,
+          "note": "hover: the altitude is held (a rate loop, no altitude hold: it drifts by the thrust lag at the start)",
+          "abs": 0.5
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Tank/prop",
+          "level": 0.0,
+          "n": 1,
+          "direction": "down",
+          "value": 76.5555149495579,
+          "abs": 0.01,
+          "note": "ROCKET EQUATION (analytic): in a hover T = m g, so m(t) = m0 exp(-g t / c) and the usable propellant (300 kg) is gone at t = (c/g) ln(m0/m_empty) = 76.556 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "State/rdot_fps",
+          "t": 79.5555149495579,
+          "value": -14.387260483580103,
+          "note": "free fall after the engine quits: the lagged thrust T0 exp(-t/tau) with T0 = m g still gives g tau of velocity, so 3 s later rdot = -g (3 s - tau) (analytic)",
+          "rtol": 0.001
+        }
+      ],
+      "run_timeout": 900
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "bicycle",
+  "models": [
+    "whipple",
+    "linear",
+    "balance",
+    "balance-linear"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

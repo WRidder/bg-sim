@@ -1,0 +1,734 @@
+{
+  "project": "segway",
+  "description": "Acceptance of the segway example: a two-wheeled self-balancing transporter with a rider as a 3D bond graph (RigidBody3D body on a PoseIntegrator3D, two RigidBody3D wheels on Revolute3D axle joints, RollingDisk tyre contacts, MSe motor torques, ExternalWrenchSpatial push). The references are independent of the bond graph: the analytic linearisation (open-loop pole +5.23 1/s) and Riccati design of design/design.py, its non-linear Lagrange reference simulation of the same closed loop (RK4), the statics of the load, and the published top speed of the Segway i2. No flight or test log of a Segway with a rider could be found, so the physical parameters are estimates apart from the quoted specifications (see the README).",
+  "models": {
+    "balance": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the body and the two wheels follow their composed poses (body: PoseIntegrator3D, wheels: body pose o mount o axle joint)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TyreL/f_n",
+          "t": 3.0,
+          "value": 564.075,
+          "abs": 8.0,
+          "note": "static load of one wheel, (m_b / 2 + m_w) g = 564 N (statics, independent): the vehicle balances upright at rest"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 0.5,
+          "value": -0.00748,
+          "abs": 0.0006,
+          "note": "body pitch at t = 0.5 s from the non-linear Lagrange reference of design.py (same LQR, RK4)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 1.0,
+          "value": -0.00428,
+          "abs": 0.0006,
+          "note": "body pitch at t = 1.0 s from the non-linear Lagrange reference of design.py (same LQR, RK4)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 4.0,
+          "value": 0.165352,
+          "abs": 0.002,
+          "note": "body pitch at t = 4.0 s from the non-linear Lagrange reference of design.py (same LQR, RK4)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 5.0,
+          "value": 0.098302,
+          "abs": 0.002,
+          "note": "body pitch at t = 5.0 s from the non-linear Lagrange reference of design.py (same LQR, RK4)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 9.4,
+          "value": -0.048924,
+          "abs": 0.002,
+          "note": "body pitch at t = 9.4 s from the non-linear Lagrange reference of design.py (same LQR, RK4)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 5.0,
+          "value": 1.770735,
+          "abs": 0.02,
+          "note": "axle speed at t = 5.0 s from the reference simulation (speed ramp from 3 s, push at 9 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 7.0,
+          "value": 1.630722,
+          "abs": 0.02,
+          "note": "axle speed at t = 7.0 s from the reference simulation (speed ramp from 3 s, push at 9 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 9.1,
+          "value": 1.757856,
+          "abs": 0.02,
+          "note": "axle speed at t = 9.1 s from the reference simulation (speed ramp from 3 s, push at 9 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 12.0,
+          "value": 1.477606,
+          "abs": 0.02,
+          "note": "axle speed at t = 12.0 s from the reference simulation (speed ramp from 3 s, push at 9 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 12.0,
+          "value": 12.397607,
+          "abs": 0.05,
+          "note": "distance travelled by t = 12 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/tau_l",
+          "t": 4.0,
+          "value": 16.148906,
+          "abs": 0.8,
+          "note": "torque of one wheel during the acceleration, half the reference total torque"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 14.0,
+          "value": 1.5,
+          "abs": 0.02,
+          "note": "steady-state speed tracking: the speed ends at the 1.5 m/s set-point (the integral of the speed error removes any offset); reference 1.497 m/s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/theta",
+          "from_t": 0.0,
+          "to_t": 14.0,
+          "value": 0.188495,
+          "abs": 0.006,
+          "note": "largest body pitch of the run (the lean while accelerating), reference simulation"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/theta",
+          "from_t": 9.0,
+          "to_t": 11.0,
+          "value": 0.049226,
+          "abs": 0.004,
+          "note": "largest pitch after the 150 N push at t = 9 s: the push is rejected, the vehicle never falls"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/tau_l",
+          "from_t": 0.0,
+          "to_t": 14.0,
+          "value": 42.821599,
+          "abs": 1.5,
+          "note": "largest wheel torque of the run, reference simulation (design.py prints it)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/vreq_l",
+          "from_t": 0.0,
+          "to_t": 14.0,
+          "value": 23.225683,
+          "abs": 0.8,
+          "note": "largest terminal voltage the motors need, reference simulation"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/tau_l",
+          "value": 80.000001,
+          "note": "the torque of each wheel stays within the stated peak torque of 80 N m (an estimate of a PT-class drive)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/vreq_l",
+          "value": 72.0,
+          "note": "the terminal voltage the motor needs, R i + k_t n (joint rate), stays below the 72 V battery bus (estimate, see README)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/vreq_r",
+          "value": 72.0,
+          "note": "same for the wheel at -y"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreL/s_lat",
+          "value": 0.0003,
+          "note": "lateral creep of the tyre stays below 0.3 mm/s: the friction cone is far from saturated (measured at most 0.12 mm/s, in the turns)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreL/s_lon",
+          "value": 0.0003,
+          "note": "longitudinal creep below 0.3 mm/s (measured at most 0.21 mm/s, in the first 10 ms while the tyre settles): the contact rolls without slipping"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/wz",
+          "from_t": 0.0,
+          "to_t": 14.0,
+          "value": 0.0,
+          "abs": 0.001,
+          "note": "straight ahead: the yaw rate stays zero (the two wheels see the same torque)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no causal conflict, no derivative-causal store (the motors are ideal torque sources and the joints are compliant, so every store is integral), no algebraic loop, no event-limit stop"
+        }
+      ]
+    },
+    "open-loop": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the body and the two wheels follow their composed poses (body: PoseIntegrator3D, wheels: body pose o mount o axle joint)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 0.2,
+          "value": 0.003197,
+          "abs": 0.0002,
+          "note": "free fall from 0.002 rad at t = 0.2 s: non-linear reference simulation of design.py with no control; the tilt grows with the unstable pole +5.2287 1/s of the analytic linearisation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 0.4,
+          "value": 0.00822,
+          "abs": 0.0002466024306418853,
+          "note": "free fall from 0.002 rad at t = 0.4 s: non-linear reference simulation of design.py with no control; the tilt grows with the unstable pole +5.2287 1/s of the analytic linearisation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 0.6,
+          "value": 0.023078,
+          "abs": 0.0006923527486346477,
+          "note": "free fall from 0.002 rad at t = 0.6 s: non-linear reference simulation of design.py with no control; the tilt grows with the unstable pole +5.2287 1/s of the analytic linearisation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 0.8,
+          "value": 0.065478,
+          "abs": 0.001964342356687871,
+          "note": "free fall from 0.002 rad at t = 0.8 s: non-linear reference simulation of design.py with no control; the tilt grows with the unstable pole +5.2287 1/s of the analytic linearisation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 1.0,
+          "value": 0.18444,
+          "abs": 0.00553319146186644,
+          "note": "free fall from 0.002 rad at t = 1.0 s: non-linear reference simulation of design.py with no control; the tilt grows with the unstable pole +5.2287 1/s of the analytic linearisation"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no causal conflict, no derivative-causal store (the motors are ideal torque sources and the joints are compliant, so every store is integral), no algebraic loop, no event-limit stop"
+        }
+      ]
+    },
+    "top-speed": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the body and the two wheels follow their composed poses (body: PoseIntegrator3D, wheels: body pose o mount o axle joint)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 4.0,
+          "value": 1.071973,
+          "abs": 0.03,
+          "note": "axle speed at t = 4.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 6.0,
+          "value": 2.446477,
+          "abs": 0.03,
+          "note": "axle speed at t = 6.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 8.0,
+          "value": 3.701223,
+          "abs": 0.03,
+          "note": "axle speed at t = 8.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 10.0,
+          "value": 4.938023,
+          "abs": 0.03,
+          "note": "axle speed at t = 10.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 11.0,
+          "value": 5.555478,
+          "abs": 0.03,
+          "note": "axle speed at t = 11.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 12.0,
+          "value": 5.877687,
+          "abs": 0.03,
+          "note": "axle speed at t = 12.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 14.0,
+          "value": 5.619379,
+          "abs": 0.03,
+          "note": "axle speed at t = 14.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 17.0,
+          "value": 5.557937,
+          "abs": 0.03,
+          "note": "axle speed at t = 17.0 s from the reference simulation (ramp to 20 km/h from t = 2.0 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 6.0,
+          "value": 0.100166,
+          "abs": 0.004,
+          "note": "body pitch at t = 6.0 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 11.0,
+          "value": 0.096046,
+          "abs": 0.004,
+          "note": "body pitch at t = 11.0 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/theta",
+          "t": 17.0,
+          "value": -0.000493,
+          "abs": 0.004,
+          "note": "body pitch at t = 17.0 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/vreq_l",
+          "t": 8.0,
+          "value": 44.882345,
+          "abs": 1.0,
+          "note": "voltage the motor needs at t = 8.0 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/vreq_l",
+          "t": 11.0,
+          "value": 67.129637,
+          "abs": 1.0,
+          "note": "voltage the motor needs at t = 11.0 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/vreq_l",
+          "t": 17.0,
+          "value": 66.691377,
+          "abs": 1.0,
+          "note": "voltage the motor needs at t = 17.0 s, reference simulation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 17.0,
+          "value": 5.555556,
+          "abs": 0.03,
+          "note": "the published top speed of the Segway i2, 20 km/h = 5.556 m/s (Segway i2 reference manual: specifications), is reached and held"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/vreq_l",
+          "t": 17.0,
+          "value": 66.666667,
+          "abs": 0.8,
+          "note": "at constant speed the voltage is the back-EMF, k_t n v / r = 2.88 * 5.556 / 0.24 = 66.7 V (analytic): the 72 V bus has 8 % margin"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/vreq_l",
+          "from_t": 0.0,
+          "to_t": 17.0,
+          "value": 71.220943,
+          "abs": 1.0,
+          "note": "peak voltage demand of the run (overshoot of the speed loop at the end of the ramp), reference simulation"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/theta",
+          "from_t": 0.0,
+          "to_t": 17.0,
+          "value": 0.117245,
+          "abs": 0.006,
+          "note": "largest lean of the run (while accelerating), reference simulation"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/tau_l",
+          "value": 80.000001,
+          "note": "the torque of each wheel stays within the stated peak torque of 80 N m (an estimate of a PT-class drive)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/vreq_l",
+          "value": 72.0,
+          "note": "the terminal voltage the motor needs, R i + k_t n (joint rate), stays below the 72 V battery bus (estimate, see README)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/vreq_r",
+          "value": 72.0,
+          "note": "same for the wheel at -y"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreL/s_lat",
+          "value": 0.0003,
+          "note": "lateral creep of the tyre stays below 0.3 mm/s: the friction cone is far from saturated (measured at most 0.12 mm/s, in the turns)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreL/s_lon",
+          "value": 0.0003,
+          "note": "longitudinal creep below 0.3 mm/s (measured at most 0.21 mm/s, in the first 10 ms while the tyre settles): the contact rolls without slipping"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no causal conflict, no derivative-causal store (the motors are ideal torque sources and the joints are compliant, so every store is integral), no algebraic loop, no event-limit stop"
+        }
+      ]
+    },
+    "figure-eight": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the body and the two wheels follow their composed poses (body: PoseIntegrator3D, wheels: body pose o mount o axle joint)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 6.0,
+          "value": 0.97106,
+          "abs": 0.02,
+          "note": "heading at t = 6.0 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 6.0,
+          "value": 2.626843,
+          "abs": 0.06,
+          "note": "axle position x at t = 6.0 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 6.0,
+          "value": 1.261042,
+          "abs": 0.06,
+          "note": "axle position y at t = 6.0 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 9.5,
+          "value": 2.970233,
+          "abs": 0.02,
+          "note": "heading at t = 9.5 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 9.5,
+          "value": 0.910097,
+          "abs": 0.06,
+          "note": "axle position x at t = 9.5 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 9.5,
+          "value": 5.353315,
+          "abs": 0.06,
+          "note": "axle position y at t = 9.5 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 12.0,
+          "value": 4.39823,
+          "abs": 0.02,
+          "note": "heading at t = 12.0 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 12.0,
+          "value": -2.03563,
+          "abs": 0.06,
+          "note": "axle position x at t = 12.0 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 12.0,
+          "value": 3.577125,
+          "abs": 0.06,
+          "note": "axle position y at t = 12.0 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 15.0,
+          "value": 6.052724,
+          "abs": 0.02,
+          "note": "heading at t = 15.0 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 15.0,
+          "value": 0.008288,
+          "abs": 0.06,
+          "note": "axle position x at t = 15.0 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 15.0,
+          "value": 0.159615,
+          "abs": 0.06,
+          "note": "axle position y at t = 15.0 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 20.0,
+          "value": 3.598552,
+          "abs": 0.02,
+          "note": "heading at t = 20.0 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 20.0,
+          "value": 1.594981,
+          "abs": 0.06,
+          "note": "axle position x at t = 20.0 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 20.0,
+          "value": -4.982262,
+          "abs": 0.06,
+          "note": "axle position y at t = 20.0 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 24.0,
+          "value": 1.313759,
+          "abs": 0.02,
+          "note": "heading at t = 24.0 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 24.0,
+          "value": -2.103474,
+          "abs": 0.06,
+          "note": "axle position x at t = 24.0 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 24.0,
+          "value": -1.958051,
+          "abs": 0.06,
+          "note": "axle position y at t = 24.0 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 28.0,
+          "value": 2.2e-05,
+          "abs": 0.02,
+          "note": "heading at t = 28.0 s: non-linear pitch plane plus the yaw loop and kinematic path of design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/xa",
+          "t": 28.0,
+          "value": 2.980063,
+          "abs": 0.06,
+          "note": "axle position x at t = 28.0 s, reference path (path length 1.5 m/s * t)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/ya",
+          "t": 28.0,
+          "value": 0.070881,
+          "abs": 0.06,
+          "note": "axle position y at t = 28.0 s, reference path"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/v",
+          "t": 28.0,
+          "value": 1.5,
+          "abs": 0.01,
+          "note": "the cruise speed 1.5 m/s is held through both circles"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/heading",
+          "t": 28.0,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the heading returns to 0: the eight is closed (+2 pi, then -2 pi)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/wz",
+          "t": 9.5,
+          "value": 0.571199,
+          "abs": 0.01,
+          "note": "yaw rate on the first circle, 2 pi / 11 s = 0.571 rad/s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/wz",
+          "t": 20.0,
+          "value": -0.571199,
+          "abs": 0.01,
+          "note": "yaw rate on the second circle, -0.571 rad/s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/wz",
+          "from_t": 0.0,
+          "to_t": 28.0,
+          "value": 0.571199,
+          "abs": 0.01,
+          "note": "peak yaw rate of the eight, reference"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/tau_l",
+          "from_t": 0.0,
+          "to_t": 28.0,
+          "value": 38.274054,
+          "abs": 1.5,
+          "note": "largest wheel torque of the run: the start-up acceleration (the same pitch-plane reference as `balance`, from upright)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/theta",
+          "from_t": 0.0,
+          "to_t": 28.0,
+          "value": 0.155052,
+          "abs": 0.006,
+          "note": "largest pitch (the lean during the speed-up), reference"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/tau_l",
+          "value": 80.000001,
+          "note": "the torque of each wheel stays within the stated peak torque of 80 N m (an estimate of a PT-class drive)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/vreq_l",
+          "value": 72.0,
+          "note": "the terminal voltage the motor needs, R i + k_t n (joint rate), stays below the 72 V battery bus (estimate, see README)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/vreq_r",
+          "value": 72.0,
+          "note": "same for the wheel at -y"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreL/s_lat",
+          "value": 0.0003,
+          "note": "lateral creep of the tyre stays below 0.3 mm/s: the friction cone is far from saturated (measured at most 0.12 mm/s, in the turns)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TyreL/s_lon",
+          "value": 0.0003,
+          "note": "longitudinal creep below 0.3 mm/s (measured at most 0.21 mm/s, in the first 10 ms while the tyre settles): the contact rolls without slipping"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no causal conflict, no derivative-causal store (the motors are ideal torque sources and the joints are compliant, so every store is integral), no algebraic loop, no event-limit stop"
+        }
+      ]
+    }
+  }
+}

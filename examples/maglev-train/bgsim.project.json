@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "maglev-train",
+  "models": [
+    "maglev-module",
+    "maglev-module-open-loop",
+    "maglev-vehicle"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
