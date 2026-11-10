@@ -268,7 +268,7 @@ end
             @test checked.interface !== nothing
             @test sort(collect(keys(checked.interface))) ==
                   sort([:constants, :parameters, :inputs, :outputs, :ports,
-                        :variables, :causality])
+                        :variables, :causality, :orientation])
             @test length(checked.interface.ports) == 3
 
             broken = result_of(client, 11, "block.check",

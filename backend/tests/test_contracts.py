@@ -101,10 +101,11 @@ DOMAIN_NAMES = [
 
 # One instance of every code in the spec's table plus D14's additions, the
 # multibond codes (E007 frame mismatch, E108 invalid inertia parameters,
-# E109 singular assembled mass), E113 (global parameter cycle) and the viewer codes of plan 7.6.
+# E109 singular assembled mass), E113 (global parameter cycle), E114 (bond against a declared
+# port orientation) and the viewer codes of plan 7.6.
 DIAGNOSTIC_CODES = [
     "E000", "E001", "E002", "E003", "E004", "E005", "E006", "E007",
-    "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109", "E113",
+    "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109", "E113", "E114",
     "E900", "E901",
     "W201", "W202", "W203", "W204", "W205", "W206", "W216",
     "E301", "E302", "E303", "E304", "E305", "E306",

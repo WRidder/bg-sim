@@ -57,7 +57,7 @@ library stage needs. It is immutable and JSON-serialisable through
 | `description`, `icon` | catalog presentation data |
 | `source` | the full `@block ... end` text |
 | `path` | `stdlib/<group>/<Name>.jl`, or `library/<Name>.jl` for a project block |
-| `interface` | the seven arrays of plan 3.2, as returned by `block_interface` |
+| `interface` | the eight arrays of plan 3.2 (with `orientation`), as returned by `block_interface` |
 | `ast` | the `ParsedBlock` (parse-stage diagnostics only) |
 | `diagnostics` | every diagnostic of the parse and check passes, sorted |
 
@@ -90,7 +90,7 @@ has_errors(b::BlockDef) = any(d -> d.severity == "error", b.diagnostics)
     to_namedtuple(b::BlockDef) -> NamedTuple
 
 The block in the plan 3.2 catalog shape, with exactly the field names of
-`contracts/schemas/catalog.schema.json` and in the schema's order. The seven interface
+`contracts/schemas/catalog.schema.json` and in the schema's order. The eight interface
 arrays are passed through unchanged.
 """
 function to_namedtuple(b::BlockDef)
@@ -109,6 +109,7 @@ function to_namedtuple(b::BlockDef)
         ports = i.ports,
         variables = i.variables,
         causality = i.causality,
+        orientation = i.orientation,
         source = b.source,
         path = b.path,
     )

@@ -10,7 +10,7 @@
 #   2. declaration types (Bool state, Int outside discrete, array sizes) — E004/E005
 #   3. defaults (constant expressions, type) — E004
 #   4. equations (names, types, indices, `for` bounds, `if` branch counts) — E001..E005
-#   5. `@causality` port names — E003
+#   5. `@causality` and `@orientation` port names — E003
 #   6. units, via `BGSim.Units.check_units` when J1.2 has landed — E006
 #   7. unused declarations — W204
 #   8. balance: #equations == #variables + #outputs + #powerports — E103 (a warning here)
@@ -112,6 +112,7 @@ function check_block(pb::ParsedBlock)
     _check_discrete_scopes!(ck)
     _check_events!(ck)
     _check_causality!(ck)
+    _check_orientation!(ck)
     _check_units!(ck)
     _check_unused!(ck)
     _check_balance!(ck)
@@ -345,6 +346,7 @@ function _has_scope(pb::ParsedBlock, scope::Symbol)
     scope == :discrete && return !isempty(pb.discrete_items)
     scope == :events && return !isempty(pb.event_items)
     scope == :causality && return !isempty(pb.causality_items)
+    scope == :orientation && return !isempty(pb.orientation_items)
     return !isempty(get(pb.declaration_map, scope, Decl[]))
 end
 
@@ -1185,6 +1187,58 @@ function _check_causality!(ck::Checker)
                 )
             else
                 push!(ck.used, p)
+            end
+        end
+    end
+    ck.scope = :equations
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Orientation (plan/PORT_ORIENTATION_PLAN.md, O2 and O13)
+# ---------------------------------------------------------------------------------------
+
+# Every port of an entry is a declared power port of the block, and no port is named by two
+# entries (a port has one orientation; a `through` pair is one entry). A composite may
+# declare orientations for its own interface ports, like a flat block.
+function _check_orientation!(ck::Checker)
+    ck.scope = :orientation
+    seen = Dict{Symbol,OrientationDecl}()
+    for o in ck.pb.orientation_items
+        for p in o.ports
+            d = get(ck.decls, p, nothing)
+            if d === nothing
+                _report!(
+                    ck,
+                    "E003",
+                    "`$p` is not a port of this block",
+                    o;
+                    hint = "an orientation names a power port declared in `@ports`",
+                )
+                continue
+            elseif d.scope != :ports
+                what = d.scope == :inputs ? "an input" : d.scope == :outputs ? "an output" :
+                       "a `$(scope_string(d.scope))` declaration"
+                _report!(
+                    ck,
+                    "E003",
+                    "`$p` is $what, not a power port: only power ports have an orientation",
+                    o;
+                    hint = "signal connections always run from an output to an input; remove the entry",
+                )
+                continue
+            end
+            push!(ck.used, p)
+            if haskey(seen, p)
+                _report!(
+                    ck,
+                    "E003",
+                    "port `$p` is named in two `@orientation` entries",
+                    o;
+                    hint = "a port has one orientation: keep one entry (`$(seen[p])`)",
+                )
+            else
+                seen[p] = o
             end
         end
     end
@@ -2363,7 +2417,7 @@ end
     block_interface(pb::ParsedBlock) -> NamedTuple
 
 The catalog interface of plan 3.2 and `contracts/schemas/catalog.schema.json`:
-`constants, parameters, inputs, outputs, ports, variables, causality`. Each entry is a
+`constants, parameters, inputs, outputs, ports, variables, causality, orientation`. Each entry is a
 `Vector` of `NamedTuple`s with exactly the schema fields, so J1.3 can put it straight into
 `catalog.get`.
 
@@ -2443,6 +2497,12 @@ function block_interface(pb::ParsedBlock)
         ) for c in pb.causality_items
     ]
 
+    # Shaped like `causality` (plan/PORT_ORIENTATION_PLAN.md, O13); a port in no entry is `any`.
+    orientation_entries = [
+        (ports = String[String(p) for p in o.ports], kind = String(o.kind))
+        for o in pb.orientation_items
+    ]
+
     iface = (
         constants = constants,
         parameters = parameters,
@@ -2451,6 +2511,7 @@ function block_interface(pb::ParsedBlock)
         ports = port_entries,
         variables = variables,
         causality = causality_entries,
+        orientation = orientation_entries,
     )
     # `dimension` is optional and the schema's enum is `2 | 3` (no null), so a scalar block
     # omits it; a multibond block reports the model dimension (D-MB12).

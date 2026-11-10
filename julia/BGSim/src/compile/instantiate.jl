@@ -133,6 +133,14 @@ mutable struct Builder
     # Nodes whose block did not load (E101, or the block's own errors): their connections are
     # left out without an E102 each, so the block's error is the one the user sees.
     failed_nodes::Set{String}
+    # Port orientation (plan/PORT_ORIENTATION_PLAN.md, O3/O13): the `@orientation` entries of
+    # every textual composite by its path (with its ref), the chain of faces a subsystem or
+    # composite port passes through (outermost first), and the source of every composite-
+    # internal connection by `(diagram, connection id)`: the composite ref, the `connect`
+    # range, the composite node id and the source text of the two `connect` sides.
+    composite_orientation::Dict{String,Tuple{String,Vector{BGSim.OrientationDecl}}}
+    face_chain::Dict{Tuple{String,Symbol},Vector{Tuple{String,Symbol}}}
+    conn_source::Dict{Tuple{String,String},NamedTuple}
 end
 
 function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
@@ -168,6 +176,9 @@ function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
         Dict{String,Any}(),
         Dict{Symbol,Vector{String}}(),
         Set{String}(),
+        Dict{String,Tuple{String,Vector{BGSim.OrientationDecl}}}(),
+        Dict{Tuple{String,Symbol},Vector{Tuple{String,Symbol}}}(),
+        Dict{Tuple{String,String},NamedTuple}(),
     )
 end
 
@@ -2896,18 +2907,29 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
         ) == :input
             f, t = t, f
         end
+        conn_id = _join(_join(path, String(block.name)), "c" * string(k))
+        # Where the bond came from, so a diagnostic on it (E114) points at the `connect`
+        # line of the composite rather than at a connection id the editor does not show.
+        b.conn_source[(path, conn_id)] = (
+            ref = block.ref,
+            range = BGSim.source_range(c),
+            node = node.id,
+            from_text = _portref_text(from),
+            to_text = _portref_text(to),
+        )
         push!(
             diagram.connections,
-            IR.ModelConnection(
-                _join(_join(path, String(block.name)), "c" * string(k)),
-                kind,
-                f,
-                t,
-                nothing,
-            ),
+            IR.ModelConnection(conn_id, kind, f, t, nothing),
         )
     end
     return diagram, faces
+end
+
+"""The source spelling of one `connect` side: `instance.port`, or a bare name."""
+function _portref_text(ref)
+    instance = BGSim.portref_instance(ref)
+    port = String(BGSim.portref_port(ref))
+    return instance === nothing ? port : String(instance) * "." * port
 end
 
 """The internal instance a `connect` side names, including a bare junction component.
@@ -3020,6 +3042,10 @@ function _instantiate_composite!(
     end
     push!(b.composite_stack, block.ref)
     try
+        # A composite may declare the orientation of its own ports (E114 checks the bonds
+        # that reach them from outside, through the face).
+        decls = BGSim.orientation(block.ast)
+        isempty(decls) || (b.composite_orientation[path] = (block.ref, decls))
         consts = _bind_composite_parameters!(b, node, path, block)
         diagram, faces = _composite_diagram!(b, node, path, block, consts)
         diagram === nothing && return nothing
@@ -3315,6 +3341,19 @@ function _bind_boundary!(b::Builder, node::IR.ModelNode, path::String)
             _check_subsystem_power_port!(b, node, path, sp, internal)
         boundary[sp.name] = internal
         b.boundary_ports[(path, sp.name)] = sp
+        if sp.kind == :power
+            # The faces this port passes through, outermost first: a face that exposes the
+            # face of a nested subsystem or composite continues that one's chain (E114 checks
+            # the orientation a composite declares on any face of the chain).
+            chain = Tuple{String,Symbol}[(path, sp.name)]
+            inner = get(local_nodes, sp.node, nothing)
+            if inner !== nothing && sp.port !== nothing
+                inner_path = _join(path, inner.name)
+                haskey(b.boundary, inner_path) && append!(chain,
+                    get(b.face_chain, (inner_path, Symbol(sp.port)), Tuple{String,Symbol}[]))
+            end
+            b.face_chain[(path, sp.name)] = chain
+        end
     end
     b.boundary[path] = boundary
     b.boundary_nodes[path] = node.id

@@ -844,6 +844,29 @@ class CausalityDecl(BaseModel):
     )
 
 
+class OrientationKind(Enum):
+    in_ = 'in'
+    out = 'out'
+    through = 'through'
+
+
+class OrientationDecl(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ports: list[str] = Field(
+        ...,
+        description='One power port for in and out; the two ports of a through pair.',
+        max_length=2,
+        min_length=1,
+    )
+    kind: OrientationKind = Field(
+        ...,
+        description="in: a bond ends at the port (the port is the bond's head); out: a bond starts at it (its tail); through: of the two bonds at the pair, one arrives and the other leaves.",
+        title='OrientationKind',
+    )
+
+
 class CatalogJunction(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2670,6 +2693,10 @@ class CatalogBlock(BaseModel):
     ports: list[PortDecl]
     variables: list[VariableDecl]
     causality: list[CausalityDecl]
+    orientation: list[OrientationDecl] = Field(
+        ...,
+        description='The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry is `any`; empty for a block that declares none.',
+    )
     source: str = Field(
         ...,
         description='Full @block source text, for "open source" and "copy to project".',
@@ -2696,6 +2723,10 @@ class BlockInterface(BaseModel):
     ports: list[PortDecl]
     variables: list[VariableDecl]
     causality: list[CausalityDecl]
+    orientation: list[OrientationDecl] = Field(
+        ...,
+        description='The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry is `any`; empty for a block that declares none.',
+    )
     dimension: ModelDimension | None = Field(
         None,
         description='Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).',

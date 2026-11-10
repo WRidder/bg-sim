@@ -929,6 +929,351 @@ end
         @test any(d -> d.code == "E002", bad.diagnostics)
     end
 
+    @testset "port orientation: E114 (plan/PORT_ORIENTATION_PLAN.md O3, O4, O13, O14)" begin
+        # No stdlib block declares an orientation yet, so the rig is a project library of
+        # small blocks that do: a storage and a dissipator `in`, a source `out`, a
+        # pass-through transformer `(a, b) => :through`, an electrical resistor whose wire
+        # ports are `in`, and composites.
+        dir = mktempdir()
+        lib = joinpath(dir, "library")
+        mkpath(lib)
+        files = Dict(
+            "OrC" => """
+            @block OrC begin
+                @ports p::Power{Generic}
+                @parameters c::Real = 1.0, [unit = "flow*s/effort", description = "Compliance"]
+                @variables q::Real = 0.0, [unit = "flow*s", state = :prefer]
+                @equations begin
+                    ddt(q) ~ p.f
+                    p.e ~ q / c
+                end
+                @orientation p => :in
+            end
+            """,
+            "OrR" => """
+            @block OrR begin
+                @ports p::Power{Generic}
+                @parameters r::Real = 2.0, [unit = "effort/flow", description = "Resistance"]
+                @equations p.e ~ r * p.f
+                @orientation p => :in
+            end
+            """,
+            "OrSe" => """
+            @block OrSe begin
+                @ports p::Power{Generic}
+                @parameters e::Real = 1.0, [unit = "effort", description = "Effort"]
+                @equations p.e ~ e
+                @orientation p => :out
+            end
+            """,
+            "OrTF" => """
+            @block OrTF begin
+                @ports begin
+                    a::Power{Generic}
+                    b::Power{Generic}
+                end
+                @parameters n::Real = 2.0, [description = "Ratio"]
+                @equations begin
+                    a.e ~ n * b.e
+                    b.f ~ -n * a.f
+                end
+                @orientation (a, b) => :through
+            end
+            """,
+            "OrRes" => """
+            @block OrRes begin
+                @ports begin
+                    p::Power{Electrical}
+                    n::Power{Electrical}
+                end
+                @parameters R::Real = 5.0, [unit = "Ohm", description = "Resistance"]
+                @equations begin
+                    p.f + n.f ~ 0.0
+                    p.e - n.e ~ R * p.f
+                end
+                @orientation begin
+                    p => :in
+                    n => :in
+                end
+            end
+            """,
+            # A composite whose port is its internal 1-junction, with one internal bond
+            # drawn against `OrC.p` (connect(c.p, node) runs from c.p to the junction).
+            "OrStackBad" => """
+            @block OrStackBad begin
+                @ports p::Power{Generic}
+                @components begin
+                    node = Junction(1)
+                    se = OrSe()
+                    c = OrC()
+                end
+                @connections begin
+                    connect(p, node)
+                    connect(se.p, node)
+                    connect(c.p, node)
+                end
+            end
+            """,
+            # The same, drawn right; its junction port is `any` (a junction for the check).
+            "OrStack" => """
+            @block OrStack begin
+                @ports p::Power{Generic}
+                @components begin
+                    node = Junction(1)
+                    se = OrSe()
+                    c = OrC()
+                end
+                @connections begin
+                    connect(p, node)
+                    connect(se.p, node)
+                    connect(node, c.p)
+                end
+            end
+            """,
+            # The same with an orientation declared on the junction port.
+            "OrStackOut" => """
+            @block OrStackOut begin
+                @ports p::Power{Generic}
+                @components begin
+                    node = Junction(1)
+                    se = OrSe()
+                    c = OrC()
+                end
+                @connections begin
+                    connect(p, node)
+                    connect(se.p, node)
+                    connect(node, c.p)
+                end
+                @orientation p => :out
+            end
+            """,
+            # A composite whose port exposes an `in` component port directly.
+            "OrWrapC" => """
+            @block OrWrapC begin
+                @ports p::Power{Generic}
+                @components begin
+                    c = OrC()
+                end
+                @connections begin
+                    connect(p, c.p)
+                end
+            end
+            """,
+        )
+        for (name, source) in files
+            write(joinpath(lib, name * ".jl"), source)
+        end
+        node(id, name, block; kw...) = _node(id, name, _ref("project:" * block); kw...)
+        run(nodes, conns) = Compile.flatten(IR.parse_model(_model("Orient", nodes, conns));
+            project_dir = dir)
+        e114(fm) = [d for d in fm.diagnostics if d.code == "E114"]
+
+        # The library itself is clean: no stdlib block and no rig block has an error.
+        for name in keys(files)
+            b = BGSim.Library.load_block(read(joinpath(lib, name * ".jl"), String);
+                ref = "project:" * name)
+            @test isempty([d for d in b.diagnostics if d.severity == "error"])
+        end
+
+        se_c_r(c1, c2, c3) = run(Any[
+            node("n1", "Se1", "OrSe"),
+            _node("j1", "J1", _junction(1)),
+            node("n2", "C1", "OrC"),
+            node("n3", "R1", "OrR"),
+        ], Any[c1, c2, c3])
+
+        # Accepted: source -> junction -> storage and dissipator, the textbook drawing.
+        ok = se_c_r(_conn("c1", "bond", "n1", "p", "j1"),
+            _conn("c2", "bond", "j1", nothing, "n2", "p"),
+            _conn("c3", "bond", "j1", nothing, "n3", "p"))
+        @test isempty(e114(ok))
+        @test isempty(_errors(ok))
+
+        # An `in` port at the tail: one E114 on that bond, at the block, with the reverse hint.
+        bad_in = se_c_r(_conn("c1", "bond", "n1", "p", "j1"),
+            _conn("c2", "bond", "n2", "p", "j1"),
+            _conn("c3", "bond", "j1", nothing, "n3", "p"))
+        @test length(e114(bad_in)) == 1
+        d = _diag(bad_in, "E114"; connection = "c2")
+        @test d !== nothing
+        @test d.severity == "error" && d.node == "n2" && d.path == "C1"
+        @test d.block == "project:OrC"
+        @test d.message == "bond `c2` runs from `p` of `C1` to junction `J1`, but `p` of `C1` " *
+                           "is declared `in`: a bond must end at an `in` port"
+        @test d.hint == "reverse bond `c2`, so that it runs from junction `J1` to `p` of `C1`"
+        # The bond stays in the model: the only error is E114.
+        @test length(_errors(bad_in)) == 1
+
+        # An `out` port at the head.
+        bad_out = se_c_r(_conn("c1", "bond", "j1", nothing, "n1", "p"),
+            _conn("c2", "bond", "j1", nothing, "n2", "p"),
+            _conn("c3", "bond", "j1", nothing, "n3", "p"))
+        d = _diag(bad_out, "E114"; connection = "c1")
+        @test length(e114(bad_out)) == 1
+        @test d !== nothing && d.node == "n1"
+        @test occursin("`p` of `Se1` is declared `out`: a bond must start at an `out` port",
+            d.message)
+
+        # Two blocks bonded directly: out -> in is accepted; in -> out violates both ends.
+        pair(from, fp, to, tp, blocks...) = run(
+            Any[node("n$k", "B$k", blk) for (k, blk) in enumerate(blocks)],
+            Any[_conn("c1", "bond", from, fp, to, tp)])
+        @test isempty(e114(pair("n1", "p", "n2", "p", "OrSe", "OrR")))
+        both = pair("n2", "p", "n1", "p", "OrSe", "OrR")
+        @test length(e114(both)) == 1
+        @test occursin("`p` of `B2` is declared `in` and `p` of `B1` is declared `out`: " *
+                       "the bond must run from the `out` port to the `in` port",
+            only(e114(both)).message)
+        @test occursin("reverse bond `c1`", only(e114(both)).hint)
+
+        # O4: in-in and out-out are errors whichever way they are drawn, with the junction hint.
+        for (a, b) in (("n1", "n2"), ("n2", "n1"))
+            inin = pair(a, "p", b, "p", "OrC", "OrR")
+            @test length(e114(inin)) == 1
+            @test occursin("joins two `in` ports", only(e114(inin)).message)
+            @test occursin("put a junction in between", only(e114(inin)).hint)
+        end
+        outout = pair("n1", "p", "n2", "p", "OrSe", "OrSe")
+        @test length(e114(outout)) == 1
+        @test occursin("joins two `out` ports", only(e114(outout)).message)
+        @test occursin("from each `out` port to the junction", only(e114(outout)).hint)
+
+        # A through pair: one bond arrives and the other leaves, either way round.
+        tf(c2, c3) = run(Any[
+            node("n1", "Se1", "OrSe"),
+            _node("j1", "J1", _junction(1)),
+            node("n2", "TF1", "OrTF"),
+            _node("j2", "J2", _junction(1)),
+            node("n3", "R1", "OrR"),
+        ], Any[
+            _conn("c1", "bond", "n1", "p", "j1"),
+            c2, c3,
+            _conn("c4", "bond", "j2", nothing, "n3", "p"),
+        ])
+        @test isempty(e114(tf(_conn("c2", "bond", "j1", nothing, "n2", "a"),
+            _conn("c3", "bond", "n2", "b", "j2"))))
+        @test isempty(e114(tf(_conn("c2", "bond", "n2", "a", "j1"),
+            _conn("c3", "bond", "j2", nothing, "n2", "b"))))
+        arrive = tf(_conn("c2", "bond", "j1", nothing, "n2", "a"),
+            _conn("c3", "bond", "j2", nothing, "n2", "b"))
+        @test length(e114(arrive)) == 1
+        d = only(e114(arrive))
+        @test d.node == "n2" && d.connection == "c3"
+        @test occursin("bond `c2` and bond `c3` both arrive at `TF1` at `a` and `b`", d.message)
+        @test d.hint == "reverse bond `c3`, so that it runs from `b` of `TF1` to junction `J2`"
+        leave = tf(_conn("c2", "bond", "n2", "a", "j1"), _conn("c3", "bond", "n2", "b", "j2"))
+        @test length(e114(leave)) == 1
+        @test occursin("both leave `TF1`", only(e114(leave)).message)
+        # One bonded port of the pair alone is never an error (b is unconnected: E101 only).
+        alone = run(Any[
+            node("n1", "Se1", "OrSe"),
+            _node("j1", "J1", _junction(1)),
+            node("n2", "TF1", "OrTF"),
+        ], Any[
+            _conn("c1", "bond", "n1", "p", "j1"),
+            _conn("c2", "bond", "j1", nothing, "n2", "a"),
+        ])
+        @test isempty(e114(alone))
+        # Through pair bonded to two fixed ports that both point into it: neither bond can
+        # be reversed without breaking its other end, so the hint asks for a junction.
+        stuck = run(Any[
+            node("n1", "Se1", "OrSe"), node("n2", "TF1", "OrTF"), node("n3", "Se2", "OrSe"),
+        ], Any[
+            _conn("c1", "bond", "n1", "p", "n2", "a"),
+            _conn("c2", "bond", "n3", "p", "n2", "b"),
+        ])
+        @test length(e114(stuck)) == 1
+        @test occursin("neither bond can be reversed", only(e114(stuck)).hint)
+
+        # Junction-to-junction bonds are never checked, in either direction (O14).
+        for (f, t) in (("j1", "j2"), ("j2", "j1"))
+            jj = run(Any[
+                node("n1", "Se1", "OrSe"),
+                _node("j1", "J1", _junction(1)),
+                _node("j2", "J2", _junction(0)),
+                node("n2", "C1", "OrC"),
+            ], Any[
+                _conn("c1", "bond", "n1", "p", "j1"),
+                _conn("c2", "bond", f, nothing, t, nothing),
+                _conn("c3", "bond", "j2", nothing, "n2", "p"),
+            ])
+            @test isempty(e114(jj))
+        end
+
+        # Wires are never checked: two `in` ports on one wire node are fine.
+        wired = run(Any[
+            node("n2", "Ra", "OrRes"),
+            node("n3", "Rb", "OrRes"),
+            _node("n4", "G", _ref("stdlib:electrical/Ground")),
+        ], Any[
+            _conn("c1", "wire", "n2", "p", "n3", "p"),
+            _conn("c2", "wire", "n2", "n", "n4", "p"),
+            _conn("c3", "wire", "n3", "n", "n4", "p"),
+        ])
+        @test isempty(e114(wired))
+
+        # A subsystem boundary: the bond is checked against the port it finally reaches
+        # (`C1.p` inside `Load`) and reported on the subsystem node the user sees.
+        sub = Dict{String,Any}(
+            "ports" => Any[Dict{String,Any}("name" => "q", "kind" => "power",
+                "domain" => "Generic", "size" => Any[], "node" => "s1", "port" => "p")],
+            "diagram" => Dict{String,Any}("nodes" => Any[node("s1", "C1", "OrC")],
+                "connections" => Any[]),
+        )
+        load(conn) = run(Any[
+            node("n1", "Se1", "OrSe"),
+            _node("j1", "J1", _junction(1)),
+            _node("n2", "Load", Dict{String,Any}("subsystem" => sub)),
+        ], Any[_conn("c1", "bond", "n1", "p", "j1"), conn])
+        @test isempty(e114(load(_conn("c2", "bond", "j1", nothing, "n2", "q"))))
+        crossed = load(_conn("c2", "bond", "n2", "q", "j1"))
+        @test length(e114(crossed)) == 1
+        d = only(e114(crossed))
+        @test d.node == "n2" && d.path == "Load" && d.connection == "c2"
+        @test occursin("bond `c2` runs from `q` of `Load` to junction `J1`, but `p` of `C1`, " *
+                       "which `q` of `Load` exposes, is declared `in`", d.message)
+        # A composite face that exposes a component port: the same, through the composite.
+        wrapped = run(Any[
+            _node("j1", "J1", _junction(1)),
+            node("n1", "Se1", "OrSe"),
+            node("n2", "W", "OrWrapC"),
+        ], Any[
+            _conn("c1", "bond", "n1", "p", "j1"),
+            _conn("c2", "bond", "n2", "p", "j1"),
+        ])
+        @test length(e114(wrapped)) == 1
+        @test only(e114(wrapped)).node == "n2"
+
+        # Composite `@connections` are checked: `connect(c.p, node)` runs from c.p into the
+        # junction, against `c.p => :in`. E114 points at the composite's `connect` line.
+        stack(block, conn) = run(Any[
+            node("n1", "S", block),
+            node("n2", "R1", "OrR"),
+            _node("j1", "J1", _junction(1)),
+        ], Any[conn])
+        inner = stack("OrStackBad", _conn("c1", "bond", "n1", "p", "n2", "p"))
+        @test length(e114(inner)) == 1
+        d = only(e114(inner))
+        @test d.node == "n1" && d.path == "S" && d.block == "project:OrStackBad"
+        @test d.scope == "@connections"
+        @test d.source !== nothing && d.source.range.line == 11
+        @test occursin("bond `connect(c.p, node)` of `S` runs from `p` of `c` to junction `node`",
+            d.message)
+        @test d.hint == "reverse the bond: write `connect(node, c.p)`"
+        # A composite port that is a junction inside behaves as a junction: either direction.
+        @test isempty(e114(stack("OrStack", _conn("c1", "bond", "n1", "p", "j1"))))
+        @test isempty(e114(stack("OrStack", _conn("c1", "bond", "j1", nothing, "n1", "p"))))
+        @test isempty(e114(stack("OrStack", _conn("c1", "bond", "n1", "p", "n2", "p"))))
+        # ... unless the composite declares an orientation for it.
+        @test isempty(e114(stack("OrStackOut", _conn("c1", "bond", "n1", "p", "n2", "p"))))
+        declared = stack("OrStackOut", _conn("c1", "bond", "j1", nothing, "n1", "p"))
+        @test length(e114(declared)) == 1
+        @test only(e114(declared)).node == "n1"
+        @test only(e114(declared)).block == "project:OrStackOut"
+        @test occursin("`p` of `S` is declared `out`", only(e114(declared)).message)
+        @test length(e114(stack("OrStackOut", _conn("c1", "bond", "n2", "p", "n1", "p")))) == 1
+    end
+
     @testset "project library" begin
         dir = mktempdir()
         mkpath(joinpath(dir, "library"))

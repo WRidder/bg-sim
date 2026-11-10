@@ -20,6 +20,10 @@ export type CausalityKind = "preferred" | "fixed" | "transformer" | "gyrator";
  */
 export type CausalityValue = "effort_out" | "flow_out" | null;
 /**
+ * in: a bond ends at the port (the port is the bond's head); out: a bond starts at it (its tail); through: of the two bonds at the pair, one arrives and the other leaves.
+ */
+export type OrientationKind = "in" | "out" | "through";
+/**
  * Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).
  */
 export type ModelDimension = 2 | 3;
@@ -73,6 +77,10 @@ export interface CatalogBlock {
   ports: PortDecl[];
   variables: VariableDecl[];
   causality: CausalityDecl[];
+  /**
+   * The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry is `any`; empty for a block that declares none.
+   */
+  orientation: OrientationDecl[];
   /**
    * Full @block source text, for "open source" and "copy to project".
    */
@@ -161,6 +169,19 @@ export interface CausalityDecl {
   ports: [string, ...string[]];
   kind: CausalityKind;
   value: CausalityValue;
+}
+/**
+ * One @orientation entry: `p => :in` is { ports: [p], kind: in }, `p => :out` is { ports: [p], kind: out }, `(a, b) => :through` is { ports: [a, b], kind: through }. The compiler enforces it on every bond (E114).
+ */
+export interface OrientationDecl {
+  /**
+   * One power port for in and out; the two ports of a through pair.
+   *
+   * @minItems 1
+   * @maxItems 2
+   */
+  ports: [string] | [string, string];
+  kind: OrientationKind;
 }
 export interface CatalogJunction {
   ref: string;

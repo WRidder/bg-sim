@@ -499,6 +499,7 @@ const INTERFACE_FIELDS = [
     ("ports", "portDecl"),
     ("variables", "variableDecl"),
     ("causality", "causalityDecl"),
+    ("orientation", "orientationDecl"),
 ]
 
 @testset "library" begin
@@ -2256,12 +2257,62 @@ const INTERFACE_FIELDS = [
             end
         end
 
-        # The shared `blockInterface` definition exists and covers the same seven arrays the
+        # The shared `blockInterface` definition exists and covers the same eight arrays the
         # catalog block embeds; that is what keeps `block.check` and `catalog.get` aligned.
         iface = _schema_keys(defs["blockInterface"].properties)
         @test iface == Set([field for (field, _) in INTERFACE_FIELDS]) ∪ Set(["dimension"])
         first_interface = _plain(block_interface(load_stdlib()[1].ast))
         @test _schema_required(defs["blockInterface"]) ⊆ Set(keys(first_interface))
+    end
+
+    @testset "orientation in the catalog (port orientation O13)" begin
+        # Every block carries the `orientation` list; each entry names power ports of the
+        # block, one for `in`/`out` and two for `through`.
+        for b in catalog().blocks
+            @test b.orientation isa AbstractVector
+            power = Set(p.name for p in b.ports)
+            for o in b.orientation
+                @test keys(o) == (:ports, :kind)
+                @test o.kind in ("in", "out", "through")
+                @test length(o.ports) == (o.kind == "through" ? 2 : 1)
+                @test all(p -> p in power, o.ports)
+            end
+        end
+        # A project block that declares orientations reports them in the catalog and in
+        # `block.check`'s interface, shaped like `causality`.
+        dir = mktempdir()
+        mkpath(joinpath(dir, "library"))
+        source = """
+        @block OrientTF begin
+            @ports begin
+                a::Power{Generic}
+                b::Power{Generic}
+                s::Power{Generic}
+                free::Power{Generic}
+            end
+            @equations begin
+                a.e ~ 2.0 * b.e
+                b.f ~ -2.0 * a.f
+                s.e ~ 1.0
+                free.e ~ 0.0
+            end
+            @orientation begin
+                (a, b) => :through
+                s => :out
+            end
+        end
+        """
+        write(joinpath(dir, "library", "OrientTF.jl"), source)
+        blk = only(b for b in catalog(dir).blocks if b.ref == "project:OrientTF")
+        expected = [(ports = ["a", "b"], kind = "through"), (ports = ["s"], kind = "out")]
+        @test blk.orientation == expected
+        @test _plain(BGSim.Library.to_dict(load_block(source; ref = "project:OrientTF")))["orientation"] ==
+              _plain(expected)
+        checked = BGSim.Compile.check_block_source(source; ref = "inline:o")
+        @test checked.interface.orientation == expected
+        # The key order follows the schema: `orientation` right after `causality`.
+        ks = collect(keys(blk))
+        @test findfirst(==(:orientation), ks) == findfirst(==(:causality), ks) + 1
     end
 
     @testset "catalog against the contract fixture, field for field" begin

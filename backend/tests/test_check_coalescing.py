@@ -41,6 +41,7 @@ def _result(source: str) -> dict[str, Any]:
             "ports": [],
             "variables": [],
             "causality": [],
+            "orientation": [],
         },
     }
 

@@ -32,6 +32,7 @@ const SCOPE_MACROS = Dict{Symbol,Symbol}(
     Symbol("@discrete") => :discrete,
     Symbol("@events") => :events,
     Symbol("@causality") => :causality,
+    Symbol("@orientation") => :orientation,
     Symbol("@components") => :components,
     Symbol("@connections") => :connections,
     Symbol("@observables") => :observables,
@@ -43,7 +44,7 @@ const UNSUPPORTED_SCOPES = Dict{Symbol,String}()
 
 const ALL_SCOPE_NAMES =
     "@constants @parameters @inputs @outputs @ports @variables @initial @equations " *
-    "@discrete @events @causality @components @connections @observables"
+    "@discrete @events @causality @orientation @components @connections @observables"
 
 const POWER_DOMAINS = Set{Symbol}(
     [:Electrical, :Translation, :Rotation, :Hydraulic, :Thermal, :Generic, :Planar, :Spatial]
@@ -189,6 +190,7 @@ mutable struct BlockBuilder
     discrete_items::Vector{Any}
     event_items::Vector{Any}
     causality_items::Vector{CausalityDecl}
+    orientation_items::Vector{OrientationDecl}
     component_items::Vector{ComponentDecl}
     connection_items::Vector{ConnectDecl}
     observation_items::Vector{ObservationDecl}
@@ -210,6 +212,7 @@ function BlockBuilder(name, ref, text, filename, range)
         Any[],
         Any[],
         CausalityDecl[],
+        OrientationDecl[],
         ComponentDecl[],
         ConnectDecl[],
         ObservationDecl[],
@@ -241,6 +244,7 @@ function _as_parsed_stub(b::BlockBuilder)
         b.discrete_items,
         b.event_items,
         b.causality_items,
+        b.orientation_items,
         b.component_items,
         b.connection_items,
         b.observation_items,
@@ -262,6 +266,7 @@ function _finish(b::BlockBuilder)
         b.discrete_items,
         b.event_items,
         b.causality_items,
+        b.orientation_items,
         b.component_items,
         b.connection_items,
         b.observation_items,
@@ -444,6 +449,7 @@ function _syntax_error_block(src::String, filename::String, ref::String, err)
         Any[],
         Any[],
         CausalityDecl[],
+        OrientationDecl[],
         ComponentDecl[],
         ConnectDecl[],
         ObservationDecl[],
@@ -585,6 +591,11 @@ function _parse_scope_stmt!(b::BlockBuilder, stmt)
         for item in items
             c = _parse_causality!(b, item)
             c === nothing || push!(b.causality_items, c)
+        end
+    elseif scope == :orientation
+        for item in items
+            o = _parse_orientation!(b, item)
+            o === nothing || push!(b.orientation_items, o)
         end
     end
     return nothing
@@ -1824,7 +1835,7 @@ function _parse_stmt!(b::BlockBuilder, node, scope::Symbol)
                 _error!(
                     b,
                     "E001",
-                    "`=>` is only allowed in `@causality` and as an `@events` entry",
+                    "`=>` is only allowed in `@causality`, `@orientation` and as an `@events` entry",
                     node;
                     scope = scope,
                 )
@@ -2107,6 +2118,113 @@ function _parse_causality!(b::BlockBuilder, node)
 end
 
 # ---------------------------------------------------------------------------------------
+# Orientation (plan/PORT_ORIENTATION_PLAN.md, O2 and O13)
+# ---------------------------------------------------------------------------------------
+
+const ORIENTATION_FORMS = "`p => :in`, `p => :out` or `(a, b) => :through`"
+
+# The symbol of a quoted value (`:in`, `:out`, `:through`), or `nothing`. JuliaSyntax parses
+# `:in` as a quoted `Identifier`, like any other symbol.
+function _quoted_symbol(node)
+    kind(node) == K"quote" || return nothing
+    ch = _children(node)
+    return length(ch) == 1 ? _leaf_symbol(ch[1]) : nothing
+end
+
+function _parse_orientation!(b::BlockBuilder, node)
+    rng = _range(node, b.filename)
+    if kind(node) != K"call"
+        _error!(
+            b,
+            "E001",
+            "`@orientation` takes $ORIENTATION_FORMS",
+            node;
+            hint = "write one entry per line, as in `p => :in`",
+        )
+        return nothing
+    end
+    ch = _children(node)
+    if !(length(ch) == 3 && _is_operator_node(ch[2]) && _operator_symbol(ch[2]) === Symbol("=>"))
+        _error!(b, "E001", "`@orientation` entries use `=>`", node; hint = "write $ORIENTATION_FORMS")
+        return nothing
+    end
+    port_nodes = kind(ch[1]) == K"tuple" ? _children(ch[1]) : [ch[1]]
+    ports = Symbol[]
+    for p in port_nodes
+        s = _leaf_symbol(p)
+        if s === nothing
+            _error!(b, "E001", "an orientation port must be an identifier", p)
+            return nothing
+        end
+        push!(ports, s)
+    end
+    rhs = ch[3]
+    v = _quoted_symbol(rhs)
+    if v === nothing
+        _error!(
+            b,
+            "E001",
+            "`@orientation` needs a symbol value, as in `p => :in`",
+            rhs;
+            hint = "write $ORIENTATION_FORMS",
+        )
+        return nothing
+    end
+    if v === :in || v === :out
+        if length(ports) != 1 || kind(ch[1]) == K"tuple"
+            _error!(
+                b,
+                "E001",
+                "`:$v` applies to one port, not $(length(ports))",
+                node;
+                hint = "write one entry per port, as in `p => :$v`; a pair of ports is `(a, b) => :through`",
+            )
+            return nothing
+        end
+        return OrientationDecl(ports, v, rng)
+    elseif v === :through
+        if length(ports) != 2
+            _error!(
+                b,
+                "E001",
+                "`:through` relates exactly two ports, found $(length(ports))",
+                node;
+                hint = "write `(a, b) => :through`: of the two bonds, one arrives and the other leaves",
+            )
+            return nothing
+        end
+        if ports[1] === ports[2]
+            _error!(
+                b,
+                "E001",
+                "`:through` relates two different ports, found `$(ports[1])` twice",
+                node;
+                hint = "write `(a, b) => :through` with the two ports the power passes through",
+            )
+            return nothing
+        end
+        return OrientationDecl(ports, :through, rng)
+    elseif v === :any
+        _error!(
+            b,
+            "E001",
+            "`:any` is not written: a power port named in no `@orientation` entry is `any`",
+            rhs;
+            hint = "remove the entry",
+        )
+        return nothing
+    end
+    _error!(
+        b,
+        "E001",
+        "`:$v` is not an orientation",
+        rhs;
+        hint = "use `:in`, `:out` or, for a pair of ports, `:through`",
+    )
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
 # Expressions
 # ---------------------------------------------------------------------------------------
 
@@ -2210,7 +2328,7 @@ function _to_expr!(b::BlockBuilder, node, scope::Symbol)
         )
         return nothing
     elseif k == K"quote"
-        _error!(b, "E001", "symbol literals are only allowed in `state` and `@causality`")
+        _error!(b, "E001", "symbol literals are only allowed in `state`, `@causality` and `@orientation`")
         return nothing
     elseif k == K"macrocall"
         _error!(b, "E001", "macros are not allowed in expressions", node)
@@ -2288,7 +2406,7 @@ function _call_to_expr!(b::BlockBuilder, node, scope::Symbol)
                 )
                 return nothing
             elseif op === Symbol("=>")
-                _error!(b, "E001", "`=>` is only allowed in `@causality`", node)
+                _error!(b, "E001", "`=>` is only allowed in `@causality` and `@orientation`", node)
                 return nothing
             elseif op === Symbol(":")
                 _error!(b, "E001", "a range is only allowed in a `for` loop", node)

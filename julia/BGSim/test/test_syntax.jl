@@ -23,6 +23,8 @@ using BGSim:
     declarations,
     equations,
     causality,
+    orientation,
+    port_orientation,
     ports,
     decl_name,
     decl_type,
@@ -39,6 +41,7 @@ using BGSim:
     Decl,
     TypeSpec,
     CausalityDecl,
+    OrientationDecl,
     Diagnostic,
     SourceRange,
     SourceRef,
@@ -637,6 +640,107 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
         @test iface.causality[3] ==
               (ports = ["p", "q"], kind = "transformer", value = nothing)
         @test iface.causality[4] == (ports = ["p", "q"], kind = "gyrator", value = nothing)
+        # No `@orientation`: every port is `any` and the catalog list is empty.
+        @test isempty(orientation(pb))
+        @test iface.orientation == []
+        @test port_orientation(pb, :p) == :any
+    end
+
+    # -----------------------------------------------------------------------------------
+    @testset "orientation syntax (port orientation O2, O13)" begin
+        # One block with the three kinds, in the single-line and the block form.
+        orient_src(entries) = """
+        @block Orient begin
+            @ports begin
+                p::Power{Generic}
+                s::Power{Generic}
+                a::Power{Generic}
+                b::Power{Generic}
+                free::Power{Generic}
+            end
+            @inputs u::Real
+            @equations begin
+                p.e ~ u
+                s.e ~ 1.0
+                a.e ~ b.e
+                a.f ~ -b.f
+                free.e ~ 0.0
+            end
+        $entries
+        end
+        """
+        pb = parse_block(orient_src("""
+            @orientation p => :in
+            @orientation begin
+                s => :out
+                (a, b) => :through
+            end
+        """))
+        @test isempty(check_block(pb))
+        @test :orientation in scopes(pb)
+        os = orientation(pb)
+        @test length(os) == 3
+        @test all(o -> o isa OrientationDecl, os)
+        @test [BGSim.orientation_kind(o) for o in os] == [:in, :out, :through]
+        @test [BGSim.orientation_ports(o) for o in os] == [[:p], [:s], [:a, :b]]
+        @test BGSim.source_range(os[1]).line == 17
+        @test [port_orientation(pb, n) for n in (:p, :s, :a, :b, :free)] ==
+              [:in, :out, :through, :through, :any]
+        @test sprint(show, os[1]) == "p => :in"
+        @test sprint(show, os[3]) == "(a, b) => :through"
+        iface = block_interface(pb)
+        @test iface.orientation == [
+            (ports = ["p"], kind = "in"),
+            (ports = ["s"], kind = "out"),
+            (ports = ["a", "b"], kind = "through"),
+        ]
+        # A port used only in `@orientation` still counts as used (no W204).
+        @test !any(d -> d.code == "W204", check_block(pb))
+
+        # Bad entries: the parse-stage shape errors are E001, the name errors E003.
+        function bad(entry, code; contains = nothing)
+            ds = check_block(parse_block(orient_src("    " * entry)))
+            hits = [d for d in ds if d.code == code &&
+                    (contains === nothing || occursin(contains, d.message))]
+            @test !isempty(hits)
+            isempty(hits) || @test all(d -> d.scope == "@orientation" || d.scope === nothing, hits)
+            return isempty(hits) ? nothing : hits[1]
+        end
+        d = bad("@orientation q => :in", "E003"; contains = "`q` is not a port")
+        @test d !== nothing && first(at(d)) == 17
+        bad("@orientation u => :in", "E003"; contains = "an input, not a power port")
+        bad("@orientation p => :sideways", "E001"; contains = "`:sideways` is not an orientation")
+        bad("@orientation p => :any", "E001"; contains = "`:any` is not written")
+        bad("@orientation p => in", "E001"; contains = "needs a symbol value")
+        bad("@orientation p", "E001"; contains = "`@orientation` takes")
+        bad("@orientation (a, b) => :in", "E001"; contains = "applies to one port")
+        bad("@orientation (a, b, p) => :through", "E001"; contains = "exactly two ports, found 3")
+        bad("@orientation p => :through", "E001"; contains = "exactly two ports, found 1")
+        bad("@orientation (a, a) => :through", "E001"; contains = "two different ports")
+        bad("@orientation (a, 1) => :through", "E001"; contains = "must be an identifier")
+        bad("@orientation begin\n        p => :in\n        p => :out\n    end", "E003";
+            contains = "port `p` is named in two `@orientation` entries")
+        bad("@orientation begin\n        p => :in\n        (p, a) => :through\n    end", "E003";
+            contains = "port `p` is named in two")
+        # A bad entry is dropped; the good ones stay.
+        pb2 = parse_block(orient_src("    @orientation begin\n        p => :bogus\n        s => :out\n    end"))
+        @test [BGSim.orientation_kind(o) for o in orientation(pb2)] == [:out]
+
+        # A textual composite may declare the orientation of its own ports.
+        comp = parse_block("""
+        @block Wrap begin
+            @ports p::Power{Generic}
+            @components begin
+                c = C()
+            end
+            @connections begin
+                connect(p, c.p)
+            end
+            @orientation p => :in
+        end
+        """)
+        @test isempty([d for d in check_block(comp) if d.severity == "error"])
+        @test block_interface(comp).orientation == [(ports = ["p"], kind = "in")]
     end
 
     # -----------------------------------------------------------------------------------
@@ -1230,6 +1334,8 @@ end
             "@block A begin\n    @equations x ~\nend",
             "@block A begin\n    @parameters a::Real = 1.0, [unit = ]\nend",
             "@block A begin\n    @causality => :effort_out\nend",
+            "@block A begin\n    @orientation => :in\nend",
+            "@block A begin\n    @orientation p =>\nend",
             "@block A begin\n    @equations if x\nend",
             "@block A begin\n    @equations for i in 1:3\nend",
             "@block A begin\n    @equations for i\nend",

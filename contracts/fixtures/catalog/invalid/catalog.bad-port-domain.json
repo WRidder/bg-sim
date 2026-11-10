@@ -19,6 +19,7 @@
       ],
       "variables": [],
       "causality": [],
+      "orientation": [],
       "source": "@block Resistor begin\n    @ports begin\n        p::Power{Electrical}\n        n::Power{Electrical}\n    end\n    @equations begin\n        p.f + n.f ~ 0.0\n        p.e - n.e ~ R * p.f\n    end\nend",
       "path": "stdlib/electrical/Resistor.jl"
     }

@@ -1,0 +1,25 @@
+{
+  "$comment": "Invalid: the block has no orientation list; it is required, and empty for a block that declares no @orientation (plan/PORT_ORIENTATION_PLAN.md O13).",
+  "language": "0.1.0",
+  "blocks": [
+    {
+      "ref": "stdlib:bondgraph/R",
+      "name": "R",
+      "group": "Bond graph",
+      "release": "0.1",
+      "description": "Resistive element; free causality.",
+      "icon": "bg-r",
+      "constants": [],
+      "parameters": [],
+      "inputs": [],
+      "outputs": [],
+      "ports": [{ "name": "p", "domain": "Generic", "size": [] }],
+      "variables": [],
+      "causality": [],
+      "source": "@block R begin\n    @ports p::Power{Generic}\n    @equations p.e ~ 1.0 * p.f\nend",
+      "path": "stdlib/bondgraph/R.jl"
+    }
+  ],
+  "junctions": [],
+  "domains": []
+}

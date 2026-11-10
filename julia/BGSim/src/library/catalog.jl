@@ -1515,7 +1515,7 @@ The plan 3.2 catalog, ready for `JSON3.write`:
     (language = "0.1.0", blocks = [...], junctions = [...], domains = [...])
 
 Every `blocks` entry is a `NamedTuple` with exactly the schema fields (`ref`, `name`,
-`group`, `release`, `description`, `icon`, the seven interface arrays, `source`, `path`), so
+`group`, `release`, `description`, `icon`, the eight interface arrays, `source`, `path`), so
 `b.ref` and `b.parameters` work directly. Blocks are sorted by `ref`; with `project_dir` the
 project's blocks are merged in at their `project:<Name>` refs. `project_dir` is either the
 project root or its `library` directory (see [`project_library_dir`](@ref)).

@@ -35,6 +35,7 @@ export const SCOPE_MACROS = [
   "@components",
   "@connections",
   "@causality",
+  "@orientation",
 ] as const;
 
 export type ScopeMacro = (typeof SCOPE_MACROS)[number];

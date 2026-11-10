@@ -62,6 +62,35 @@ Amendments after the WP-O0 inventory (findings F1 to F7 at the end). They overri
 | O18 | What may change in recorded results: **only the sign of port variables (`p.e`, `p.f`, and signals defined as a port variable) of blocks whose convention changes**, listed per block in `plan/wps/port-orientation/sign-changes.md` by the package that changes them. Golden files and `expected.json` entries are updated only for signals on that list, by negation, never by re-recording. Positions, twists `V`, states and every physical output stay bit-comparable within the existing tolerances (O10). | 53 Julia test files name a block whose law changes. Without a closed list, "update the goldens" would hide real regressions. |
 | O19 | O9's migration tool is junction-aware: it works per 1-junction cluster, follows element-to-element bonds and `through` pairs, also handles conforming bonds of blocks whose law changed, and negates the start values and the listed signal references (plots, bindings, dashboards, checks) of odd elements on a reversed chain. | F2: classifying by block kind alone gives 471 review cases; junction-aware classification gives 36. |
 
+Choices WP-O1 made where the decisions above leave room:
+
+- **O2/O13, syntax.** One scope, `@orientation`, holds all three kinds; the relation is not a separate
+  scope. Entries are `p => :in`, `p => :out`, `(a, b) => :through`, single-line or in `begin ... end`.
+  `:any` is not written (E001: a port named in no entry is `any`). Shape errors are E001 (no `=>`, a value
+  that is not a symbol, an unknown kind, `:in`/`:out` on a tuple, a `:through` entry with other than two
+  ports or the same port twice); name errors are E003 (an unknown name, a signal port or other
+  declaration, a port named in two entries, also across a single entry and a `through` pair). A textual
+  composite may declare `@orientation` for its own ports. Accessors: `orientation(pb)`,
+  `port_orientation(pb, port) -> :in | :out | :through | :any`, `orientation_ports`, `orientation_kind`
+  on `OrientationDecl`.
+- **O13, catalog.** `orientation: [{ "ports": [...], "kind": "in" | "out" | "through" }]` on `catalogBlock`
+  and `blockInterface`, required, right after `causality`; `ports` has one or two unique names
+  (`orientationDecl` in `catalog.schema.json`).
+- **O3, code and messages.** The code is **E114** (E106 to E113 are taken or retired: E107 became W205). It
+  is an error and the bond stays in the model, so it does not cascade into E101/E103/E106. One E114 per
+  violating bond: "bond `c2` runs from `p` of `C1` to junction `J1`, but `p` of `C1` is declared `in`: a
+  bond must end at an `in` port", hint "reverse bond `c2`, so that it runs from ...". O4: "bond `c1` joins
+  two `in` ports, ...: no direction of the bond satisfies both", hint "put a junction in between, ...".
+  O13: "bond `c2` and bond `c3` both arrive at `TF1` at `a` and `b`, ...", hint naming the bond whose other
+  end is free to reverse, or a junction when neither is.
+- **O3, where and how.** `check_orientations!` in `src/compile/connect.jl`, run in `classify_connections!`
+  after the port-conflict check, on the valid bonds of the flattened connection list. An end is checked
+  against the leaf port it resolves to and against every textual-composite face it passes (the face chain
+  of `_bind_boundary!`); JSON subsystem ports carry no orientation of their own. A bond reaching a face is
+  reported on the subsystem/composite node; a composite-internal bond is reported on the composite node
+  with `scope: "@connections"`, the composite's ref and the `connect` line as `source`, and its message
+  and hint spell the `connect(a, b)`.
+
 Open points, decided in the work package that meets them and recorded here:
 
 - **Two-terminal iconic sensors** (decided in WP-O0): they **stay `any`**.

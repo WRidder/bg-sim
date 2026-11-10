@@ -44,6 +44,7 @@
         "ports",
         "variables",
         "causality",
+        "orientation",
         "source",
         "path"
       ],
@@ -95,6 +96,11 @@
           "type": "array",
           "items": { "$ref": "#/$defs/causalityDecl" }
         },
+        "orientation": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/orientationDecl" },
+          "description": "The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry is `any`; empty for a block that declares none."
+        },
         "source": {
           "type": "string",
           "description": "Full @block source text, for \"open source\" and \"copy to project\"."
@@ -122,7 +128,8 @@
         "outputs",
         "ports",
         "variables",
-        "causality"
+        "causality",
+        "orientation"
       ],
       "properties": {
         "constants": {
@@ -152,6 +159,11 @@
         "causality": {
           "type": "array",
           "items": { "$ref": "#/$defs/causalityDecl" }
+        },
+        "orientation": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/orientationDecl" },
+          "description": "The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry is `any`; empty for a block that declares none."
         },
         "dimension": {
           "title": "ModelDimension",
@@ -338,6 +350,28 @@
           "type": ["string", "null"],
           "enum": ["effort_out", "flow_out", null],
           "description": "effort_out or flow_out for preferred and fixed causality; null for transformer and gyrator."
+        }
+      },
+      "additionalProperties": false
+    },
+    "orientationDecl": {
+      "title": "OrientationDecl",
+      "description": "One @orientation entry: `p => :in` is { ports: [p], kind: in }, `p => :out` is { ports: [p], kind: out }, `(a, b) => :through` is { ports: [a, b], kind: through }. The compiler enforces it on every bond (E114).",
+      "type": "object",
+      "required": ["ports", "kind"],
+      "properties": {
+        "ports": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "One power port for in and out; the two ports of a through pair."
+        },
+        "kind": {
+          "title": "OrientationKind",
+          "enum": ["in", "out", "through"],
+          "description": "in: a bond ends at the port (the port is the bond's head); out: a bond starts at it (its tail); through: of the two bonds at the pair, one arrives and the other leaves."
         }
       },
       "additionalProperties": false
