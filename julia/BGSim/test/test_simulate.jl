@@ -573,6 +573,98 @@ _sim_ramp_model() = _sim_model(
         @test isapprox(data["I2/P"][end], 1.0; rtol = 1.0e-6)
     end
 
+    @testset "an instance start survives MTK's choice of state" begin
+        run0(nodes, conns) = begin
+            flat = _sim_flat(_sim_model("Starts", nodes, conns; t_end = 0.01, points = 3))
+            @test isempty(_sim_errors(flat))
+            dir = mktempdir()
+            result = simulate(flat; run_dir = dir, settings = BGSim.RunSettings(
+                t_start = 0.0, t_end = 0.01,
+                output = Dict{String,Any}("mode" => "points", "points" => 3)))
+            @test result.status == "done"
+            _sim_columns(dir)
+        end
+        bond(id, a, ap, b, bp) = begin
+            c = _sim_conn(id, "bond", a, ap, b, bp)
+            ap === nothing && delete!(c["from"], "port")
+            bp === nothing && delete!(c["to"], "port")
+            c
+        end
+        junction(id, name, kind) = _sim_node(id, name, Dict{String,Any}("junction" => kind))
+
+        # A sensor whose output a signal block reads: MTK keeps the reader's input `K/u` as
+        # the state. Its alias chain reaches the output `Pos/y` (declared `= 0.0`) before the
+        # state `Pos/x`, and the default used to win over the start set on the instance.
+        data = run0(
+            [
+                _sim_node("n1", "Src", _sim_ref("stdlib:bondgraph/Sf");
+                    params = Dict{String,Any}("f" => "1.0")),
+                _sim_node("n2", "Pos", _sim_ref("stdlib:converters/PositionSensor");
+                    starts = Dict{String,Any}("x" => "0.5")),
+                _sim_node("n3", "K", _sim_ref("stdlib:continuous/Gain");
+                    params = Dict{String,Any}("k" => "2.0")),
+            ],
+            [
+                bond("c1", "n1", "p", "n2", "a"),
+                _sim_conn("c2", "signal", "n2", "y", "n3", "u"),
+            ],
+        )
+        @test data["Pos/x"][1] == 0.5
+        @test data["K/y"][1] == 1.0
+        # the bond runs from the source to the sensor, so the sensor port sees -f
+        @test isapprox(data["Pos/x"][end], 0.49; rtol = 1.0e-9)
+
+        # A coil on a 1-junction inside a current loop: MTK keeps the source's bond flow
+        # `Amp/p.f` and writes the coil current as `EM/i ~ -Amp/p.f`. The start has to follow
+        # the negated alias, with its sign; it used to be dropped (the coil started at 0 A).
+        data = run0(
+            [
+                _sim_node("n1", "Amp", _sim_ref("stdlib:bondgraph/MSe")),
+                junction("n2", "Jc", "1"),
+                _sim_node("n3", "Rc", _sim_ref("stdlib:bondgraph/R");
+                    params = Dict{String,Any}("r" => "1.0")),
+                _sim_node("n4", "Imeas", _sim_ref("stdlib:bondgraph/Df")),
+                _sim_node("n5", "EM", _sim_ref("stdlib:converters/Electromagnet");
+                    starts = Dict{String,Any}("i" => "2.0", "h" => "0.01")),
+                _sim_node("n6", "Gnd", _sim_ref("stdlib:electrical/Ground")),
+                _sim_node("n7", "Fa", _sim_ref("stdlib:bondgraph/Sf");
+                    params = Dict{String,Any}("f" => "0.0")),
+                _sim_node("n8", "Fb", _sim_ref("stdlib:bondgraph/Sf");
+                    params = Dict{String,Any}("f" => "0.0")),
+                _sim_node("n9", "K", _sim_ref("stdlib:continuous/Gain")),
+            ],
+            [
+                bond("c1", "n1", "p", "n2", nothing),
+                bond("c2", "n2", nothing, "n3", "p"),
+                bond("c3", "n2", nothing, "n4", "p"),
+                bond("c4", "n2", nothing, "n5", "p"),
+                _sim_conn("c5", "wire", "n5", "n", "n6", "p"),
+                bond("c6", "n7", "p", "n5", "a"),
+                bond("c7", "n8", "p", "n5", "b"),
+                _sim_conn("c8", "signal", "n4", "y", "n9", "u"),
+                _sim_conn("c9", "signal", "n9", "y", "n1", "u"),
+            ],
+        )
+        @test data["EM/i"][1] == 2.0
+        @test data["Imeas/y"][1] == 2.0
+        @test data["EM/h"][1] == 0.01
+
+        # The order of preference itself: instance start, then a state's default, then any.
+        var(id, kind, start; set = false) = Flat.FlatVar(id, kind, :Real, nothing, start,
+            set ? Dict{Symbol,Any}(BGSim.START_SET => true) : Dict{Symbol,Any}(),
+            Flat.Origin(; path = "", block = "", node = "", range = nothing, kind = :block))
+        alias = Dict("k" => [("y", 1)], "y" => [("k", 1), ("x", -1)], "x" => [("y", -1)])
+        by_id(vars...) = Dict{String,Flat.FlatVar}(v.id => v for v in vars)
+        @test BGSim._start_source(
+            by_id(var("y", :output, 0.0), var("x", :state, 3.0; set = true)), alias, "k") == ("x", -1)
+        @test BGSim._start_value(
+            by_id(var("y", :output, 0.0), var("x", :state, 3.0)), alias, "k") == -3.0
+        @test BGSim._start_source(
+            by_id(var("y", :state, 1.0; set = true), var("x", :state, 3.0; set = true)), alias, "k") == ("y", 1)
+        @test BGSim._start_source(by_id(var("y", :output, 0.5)), alias, "k") == ("y", 1)
+        @test BGSim._start_source(by_id(var("y", :output, nothing)), alias, "k") === nothing
+    end
+
     @testset "algebraic starts are guesses, not equations (FIX-M2-1)" begin
         # Se -> 1-junction -> TF(n=2) -> R(3). At t = 0 the transformer's second-port
         # effort is 0.5 and the resistor flow is 1/6, both algebraic and non-zero. Passing

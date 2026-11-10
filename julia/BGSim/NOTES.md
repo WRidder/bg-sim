@@ -1239,6 +1239,21 @@ BFS) to the flat variable that carries the start. MTK aliases `IPlanar/Pm -> Cor
 variable the start was written on; before this the free body started at rest no matter what
 was set. Regressions: `Free2D` screw motion, the `DCMotor` composite's rotor start.
 
+Two more ways a start was lost on that chain, both fixed in `_start_source` / `_alias_map`
+(regression: "an instance start survives MTK's choice of state" in `test_simulate.jl`):
+
+* **A declared default sat closer than the start that was set.** A `PositionSensor` whose
+  output a signal block reads: MTK keeps the reader's input as the state, and its chain reaches
+  the output `Pos/y` (declared `= 0.0`) before the state `Pos/x`. The nearest start won, so the
+  sensor started at 0 whatever `starts.x` said. The search now collects the whole alias class
+  and prefers (1) a start set on the instance (`attrs[:start_set]`, written by `_bind_starts!`
+  and `set_start_values`, left out of `compile_key`), (2) the default of a flat state,
+  (3) any other default; nearest first inside each rank.
+* **Negated aliases were not followed.** On a 1-junction MTK may keep one bond's flow
+  (`Amp/p.f`) and write an element's state as `EM/i ~ -Amp/p.f`. `_alias_map` only knew
+  `u ~ v`, so the coil started at 0 A. It now also records `u ~ -v`, and the sign is carried to
+  the start value (and to a tunable start expression in `export/tunables.jl`).
+
 ## FIX-MB-2 — the composite joint runs at any mounting angle
 
 Root cause (measured, not guessed): `FixedTransform2D` writes `a.e = Ad^-T b.e` *implicitly*;
