@@ -15,6 +15,7 @@ A bond-graph / block-diagram / equation modeling and simulation tool:
 - Robust classical pendulum control (multi-model LQR, worst-case swing-up, energy-based swing-up, comparison with RL): `plan/ROBUST_CLASSICAL_PLAN.md`
 - Modelling assistant (chat panel, draft and Apply, runners, code cells, hosted profiles): `plan/ASSISTANT_PLAN.md`
 - Web games (FMU in the browser via Wasm, no backend, single HTML file): `plan/WEB_APPS_PLAN.md`, code in `apps/web/`
+- Port orientation (one bond-direction rule: `@orientation` on ports, enforced by the compiler and the editor; work packages): `plan/PORT_ORIENTATION_PLAN.md`
 - Background literature (PDFs, read-only): `background/`
 
 ## Toolchain (this machine: Windows 11)
