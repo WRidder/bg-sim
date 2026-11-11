@@ -37,4 +37,5 @@
                    G[4, 6] * a.f[4] + G[5, 6] * a.f[5] + G[6, 6] * a.f[6])
     end
     @causality (a, b) => :gyrator
+    @orientation (a, b) => :through
 end

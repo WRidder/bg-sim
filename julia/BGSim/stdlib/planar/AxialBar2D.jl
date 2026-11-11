@@ -119,4 +119,8 @@
         pa => :effort_out
         pb => :effort_out
     end
+    @orientation begin
+        pa => :in
+        pb => :in
+    end
 end

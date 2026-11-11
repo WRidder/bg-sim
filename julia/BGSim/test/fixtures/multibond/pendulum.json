@@ -232,13 +232,13 @@
             },
             {
                 "from": {
-                    "port": "p",
-                    "node": "n5"
+                    "node": "n4"
                 },
                 "kind": "bond",
                 "id": "c4",
                 "to": {
-                    "node": "n4"
+                    "port": "p",
+                    "node": "n5"
                 }
             },
             {
@@ -302,13 +302,13 @@
             },
             {
                 "from": {
-                    "port": "p",
-                    "node": "n10"
+                    "node": "n4"
                 },
                 "kind": "bond",
                 "id": "c10",
                 "to": {
-                    "node": "n4"
+                    "port": "p",
+                    "node": "n10"
                 }
             },
             {

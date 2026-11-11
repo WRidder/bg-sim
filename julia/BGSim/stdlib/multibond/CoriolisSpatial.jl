@@ -9,8 +9,8 @@
     #     ad(V) = [[w_hat, 0], [v_hat, w_hat]]        (angular first, D-MB2)
     #     -ad(V)^T P = [ w x h + v x p ; w x p ]
     #
-    # On a 1-junction the Coriolis bond carries the negative of the body twist, so the inertia
-    # receives `+ad(V)^T P`: `dP/dt = ad(V)^T P (+ W_ext)`, the body-frame Euler equation. The
+    # On the body 1-junction the port flow is the body twist, so the inertia receives
+    # `+ad(V)^T P`: `dP/dt = ad(V)^T P (+ W_ext)`, the body-frame Euler equation. The
     # element's own power `p.e . p.f = -V^T ad(V)^T P` is zero because `ad(V) V = 0`; the
     # free-body run (momentum and energy, Dzhanibekov) is the acceptance test.
     @ports p::Power{Spatial}, [frame = "body"]
@@ -24,4 +24,5 @@
         p.e[6] ~ p.f[1] * P[5] - p.f[2] * P[4]
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :in
 end

@@ -1,5 +1,7 @@
 @block Revolute2DBefore begin
     # Fixture: stdlib:multibond/Revolute2D before the optional hard stops (test_joint_stops.jl).
+    # Port orientation (WP-O3a) applied as in the library: `V_c = -child.f` is the child
+    # body's twist and `W_c = -child.e` the wrench the child body exerts on the joint.
     # Compliant-pivot planar revolute joint (plan Mode A, D-MB7): the rotation is exact
     # (q is the link-side angle) and the two pivot translations are compliant spring states.
     # Every storage element stays in integral causality, so a 3-DOF IPlanar body attached
@@ -7,7 +9,7 @@
     #
     # `d` lives in the rotating child frame, so the spring state integrates the full
     # relative displacement: ddt(d) = V_rel[2:3] + omega_child * [-d2, d1] (the omega x d
-    # transport term), with omega_child = child.f[1] = parent.f[1] + qdot the **absolute**
+    # transport term), with omega_child = V_c[1] = parent.f[1] + qdot the **absolute**
     # child angular rate. Using the relative qdot here is wrong whenever the parent rotates
     # (the double pendulum, every link after the first): V_rel already contains the lever
     # term R(q) d, so the coordinate rate must use the full frame rotation. The term is
@@ -45,27 +47,27 @@
     end
     @equations begin
         # g(q) = (q, rx, ry); Ad(g) and its inverse in the angular-first ordering.
-        Vrel[1] ~ child.f[1] - parent.f[1]
-        Vrel[2] ~ child.f[2] - ((sin(q) * rx - cos(q) * ry) * parent.f[1] +
+        Vrel[1] ~ -child.f[1] - parent.f[1]
+        Vrel[2] ~ -child.f[2] - ((sin(q) * rx - cos(q) * ry) * parent.f[1] +
                                 cos(q) * parent.f[2] + sin(q) * parent.f[3])
-        Vrel[3] ~ child.f[3] - ((cos(q) * rx + sin(q) * ry) * parent.f[1] -
+        Vrel[3] ~ -child.f[3] - ((cos(q) * rx + sin(q) * ry) * parent.f[1] -
                                 sin(q) * parent.f[2] + cos(q) * parent.f[3])
         qdot ~ Vrel[1]
         q ~ q0 + int(qdot, 0.0)
-        ddt(d[1]) ~ Vrel[2] + child.f[1] * d[2]
-        ddt(d[2]) ~ Vrel[3] - child.f[1] * d[1]
+        ddt(d[1]) ~ Vrel[2] - child.f[1] * d[2]
+        ddt(d[2]) ~ Vrel[3] + child.f[1] * d[1]
         fs[1] ~ 0.0
         fs[2] ~ kt * d[1] + bt * Vrel[2]
         fs[3] ~ kt * d[2] + bt * Vrel[3]
-        # The axial torque is S^T child.e = child.e[1] (the drive reads it); the translations
+        # The axial torque is S^T W_c = W_c[1] (the drive reads it); the translations
         # carry the spring effort. parent.e is the reaction, drive.e the negative torque.
-        child.e[2] ~ fs[2]
-        child.e[3] ~ fs[3]
-        parent.e[1] ~ -(child.e[1] + (sin(q) * rx - cos(q) * ry) * child.e[2] +
-                        (cos(q) * rx + sin(q) * ry) * child.e[3])
-        parent.e[2] ~ -(cos(q) * child.e[2] - sin(q) * child.e[3])
-        parent.e[3] ~ -(sin(q) * child.e[2] + cos(q) * child.e[3])
-        drive.e ~ -child.e[1]
+        child.e[2] ~ -fs[2]
+        child.e[3] ~ -fs[3]
+        parent.e[1] ~ (child.e[1] + (sin(q) * rx - cos(q) * ry) * child.e[2] +
+                       (cos(q) * rx + sin(q) * ry) * child.e[3])
+        parent.e[2] ~ cos(q) * child.e[2] - sin(q) * child.e[3]
+        parent.e[3] ~ sin(q) * child.e[2] + cos(q) * child.e[3]
+        drive.e ~ child.e[1]
         drive.f ~ qdot
         qout ~ q
         qdout ~ qdot
@@ -84,5 +86,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

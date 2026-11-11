@@ -16,4 +16,5 @@
         b.e ~ -(a.e[1] + ry * a.e[2] - rx * a.e[3])
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

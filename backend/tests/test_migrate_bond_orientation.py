@@ -383,3 +383,184 @@ def test_formatting_is_kept(mig, tmp_path):
     assert new == text.replace('"9.81"', '"-9.81"').replace(
         '"from": { "node": "n2" }, "to": { "node": "n1", "port": "p" }',
         '"from": { "node": "n1", "port": "p" }, "to": { "node": "n2" }')
+
+
+# ---------------------------------------------------------------------------------------------
+# WP-O3a: multibond mechanics (O7 law changes, body composite faces)
+# ---------------------------------------------------------------------------------------------
+
+MECH_CATALOG = {
+    "blocks": CATALOG["blocks"] + [
+        _block("stdlib:multibond/GroundSpatial", ["p"], [(("p",), "out")]),
+        _block("stdlib:spatial/Revolute3D", ["parent", "child", "drive"],
+               [(("parent",), "in"), (("child",), "out"), (("drive",), "in")]),
+        _block("stdlib:spatial/Free3D", ["parent", "child"], [(("parent",), "in"), (("child",), "out")]),
+        _block("stdlib:spatial/RigidBody3D", ["p"], outputs=["V", "P"]),
+        _block("stdlib:multibond/ISpatial", ["p"], [(("p",), "in")], [("m", "1.0")], ["Pm", "twout"]),
+        _block("stdlib:multibond/CoriolisSpatial", ["p"], [(("p",), "in")]),
+        _block("stdlib:multibond/DfSpatial", ["p"], [(("p",), "in")], outputs=["y"]),
+        _block("stdlib:multibond/GravitySpatial", ["p"], [(("p",), "out")], [("m", "1.0")]),
+        _block("stdlib:multibond/ExternalWrenchSpatial", ["p"], [(("p",), "out")]),
+        _block("stdlib:multibond/SeSpatial", ["p"], [(("p",), "out")]),
+        _block("stdlib:multibond/FixedTransform3DNeutral", ["a", "b"], [(("a", "b"), "through")]),
+        _block("stdlib:contact/ContactPoint", ["p"], [(("p",), "in")]),
+        _block("stdlib:planar/Revolute2DRigid", ["parent", "child", "drive"], [(("child",), "out")]),
+        _block("stdlib:multibond/GroundPlanar", ["p"], [(("p",), "out")]),
+        _block("stdlib:planar/RigidBody2D", ["p"], outputs=["V", "P"]),
+    ]
+}
+
+
+def _run_mech(mig, proj, check=False):
+    out = io.StringIO()
+    cat = mig.catalog_from_json(MECH_CATALOG)
+    status = mig.run([str(proj)], check=check, catalog=cat, out=out)
+    return status, out.getvalue()
+
+
+def _comment(doc, nid):
+    return next(n for n in doc["diagram"]["nodes"] if n["id"] == nid).get("$comment", "")
+
+
+def test_mech_library_body_needs_no_reversal(mig, tmp_path):
+    """The documented `RigidBody3D` rig (joint child into the body, the body into a contact mount,
+    a wrench into the body) already conforms. The body face is a junction whose contents changed
+    sign (O7); the joint child, the contact and the wrench changed theirs too, so every change
+    cancels: no reversal, no value edit, a marker on each block, and the port variables of the
+    attachments (and the body's internal gravity port) change sign in recorded results."""
+    doc = model("m", [
+        _node("n1", "World", ref("stdlib:multibond/GroundSpatial")),
+        _node("n2", "Joint", ref("stdlib:spatial/Revolute3D")),
+        _node("n3", "Body", ref("stdlib:spatial/RigidBody3D")),
+        _node("n4", "Mount", ref("stdlib:multibond/FixedTransform3DNeutral")),
+        _node("n5", "Pad", ref("stdlib:contact/ContactPoint")),
+        _node("n6", "Thrust", ref("stdlib:multibond/ExternalWrenchSpatial")),
+    ], [
+        bond("b1", ("n1", "p"), ("n2", "parent")),
+        bond("b2", ("n2", "child"), ("n3", "p")),
+        bond("b3", ("n3", "p"), ("n4", "b")),
+        bond("b4", ("n4", "a"), ("n5", "p")),
+        bond("b5", ("n6", "p"), ("n3", "p")),
+    ], plots=[{"id": "p1", "title": "contact", "signals": ["Pad/p.e[6]"]}])
+    proj = _project(tmp_path, {"m": doc})
+    status, report = _run_mech(mig, proj)
+    assert status == 0, report
+    assert "reverse bond" not in report and "[review]" not in report and "[source]" not in report
+    assert "plot `p1` shows Pad/p.e[6]" in report
+    for sig in ("Joint/child.e", "Pad/p.f", "Thrust/p.e", "Body/gravity/p.e", "Mount/a.f"):
+        assert sig in report
+    assert "Joint/parent.e" not in report
+    after = _read(proj, "m")
+    assert after["diagram"]["connections"] == doc["diagram"]["connections"]
+    for nid in ("n2", "n3", "n5", "n6"):
+        assert "migrate_bond_orientation: O7" in _comment(after, nid)
+    assert _comment(after, "n4") == "" and _comment(after, "n1") == ""
+    # idempotent
+    status, report = _run_mech(mig, proj)
+    assert status == 0 and "nothing to do" in report
+
+
+def _hand_body(inner_out: bool):
+    """A hand-built body junction with inertia, Coriolis, twist sensor and gravity, on a `Free3D`,
+    a contact through a mount and a wrench through a mount. `inner_out`: the lunar-module way
+    (every element bonded from the junction, the contact mount into it and the thrust mount from
+    it); else the `RigidBody3D` way (the other way round). These are the consistent pairs of the
+    W218 check."""
+    def att(cid, end):
+        return bond(cid, "j", end) if inner_out else bond(cid, end, "j")
+
+    def mnt(cid, end, into):
+        return bond(cid, end, "j") if into else bond(cid, "j", end)
+
+    return model("m", [
+        _node("w", "World", ref("stdlib:multibond/GroundSpatial")),
+        _node("f", "Free", ref("stdlib:spatial/Free3D")),
+        _node("j", "Body", junction(1)),
+        _node("i", "Inertia", ref("stdlib:multibond/ISpatial"), {"m": "2.0"}, {"P": "[0, 0, 0, 0, 0, 0]"}),
+        _node("co", "Coriolis", ref("stdlib:multibond/CoriolisSpatial")),
+        _node("tw", "Twist", ref("stdlib:multibond/DfSpatial")),
+        _node("gr", "Gravity", ref("stdlib:multibond/GravitySpatial"), {"m": "2.0"}),
+        _node("m", "Mount", ref("stdlib:multibond/FixedTransform3DNeutral")),
+        _node("p", "Pad", ref("stdlib:contact/ContactPoint")),
+        _node("tm", "ThrustMount", ref("stdlib:multibond/FixedTransform3DNeutral")),
+        _node("t", "Thrust", ref("stdlib:multibond/ExternalWrenchSpatial")),
+    ], [
+        bond("cw", ("w", "p"), ("f", "parent")),
+        att("ci", ("i", "p")),
+        att("cco", ("co", "p")),
+        att("ctw", ("tw", "p")),
+        att("cgr", ("gr", "p")),
+        att("cfree", ("f", "child")),
+        mnt("cmount", ("m", "b"), inner_out),
+        bond("cpad", ("m", "a"), ("p", "p")),
+        mnt("cthrust", ("tm", "b"), not inner_out),
+        bond("cthw", ("t", "p"), ("tm", "a")),
+        signal("cP", ("i", "Pm"), ("co", "P")),
+        signal("cv", ("tw", "y"), ("f", "tw")),
+    ])
+
+
+@pytest.mark.parametrize("inner_out", [True, False])
+def test_mech_hand_built_body(mig, tmp_path, inner_out):
+    """Both old hand-built conventions migrate without a value edit. The lunar-module way keeps
+    the inertia, Coriolis and twist bonds and reverses gravity, the joint child and the two mount
+    bonds; the `RigidBody3D` way reverses the inertia, Coriolis and twist bonds (the junction is
+    renamed, so their port signals keep their sign) and keeps the rest."""
+    proj = _project(tmp_path, {"m": _hand_body(inner_out)})
+    status, report = _run_mech(mig, proj)
+    assert status == 0, report
+    assert "[review]" not in report and "[source]" not in report
+    after = _read(proj, "m")
+    flipped = {"cgr", "cfree", "cmount", "cthrust"} if inner_out else {"ci", "cco", "ctw"}
+    before = _hand_body(inner_out)
+    for c in before["diagram"]["connections"]:
+        a = _conn(after, c["id"])
+        if c["id"] in flipped:
+            assert (a["from"], a["to"]) == (c["to"], c["from"]), c["id"]
+        else:
+            assert (a["from"], a["to"]) == (c["from"], c["to"]), c["id"]
+    assert _comment(after, "i") == ""                     # the inertia keeps its law and sign
+    assert after["diagram"]["nodes"][3]["starts"] == {"P": "[0, 0, 0, 0, 0, 0]"}
+    assert "Inertia/p.f" not in report
+    for nid in ("f", "gr", "p", "t"):
+        assert "migrate_bond_orientation: O7" in _comment(after, nid)
+    status, report = _run_mech(mig, proj)
+    assert status == 0 and "nothing to do" in report
+
+
+def test_mech_signal_source_on_body_is_review(mig, tmp_path):
+    """A `SeSpatial` bonded into a `RigidBody3D`: the body face junction is renamed (its contents
+    changed sign), so the source would have to push the other way. Its value is a signal input
+    the tool cannot negate: review, nothing written."""
+    doc = model("m", [
+        _node("n1", "Push", ref("stdlib:multibond/SeSpatial")),
+        _node("n2", "Body", ref("stdlib:spatial/RigidBody3D")),
+        _node("n3", "Joint", ref("stdlib:spatial/Free3D")),
+        _node("n4", "World", ref("stdlib:multibond/GroundSpatial")),
+    ], [
+        bond("b1", ("n1", "p"), ("n2", "p")),
+        bond("b2", ("n3", "child"), ("n2", "p")),
+        bond("b3", ("n4", "p"), ("n3", "parent")),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    before = (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8")
+    status, report = _run_mech(mig, proj)
+    assert status == 2
+    assert "`Push` (stdlib:multibond/SeSpatial) flips sign: negate its input `u` by hand" in report
+    assert (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8") == before
+
+
+def test_mech_revolute2drigid_is_review(mig, tmp_path):
+    """`Revolute2DRigid` changed inside (its rate sensor): always review."""
+    doc = model("m", [
+        _node("n1", "World", ref("stdlib:multibond/GroundPlanar")),
+        _node("n2", "Joint", ref("stdlib:planar/Revolute2DRigid")),
+        _node("n3", "Body", ref("stdlib:planar/RigidBody2D")),
+    ], [
+        bond("b1", ("n1", "p"), ("n2", "parent")),
+        bond("b2", ("n2", "child"), ("n3", "p")),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    status, report = _run_mech(mig, proj)
+    assert status == 2
+    assert "`Joint` (stdlib:planar/Revolute2DRigid)" in report

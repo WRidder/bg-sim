@@ -237,7 +237,7 @@ const _TR_P = "stdlib:planar/"
             _tr_node("Z", "Zero", "stdlib:sources/Constant"; params = Dict{String,Any}("value" => "0.0")),
         ]
         conns = Any[
-            bg_conn("c1", "bond", "C", "p", "B", "p"),
+            bg_conn("c1", "bond", "B", "p", "C", "p"),   # the contact is `in` (WP-O3a)
             bg_conn("s1", "signal", "B", "g", "C", "g"),
             bg_conn("s2", "signal", "T", "x", "C", "x"), bg_conn("s3", "signal", "T", "y", "C", "y"),
             bg_conn("s4", "signal", "T", "xd", "C", "xd"), bg_conn("s5", "signal", "T", "yd", "C", "yd"),

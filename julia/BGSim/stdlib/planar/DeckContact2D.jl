@@ -27,10 +27,8 @@
     # normal force is the gradient of the tyre energy with respect to the wheel and both
     # nodes, so the contact is energy-consistent; the traction does the drive's work.
     #
-    # Port and sign: bond FROM this port TO the body's port, as for `ExternalWrenchPlanar`
-    # (the opposite bond direction reverses the wheel forces). The port flow is the body twist
-    # (omega, vx, vy) in the body frame, `g` the body pose (theta, x, y), and the port effort
-    # is minus the wheel wrench on the body. The outputs `Fx`, `Fy` are the forces on the
+    # Port and sign: the port flow is the body twist (omega, vx, vy) in the body frame, `g`
+    # the body pose (theta, x, y), and the port effort is minus the wheel wrench on the body. The outputs `Fx`, `Fy` are the forces on the
     # truss nodes: wire them to the truss inputs.
     @constants begin
         nn::Int = 3, [min = 2, description = "Number of truss nodes"]
@@ -191,4 +189,5 @@
         end
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :in
 end

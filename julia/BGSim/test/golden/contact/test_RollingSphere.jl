@@ -92,7 +92,7 @@ function rs_model(; alpha = 0.0, crr = 0.0, spin = nothing, rho = 0.0, t_end = 1
         bg_conn("s5", "signal", "pose", "g", "c", "gb"),
     ]
     if spin === nothing
-        push!(conns, bg_conn("b7", "bond", "j", "drive", "lk", nothing))
+        push!(conns, bg_conn("b7", "bond", "lk", nothing, "j", "drive"))   # `drive` is `in`
     else
         # Sf -> 0 -> drive, 0 -> lock (the C/R pair carries the drive torque)
         push!(nodes, bg_node("sf", "Spin", bg_ref("stdlib:bondgraph/Sf"); params = Dict{String,Any}("f" => _rs(W))))

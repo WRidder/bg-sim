@@ -34,4 +34,5 @@
         p.e[3] ~ ky * (qy - qy0)
     end
     @causality p => :effort_out
+    @orientation p => :in
 end

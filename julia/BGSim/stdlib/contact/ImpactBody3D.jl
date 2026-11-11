@@ -43,10 +43,10 @@
     @connections begin
         connect(p, mount.a)
         connect(mount.b, node)
-        connect(inertia.p, node)
-        connect(coriolis.p, node)
+        connect(node, inertia.p)
+        connect(node, coriolis.p)
         connect(gravity.p, node)
-        connect(flow.p, node)
+        connect(node, flow.p)
         connect(g, gravity.g)
         connect(sw, inertia.sw)
         connect(mode_new, inertia.mode_new)

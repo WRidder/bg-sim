@@ -28,8 +28,13 @@ What the tool does, per model:
 2. **Signs, junction-aware (O19).** Reversing a bond on a 1-junction negates ``(e, f)`` of that
    port; on a 0-junction or between two element ports it changes nothing. A negation travels along
    a *chain*: element-to-element bonds and the two sides of a ``through`` two-port. A block whose
-   law changed (``LAW_CHANGES``: ``Sf`` and ``MSf`` impose ``+f`` at the tail since O15) negates its
-   own port too. Per connected group of junctions and chains the tool picks the cheaper of the two
+   law changed (``LAW_CHANGES``: ``Sf`` and ``MSf`` impose ``+f`` at the tail since O15; the
+   mechanics blocks of WP-O3a, O7, on the ports of ``LAW_PORTS``: a joint's ``child``, a contact's
+   ports, the gravity, external-wrench and planar/spatial flow sources) negates its own port too.
+   The face of a body composite (``JUNCTION_FACES``: ``RigidBody2D``/``3D``, ``Free2D``, the flexible
+   bodies) is an internal 1-junction whose contents changed sign with O7: the tool treats it as a
+   junction with a virtual element inside that must keep its sign (else ``review``).
+   Per connected group of junctions and chains the tool picks the cheaper of the two
    equivalent sign choices (renaming a junction's flow or effort is free), then classifies every
    element whose port sign flips:
 
@@ -79,6 +84,85 @@ LAW_CHANGES: dict[str, str] = {
     "stdlib:bondgraph/Sf": "O15",
     "stdlib:bondgraph/MSf": "O15",
 }
+
+# WP-O3a (O7): the multibond mechanics blocks whose port law changed sign, with the ports it
+# changed on (port flow = the true body twist, port effort = minus the wrench on the body; a
+# joint's `child` side: `V_c = -child.f`, `W_c = -child.e`).
+_JOINTS = [f"stdlib:spatial/{j}" for j in (
+    "Free3D", "Revolute3D", "Revolute3DCompliant", "Revolute3DFriction", "Revolute3DLimit",
+    "Revolute3DRigid", "Prismatic3D", "Prismatic3DCompliant", "Prismatic3DFriction",
+    "Prismatic3DLimit", "Cylindrical3D", "Helical3D", "Planar3D", "Spherical3D", "Universal3D")] + [
+    "stdlib:multibond/Revolute2D", "stdlib:planar/Prismatic2D", "stdlib:planar/Revolute2DCompliant",
+    "stdlib:planar/Revolute2DFriction", "stdlib:planar/Revolute2DLimit", "stdlib:contact/SwitchedPivot3D"]
+LAW_PORTS: dict[str, tuple[str, ...]] = {
+    **{j: ("child",) for j in _JOINTS},
+    "stdlib:contact/ContactPoint": ("p",),
+    "stdlib:contact/MovingPlaneContact": ("p",),
+    "stdlib:contact/RollingDisk": ("p",),
+    "stdlib:contact/RollingSphere": ("a", "b"),
+    "stdlib:contact/SuctionCup": ("a", "b"),
+    "stdlib:contact/Tyre": ("p",),
+    "stdlib:contact/ImpactBody3D": ("p",),
+    "stdlib:spatial/Rotor3D": ("p",),
+    "stdlib:multibond/GravityPlanar": ("p",),
+    "stdlib:multibond/GravitySpatial": ("p",),
+    "stdlib:multibond/ExternalWrenchPlanar": ("p",),
+    "stdlib:multibond/ExternalWrenchSpatial": ("p",),
+    "stdlib:multibond/SfPlanar": ("p",),
+    "stdlib:multibond/SfSpatial": ("p",),
+    "stdlib:multibond/MSfPlanar": ("p",),
+}
+LAW_CHANGES.update({ref: "O7" for ref in LAW_PORTS})
+
+# The faces of the body composites: each is an internal 1-junction whose contents (inertia,
+# Coriolis, twist sensor, gravity, beam or modal core) changed sign with O7. Old junction flow =
+# minus the body twist, new = the body twist. The tool resolves such a face to a junction
+# `<path>#<port>` with a virtual element inside (law change O7 on its port `p`).
+JUNCTION_FACES: dict[str, tuple[str, ...]] = {
+    "stdlib:spatial/RigidBody3D": ("p",),
+    "stdlib:planar/RigidBody2D": ("p",),
+    "stdlib:planar/Free2D": ("p",),
+    "stdlib:planar/PinNode2D": ("p",),
+    "stdlib:planar/Bar2D": ("a", "b"),
+    "stdlib:planar/FlexibleBeam2D": ("A", "B"),
+    "stdlib:spatial/FlexibleBeam3D": ("A", "B"),
+    "stdlib:spatial/ModalBody3D": ("A", "B", "C", "D", "E", "S"),
+}
+FACE = "face:"
+for _ref in JUNCTION_FACES:
+    LAW_CHANGES[FACE + _ref] = "O7"
+    LAW_PORTS[FACE + _ref] = ("p",)
+
+# Internal signals of a composite that change sign in recorded results once its O7 change is
+# accounted for (the composite keeps its motion; these port variables are negated).
+COMPOSITE_FLIPS: dict[str, tuple[str, ...]] = {
+    "stdlib:spatial/RigidBody3D": ("gravity/p",),
+    "stdlib:planar/RigidBody2D": ("gravity/p",),
+    "stdlib:planar/Free2D": ("body/gravity/p",),
+    "stdlib:contact/ImpactBody3D": ("gravity/p", "mount/a", "mount/b"),
+}
+
+# Blocks the tool never edits around: their migration needs a decision by hand.
+REVIEW_ALWAYS: dict[str, str] = {
+    "stdlib:planar/Revolute2DRigid": ("its internal rate sensor was reversed (WP-O3a), so a torque "
+                                      "source on `drive` now acts with the opposite sign; check the "
+                                      "drive value and the child bond by hand"),
+}
+
+# Blocks whose port flip cannot be absorbed by a parameter: the value comes from a signal input
+# (or from a physical constant) and has to be negated by hand.
+SIGNAL_SOURCES: dict[str, str] = {
+    "stdlib:multibond/SePlanar": "its input `u`",
+    "stdlib:multibond/SeSpatial": "its input `u`",
+    "stdlib:multibond/MSePlanar": "its inputs `ur`, `ux`, `uy`",
+    "stdlib:multibond/SfPlanar": "its input `u`",
+    "stdlib:multibond/SfSpatial": "its input `u`",
+    "stdlib:multibond/MSfPlanar": "its inputs `vr`, `vx`, `vy`",
+    "stdlib:multibond/ExternalWrenchPlanar": "its inputs `wr`, `wx`, `wy`",
+    "stdlib:multibond/ExternalWrenchSpatial": "its wrench inputs",
+    "stdlib:multibond/GravityPlanar": "gravity (it cannot be negated)",
+    "stdlib:multibond/GravitySpatial": "gravity (it cannot be negated)",
+}
 MARKER = "migrate_bond_orientation: {decision}"
 
 # Sources: the parameter whose negation restores the model when the port flips.
@@ -104,8 +188,24 @@ ODD: dict[str, tuple[str, ...]] = {
     "stdlib:converters/VelocitySensor": ("y",),
     "stdlib:converters/AccelerationSensor": ("y", "v"),
     "stdlib:converters/PressureSensor": ("y",),
+    # WP-O3a: the linear multibond one-ports (an output that feeds a block makes it review).
+    "stdlib:multibond/IPlanar": ("P", "Pm", "wout"),
+    "stdlib:multibond/ISpatial": ("P", "Pm", "twout"),
+    "stdlib:multibond/CPlanar": ("qr", "qx", "qy"),
+    "stdlib:multibond/CSpatial": ("qrx", "qry", "qrz", "qx", "qy", "qz"),
+    "stdlib:multibond/RPlanar": (),
+    "stdlib:multibond/RSpatial": (),
+    "stdlib:multibond/DePlanar": ("y",),
+    "stdlib:multibond/DeSpatial": ("y",),
+    "stdlib:multibond/DfPlanar": ("y",),
+    "stdlib:multibond/DfSpatial": ("y",),
 }
 ODD_OUTPUTS = {"y"}
+# A spring with a rest deflection is odd only when the rest is zero (else review).
+ODD_REST: dict[str, tuple[str, ...]] = {
+    "stdlib:multibond/CPlanar": ("qr0", "qx0", "qy0"),
+    "stdlib:multibond/CSpatial": ("qrx0", "qry0", "qrz0", "qx0", "qy0", "qz0"),
+}
 
 # The cost of a sign choice. A review case is the last resort; negating a source value keeps every
 # other signal of the model, so it is preferred to flipping an odd element, whose variables (a
@@ -392,6 +492,17 @@ class Model:
         self.bonds: list[Bond] = []
         self._walk(("diagram",), "")
 
+    def _face(self, path: str, port: str) -> End:
+        """The junction behind a body composite's face, with its virtual inside element."""
+        jpath = f"{path}#{port}"
+        if jpath not in self.juncs:
+            inst = self.insts[path]
+            self.juncs[jpath] = 1
+            vpath = jpath + "#inside"
+            self.insts[vpath] = Inst(vpath, FACE + (inst.ref or ""), inst.node_path, inst.node)
+            self.bonds.append(Bond(f"{jpath}(inside)", (), End("J", jpath, None, 1), End("P", vpath, "p")))
+        return End("J", jpath, None, 1)
+
     def _walk(self, dpath: tuple, prefix: str) -> None:
         diagram = self.doc.get(dpath)
         nodes = {n["id"]: (i, n) for i, n in enumerate(diagram.get("nodes", []))}
@@ -445,6 +556,9 @@ class Model:
                         return self._resolve(inner_d, path + "/",
                                              {"node": p["node"], "port": p.get("port")}, signal)
                 return None
+            if not signal and block.get("ref") in JUNCTION_FACES \
+                    and ep.get("port") in JUNCTION_FACES[block["ref"]] and path in self.insts:
+                return self._face(path, ep["port"])
             return End("P", path, ep.get("port"))
         return None
 
@@ -585,6 +699,16 @@ def plan_reversals(m: Model, cat: dict[str, BlockInfo]) -> None:
             break
 
 
+def _nonzero(v) -> bool:
+    """Whether a parameter value is set to something other than zero (an expression counts)."""
+    if v is None:
+        return False
+    try:
+        return float(str(v)) != 0.0
+    except ValueError:
+        return True
+
+
 def _negate_expr(s: str) -> str:
     t = s.strip()
     if re.fullmatch(r"[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?", t):
@@ -675,6 +799,12 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
     def law_flip(inst: Inst) -> bool:
         return law_changes and inst.ref in LAW_CHANGES and not marked(inst)
 
+    def law_ports(inst: Inst) -> set[str]:
+        """The ports whose law changed sign (all ports when the table names none)."""
+        if not law_flip(inst):
+            return set()
+        return set(LAW_PORTS.get(inst.ref or "", iports(inst)))
+
     inst_ports: dict[str, list[str]] = defaultdict(list)
     for path, port in sorted(bonded):
         inst_ports[path].append(port)
@@ -689,26 +819,38 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
     def element(inst: Inst, sigma: dict) -> tuple[str, str]:
         """(class, detail) of one element under the sign choice."""
         ports = [p for p in iports(inst) if (inst.path, p) in bonded]
-        signs = {p: s_port(inst.path, p, sigma) for p in ports}
-        lf = law_flip(inst)
+        lp = law_ports(inst)
+        # the sign of each port relative to the block's law: the junction sign choice, the
+        # reversal, and the law change of the port itself
+        signs = {p: s_port(inst.path, p, sigma) * (-1 if p in lp else 1) for p in ports}
         info = cat.get(inst.ref or "")
         through = info is not None and all(info.orientation.get(p, ("", None))[0] == "through" for p in ports) \
             and len(ports) == 2
-        if all(s == 1 for s in signs.values()) and not lf:
+        if inst.ref in REVIEW_ALWAYS:
+            return ("review", f"`{inst.path}` ({inst.ref}): {REVIEW_ALWAYS[inst.ref]}")
+        if all(s == 1 for s in signs.values()):
             return ("neutral", "")
+        if (inst.ref or "").startswith(FACE):
+            return ("review", f"the inside of `{inst.path.split('#')[0]}` ({inst.ref[len(FACE):]}) "
+                              "would change sign: its face bonds cannot be migrated by sign")
         if through:
-            if len(set(signs.values())) == 1 and not lf:
+            if len(set(signs.values())) == 1 and not lp:
                 return ("neutral", "")
             return ("review", f"`{inst.path}`: the two sides of the through pair get opposite signs")
         if len(ports) != 1:
             return ("review", f"`{inst.path}` ({inst.ref}): multi-port block with a flipped port")
-        s_elem = signs[ports[0]] * (-1 if lf else 1)
+        s_elem = signs[ports[0]]
         if s_elem == 1:
             return ("neutral", "")
         if inst.ref is None:
             return ("review", f"`{inst.path}` (inline block) flips sign")
         if inst.ref in SOURCES:
             return ("source", "")
+        if inst.ref in SIGNAL_SOURCES:
+            return ("review", f"`{inst.path}` ({inst.ref}) flips sign: negate {SIGNAL_SOURCES[inst.ref]} by hand")
+        if inst.ref in ODD_REST and any(_nonzero(inst.node.get("params", {}).get(r))
+                                        for r in ODD_REST[inst.ref]):
+            return ("review", f"`{inst.path}` ({inst.ref}) flips sign and has a rest deflection")
         if inst.ref in ODD:
             used = [o for o in inst.consumed_outputs if o in ODD[inst.ref] or o in ODD_OUTPUTS]
             if used:
@@ -818,8 +960,13 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
             continue
         port_signs = {p: s_port(inst.path, p, sigma) for p in iports(inst) if (inst.path, p) in bonded}
         for p, s in port_signs.items():
-            if s == -1:
+            if s == -1 and "#" not in inst.path:
                 res.flipped.update({f"{inst.path}/{p}.e", f"{inst.path}/{p}.f"})
+        if law_flip(inst):
+            owner = inst.path.split("#")[0]
+            base = (inst.ref or "").removeprefix(FACE)
+            for sig in COMPOSITE_FLIPS.get(base, ()):
+                res.flipped.update({f"{owner}/{sig}.e", f"{owner}/{sig}.f"})
         if cls == "source":
             pname = SOURCES[inst.ref]
             old = inst.node.get("params", {}).get(pname)
@@ -995,7 +1142,11 @@ def apply_plan(doc: JsonDoc, plan: dict) -> None:
         doc.set_key(inst.node_path + ("params",), pname, new)
     for inst, var, new in plan["starts"]:
         doc.replace(inst.node_path + ("starts", var), new)
+    seen: set[tuple] = set()
     for inst in plan["markers"]:
+        if inst.node_path in seen:
+            continue
+        seen.add(inst.node_path)
         marker = MARKER.format(decision=LAW_CHANGES[inst.ref])
         old = inst.node.get("$comment")
         doc.set_key(inst.node_path, "$comment", marker if not old else f"{old} [{marker}]")

@@ -126,6 +126,41 @@ Choices WP-O2 made:
   `qout`, `qdout` need a compensating sign (or the screw/drive bonds change with it). `planar/` is WP-O3a's, so
   WP-O2 did not touch it.
 
+Choices WP-O3a made:
+
+- **The multibond transforms are `through`.** `TF*`, `MTF*`, `GY*`, `MGY*`, `ScrewTF`, `TFAd*`, `FixedTransform*`,
+  `JointTransform*` and `planar/FixedJoint2D` declare `(a, b) => :through` (FixedJoint2D `(parent, child)`). The
+  block table listed the flip-form transforms as `a` in, `b` out, but a mount sits between a body and both kinds
+  of attachment (a contact is reached body -> `Mount.b`, `Mount.a` -> contact; a thrust wrench `X -> Mount.a`,
+  `Mount.b -> Body`), so a fixed direction would forbid one of them. A `through` pair has the same sign effect.
+- **The joint law changes on the child side only.** `V_c = -child.f`, `W_c = -child.e` (21 joints, including
+  `SwitchedPivot3D`); `parent`, the drives and every joint variable (`q`, `qdot`, `Vrel`, `d`, the pose) keep
+  their sign. Contacts: port flow = the body twist, port effort = minus the wrench on the body. `Rotor3D`: both
+  `p.e` and `p.f` change sign. Gravity and ExternalWrench: `p.e` = the wrench. The planar and spatial flow sources:
+  `p.f ~ -u` (O15).
+- **`planar/Revolute2DRigid`** (left by WP-O2): the internal bond is now `axis -> rate.p`, so `drive.f` reads
+  `+qdot`. A torque source on `drive` acts with the opposite sign; the tool reports the joint as `review` always.
+  The old test failures are gone; the joint is still index 3 (W201).
+- **`load_chain`** (`src/library/chain_loader.jl`): the parent body junction bonds into the joint mount `J_t.b`
+  (the mount is a `through` pair whose `a` side faces the joint's parent, which is `in`).
+- **Frozen test fixtures re-based.** `golden/contact/fixtures/library/SuctionCupLinear.jl` and
+  `fixtures/joint_stops/Revolute2DBefore.jl`, `Revolute3DBefore.jl` are copies of library blocks that the tests
+  compare against the stdlib block bit for bit; they now carry the WP-O3a law and `@orientation`, so the
+  comparison stays like for like. No tolerance changed.
+- **The tool and composite faces.** A composite face backed by a junction (`RigidBody2D/3D.p`, `Free2D.p`,
+  `PinNode2D.p`, `Bar2D.a/b`, `FlexibleBeam2D/3D`, `ModalBody3D` faces) is treated as a virtual 1-junction inside
+  the composite, with a virtual element carrying the face's law change; its marker goes on the composite node. A
+  composite face is not a recorded signal; the composite's internal changed ports (`gravity/p`, `mount/a`, `mount/b`)
+  are listed. The tool's `LAW_CHANGES` entries for these are tagged O7.
+- **`any` ports on a body face are a hazard, not an error.** A translation `Spring`/`Damper` (`any`) bonded to a
+  body or node face keeps compiling, but the face flow changed sign, so the element now reads minus the rate it read
+  before. The Julia rigs that had one (`test_fem_rail`) were reversed by hand; the tool cannot see it from the
+  catalog and the WP-O3b/c migration should check every `any` port on a body face.
+- **A tearing artefact, not a library error.** `test_multibond_slice.jl:825` (the `la + lb` power identity at
+  1e-9) now fails: MTK keeps a different algebraic residual and computes an observed `Link/b.e[3]` by dividing by
+  `cos(pi/2)`. States, period and energy drift match the baseline; the failure is reported, the tolerance is
+  unchanged.
+
 Open points, decided in the work package that meets them and recorded here:
 
 - **Two-terminal iconic sensors** (decided in WP-O0): they **stay `any`**.

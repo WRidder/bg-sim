@@ -4,7 +4,7 @@
     # brittle failure by events (tension above Ft = fy A, compression above the Euler load
     # pi^2 E I / (K L0)^2). A failed bar carries no force from then on. The physics is in
     # `AxialBar2D`; this composite gives each end its own 1-junction, so the ends bond to a
-    # node in either bond direction.
+    # node like a body port.
     #
     #   a (1-junction) ── AxialBar2D.pa      AxialBar2D.pb ── b (1-junction)
     #             ga, gb (node poses) ──► length, direction
@@ -59,9 +59,9 @@
     end
     @connections begin
         connect(a, nodeA)
-        connect(bar.pa, nodeA)
+        connect(nodeA, bar.pa)
         connect(b, nodeB)
-        connect(bar.pb, nodeB)
+        connect(nodeB, bar.pb)
         connect(ga, bar.ga)
         connect(gb, bar.gb)
         connect(bar.N, N)

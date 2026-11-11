@@ -248,7 +248,7 @@ function _mp7_double(; kt = _MP7_KT, p = _MP7_DP, q1 = _MP7_DP_Q1, q2 = _MP7_DP_
         bg_conn("c2", "bond", "n2", "child", "n3", "parent"),
         bg_conn("c3", "bond", "n3", "child", "n4", nothing),
         bg_conn("c4", "bond", "n5", "p", "n4", nothing),
-        bg_conn("c5", "bond", "n6", "parent", "n4", nothing),
+        bg_conn("c5", "bond", "n4", nothing, "n6", "parent"),   # `parent` is `in`
         bg_conn("c6", "bond", "n6", "child", "n7", "parent"),
         bg_conn("c7", "bond", "n7", "child", "n8", nothing),
         bg_conn("c8", "bond", "n9", "p", "n8", nothing),
@@ -341,8 +341,10 @@ function _mp7_prismatic(; m = 2.0, k = 200.0, dmp = 0.0, force = nothing, phi = 
     conns = Any[
         bg_conn("c1", "bond", "n1", "p", "n2", "parent"),
         bg_conn("c2", "bond", "n2", "child", "n3", "p"),
-        bg_conn("c3", "bond", "n2", "drive", "n6", nothing),
-        bg_conn("c4", "bond", "n4", "a", "n6", nothing),
+        # `drive` is `in`: its bond leaves the axis junction, and so do the spring's and the
+        # force's, so both still see the drive's flow (port orientation, WP-O3a).
+        bg_conn("c3", "bond", "n6", nothing, "n2", "drive"),
+        bg_conn("c4", "bond", "n6", nothing, "n4", "a"),
         bg_conn("c5", "wire", "n4", "b", "n5", "a"),
         bg_conn("c6", "signal", "n7", "g", "n3", "g"),
     ]
@@ -353,7 +355,7 @@ function _mp7_prismatic(; m = 2.0, k = 200.0, dmp = 0.0, force = nothing, phi = 
             params = Dict{String,Any}("F" => string(force))))
         push!(nodes, bg_node("n10", "FAnchor", bg_ref("stdlib:translation/Fixed")))
         push!(conns, bg_conn("c7", "signal", "n8", "y", "n9", "u"))
-        push!(conns, bg_conn("c8", "bond", "n9", "a", "n6", nothing))
+        push!(conns, bg_conn("c8", "bond", "n6", nothing, "n9", "a"))
         push!(conns, bg_conn("c9", "wire", "n9", "b", "n10", "a"))
     end
     return bg_model("PrismaticMassSpring", nodes, conns; t_end = t_end, points = points,
@@ -404,13 +406,18 @@ function _mp7_prismatic_rotating(; omega = 2.0, d = 1.0e-3, t_end = 0.1, points 
         bg_node("n8", "Zero", bg_ref("stdlib:sources/Constant");
             params = Dict{String,Any}("value" => "0.0")),
         bg_node("n9", "Anchor", bg_ref("stdlib:translation/Fixed")),
+        bg_node("n10", "ChildJ", bg_junction("1")),
     ], Any[
         bg_conn("c1", "signal", "n1", "y", "n3", "u"),
         bg_conn("c2", "signal", "n2", "y", "n4", "u"),
         bg_conn("c3", "bond", "n3", "p", "n5", "parent"),
-        bg_conn("c4", "bond", "n4", "p", "n5", "child"),
-        bg_conn("c5", "bond", "n5", "drive", "n6", nothing),
-        bg_conn("c6", "bond", "n7", "a", "n6", nothing),
+        # The child source and the joint's `child` are both `out`: they meet on a 1-junction,
+        # which gives the child the source flow (SfPlanar delivers +u at its tail, O15) as its
+        # twist (port orientation, WP-O3a).
+        bg_conn("c4", "bond", "n4", "p", "n10", nothing),
+        bg_conn("c9", "bond", "n5", "child", "n10", nothing),
+        bg_conn("c5", "bond", "n6", nothing, "n5", "drive"),
+        bg_conn("c6", "bond", "n6", nothing, "n7", "a"),
         bg_conn("c7", "wire", "n7", "b", "n9", "a"),
         bg_conn("c8", "signal", "n8", "y", "n7", "u"),
     ]; t_end = t_end, points = points, reltol = 1.0e-9, abstol = 1.0e-11)
@@ -1031,7 +1038,9 @@ end
         dummies = [n for n in unknown_names if occursin(Char(0x02cd), n)]
         @test length(dummies) == 3
         @test count(n -> occursin("Joint/xform/b.f[", n), dummies) == 2
-        @test count(n -> occursin("Body/flow/p.f[1]", n), dummies) == 1
+        # The third dummy is the first body twist component at the aliased port MTK keeps
+        # (`Body/coriolis/p.f[1]` since the body's internal bonds leave its junction, WP-O3a).
+        @test count(n -> occursin("Body/coriolis/p.f[1]", n), dummies) == 1
         @test length(ModelingToolkit.collect_differential_variables(lowered.model.system)) == 2
         columns, result, _ = bg_run(rigid)
         @test result.status == "failed"

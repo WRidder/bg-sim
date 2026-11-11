@@ -258,8 +258,10 @@ end
 """
     _msp_kin(; joint, params, starts, child, parent, t_end, points)
 
-A **kinematic** rig: the child port is bonded to an `SfSpatial` that imposes the child twist
-`child` (a bond flips the flow sign, so the source is fed `-child`) (and the parent to another, or to the ground, so `parent = nothing` is the ground), and
+A **kinematic** rig: the child port meets an `SfSpatial` on a 0-junction (both are `out`), so the
+source imposes the child twist `child` (the 0-junction flips the flow sign, so the source is fed
+`-child`), and the parent is bonded to another `SfSpatial` fed `parent` directly (it delivers
+`+u` at the tail of its bond, O15), or to the ground, so `parent = nothing` is the ground; and
 every drive port to a zero `Se`. With the twist along the screw the deflections stay zero, so
 the pose and the coordinates follow the analytic forward kinematics exactly.
 """
@@ -269,16 +271,18 @@ function _msp_kin(; joint, params = Dict{String,Any}(), starts = Dict{String,Any
         bg_node("n3", "Joint", bg_ref(joint); params = params, starts = starts),
         _msp_vec6("n4", "Uc", -1 .* collect(child)),
         bg_node("n5", "Sc", bg_ref("stdlib:multibond/SfSpatial")),
+        bg_node("n2", "ChildNode", bg_junction("0")),
     ]
     conns = Any[
         bg_conn("c1", "signal", "n4", "y", "n5", "u"),
-        bg_conn("c2", "bond", "n5", "p", "n3", "child"),
+        bg_conn("c2", "bond", "n5", "p", "n2", nothing),
+        bg_conn("c5", "bond", "n3", "child", "n2", nothing),
     ]
     if parent === nothing
         push!(nodes, bg_node("n1", "World", bg_ref("stdlib:multibond/GroundSpatial")))
         push!(conns, bg_conn("c3", "bond", "n1", "p", "n3", "parent"))
     else
-        push!(nodes, _msp_vec6("n6", "Up", -1 .* collect(parent)))
+        push!(nodes, _msp_vec6("n6", "Up", collect(parent)))
         push!(nodes, bg_node("n7", "Sp", bg_ref("stdlib:multibond/SfSpatial")))
         push!(conns, bg_conn("c3", "signal", "n6", "y", "n7", "u"))
         push!(conns, bg_conn("c4", "bond", "n7", "p", "n3", "parent"))
@@ -527,7 +531,7 @@ function _msp_double(kk; q1 = 0.4, q2 = 0.6, t_end = 1.5, points = 301, p = _MSP
         bg_conn("c3", "bond", "n3", "child", "n4", "a"),
         bg_conn("c4", "bond", "n4", "b", "n5", nothing),
         bg_conn("c5", "bond", "n6", "p", "n5", nothing),
-        bg_conn("c6", "bond", "n7", "b", "n5", nothing),
+        bg_conn("c6", "bond", "n5", nothing, "n7", "b"),
         bg_conn("c7", "bond", "n7", "a", "n8", "parent"),
         bg_conn("c8", "bond", "n8", "child", "n9", "a"),
         bg_conn("c9", "bond", "n9", "b", "n10", nothing),
@@ -581,7 +585,7 @@ function _msp_prismatic(; m = 2.0, k = 200.0, dmp = 0.0, force = nothing, q0 = 0
     conns = Any[
         bg_conn("c1", "bond", "n1", "p", "n2", "parent"),
         bg_conn("c2", "bond", "n2", "child", "n3", "p"),
-        bg_conn("c3", "bond", "n2", "drive", "n6", nothing),
+        bg_conn("c3", "bond", "n6", nothing, "n2", "drive"),
         bg_conn("c6", "signal", "n7", "g", "n3", "g"),
     ]
     if with_spring
@@ -589,7 +593,7 @@ function _msp_prismatic(; m = 2.0, k = 200.0, dmp = 0.0, force = nothing, q0 = 0
             params = Dict{String,Any}("k" => string(k), "d" => string(dmp)),
             starts = Dict{String,Any}("x" => string(q0))))
         push!(nodes, bg_node("n5", "Anchor", bg_ref("stdlib:translation/Fixed")))
-        push!(conns, bg_conn("c4", "bond", "n4", "a", "n6", nothing))
+        push!(conns, bg_conn("c4", "bond", "n6", nothing, "n4", "a"))
         push!(conns, bg_conn("c5", "wire", "n4", "b", "n5", "a"))
     else
         push!(nodes, bg_node("n4", "Free", bg_ref("stdlib:bondgraph/Se");
@@ -603,14 +607,15 @@ function _msp_prismatic(; m = 2.0, k = 200.0, dmp = 0.0, force = nothing, q0 = 0
             params = Dict{String,Any}("F" => string(force))))
         push!(nodes, bg_node("n11", "FAnchor", bg_ref("stdlib:translation/Fixed")))
         push!(conns, bg_conn("c7", "signal", "n8", "y", "n10", "u"))
-        push!(conns, bg_conn("c8", "bond", "n10", "a", "n6", nothing))
+        push!(conns, bg_conn("c8", "bond", "n6", nothing, "n10", "a"))
         push!(conns, bg_conn("c9", "wire", "n10", "b", "n11", "a"))
     end
     return bg_model("PrismaticMassSpring", nodes, conns; t_end = t_end, points = points,
         reltol = 1.0e-9, abstol = 1.0e-11)
 end
 
-"""A joint whose **parent is driven** at the constant twist `parent` (an `SfSpatial`), the child a
+"""A joint whose **parent is driven** at the constant twist `parent` (an `SfSpatial` fed `parent`: it
+delivers `+u` at the tail of its bond, O15), the child a
 `RigidBody3D` with its centre of mass at `offset` in the child frame (no gravity). The parent
 source does the work, so the joint's port-power identity is the check."""
 function _msp_driven_parent(; joint, params = Dict{String,Any}(), starts = Dict{String,Any}(),
@@ -618,7 +623,7 @@ function _msp_driven_parent(; joint, params = Dict{String,Any}(), starts = Dict{
     points = 201, efforts = Dict{String,Float64}(), P0 = nothing)
     bstarts = P0 === nothing ? Dict{String,Any}() : Dict{String,Any}("inertia/P" => _msp_vec(P0))
     nodes = Any[
-        _msp_vec6("n6", "Up", -1 .* collect(parent)),
+        _msp_vec6("n6", "Up", collect(parent)),
         bg_node("n7", "Sp", bg_ref("stdlib:multibond/SfSpatial")),
         bg_node("n3", "Joint", bg_ref(joint); params = params, starts = starts),
         bg_node("n4", "Link", bg_ref("stdlib:multibond/FixedTransform3DNeutral");

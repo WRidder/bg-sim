@@ -17,8 +17,8 @@
     # strain energy is `1/2 kr |dth|^2`, and `Rg`, its kinematics and its inverse are
     # polynomial over `D = 1 + |g|^2` (no series, no guard). Both adjoints use **this** pose:
     #
-    #     V_rel    = child.f - Ad(H)^-1 parent.f        (the body twist of H, exactly)
-    #     parent.e = -Ad(H)^-T child.e                   (exactly power-continuous)
+    #     V_rel    = V_c - Ad(H)^-1 parent.f        (the body twist of H, exactly)
+    #     parent.e = -Ad(H)^-T W_c                   (exactly power-continuous)
     #
     # and the chart rates are the closed-form inverse of the chart Jacobian, `xdot = B V_rel`:
     #
@@ -29,11 +29,11 @@
     #
     # (`B` is `A^-1` for `w = A (qdot, dth')`, `A = [Rg^T ez | (I - [g]) e_x / D | (I - [g]) e_y / D]`;
     # no division appears because `(-g_y, g_x, 1) . Rg^T ez = 1`). The transport `w x dl` is
-    # `child.f[1:3] x dl` minus the lever already inside `V_rel[4:6]`, i.e. the FIX-MB-5 rule
-    # with the absolute child rate. The conjugate wrench is `child.e = B^T [tau; F; Fl]` with
+    # `V_c[1:3] x dl` minus the lever already inside `V_rel[4:6]`, i.e. the FIX-MB-5 rule
+    # with the absolute child rate. The conjugate wrench is `W_c = B^T [tau; F; Fl]` with
     # `F = kr dth + br dth'`, `Fl = kt dl + bt dl'`, so on a run
     #
-    #     parent.e.parent.f + child.e.child.f + drive.e*qdot
+    #     parent.e.parent.f + W_c.V_c + drive.e*qdot
     #         = d/dt(1/2 kr|dth|^2 + 1/2 kt|dl|^2) + br|dth'|^2 + bt|dl'|^2 [+ ts*qdot]
     #
     # holds identically, and the pose `H` is exactly the integral of the twists the joint
@@ -52,6 +52,9 @@
     # no switching event and nothing that can trap the root finder when the joint rests on its
     # stop. The limits are structural constants: the default `-Inf`/`Inf` leaves each stop out
     # of the equations entirely, so a joint without stops compiles exactly as before.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -127,11 +130,11 @@
         for i in 1:3
             wn[i] ~ R[1, i] * parent.f[1] + R[2, i] * parent.f[2] + R[3, i] * parent.f[3]
             vn[i] ~ R[1, i] * parent.f[4] + R[2, i] * parent.f[5] + R[3, i] * parent.f[6]
-            Vrel[i] ~ child.f[i] - wn[i]
+            Vrel[i] ~ -child.f[i] - wn[i]
         end
-        Vrel[4] ~ child.f[4] - vn[1] - (wn[2] * dl[3] - wn[3] * dl[2])
-        Vrel[5] ~ child.f[5] - vn[2] - (wn[3] * dl[1] - wn[1] * dl[3])
-        Vrel[6] ~ child.f[6] - vn[3] - (wn[1] * dl[2] - wn[2] * dl[1])
+        Vrel[4] ~ -child.f[4] - vn[1] - (wn[2] * dl[3] - wn[3] * dl[2])
+        Vrel[5] ~ -child.f[5] - vn[2] - (wn[3] * dl[1] - wn[1] * dl[3])
+        Vrel[6] ~ -child.f[6] - vn[3] - (wn[1] * dl[2] - wn[2] * dl[1])
         # xdot = B V_rel (the exact inverse of the chart Jacobian)
         qdot ~ Vrel[3] + gx * Vrel[2] - gy * Vrel[1]
         q ~ q0 + int(qdot, 0.0)
@@ -150,18 +153,18 @@
         Fl[1] ~ kt * dl[1] + bt * dld[1]
         Fl[2] ~ kt * dl[2] + bt * dld[2]
         Fl[3] ~ kt * dl[3] + bt * dld[3]
-        # child.e = B^T [tau; F; Fl]: the angular rows carry the lever Fl x dl of the force
+        # W_c = B^T [tau; F; Fl]: the angular rows carry the lever Fl x dl of the force
         # acting at the nominal pivot (-dl from the child origin).
         tq[1] ~ -gy * tau + (1.0 + gx * gx - gy * gy) * F[1] + 2.0 * gx * gy * F[2]
         tq[2] ~ gx * tau + 2.0 * gx * gy * F[1] + (1.0 - gx * gx + gy * gy) * F[2]
         tq[3] ~ tau + 2.0 * gy * F[1] - 2.0 * gx * F[2]
-        child.e[1] ~ tq[1] + (Fl[2] * dl[3] - Fl[3] * dl[2])
-        child.e[2] ~ tq[2] + (Fl[3] * dl[1] - Fl[1] * dl[3])
-        child.e[3] ~ tq[3] + (Fl[1] * dl[2] - Fl[2] * dl[1])
-        child.e[4] ~ Fl[1]
-        child.e[5] ~ Fl[2]
-        child.e[6] ~ Fl[3]
-        # parent.e = -Ad(H)^-T child.e = -[R (child.e_ang + dl x Fl); R Fl] = -[R tq; R Fl]
+        child.e[1] ~ -(tq[1] + (Fl[2] * dl[3] - Fl[3] * dl[2]))
+        child.e[2] ~ -(tq[2] + (Fl[3] * dl[1] - Fl[1] * dl[3]))
+        child.e[3] ~ -(tq[3] + (Fl[1] * dl[2] - Fl[2] * dl[1]))
+        child.e[4] ~ -Fl[1]
+        child.e[5] ~ -Fl[2]
+        child.e[6] ~ -Fl[3]
+        # parent.e = -Ad(H)^-T W_c = -[R (W_c_ang + dl x Fl); R Fl] = -[R tq; R Fl]
         for i in 1:3
             parent.e[i] ~ -(R[i, 1] * tq[1] + R[i, 2] * tq[2] + R[i, 3] * tq[3])
         end
@@ -206,5 +209,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

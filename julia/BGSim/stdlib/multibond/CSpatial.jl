@@ -45,4 +45,5 @@
         p.e[6] ~ kz * (qz - qz0)
     end
     @causality p => :effort_out
+    @orientation p => :in
 end

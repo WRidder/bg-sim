@@ -16,8 +16,10 @@
     # Signals: `V` is the body twist `[w; v]` (component-wise, in the body frame), `P` the
     # momentum `ISpatial.P`, `g` the pose input (the D-MB6 chart `(q_w, q_x, q_y, q_z, p)`,
     # readable at the composite path), and `p.e[k]`/`p.f[k]`/`p.P` the port effort/flow/power.
-    # The twist comes from a zero-power `DfSpatial` on the 1-junction (`V[k] = p.f[k]`), so a
-    # floating base can integrate its pose from it (D-MB6). Fixed-base links compose their
+    # The junction flow is the body twist: the inertia, the Coriolis element and the twist
+    # sensor are bonded from the junction and gravity into it, as in a hand-built body. The
+    # twist comes from a zero-power `DfSpatial` on the 1-junction (`V[k]` = its port flow), so
+    # a floating base can integrate its pose from it (D-MB6). Fixed-base links compose their
     # pose from the joint coordinate (`ComposePose3D`) and never integrate one.
     @ports p::Power{Spatial}, [frame = "body"]
     @inputs g::Vec{7}
@@ -37,10 +39,10 @@
     end
     @connections begin
         connect(p, node)
-        connect(inertia.p, node)
-        connect(coriolis.p, node)
+        connect(node, inertia.p)
+        connect(node, coriolis.p)
         connect(gravity.p, node)
-        connect(flow.p, node)
+        connect(node, flow.p)
         connect(g, gravity.g)
         connect(inertia.Pm, coriolis.P)
         connect(inertia.Pm, P)

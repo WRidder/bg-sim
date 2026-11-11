@@ -74,4 +74,5 @@
         b.e[6] ~ R[1, 3] * a.e[4] + R[2, 3] * a.e[5] + R[3, 3] * a.e[6]
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

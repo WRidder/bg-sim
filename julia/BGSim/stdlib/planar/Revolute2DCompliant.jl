@@ -12,10 +12,13 @@
     # the link angle, so the spring acts on the link's own angle and the pose composed from
     # `q` is the geometric pose of the link. Every state is integral (no W201).
     #
-    # Effort chain: the axial torque is `S^T child.e = child.e[1]`; the drive sees the
-    # reaction plus the spring torque, `drive.e = -child.e[1] + k(q - qrest) + b*qdot`, so the
+    # Effort chain: the axial torque is `S^T W_c = W_c[1]`; the drive sees the
+    # reaction plus the spring torque, `drive.e = -W_c[1] + k(q - qrest) + b*qdot`, so the
     # drive/child pair carries exactly the spring's power and the port power identity becomes
-    # `parent.e.parent.f + child.e.child.f + drive.e*qdot = fs.Vrel + tau_spring*qdot`.
+    # `parent.e.parent.f + W_c.V_c + drive.e*qdot = fs.Vrel + tau_spring*qdot`.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Planar}
         child::Power{Planar}
@@ -48,26 +51,26 @@
         tauout::Real, [unit = "N*m"]
     end
     @equations begin
-        Vrel[1] ~ child.f[1] - parent.f[1]
-        Vrel[2] ~ child.f[2] - ((sin(q) * rx - cos(q) * ry) * parent.f[1] +
+        Vrel[1] ~ -child.f[1] - parent.f[1]
+        Vrel[2] ~ -child.f[2] - ((sin(q) * rx - cos(q) * ry) * parent.f[1] +
                                 cos(q) * parent.f[2] + sin(q) * parent.f[3])
-        Vrel[3] ~ child.f[3] - ((cos(q) * rx + sin(q) * ry) * parent.f[1] -
+        Vrel[3] ~ -child.f[3] - ((cos(q) * rx + sin(q) * ry) * parent.f[1] -
                                 sin(q) * parent.f[2] + cos(q) * parent.f[3])
         qdot ~ Vrel[1]
         q ~ q0 + int(qdot, 0.0)
-        ddt(d[1]) ~ Vrel[2] + child.f[1] * d[2]
-        ddt(d[2]) ~ Vrel[3] - child.f[1] * d[1]
+        ddt(d[1]) ~ Vrel[2] - child.f[1] * d[2]
+        ddt(d[2]) ~ Vrel[3] + child.f[1] * d[1]
         fs[1] ~ 0.0
         fs[2] ~ kt * d[1] + bt * Vrel[2]
         fs[3] ~ kt * d[2] + bt * Vrel[3]
         taus ~ k * (q - qrest) + b * qdot
-        child.e[2] ~ fs[2]
-        child.e[3] ~ fs[3]
-        parent.e[1] ~ -(child.e[1] + (sin(q) * rx - cos(q) * ry) * child.e[2] +
-                        (cos(q) * rx + sin(q) * ry) * child.e[3])
-        parent.e[2] ~ -(cos(q) * child.e[2] - sin(q) * child.e[3])
-        parent.e[3] ~ -(sin(q) * child.e[2] + cos(q) * child.e[3])
-        drive.e ~ -child.e[1] + taus
+        child.e[2] ~ -fs[2]
+        child.e[3] ~ -fs[3]
+        parent.e[1] ~ (child.e[1] + (sin(q) * rx - cos(q) * ry) * child.e[2] +
+                       (cos(q) * rx + sin(q) * ry) * child.e[3])
+        parent.e[2] ~ cos(q) * child.e[2] - sin(q) * child.e[3]
+        parent.e[3] ~ sin(q) * child.e[2] + cos(q) * child.e[3]
+        drive.e ~ child.e[1] + taus
         drive.f ~ qdot
         qout ~ q
         qdout ~ qdot
@@ -85,5 +88,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

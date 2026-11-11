@@ -13,23 +13,26 @@
     # `Rg(g)` the rotation of the quaternion `(1, g)` (Gibbs vector `g = dth/2`, polynomial over
     # `D = 1 + |g|^2`); `dl` is measured in the nominal child frame `Rz(q1)` (the frame before
     # the deflection rotation), which keeps the chart division-free. Both adjoints use this
-    # pose (`V_rel = child.f - Ad(H)^-1 parent.f`, `parent.e = -Ad(H)^-T child.e`), so the
+    # pose (`V_rel = V_c - Ad(H)^-1 parent.f`, `parent.e = -Ad(H)^-T W_c`), so the
     # deflection lever of the translation rate (the 3-D J-MB7 term) is the `w_p x p` part of
     # `Ad(H)^-1` and exact. The chart rates are the closed-form inverse of the Jacobian:
     #
     #     qdot1 = w_z + g_x w_y - g_y w_x,   dth' = B23 w        (as Revolute3D)
     #     y = Rg v;   qdot2 = y_z,   dl_x' = y_x + dl_y qdot1,   dl_y' = y_y - dl_x qdot1
     #
-    # The conjugate wrench is `child.e = B^T [tau1; F; Fx; Fy; tau2]`: the rotational rows
+    # The conjugate wrench is `W_c = B^T [tau1; F; Fx; Fy; tau2]`: the rotational rows
     # see `tau1 + dl_y Fx - dl_x Fy` (the in-plane lever of the perpendicular force about the
     # axis) and the linear rows are `Rg^T (Fx, Fy, tau2)`; `F = kr dth + br dth'`,
     # `Fx,y = kt dl + bt dl'`. On a run
     #
-    #     parent.e.parent.f + child.e.child.f + drive1.e*qdot1 + drive2.e*qdot2
+    #     parent.e.parent.f + W_c.V_c + drive1.e*qdot1 + drive2.e*qdot2
     #         = d/dt(1/2 kr|dth|^2 + 1/2 kt|dl|^2) + br|dth'|^2 + bt|dl'|^2
     #
     # holds identically and the pose is exactly the integral of the twists. `pose` is `H` on
     # the D-MB6 chart (quaternion `Rz(q1) (x) (1, g)`, origin `q2 ez + Rz dl`).
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -114,11 +117,11 @@
         for i in 1:3
             wn[i] ~ R[1, i] * parent.f[1] + R[2, i] * parent.f[2] + R[3, i] * parent.f[3]
             vn[i] ~ R[1, i] * u[1] + R[2, i] * u[2] + R[3, i] * u[3]
-            Vrel[i] ~ child.f[i] - wn[i]
+            Vrel[i] ~ -child.f[i] - wn[i]
         end
-        Vrel[4] ~ child.f[4] - vn[1]
-        Vrel[5] ~ child.f[5] - vn[2]
-        Vrel[6] ~ child.f[6] - vn[3]
+        Vrel[4] ~ -child.f[4] - vn[1]
+        Vrel[5] ~ -child.f[5] - vn[2]
+        Vrel[6] ~ -child.f[6] - vn[3]
         # xdot = B V_rel
         qd1 ~ Vrel[3] + gx * Vrel[2] - gy * Vrel[1]
         thd[1] ~ (1.0 + gx * gx - gy * gy) * Vrel[1] + 2.0 * gx * gy * Vrel[2] + 2.0 * gy * Vrel[3]
@@ -140,18 +143,18 @@
         Fp[1] ~ kt * dl[1] + bt * dld[1]
         Fp[2] ~ kt * dl[2] + bt * dld[2]
         Fp[3] ~ tau2
-        # child.e = B^T [tau1; F; Fp]
+        # W_c = B^T [tau1; F; Fp]
         ta ~ tau1 + dl[2] * Fp[1] - dl[1] * Fp[2]
         tq[1] ~ -gy * ta + (1.0 + gx * gx - gy * gy) * F[1] + 2.0 * gx * gy * F[2]
         tq[2] ~ gx * ta + 2.0 * gx * gy * F[1] + (1.0 - gx * gx + gy * gy) * F[2]
         tq[3] ~ ta + 2.0 * gy * F[1] - 2.0 * gx * F[2]
-        child.e[1] ~ tq[1]
-        child.e[2] ~ tq[2]
-        child.e[3] ~ tq[3]
-        child.e[4] ~ Rg[1, 1] * Fp[1] + Rg[2, 1] * Fp[2] + Rg[3, 1] * Fp[3]
-        child.e[5] ~ Rg[1, 2] * Fp[1] + Rg[2, 2] * Fp[2] + Rg[3, 2] * Fp[3]
-        child.e[6] ~ Rg[1, 3] * Fp[1] + Rg[2, 3] * Fp[2] + Rg[3, 3] * Fp[3]
-        # parent.e = -Ad(H)^-T child.e = -[R tq + pr x Wl; Wl], Wl = R child.e_lin = Rz Fp
+        child.e[1] ~ -tq[1]
+        child.e[2] ~ -tq[2]
+        child.e[3] ~ -tq[3]
+        child.e[4] ~ -(Rg[1, 1] * Fp[1] + Rg[2, 1] * Fp[2] + Rg[3, 1] * Fp[3])
+        child.e[5] ~ -(Rg[1, 2] * Fp[1] + Rg[2, 2] * Fp[2] + Rg[3, 2] * Fp[3])
+        child.e[6] ~ -(Rg[1, 3] * Fp[1] + Rg[2, 3] * Fp[2] + Rg[3, 3] * Fp[3])
+        # parent.e = -Ad(H)^-T W_c = -[R tq + pr x Wl; Wl], Wl = R W_c_lin = Rz Fp
         Wl[1] ~ cq * Fp[1] - sq * Fp[2]
         Wl[2] ~ sq * Fp[1] + cq * Fp[2]
         Wl[3] ~ Fp[3]
@@ -189,5 +192,11 @@
         child => :effort_out
         drive1 => :flow_out
         drive2 => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive1 => :in
+        drive2 => :in
     end
 end

@@ -19,4 +19,5 @@
         p.e[3] ~ uy
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :out
 end

@@ -18,7 +18,7 @@
     # 0/1 states, constant between events and set from `mode_new` in the event.
     #
     # The held directions carry **deflection states** in the child frame (the Spherical3D
-    # pattern, FIX-MB-5 transport by the absolute child rate `w_c = child.f[1:3]`): the translation
+    # pattern, FIX-MB-5 transport by the absolute child rate `w_c = V_c[1:3]`): the translation
     # deflection `dl` (the pivot origin relative to its anchor) and the small-angle rotation
     # deflection `dth`:
     #     ddt(dl)  = mt (V_rel[4:6] - w_c x dl)
@@ -38,6 +38,9 @@
     # sets `mode = mode_new`, the masks, and zeroes the deflections. The impact map of the body
     # is applied by `ImpactInertia3D` on the same two signals (a block-local event can only
     # reinit its own states, so the momentum lives in that block).
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -100,12 +103,12 @@
         u[1] ~ parent.f[4] - (py * parent.f[3] - pz * parent.f[2])
         u[2] ~ parent.f[5] - (pz * parent.f[1] - px * parent.f[3])
         u[3] ~ parent.f[6] - (px * parent.f[2] - py * parent.f[1])
-        Vrel[1] ~ child.f[1] - (R[1, 1] * parent.f[1] + R[2, 1] * parent.f[2] + R[3, 1] * parent.f[3])
-        Vrel[4] ~ child.f[4] - (R[1, 1] * u[1] + R[2, 1] * u[2] + R[3, 1] * u[3])
-        Vrel[2] ~ child.f[2] - (R[1, 2] * parent.f[1] + R[2, 2] * parent.f[2] + R[3, 2] * parent.f[3])
-        Vrel[5] ~ child.f[5] - (R[1, 2] * u[1] + R[2, 2] * u[2] + R[3, 2] * u[3])
-        Vrel[3] ~ child.f[3] - (R[1, 3] * parent.f[1] + R[2, 3] * parent.f[2] + R[3, 3] * parent.f[3])
-        Vrel[6] ~ child.f[6] - (R[1, 3] * u[1] + R[2, 3] * u[2] + R[3, 3] * u[3])
+        Vrel[1] ~ -child.f[1] - (R[1, 1] * parent.f[1] + R[2, 1] * parent.f[2] + R[3, 1] * parent.f[3])
+        Vrel[4] ~ -child.f[4] - (R[1, 1] * u[1] + R[2, 1] * u[2] + R[3, 1] * u[3])
+        Vrel[2] ~ -child.f[2] - (R[1, 2] * parent.f[1] + R[2, 2] * parent.f[2] + R[3, 2] * parent.f[3])
+        Vrel[5] ~ -child.f[5] - (R[1, 2] * u[1] + R[2, 2] * u[2] + R[3, 2] * u[3])
+        Vrel[3] ~ -child.f[3] - (R[1, 3] * parent.f[1] + R[2, 3] * parent.f[2] + R[3, 3] * parent.f[3])
+        Vrel[6] ~ -child.f[6] - (R[1, 3] * u[1] + R[2, 3] * u[2] + R[3, 3] * u[3])
         ddt(qw) ~ -0.5 * (Vrel[1] * qx + Vrel[2] * qy + Vrel[3] * qz)
         ddt(qx) ~ 0.5 * (Vrel[1] * qw + Vrel[3] * qy - Vrel[2] * qz)
         ddt(qy) ~ 0.5 * (Vrel[2] * qw + Vrel[1] * qz - Vrel[3] * qx)
@@ -119,12 +122,12 @@
         ddt(mr) ~ -leak * mr
         ddt(mz) ~ -leak * mz
         # Deflections with the transport by the absolute child rate.
-        ddt(dl[1]) ~ mt * (Vrel[4] - (child.f[2] * dl[3] - child.f[3] * dl[2]))
-        ddt(dl[2]) ~ mt * (Vrel[5] - (child.f[3] * dl[1] - child.f[1] * dl[3]))
-        ddt(dl[3]) ~ mt * (Vrel[6] - (child.f[1] * dl[2] - child.f[2] * dl[1]))
-        ddt(dth[1]) ~ mr * (Vrel[1] - (child.f[2] * dth[3] - child.f[3] * dth[2]))
-        ddt(dth[2]) ~ mr * (Vrel[2] - (child.f[3] * dth[1] - child.f[1] * dth[3]))
-        ddt(dth[3]) ~ mz * (Vrel[3] - (child.f[1] * dth[2] - child.f[2] * dth[1]))
+        ddt(dl[1]) ~ mt * (Vrel[4] - (child.f[3] * dl[2] - child.f[2] * dl[3]))
+        ddt(dl[2]) ~ mt * (Vrel[5] - (child.f[1] * dl[3] - child.f[3] * dl[1]))
+        ddt(dl[3]) ~ mt * (Vrel[6] - (child.f[2] * dl[1] - child.f[1] * dl[2]))
+        ddt(dth[1]) ~ mr * (Vrel[1] - (child.f[3] * dth[2] - child.f[2] * dth[3]))
+        ddt(dth[2]) ~ mr * (Vrel[2] - (child.f[1] * dth[3] - child.f[3] * dth[1]))
+        ddt(dth[3]) ~ mz * (Vrel[3] - (child.f[2] * dth[1] - child.f[1] * dth[2]))
         ddt(wl[1]) ~ (Vrel[4] - wl[1]) / tau
         ddt(wl[2]) ~ (Vrel[5] - wl[2]) / tau
         ddt(wl[3]) ~ (Vrel[6] - wl[3]) / tau
@@ -137,17 +140,17 @@
         Tc[1] ~ -mr * (kr * dth[1] + br * wa[1])
         Tc[2] ~ -mr * (kr * dth[2] + br * wa[2])
         Tc[3] ~ -mz * (kr * dth[3] + br * wa[3])
-        # Bond convention (as Free3D, `child.e = -drive.e`): the port effort is minus the wrench on the
-        # child body (Tc, Fc); the parent port receives the reaction.
-        child.e[1] ~ -Tc[1]
-        child.e[2] ~ -Tc[2]
-        child.e[3] ~ -Tc[3]
-        child.e[4] ~ -Fc[1]
-        child.e[5] ~ -Fc[2]
-        child.e[6] ~ -Fc[3]
+        # The port effort is the wrench on the child body (Tc, Fc), `W_c = -child.e`; the parent
+        # port receives the reaction.
+        child.e[1] ~ Tc[1]
+        child.e[2] ~ Tc[2]
+        child.e[3] ~ Tc[3]
+        child.e[4] ~ Fc[1]
+        child.e[5] ~ Fc[2]
+        child.e[6] ~ Fc[3]
         for k in 1:3
-            Wa[k] ~ R[k, 1] * child.e[1] + R[k, 2] * child.e[2] + R[k, 3] * child.e[3]
-            Wl[k] ~ R[k, 1] * child.e[4] + R[k, 2] * child.e[5] + R[k, 3] * child.e[6]
+            Wa[k] ~ -(R[k, 1] * child.e[1] + R[k, 2] * child.e[2] + R[k, 3] * child.e[3])
+            Wl[k] ~ -(R[k, 1] * child.e[4] + R[k, 2] * child.e[5] + R[k, 3] * child.e[6])
         end
         # parent.e = -[R W_ang + p x (R W_lin); R W_lin]
         parent.e[1] ~ -(Wa[1] + (py * Wl[3] - pz * Wl[2]))
@@ -188,5 +191,9 @@
     @causality begin
         parent => :effort_out
         child => :effort_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
     end
 end

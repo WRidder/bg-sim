@@ -6,7 +6,8 @@
     # Three *scalar* signal inputs, not one `Vec{3}`: a vector signal is unit-homogeneous in
     # v1, but a twist is an angular rate (rad/s) and two linear velocities (m/s)
     # (D-MB2/D-MB10). The flow is imposed component by component, with the fixed flow-out
-    # causality of a source.
+    # causality of a source. Port flows count into the block, so a source that delivers
+    # `(vr, vx, vy)` imposes `p.f = -(vr, vx, vy)` (as the scalar `MSf`).
     @ports p::Power{Planar}
     @inputs begin
         vr::Real, [unit = "rad/s"]
@@ -14,9 +15,10 @@
         vy::Real, [unit = "m/s"]
     end
     @equations begin
-        p.f[1] ~ vr
-        p.f[2] ~ vx
-        p.f[3] ~ vy
+        p.f[1] ~ -vr
+        p.f[2] ~ -vx
+        p.f[3] ~ -vy
     end
     @causality p => (:flow_out, :fixed)
+    @orientation p => :out
 end

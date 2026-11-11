@@ -23,4 +23,5 @@
         a.e[3] ~ sin(theta) * b.e[2] + cos(theta) * b.e[3]
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

@@ -9,8 +9,8 @@
     # a translation-only point at body offset r that is -r). The body's flow then determines
     # `p.f` explicitly and `p.e` flows back as `b.e = Ad^T a.e` with no algebraic loop (the
     # other orientation needs the inverse of `Ad(g)` and leaves a nonlinear initialisation).
-    # Because `a.f = -Ad(g) b.f`, the port flow is the NEGATIVE point twist, and the port
-    # effort is `+(wrench on the body)` expressed in the point frame, so the port power
+    # The port flow is the point twist and the port effort is the wrench the body exerts on
+    # the contact, `-(wrench on the body)` in the point frame, so the port power
     # `e . f = -F . v` is the power absorbed by the contact (storage + dissipation).
     #
     # Inputs: `g` the point's world pose on the D-MB6 chart (compose the body pose with the
@@ -37,7 +37,7 @@
     #
     # The world force `F_w = f_n n - F_t1 t1 - F_t2 t2` acts at the point with no torque about
     # the point; in the point frame the wrench on the body is `[0; R^T F_w]` and the port effort
-    # equals it (see the mounting note above for the sign convention). The
+    # is its negative (see the mounting note above). The
     # torque and force components are written separately (N*m vs N).
     @ports p::Power{Spatial}
     @inputs begin
@@ -95,10 +95,10 @@
         R[3, 1] ~ 2 * (g[2] * g[4] - g[1] * g[3]) / s
         R[3, 2] ~ 2 * (g[3] * g[4] + g[1] * g[2]) / s
         R[3, 3] ~ (g[1] * g[1] - g[2] * g[2] - g[3] * g[3] + g[4] * g[4]) / s
-        # Point velocity in the world: the port flow is the NEGATIVE point twist (the mount's a-side).
-        v1 ~ -(R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6])
-        v2 ~ -(R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6])
-        v3 ~ -(R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6])
+        # Point velocity in the world: the port flow is the point twist.
+        v1 ~ R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6]
+        v2 ~ R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6]
+        v3 ~ R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6]
         h ~ fr[1] * (g[5] - o[1]) + fr[2] * (g[6] - o[2]) + fr[3] * (g[7] - o[3])
         delta ~ -h
         r ~ sqrt(delta * delta + eps * eps)
@@ -119,14 +119,15 @@
         Fw1 ~ f_n * fr[1] - ft1 * fr[4] - ft2 * fr[7]
         Fw2 ~ f_n * fr[2] - ft1 * fr[5] - ft2 * fr[8]
         Fw3 ~ f_n * fr[3] - ft1 * fr[6] - ft2 * fr[9]
-        # Port effort = +(point-frame wrench [0; R^T F_w]) on the body: with `p.f` = -(point twist)
+        # Port effort = -(point-frame wrench [0; R^T F_w] on the body): with `p.f` = point twist
         # the port power `e . f = -F . v` is the power ABSORBED by the contact.
         p.e[1] ~ 0
         p.e[2] ~ 0
         p.e[3] ~ 0
-        p.e[4] ~ R[1, 1] * Fw1 + R[2, 1] * Fw2 + R[3, 1] * Fw3
-        p.e[5] ~ R[1, 2] * Fw1 + R[2, 2] * Fw2 + R[3, 2] * Fw3
-        p.e[6] ~ R[1, 3] * Fw1 + R[2, 3] * Fw2 + R[3, 3] * Fw3
+        p.e[4] ~ -(R[1, 1] * Fw1 + R[2, 1] * Fw2 + R[3, 1] * Fw3)
+        p.e[5] ~ -(R[1, 2] * Fw1 + R[2, 2] * Fw2 + R[3, 2] * Fw3)
+        p.e[6] ~ -(R[1, 3] * Fw1 + R[2, 3] * Fw2 + R[3, 3] * Fw3)
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :in
 end

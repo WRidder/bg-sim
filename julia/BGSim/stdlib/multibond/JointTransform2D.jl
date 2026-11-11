@@ -31,4 +31,5 @@
         a.e[3] ~ sin(g[1]) * b.e[2] + cos(g[1]) * b.e[3]
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

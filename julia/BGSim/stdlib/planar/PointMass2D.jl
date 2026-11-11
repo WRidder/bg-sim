@@ -75,4 +75,5 @@
         Eg ~ m * g0 * u[2]
     end
     @causality p => :flow_out
+    @orientation p => :in
 end

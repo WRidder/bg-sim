@@ -15,8 +15,10 @@
     #
     # Signals: `V` is the body twist (component-wise, in the body frame), `P` the momentum
     # `I.P`, `g` the pose input (readable at the composite path), `p.e[k]`/`p.f[k]`/`p.P` the
-    # port effort/flow/power. The twist comes from a zero-power `DfPlanar` on the 1-junction
-    # (`V[k] = p.f[k]`, checked by the element tests), so a floating base can integrate its
+    # port effort/flow/power. The junction flow is the body twist: the inertia, the Coriolis
+    # element and the twist sensor are bonded from the junction and gravity into it, as in a
+    # hand-built body. The twist comes from a zero-power `DfPlanar` on the 1-junction (`V[k]`
+    # = its port flow, checked by the element tests), so a floating base can integrate its
     # pose from it (D-MB6).
     @ports p::Power{Planar}, [frame = "body"]
     @inputs g::Vec{3}
@@ -36,10 +38,10 @@
     end
     @connections begin
         connect(p, node)
-        connect(inertia.p, node)
-        connect(coriolis.p, node)
+        connect(node, inertia.p)
+        connect(node, coriolis.p)
         connect(gravity.p, node)
-        connect(flow.p, node)
+        connect(node, flow.p)
         connect(g, gravity.g)
         connect(inertia.Pm, coriolis.P)
         connect(inertia.Pm, P)

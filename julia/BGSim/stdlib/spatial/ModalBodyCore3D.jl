@@ -824,4 +824,12 @@
         pe => :flow_out
         ps => :flow_out
     end
+    @orientation begin
+        pa => :in
+        pb => :in
+        pc => :in
+        pd => :in
+        pe => :in
+        ps => :in
+    end
 end
