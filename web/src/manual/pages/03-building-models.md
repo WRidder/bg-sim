@@ -22,15 +22,62 @@ Models are drawn on the canvas of the **Diagram** tab.
 
 - **Connect:** drag from one port to another. Compatible ports are highlighted; an invalid target shows why it is refused. `Ctrl`+drag starts from the port of a block nearest to the pointer.
 - **Release on empty canvas** to get a filterable list of compatible blocks; the one you pick is added and connected.
-- **Bond direction:** the half arrow on a bond shows the positive power direction. Right-click a bond and choose **Reverse bond direction** to flip it.
-- **Bonds orient themselves:** some power ports declare the direction a bond must have: `in` (the bond ends at the block, the arrow points into it), `out` (the bond starts there) or, for a pass-through two-port, a pair where one bond arrives and the other leaves. The port tooltip and the **Ports** list of the block inspector show it (a port that shows nothing takes either direction). A new bond takes its direction from the two ports, whichever end you start dragging from. Two `in` ports, or two `out` ports, cannot be bonded directly: the editor says "put a junction in between".
-- **When Reverse bond direction is disabled:** a bond at an `in` or `out` port, or at one port of a pass-through pair whose other bond already takes the role, cannot be reversed. The menu item is greyed out and its tooltip (and the bond inspector) names the port and the direction it needs, for example "the port `C1.p` is declared `in`: a bond must end there". Put a junction in between if you need the other direction.
-- **Reversing a bond between a 0-junction and a 1-junction** stays possible, and it changes the model: it reverses the reference direction of everything behind this bond, so signs of relative flows and displacements, and the results that show them, change. A bond between two junctions of the same kind only changes its own arrow. Pasting and duplicating keep the stored direction of a bond; a wrong one is reported by the model check (E114), not changed.
+- **Bond direction:** a bond has a direction, shown by its half arrow. It matters, and most ports fix it for you: see **Bond direction and port orientation** below. Right-click a bond and choose **Reverse bond direction** to flip it where that is allowed.
 - **Routing:** right-click a connection for **Add routing vertex** and **Clear routing vertices**.
 - **Crossing kinds:** a signal cannot drive a power port directly. Use a modulated source (`MSe`, `MSf`) or a sensor. Different physical domains connect through a converter (`TF`, `GY`, a DC motor, …). **Thermal** ports carry temperature and heat flow, not power, so they never connect to another domain; losses reach them through `RS` or a heated component (see [Thermal domain](page:thermal-domain)).
 - **Junctions:** the **Junctions** category has the 0-junction (equal efforts, flows sum to zero) and the 1-junction (equal flows, efforts sum to zero).
 
 Units are checked: ports with the same dimension but a different unit connect with a conversion factor shown on the wire; different dimensions are refused.
+
+## Bond direction and port orientation
+
+A bond has a direction, and the direction is part of the model. The half arrow points the way positive power flows. Port variables count positive into the block, so a bond from X to Y gives Y the bond's flow and X its negative. On a 1-junction, a port at the head of the arrow sees the junction's flow, a port at the tail sees minus that flow, and its effort enters the junction's sum with the opposite sign. Drawing one bond the wrong way round therefore reverses the sign of that element's flow and effort.
+
+To keep you from drawing it wrong, power ports declare an **orientation**, the direction their equations assume:
+
+- `in`: the bond ends at the port (the arrow points into the block).
+- `out`: the bond starts at the port.
+- `through`: a pass-through two-port such as a mount or a `TF`. Of its two bonds, one arrives and the other leaves, and it does not matter which.
+
+The port tooltip and the **Ports** list of the block inspector show the orientation. A port that shows "orientation not declared" cannot be bonded: its block has not said which way it works (see [Code and Docs tabs](page:code-and-docs) to declare it).
+
+**The editor orients bonds for you.** A new bond takes its direction from the two ports, whichever end you start dragging from. Two `in` ports, or two `out` ports, cannot be bonded directly: the editor says "put a junction in between", because a junction takes one bond from each. Pasting and duplicating keep the stored direction of a bond.
+
+**When Reverse bond direction is disabled.** A bond at an `in` or `out` port, or at one port of a pass-through pair whose other bond already takes the role, cannot be reversed. The menu item is greyed out, and its tooltip (and the bond inspector) names the port and the direction it needs, for example "the port `C1.p` is declared `in`: a bond must end there". Put a junction in between if you need the other direction.
+
+**Bonds between junctions are free.** A bond between two junctions is never checked. Reversing a bond between two junctions of the same kind (1 and 1, or 0 and 0) only changes its own arrow. Reversing a bond between a 0-junction and a 1-junction changes the model: it reverses the reference direction of everything behind that bond, so the signs of relative flows and displacements, and the results that show them, change.
+
+### The convention
+
+| Element | Orientation | How to bond it |
+| --- | --- | --- |
+| Storage, dissipation, detectors and sensors (`C`, `I`, `R`, `MR`, `De`, `Df`, the sensors, Coriolis, planar and spatial forms) | `in` | junction to element |
+| Bond-graph sources (`Se`, `Sf`, `MSe`, `MSf`, gravity, external wrench, planar and spatial forms) | `out` | source to junction. `Sf` and `MSf` impose their value on the junction they point at |
+| Transformers, gyrators, mounts (`TF`, `GY`, `MTF`, `MGY`, `FixedTransform*`, `JointTransform*`), `PowerSensor` | `through` | one bond in, one bond out, either way round |
+| Contacts (`ContactPoint`, `RollingDisk`, `Tyre`, `MovingPlaneContact`, ...) | `in` | body to contact, or body to mount side `b` and mount side `a` to the contact |
+| Joints (`Revolute3D`, `Free3D`, ...) | `parent` `in`, `child` `out`, `drive` `in` | parent body to `parent`, `child` to the child body, source or junction to `drive` |
+| Iconic components (electrical, rotation, translation, hydraulic, thermal, drives, motion, converters) | `in` | junction to port. The port then behaves exactly as if it were wired to that junction |
+
+Two element ports are never bonded to each other directly. Two iconic ports are joined by a wire, or by a junction with a bond into each. A dissipator or a sensor on a joint drive goes through a junction too: `drive <- 1 -> R`.
+
+### Bodies and mounts
+
+A body is a 1-junction whose flow is the body's true twist. The library `RigidBody2D` and `RigidBody3D` have such a junction on their port `p`, and a body you build from a 1-junction, an `I`, a Coriolis element and gravity behaves the same. Every block attached to the body therefore sees the body's twist at its port. Attach each one by the convention above:
+
+- a source: `Source -> Body`, or `Source -> Mount.a` and `Mount.b -> Body`;
+- a contact: `Body -> Contact`, or `Body -> Mount.b` and `Mount.a -> Contact`;
+- a joint: `ParentBody -> Joint.parent` and `Joint.child -> ChildBody`.
+
+A mount keeps its side `b` on the body side. Do not turn it round (side `a` toward the body): the model then needs the inverse of the mount's transform, which is badly conditioned and can fail at some rotations.
+
+### E114: a bond against a declared orientation
+
+The model check reports [E114](page:diagnostics) for each bond that breaks a declared orientation. The message names the bond, the port and the orientation it declares. The hint says what to do:
+
+- **Reverse the bond.** The bond starts at an `in` port or ends at an `out` port. Right-click it and choose **Reverse bond direction**. Reversing a bond on a 1-junction changes the sign of that port's flow and effort, so when you fix an older model look at the element: a linear `C`, `I` or `R` is not affected, a source needs its value negated, and a start value of a storage element changes sign.
+- **Put a junction in between.** The bond joins two `in` ports or two `out` ports. Add a 1-junction (or a 0-junction) and bond each port to it in the direction the port wants.
+- **Turn one bond of a pair.** Both bonds of a `through` pair arrive, or both leave. Reverse the one whose other end is free.
+- **Declare the orientation.** The bond reaches a port that declares no orientation. For a block of your own, add `@orientation` to it (see [Code and Docs tabs](page:code-and-docs)).
 
 ## Legend and grid
 

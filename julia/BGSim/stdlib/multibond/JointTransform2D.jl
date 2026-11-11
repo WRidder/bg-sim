@@ -3,8 +3,8 @@
     # plan's `JointTransform` for the planar domain. It carries the same adjoint equations as
     # `TFAd` (component-wise `Ad(g)`), and it is the transform a joint uses to bridge its
     # parent-side and child-side frames: the two ports declare the joint role frames
-    # `parent` and `child`, so a bond from a `parent`-frame port to `a` and from `b` to a
-    # `child`-frame port is E007-clean, while any other named frame on those bonds is
+    # `parent` and `child`, so a `parent`-frame port at `a` and a `child`-frame port at `b`
+    # are E007-clean, while any other named frame on those bonds is
     # reported (D-MB5: only a transform bridges frames).
     #
     # The pose input `g = (theta, x, y)` is the child pose in the parent frame. With `Ad(g)`

@@ -4,6 +4,8 @@ Beyond the basic elements (inertia, spring, damper, resistor, capacitor, …) th
 
 Power is positive into every port. A rotation port carries torque `e` and angular velocity `f`, an electrical port voltage `e` and current `f`.
 
+These components can be wired, or bonded to a junction. All their power ports are `in`: a bond ends at the port (`Junction -> port`), and the port then behaves exactly as if it were wired to that junction. Join two component ports with a wire, or with a junction that has a bond into each, never with one bond. A component that fans out to several parts inside (a `DCMotor` shaft, a `Gearbox` side) is wired, not bonded. See [Building models](page:building-models) for the whole convention.
+
 ## Rotation
 
 | Block | Ports | What it does | Key parameters |
@@ -24,7 +26,7 @@ Notes:
 
 ## Contact
 
-The **Contact** category holds compliant contacts for 3D rigid bodies: a Hunt-Crossley normal force (`k·x·sqrt(x/xref)·(1 + c·xdot)`, it never pulls) and regularised Coulomb friction. Mount a contact on a body through a `FixedTransform3DNeutral` (contact on side `a`, body on side `b`).
+The **Contact** category holds compliant contacts for 3D rigid bodies: a Hunt-Crossley normal force (`k·x·sqrt(x/xref)·(1 + c·xdot)`, it never pulls) and regularised Coulomb friction. Every contact port is `in` and sees the body's true twist, so bond the body to the contact: `Body -> Contact.p`. To place the contact at a point of the body, mount it through a `FixedTransform3DNeutral` with the body on side `b` and the contact on side `a`: `Body -> Mount.b`, `Mount.a -> Contact.p`. Keep side `b` on the body; a mount turned round is badly conditioned. The contact reports a port effort equal to minus the wrench it applies to the body, and the body feels the wrench itself.
 
 | Block | Ports | What it does | Key parameters |
 | --- | --- | --- | --- |
@@ -36,7 +38,7 @@ Notes:
 
 - **Moving face.** The face origin is `pc + o + a·xs`: connect the jaw position (for example a `PositionSensor` on the jaw) to `xs`. The face pushes back on the jaw with `j.e = F·a`, and `Pc` is the power the carrier puts in. Outside the half-widths the normal force fades out over `we`, so a part can slide off the face and fall.
 - **Holding.** Below the friction limit a held part creeps at `s = vs·atanh(F_t/(mu·f_n))`; the output `util = F_t/(mu·f_n)` is the share of the friction limit in use (1 = slipping). `examples/gripper` sizes a parallel gripper with it.
-- **Rolling on a moving body.** Bond both bodies' ports straight to `RollingSphere` (`a` the face body, `b` the ball) and feed it both world poses. The ball rolls without slip up to a tiny creep, `slip` shows the residual; `crr` adds a rolling-resistance moment `crr·r·f_n`, so a ball rests on a tilt up to about `crr` rad. `u1`, `u2` are the ball's position on the face, `Ec` and `Pd` the stored and dissipated energy. `examples/ball-and-plate` balances a ball on a servo-tilted plate with it.
+- **Rolling on a moving body.** Bond both bodies' ports straight to `RollingSphere` (`a` the face body, `b` the ball; both ports are `in`, so `FaceBody -> a` and `Ball -> b`) and feed it both world poses. The ball rolls without slip up to a tiny creep, `slip` shows the residual; `crr` adds a rolling-resistance moment `crr·r·f_n`, so a ball rests on a tilt up to about `crr` rad. `u1`, `u2` are the ball's position on the face, `Ec` and `Pd` the stored and dissipated energy. `examples/ball-and-plate` balances a ball on a servo-tilted plate with it.
 
 ## Electrical
 
@@ -77,6 +79,17 @@ How it works: the block stores magnetic energy `W = ½·L(h)·i²` with `L(h) = 
 
 Use it in a circuit and a translation diagram, or in a bond graph: bond the coil to an electrical 1-junction and the armature to the mass's 1-junction. The **maglev** example shows it levitating a steel ball with a cascade controller.
 
+## Mounting wrench sources, joints and mounts (2D and 3D)
+
+On a rigid body, every attachment sees the body's true twist, so the same rule holds for all of them (the table in [Building models](page:building-models) has the rest):
+
+- **Wrench sources** (`SeSpatial`, `ExternalWrenchSpatial`, gravity and their planar forms, thrust or load blocks of your own) are `out`. Bond them to the body: `Source -> Body`. To apply the wrench at an offset or in another frame, put a mount between: `Source -> Mount.a` and `Mount.b -> Body`. The wrench acts on the body with the sign its block documents. A flow source (`SfSpatial`) imposes its twist on the junction it points at.
+- **Joints** have `parent` `in`, `child` `out` and `drive` `in`: `ParentBody -> Joint.parent` and `Joint.child -> ChildBody`. If the joint sits at an offset, put a mount on either side. A mounted parent is `ParentBody -> Mount.b`, `Mount.a -> Joint.parent`, and a mounted child is `Joint.child -> Mount.a`, `Mount.b -> ChildBody`. Drive the joint from a source or a junction (`Source -> Joint.drive`). A friction element, spring or sensor on the drive goes on a 1-junction: `Junction -> Joint.drive` and `Junction -> R`.
+- **Mounts** (`FixedTransform*`, `JointTransform*`, `FixedJoint2D`) are `through` pairs. Keep side `b` on the body side and side `a` on the side of the attached part. Do not turn a mount round: that is badly conditioned and can fail when the mount is aligned with an axis.
+- **Flexible bodies** follow the same rule. A joint's `parent` takes the bond from the end it hangs on (`B -> Joint.parent`), and a joint's `child` bonds into `A` (`Joint.child -> A`).
+
+The model check reports `E114` when a bond runs the wrong way. The hint names the bond to reverse.
+
 ## Joint hard stops (2D and 3D)
 
 The joints `Revolute3D`, `Prismatic3D` (Multibody 3D), `Revolute2D` and `Prismatic2D` (Multibody 2D) can stop at a limit of their coordinate `q`, like the mechanical end stops of a robot axis.
@@ -102,9 +115,9 @@ Two blocks of the 3D mechanics categories model a wheel that rolls on the ground
 | `RollingDisk` | Contact | `p` (spatial), inputs `g`, `o`, `fr` | rolling contact of a wheel on a `ContactSurface` plane: the contact point is the lowest rim point at every instant | `radius`, `crown`, `k`, `xref`, `c`, `mu`, `vs`, `bsp` |
 | `Rotor3D` | Spatial mechanics | `p` (spatial), `drive` (rotation) | a rotor spinning about the z axis of the body that carries it | `Ja` |
 
-- **Mounting.** Bond the wheel body's port `p` straight to the block's `p`, with the body frame at the wheel centre and the axle along body z. Feed `RollingDisk` the body pose (`g`) and the plane (`o`, `fr` from a `ContactSurface`). Put the rotor's mass and transverse inertia into the carrier body; only the axial inertia `Ja` belongs to `Rotor3D`.
+- **Mounting.** Bond the wheel body's port `p` straight to the block's `p` (`Body -> RollingDisk.p`, `Body -> Rotor3D.p`), with the body frame at the wheel centre and the axle along body z. Feed `RollingDisk` the body pose (`g`) and the plane (`o`, `fr` from a `ContactSurface`). Put the rotor's mass and transverse inertia into the carrier body; only the axial inertia `Ja` belongs to `Rotor3D`.
 - **Rolling.** The normal force is the smooth Hertz/Hunt-Crossley law of `ContactPoint`. Friction is isotropic regularised Coulomb friction on the slip of the rim point: a wheel rolling under a side force `F` creeps at about `vs F / (mu f_n)`. The block outputs `f_n`, `s_lon`/`s_lat` (slip), `f_lon`/`f_lat`, the contact point, `camber`, the spring energy `Ec` and the dissipated power `Pd`.
-- **Rotor.** Only the axial momentum `h` is a state, so a flywheel at 15 000 rpm costs no more than one at rest. The motor between carrier and rotor bonds to `drive`, and its reaction acts on the carrier. `w_rel`, `w_abs`, `H` and `Ek` are outputs.
+- **Rotor.** Only the axial momentum `h` is a state, so a flywheel at 15 000 rpm costs no more than one at rest. The motor between carrier and rotor bonds to `drive` (an `in` port: `Junction -> Rotor3D.drive`), and its reaction acts on the carrier. `w_rel`, `w_abs`, `H` and `Ek` are outputs.
 
 ## Vehicle tyres and terrain (3D)
 
@@ -115,7 +128,7 @@ Two more contact blocks build road vehicles. The **cars** example (a race car an
 | `Tyre` | Contact | `p` (spatial, the wheel carrier), `spin` (rotation), inputs `g`, `o`, `fr`, `mus` | a pneumatic tyre: radial spring at the lowest rim point, Magic Formula forces for longitudinal and lateral slip, combined on the friction ellipse, rolling resistance | `R0`, `kz`, `cz`, `Fz0`, `mux`, `muy`, `dmu`, `Kx`, `Cx`, `Ex`, `Ky`, `Ky2`, `Cy`, `Ey`, `cx`, `cy`, `dx`, `dy`, `frr` |
 | `TerrainSurface` | Contact | inputs `g`; outputs `o`, `fr`, `hq`, `slope` | hills as a formula, `h(x, y) = h0 + sx·x + sy·y + Σ a·cos(kx·x + ky·y + ph)`: gives the ground plane under a wheel to a `Tyre` (or any contact block) | `h0`, `sx`, `sy`, `a`, `kx`, `ky`, `ph` (constant `N` components) |
 
-- **Mounting.** The carrier is the wheel hub that does not spin: a `RigidBody3D` with the wheel's mass and transverse inertia, frame at the wheel centre, axle along body z. Bond its port to the tyre's `p` and to a `Rotor3D` (the wheel's spin inertia). Put the rotor's `drive`, the tyre's `spin`, a brake and a drive shaft on one 1-junction: the wheel's spin.
+- **Mounting.** The carrier is the wheel hub that does not spin: a `RigidBody3D` with the wheel's mass and transverse inertia, frame at the wheel centre, axle along body z. Bond its port to the tyre's `p` and to a `Rotor3D` (the wheel's spin inertia), both from the body: `Carrier -> Tyre.p`. Put the rotor's `drive`, the tyre's `spin`, a brake and a drive shaft on one 1-junction: the wheel's spin.
 - **Forces.** `Fz` is the radial spring and damper on the deflection. `Fx` and `Fy` follow the Magic Formula of the slips `kappa` and `alpha` (the peak is `mux·Fz` and `muy·Fz`, a little lower at high load through `dmu`), and act through a small deflection of the contact patch. So a parked car stays parked on a slope, and nothing goes stiff at low speed. `mus` scales the friction, for example 1 on asphalt and 0.6 on grass.
 - **Outputs.** `Fz`, `Fx`, `Fy`, `kappa`, `alpha`, the forward speed `Vx`, the wheel speed `omega`, the deflection `delta`, the contact point `xc`, `yc`, `zc`, the force in world axes `Fwx`..`Fwz`, `camber`, the stored energy `Ec` and the dissipated power `Pd`.
 - **Terrain.** Feed `TerrainSurface` the wheel carrier pose; it returns the tangent plane below the wheel centre. Use one per wheel. The same formula can draw the ground in a 3D view or a simulator, so what you see is what the tyres drive on.

@@ -25,7 +25,7 @@ Errors and warnings also mark the canvas.
 | E108 | a CSV data file or its settings cannot be used |
 | E110–E112 | the model or scope cannot be [exported](page:export) as it is |
 | E113 | a [global parameter](page:parameters) cannot be evaluated |
-| E114 | a bond runs against a port's declared orientation (`@orientation`): it starts at an `in` port, ends at an `out` port, joins two `in` or two `out` ports, or both bonds of a `through` pair arrive (or both leave). The hint says which bond to reverse, or to put a junction in between |
+| E114 | a bond runs against a port's declared orientation (`@orientation`): it starts at an `in` port, ends at an `out` port, joins two `in` or two `out` ports, both bonds of a `through` pair arrive (or both leave), or the bond reaches a power port that declares no orientation. The hint says which bond to reverse, to put a junction in between, or to add `@orientation`. See [Bond direction and port orientation](page:building-models) |
 | E301–E306 | 3D scene and binding problems |
 | E401, W401 | a breakpoint could not be verified |
 | E901 | the solver failed during the run. A failure at the very start of a run with W201 items usually means a dependent storage element next to a stiff compliance (an `Inertia` on the drive of a compliant `Revolute3D`, for example); the hint says so. Give the element its own state with a spring between it and what drives it (the gear or shaft stiffness), lump it into the body it moves with, or use `Revolute3DRigid` and its `Ja` armature |

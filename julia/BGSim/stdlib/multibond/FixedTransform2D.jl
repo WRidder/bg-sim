@@ -1,7 +1,6 @@
 @block FixedTransform2D begin
     # The only legal bridge between two named frames (D-MB5): a = parent, b = child. Both
-    # ports declare the frame their twist/wrench are expressed in, so a bond from a world
-    # port to `a` and a bond from `b` to a body port check E007-clean.
+    # ports declare the frame their twist/wrench are expressed in, so a world-frame port at `a` and a body-frame port at `b` check E007-clean.
     @ports begin
         a::Power{Planar}, [frame = "world"]
         b::Power{Planar}, [frame = "body"]

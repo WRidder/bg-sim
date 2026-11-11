@@ -1,7 +1,18 @@
 # Port orientation: one bond-direction rule, enforced
 
-Status: planned (branch `port-orientation`). No backward compatibility: existing models are
-migrated or regenerated, and nothing keeps the old behaviour.
+Status: implemented on branch `port-orientation` (not yet merged into `master`). No backward compatibility: existing models were
+migrated or regenerated, and nothing keeps the old behaviour. The decisions and findings below are the record and are left as written.
+
+What was built: a block declares the bond direction its equations assume with the `@orientation` scope (`in`, `out`,
+or a `through` pair), carried in the catalog as `orientation: [{ ports, kind }]`. The compiler checks every bond against the
+declarations (error E114, also for two fixed ports bonded directly and for a bond to a port that declares nothing, O22), and
+the editor orients new bonds from the ports and refuses the rest. Every stdlib block declares its orientation (iconic ports are
+`in`, O20); the bond-graph sources `Sf` and `MSf` impose `+f` at the tail (O15); `RigidBody2D/3D` are rebuilt so the junction flow is
+the true twist and all contacts, joints, gravity and wrench blocks follow it (O7); the transform laws of the 2D mounts are written
+explicitly (O21). The example models, the project library blocks and the Julia test rigs were migrated through the build
+scripts or `tools/migrate_bond_orientation.py` with no tolerance widened (O10, O18). The user-facing rules are the manual section
+"Bond direction and port orientation"; the maintainer notes are "Port orientation (E114)" in `julia/BGSim/NOTES.md`; the spec rule is
+"Bond direction" with the "Port orientation" section. W218 was never merged.
 
 ## Why
 
