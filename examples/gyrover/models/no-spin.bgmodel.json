@@ -791,12 +791,12 @@
         "id": "c007",
         "kind": "bond",
         "from": {
-          "node": "n08",
-          "port": "b"
-        },
-        "to": {
           "node": "n01",
           "port": "p"
+        },
+        "to": {
+          "node": "n08",
+          "port": "b"
         },
         "label": null
       },
@@ -908,12 +908,12 @@
         "id": "c016",
         "kind": "bond",
         "from": {
-          "node": "n12",
-          "port": "b"
-        },
-        "to": {
           "node": "n07",
           "port": "p"
+        },
+        "to": {
+          "node": "n12",
+          "port": "b"
         },
         "label": null
       },

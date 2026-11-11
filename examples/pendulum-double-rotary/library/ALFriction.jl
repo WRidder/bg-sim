@@ -25,4 +25,5 @@
         p.e ~ tau
         P ~ tau * p.f
     end
+    @orientation p => :in
 end

@@ -350,7 +350,7 @@ def build_model(plant: rl.Plant, dz: dict, name: str, free: bool) -> dict:
             t_pose = pose_mul(pose_inv(ln[i]), lc[i - 1])
             d.ref(f"t{k}", f"T{k}", "stdlib:multibond/FixedTransform3DNeutral", x0, y0, params=pose_params(t_pose))
             d.connect("bond", (f"t{k}", "a"), (f"j{k}", "parent"))
-            d.connect("bond", (f"t{k}", "b"), (f"bj{k - 1}", None))
+            d.connect("bond", (f"bj{k - 1}", None), (f"t{k}", "b"))
         d.connect("bond", (f"j{k}", "child"), (f"link{k}", "a"))
         d.connect("bond", (f"link{k}", "b"), (f"bj{k}", None))
         d.connect("bond", (f"b{k}", "p"), (f"bj{k}", None))

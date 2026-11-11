@@ -2437,6 +2437,28 @@
       },
       {
         "id": "n41",
+        "name": "FlipR",
+        "block": {
+          "ref": "stdlib:bondgraph/TF"
+        },
+        "position": {
+          "x": 860,
+          "y": 880
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "-1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n42",
         "name": "ClimbR",
         "block": {
           "ref": "stdlib:bondgraph/MTF"
@@ -2456,7 +2478,7 @@
         }
       },
       {
-        "id": "n42",
+        "id": "n43",
         "name": "GwR",
         "block": {
           "ref": "project:Guideway"
@@ -2900,11 +2922,11 @@
         "id": "c37",
         "kind": "bond",
         "from": {
-          "node": "n34",
-          "port": "b"
+          "node": "n35"
         },
         "to": {
-          "node": "n35"
+          "node": "n34",
+          "port": "b"
         }
       },
       {
@@ -3014,29 +3036,7 @@
         "id": "c47",
         "kind": "bond",
         "from": {
-          "node": "n39",
-          "port": "a"
-        },
-        "to": {
           "node": "n23"
-        }
-      },
-      {
-        "id": "c48",
-        "kind": "bond",
-        "from": {
-          "node": "n39",
-          "port": "b"
-        },
-        "to": {
-          "node": "n40"
-        }
-      },
-      {
-        "id": "c49",
-        "kind": "bond",
-        "from": {
-          "node": "n04"
         },
         "to": {
           "node": "n41",
@@ -3044,10 +3044,44 @@
         }
       },
       {
-        "id": "c50",
+        "id": "c48",
         "kind": "bond",
         "from": {
           "node": "n41",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n39",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c49",
+        "kind": "bond",
+        "from": {
+          "node": "n40"
+        },
+        "to": {
+          "node": "n39",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c50",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n42",
+          "port": "p1"
+        }
+      },
+      {
+        "id": "c51",
+        "kind": "bond",
+        "from": {
+          "node": "n42",
           "port": "p2"
         },
         "to": {
@@ -3055,19 +3089,19 @@
         }
       },
       {
-        "id": "c51",
+        "id": "c52",
         "kind": "signal",
         "from": {
           "node": "n30",
           "port": "y"
         },
         "to": {
-          "node": "n41",
+          "node": "n42",
           "port": "u"
         }
       },
       {
-        "id": "c52",
+        "id": "c53",
         "kind": "bond",
         "from": {
           "node": "n40"
@@ -3078,7 +3112,7 @@
         }
       },
       {
-        "id": "c53",
+        "id": "c54",
         "kind": "signal",
         "from": {
           "node": "n32",
@@ -3090,34 +3124,34 @@
         }
       },
       {
-        "id": "c54",
+        "id": "c55",
         "kind": "signal",
         "from": {
           "node": "n27",
           "port": "y"
         },
         "to": {
-          "node": "n42",
+          "node": "n43",
           "port": "s"
-        }
-      },
-      {
-        "id": "c55",
-        "kind": "signal",
-        "from": {
-          "node": "n09",
-          "port": "y"
-        },
-        "to": {
-          "node": "n42",
-          "port": "v"
         }
       },
       {
         "id": "c56",
         "kind": "signal",
         "from": {
-          "node": "n42",
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n43",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c57",
+        "kind": "signal",
+        "from": {
+          "node": "n43",
           "port": "w"
         },
         "to": {

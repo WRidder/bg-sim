@@ -596,15 +596,19 @@ def model_vehicle() -> dict:
         y0 = 40 if tag == "F" else 760
         dg.node(f"Mod{tag}", module_subsystem(tag), X, y0)
         # kinematic lever: the module point moves with v_z - x*w_y (z up); a 0-junction adds the heave velocity
-        # and the pinion flow (radius x_m, from the pitch rate); the module sees it as a downward velocity
+        # and the pinion flow (radius x_m, from the pitch rate); the module sees it as a downward velocity.
+        # Both rack-and-pinion terminals are `in` (the junctions bond into them); the rear module sits behind
+        # the centre of mass (x = -x_m), so a -1 transformer turns the pitch rate round before its pinion.
         dg.node(f"Lever{tag}", "stdlib:converters/RackAndPinion", 960, y0 + 120, params={"r": "x_m"})
         dg.node(f"Z{tag}", "0", 1100, y0 + 100)
         dg.bond("Jz", None, f"Z{tag}", None)
         if tag == "F":
             dg.bond("Jt", None, f"Lever{tag}", "a")
         else:
-            dg.bond(f"Lever{tag}", "a", "Jt", None)
-        dg.bond(f"Lever{tag}", "b", f"Z{tag}", None)
+            dg.node(f"Flip{tag}", "stdlib:bondgraph/TF", 860, y0 + 120, params={"n": "-1.0"})
+            dg.bond("Jt", None, f"Flip{tag}", "p1")
+            dg.bond(f"Flip{tag}", "p2", f"Lever{tag}", "a")
+        dg.bond(f"Z{tag}", None, f"Lever{tag}", "b")
         # the forward speed has a vertical component in the world when the car is pitched: R31 = -2 q_y
         dg.node(f"Climb{tag}", "stdlib:bondgraph/MTF", 960, y0 + 200)
         dg.bond("Jx", None, f"Climb{tag}", "p1")

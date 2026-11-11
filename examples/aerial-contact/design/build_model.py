@@ -148,7 +148,7 @@ def build() -> dict:
     arm = node("Arm", "stdlib:spatial/RigidBody3D", 1020, 1300,
                params={"m": d.M_ARM, "J": "[" + ", ".join(f"{v:.9g}" for v in d.J_ARM) + "]", "g0": d.G},
                starts={"inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"})
-    bond(mnt_s, "b", body, "p")
+    bond(body, "p", mnt_s, "b")
     bond(mnt_s, "a", servo, "parent")
     bond(servo, "child", link_a, "a")
     bond(link_a, "b", arm, "p")
@@ -166,7 +166,7 @@ def build() -> dict:
     ee = node("EE", "stdlib:spatial/RigidBody3D", 1620, 1300,
               params={"m": d.M_EE, "J": "[" + ", ".join(f"{v:.9g}" for v in d.J_EE) + "]", "g0": d.G},
               starts={"inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"})
-    bond(tip_m, "b", arm, "p")
+    bond(arm, "p", tip_m, "b")
     bond(tip_m, "a", rub, "parent")
     bond(rub, "child", link_e, "a")
     bond(link_e, "b", ee, "p")

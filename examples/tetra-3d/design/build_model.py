@@ -56,6 +56,17 @@ def rpy(q: np.ndarray) -> tuple[float, float, float]:
     return float(np.arctan2(-rot[1, 2], rot[1, 1])), float(pitch), 0.0
 
 
+def orient_mount_bonds(diagram: dict, mount_ids: list[str]) -> None:
+    """The body bonds into each wheel mount's `b` (port orientation: the mount is a `through` pair whose
+    `a` side feeds the joint's `in` parent). Reverses a template bond that still leaves `b`, so the
+    output is the same whether or not the cube template has been migrated."""
+    for c in diagram["connections"]:
+        if c["kind"] == "bond" and c["from"]["node"] in mount_ids and c["from"]["port"] == "b":
+            c["from"], c["to"] = c["to"], c["from"]
+            if c.get("route"):
+                c["route"] = list(reversed(c["route"]))
+
+
 def build_model() -> dict:
     model = json.loads(TEMPLATE.read_text(encoding="utf-8"))
     diagram = model["diagram"]
@@ -125,6 +136,7 @@ def build_model() -> dict:
         nodes[f"Wheel{k + 1}"]["params"]["J"] = vec([d.JT, d.JT, d.JA])
         nodes[f"Drv{k + 1}"]["params"]["k_t"] = "0.1"
         nodes[f"EnW{k + 1}"]["params"]["m"] = num(d.M_WHEEL)
+    orient_mount_bonds(diagram, [nodes[f"WMount{k + 1}"]["id"] for k in range(4)])
 
     model["plots"] = [
         {"id": "p1", "title": "Attitude error to the edge and vertex balance", "signals": ["Sense/ang_edge", "Sense/ang_vert", "Seq/ph"]},

@@ -1161,22 +1161,22 @@
     "id": "c024",
     "kind": "bond",
     "from": {
-     "node": "n022",
-     "port": "carrier"
+     "node": "n020"
     },
     "to": {
-     "node": "n020"
+     "node": "n022",
+     "port": "carrier"
     }
    },
    {
     "id": "c025",
     "kind": "bond",
     "from": {
-     "node": "n022",
-     "port": "sun"
+     "node": "n023"
     },
     "to": {
-     "node": "n023"
+     "node": "n022",
+     "port": "sun"
     }
    },
    {
@@ -1216,11 +1216,11 @@
     "id": "c029",
     "kind": "bond",
     "from": {
-     "node": "n022",
-     "port": "ring"
+     "node": "n027"
     },
     "to": {
-     "node": "n027"
+     "node": "n022",
+     "port": "ring"
     }
    },
    {

@@ -134,9 +134,6 @@ position controller (and the PI vertical loop of the engage controller).
 * **Frame of the arm.** `Revolute3D` turns about the local z axis of its frame, so the joint frame is the body frame
   rotated -90 deg about x; the arm body frame is that frame turned back by +90 deg, so that the arm, the tip and the
   end-effector frames are aligned with the multirotor frame and the wheel geometry is written in world axes.
-* **Bond direction.** A mount with the body on the `b` side must be bonded **mount to body** (`Mount.b -> Body.p`), like
-  every wheel of `reaction-wheel-3d`; the same mount bonded body to mount flips the sign of the flow at the junction and
-  the arm's gravity pushes the multirotor up (found by a free-fall test: two equal bodies on a joint stood still).
 * **The contact starts after the wall has stopped the multirotor.** Switching to the (purely angular) contact controller
   as soon as the wheel plane is near the wall lets the multirotor bounce back and lose height: the thrust F_eq carries
   the weight only when the pitch is the equilibrium one, and nothing in the contact controller regulates the height. The

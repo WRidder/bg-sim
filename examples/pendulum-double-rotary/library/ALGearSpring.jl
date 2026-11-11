@@ -48,4 +48,5 @@
         E ~ Es
         P ~ d * slope * p.f * p.f
     end
+    @orientation p => :in
 end

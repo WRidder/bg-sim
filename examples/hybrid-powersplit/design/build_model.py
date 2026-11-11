@@ -201,7 +201,7 @@ def vehicle_globals(kind: str) -> list[dict]:
 def plant(d: Diagram) -> None:
     """The vehicle bond graph (top-level nodes). Signal sources the controllers use:
     EngineSpeed/y, SunSpeed/y, RingSpeed/y, WheelSpeed/y, VehicleSpeed/y, BusVoltage/y, WOT/y,
-    BatCurrent/y; inputs: Throttle/u1, Inv1/u, Inv2/u, Brakes/u."""
+    BatDischarge/y; inputs: Throttle/u1, Inv1/u, Inv2/u, Brakes/u."""
     X0, Y0 = 0, 0
     # ---- engine
     d.node("WOT", "stdlib:continuous/Lookup1D", X0 + 0, Y0 + 520,
@@ -330,10 +330,14 @@ def plant(d: Diagram) -> None:
                    "R0": num(BAT["R0"]), "R1": num(BAT["R1"]), "C1": num(BAT["C1"])},
            constants={"N": len(BAT["ocv_soc"])}, starts={"soc": "soc0"})
     d.node("Gnd", "stdlib:electrical/Ground", X0 + 600, Y0 - 180)
-    d.bond("Battery", "p", "BatJ", None)
+    # the battery terminal is `in`: BatJ bonds into Battery.p, so the junction flow (and BatCurrent)
+    # is the charging current, the battery's own sign; BatDischarge = -BatCurrent for the BMS and PBat
+    d.bond("BatJ", None, "Battery", "p")
     d.wire("Battery", "n", "Gnd", "p")
     d.bond("BatJ", None, "BatCurrent", "p")
-    d.bond("BatJ", None, "Bus", None)
+    d.bond("Bus", None, "BatJ", None)
+    d.node("BatDischarge", "stdlib:continuous/Gain", X0 + 860, Y0 - 420, params={"k": "-1.0"})
+    d.sig("BatCurrent", "y", "BatDischarge", "u")
     d.bond("Bus", None, "DCLink", "p")
     d.bond("Bus", None, "BusVoltage", "p")
     d.bond("Bus", None, "Inv1", "p2")
@@ -348,7 +352,10 @@ def machine(d: Diagram, k: str, x: float, y: float, shaft: str, kt: float, Rs: f
     machine voltage = u x bus voltage) onto the stator 1-junction with the stator resistance (copper
     loss) and inductance (L = R tau_el: it gives the stator current integral causality, so the
     undeclared EMConverter needs no arbitrary choice), and the electromechanical gyrator
-    EMConverter (torque constant k) onto the shaft."""
+    EMConverter (torque constant k) onto the shaft. Every EMConverter port is `in`: the shaft
+    junction bonds into `shaft`, and the stator bonds into `n` with `p` grounded (the terminals
+    the other way round, as in the stdlib DCMotor), so that a positive stator current drives the
+    shaft forward (torque +k i, back-EMF +k w)."""
     d.node(f"Inv{k}", "stdlib:bondgraph/MTF", x, y)
     d.junction(f"Stator{k}", 1, x + 140, y)
     d.node(f"Rs{k}", "stdlib:bondgraph/R", x + 80, y - 100, params={"r": num(Rs)})
@@ -358,9 +365,9 @@ def machine(d: Diagram, k: str, x: float, y: float, shaft: str, kt: float, Rs: f
     d.bond(f"Inv{k}", "p1", f"Stator{k}", None)
     d.bond(f"Stator{k}", None, f"Rs{k}", "p")
     d.bond(f"Stator{k}", None, f"Ls{k}", "p")
-    d.bond(f"Stator{k}", None, f"MG{k}", "p")
-    d.wire(f"MG{k}", "n", f"Gnd{k}", "p")
-    d.bond(f"MG{k}", "shaft", shaft, None)
+    d.bond(f"Stator{k}", None, f"MG{k}", "n")
+    d.wire(f"MG{k}", "p", f"Gnd{k}", "p")
+    d.bond(shaft, None, f"MG{k}", "shaft")
 
 
 def ocv0_expr() -> str:
@@ -439,11 +446,11 @@ def control(d: Diagram, ems: bool, strategy: int = 0, step_force: float | None =
     d.sig("HCU", "d1", "Inv1", "u")
     d.sig("HCU", "d2", "Inv2", "u")
     d.sig("HCU", "u_b", "Brakes", "u")
-    # battery management: coulomb counting (BatCurrent is positive while discharging)
+    # battery management: coulomb counting (BatDischarge is positive while discharging)
     d.node("BMS", "stdlib:continuous/Integrator", X + 760, Y + 420, starts={"x": "soc0"})
     d.node("BMSGain", "stdlib:continuous/Gain", X + 620, Y + 420,
            params={"k": num(-1.0 / (3600.0 * BAT["capacity"]))})
-    d.sig("BatCurrent", "y", "BMSGain", "u")
+    d.sig("BatDischarge", "y", "BMSGain", "u")
     d.sig("BMSGain", "y", "BMS", "u")
 
 
@@ -538,7 +545,7 @@ def fuel_and_meters(d: Diagram) -> None:
     for name, a, b, x, y in (("PEng", ("Throttle", "y"), ("EngineSpeed", "y"), 300, 760),
                              ("PMG1", ("HCU", "T_g"), ("SunSpeed", "y"), 440, 760),
                              ("PMG2", ("HCU", "T_m"), ("RingSpeed", "y"), 580, 760),
-                             ("PBat", ("BusVoltage", "y"), ("BatCurrent", "y"), 720, 760),
+                             ("PBat", ("BusVoltage", "y"), ("BatDischarge", "y"), 720, 760),
                              ("PWheel", ("ShaftTorque", "y"), ("WheelSpeed", "y"), 860, 760)):
         d.node(name, "stdlib:continuous/Product", x, y)
         d.sig(*a, name, "u1")
@@ -649,13 +656,13 @@ def model_kinematics() -> dict:
     d.bond("Engine2", "p", "Carrier2", None)
     d.bond("Carrier2", None, "CarrierSpeed2", "a")
     d.node("Gear", "stdlib:rotation/PlanetaryGear", 580, Y + 300, params={"ratio": "Zr/Zs"})
-    d.bond("Gear", "carrier", "Carrier2", None)
+    d.bond("Carrier2", None, "Gear", "carrier")
     for shaft, y, J, b in (("Sun2", Y + 120, k["J_s"], k["b_s"]), ("Ring2", Y + 480, k["J_r"], k["b_r"])):
         d.junction(shaft, 1, 900, y)
         d.node(f"{shaft}Inertia", "stdlib:bondgraph/I", 1020, y - 80, params={"i": num(J)})
         d.node(f"{shaft}Load", "stdlib:bondgraph/R", 1020, y + 60, params={"r": num(b)})
         d.node(f"{shaft}Speed", "stdlib:converters/SpeedSensor", 900, y + 110)
-        d.bond("Gear", shaft[:-1].lower(), shaft, None)
+        d.bond(shaft, None, "Gear", shaft[:-1].lower())
         d.bond(shaft, None, f"{shaft}Inertia", "p")
         d.bond(shaft, None, f"{shaft}Load", "p")
         d.bond(shaft, None, f"{shaft}Speed", "a")

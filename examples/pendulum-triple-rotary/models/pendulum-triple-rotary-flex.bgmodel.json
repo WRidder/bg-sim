@@ -1552,11 +1552,11 @@
         "id": "b026",
         "kind": "bond",
         "from": {
-          "node": "t3",
-          "port": "b"
+          "node": "bj2"
         },
         "to": {
-          "node": "bj2"
+          "node": "t3",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -1717,11 +1717,11 @@
         "id": "b038",
         "kind": "bond",
         "from": {
-          "node": "t4",
-          "port": "b"
+          "node": "bj3"
         },
         "to": {
-          "node": "bj3"
+          "node": "t4",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -2301,12 +2301,12 @@
         "id": "bf072",
         "kind": "bond",
         "from": {
-          "node": "t2",
-          "port": "b"
-        },
-        "to": {
           "node": "arm",
           "port": "B"
+        },
+        "to": {
+          "node": "t2",
+          "port": "b"
         },
         "route": [],
         "label": null

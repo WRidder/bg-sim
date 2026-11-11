@@ -58,7 +58,7 @@
         wheel = view.wheel
     end
     @connections begin
-        connect(contact.p, hub)
+        connect(hub, contact.p)
         connect(hub, body.p)
         connect(body.V, pose.tw)
         connect(pose.g, body.g)

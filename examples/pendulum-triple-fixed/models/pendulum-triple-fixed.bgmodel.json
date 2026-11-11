@@ -939,11 +939,11 @@
         "id": "c05",
         "kind": "bond",
         "from": {
-          "node": "n06",
-          "port": "parent"
+          "node": "n04"
         },
         "to": {
-          "node": "n04"
+          "node": "n06",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -1006,11 +1006,11 @@
         "id": "c10",
         "kind": "bond",
         "from": {
-          "node": "n11",
-          "port": "parent"
+          "node": "n08"
         },
         "to": {
-          "node": "n08"
+          "node": "n11",
+          "port": "parent"
         },
         "route": [],
         "label": null

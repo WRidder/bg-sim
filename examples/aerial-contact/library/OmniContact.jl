@@ -93,9 +93,9 @@
         R[3, 1] ~ 2 * (g[2] * g[4] - g[1] * g[3]) / s
         R[3, 2] ~ 2 * (g[3] * g[4] + g[1] * g[2]) / s
         R[3, 3] ~ (g[1] * g[1] - g[2] * g[2] - g[3] * g[3] + g[4] * g[4]) / s
-        v1 ~ -(R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6])
-        v2 ~ -(R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6])
-        v3 ~ -(R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6])
+        v1 ~ R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6]
+        v2 ~ R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6]
+        v3 ~ R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6]
         h ~ fr[1] * (g[5] - o[1]) + fr[2] * (g[6] - o[2]) + fr[3] * (g[7] - o[3])
         delta ~ -h
         r ~ sqrt(delta * delta + eps * eps)
@@ -125,12 +125,15 @@
         Fw1 ~ f_n * fr[1] - fd * ex - frl * rx
         Fw2 ~ f_n * fr[2] - fd * ey - frl * ry
         Fw3 ~ f_n * fr[3] - fd * ez - frl * rz
+        # Port effort = -(point-frame wrench [0; R^T F_w] on the body), with `p.f` = the point twist
+        # (as ContactPoint): the port power `e . f = -F . v` is the power absorbed by the contact.
         p.e[1] ~ 0
         p.e[2] ~ 0
         p.e[3] ~ 0
-        p.e[4] ~ R[1, 1] * Fw1 + R[2, 1] * Fw2 + R[3, 1] * Fw3
-        p.e[5] ~ R[1, 2] * Fw1 + R[2, 2] * Fw2 + R[3, 2] * Fw3
-        p.e[6] ~ R[1, 3] * Fw1 + R[2, 3] * Fw2 + R[3, 3] * Fw3
+        p.e[4] ~ -(R[1, 1] * Fw1 + R[2, 1] * Fw2 + R[3, 1] * Fw3)
+        p.e[5] ~ -(R[1, 2] * Fw1 + R[2, 2] * Fw2 + R[3, 2] * Fw3)
+        p.e[6] ~ -(R[1, 3] * Fw1 + R[2, 3] * Fw2 + R[3, 3] * Fw3)
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :in
 end

@@ -864,6 +864,22 @@
     "starts": {}
    },
    {
+    "id": "BoomPinion",
+    "name": "BoomPinion",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1080,
+     "y": 260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
     "id": "BoomLever",
     "name": "BoomLever",
     "block": {
@@ -992,6 +1008,22 @@
     "starts": {}
    },
    {
+    "id": "ArmPinion",
+    "name": "ArmPinion",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1080,
+     "y": 660
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
     "id": "ArmLever",
     "name": "ArmLever",
     "block": {
@@ -1116,6 +1148,22 @@
     "params": {
      "r": "1.0"
     },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketPinion",
+    "name": "BucketPinion",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1080,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
     "constants": {},
     "starts": {}
    },
@@ -1299,11 +1347,11 @@
     "id": "c005",
     "kind": "bond",
     "from": {
-     "node": "Joint2",
-     "port": "parent"
+     "node": "BodyJ1"
     },
     "to": {
-     "node": "BodyJ1"
+     "node": "Joint2",
+     "port": "parent"
     }
    },
    {
@@ -1344,11 +1392,11 @@
     "id": "c009",
     "kind": "bond",
     "from": {
-     "node": "Joint3",
-     "port": "parent"
+     "node": "BodyJ2"
     },
     "to": {
-     "node": "BodyJ2"
+     "node": "Joint3",
+     "port": "parent"
     }
    },
    {
@@ -1893,19 +1941,29 @@
     "id": "c055",
     "kind": "bond",
     "from": {
-     "node": "BoomRP",
-     "port": "b"
+     "node": "BoomRod"
     },
     "to": {
-     "node": "BoomRod"
+     "node": "BoomRP",
+     "port": "b"
     }
    },
    {
     "id": "c056",
     "kind": "bond",
     "from": {
+     "node": "BoomPinion"
+    },
+    "to": {
      "node": "BoomRP",
      "port": "a"
+    }
+   },
+   {
+    "id": "c057",
+    "kind": "bond",
+    "from": {
+     "node": "BoomPinion"
     },
     "to": {
      "node": "BoomLever",
@@ -1913,7 +1971,7 @@
     }
    },
    {
-    "id": "c057",
+    "id": "c058",
     "kind": "bond",
     "from": {
      "node": "BoomLever",
@@ -1925,7 +1983,7 @@
     }
    },
    {
-    "id": "c058",
+    "id": "c059",
     "kind": "signal",
     "from": {
      "node": "BoomMount",
@@ -1937,7 +1995,7 @@
     }
    },
    {
-    "id": "c059",
+    "id": "c060",
     "kind": "signal",
     "from": {
      "node": "BoomRate",
@@ -1949,7 +2007,7 @@
     }
    },
    {
-    "id": "c060",
+    "id": "c061",
     "kind": "bond",
     "from": {
      "node": "BoomRod"
@@ -1960,7 +2018,7 @@
     }
    },
    {
-    "id": "c061",
+    "id": "c062",
     "kind": "wire",
     "from": {
      "node": "BoomServo",
@@ -1972,7 +2030,7 @@
     }
    },
    {
-    "id": "c062",
+    "id": "c063",
     "kind": "signal",
     "from": {
      "node": "BoomRate",
@@ -1984,22 +2042,32 @@
     }
    },
    {
-    "id": "c063",
-    "kind": "bond",
-    "from": {
-     "node": "ArmRP",
-     "port": "b"
-    },
-    "to": {
-     "node": "ArmRod"
-    }
-   },
-   {
     "id": "c064",
     "kind": "bond",
     "from": {
+     "node": "ArmRod"
+    },
+    "to": {
+     "node": "ArmRP",
+     "port": "b"
+    }
+   },
+   {
+    "id": "c065",
+    "kind": "bond",
+    "from": {
+     "node": "ArmPinion"
+    },
+    "to": {
      "node": "ArmRP",
      "port": "a"
+    }
+   },
+   {
+    "id": "c066",
+    "kind": "bond",
+    "from": {
+     "node": "ArmPinion"
     },
     "to": {
      "node": "ArmLever",
@@ -2007,7 +2075,7 @@
     }
    },
    {
-    "id": "c065",
+    "id": "c067",
     "kind": "bond",
     "from": {
      "node": "ArmLever",
@@ -2019,7 +2087,7 @@
     }
    },
    {
-    "id": "c066",
+    "id": "c068",
     "kind": "signal",
     "from": {
      "node": "ArmMount",
@@ -2031,7 +2099,7 @@
     }
    },
    {
-    "id": "c067",
+    "id": "c069",
     "kind": "signal",
     "from": {
      "node": "ArmRate",
@@ -2043,7 +2111,7 @@
     }
    },
    {
-    "id": "c068",
+    "id": "c070",
     "kind": "bond",
     "from": {
      "node": "ArmRod"
@@ -2054,7 +2122,7 @@
     }
    },
    {
-    "id": "c069",
+    "id": "c071",
     "kind": "wire",
     "from": {
      "node": "ArmServo",
@@ -2066,7 +2134,7 @@
     }
    },
    {
-    "id": "c070",
+    "id": "c072",
     "kind": "signal",
     "from": {
      "node": "ArmRate",
@@ -2078,22 +2146,32 @@
     }
    },
    {
-    "id": "c071",
+    "id": "c073",
     "kind": "bond",
     "from": {
-     "node": "BucketRP",
-     "port": "b"
+     "node": "BucketRod"
     },
     "to": {
-     "node": "BucketRod"
+     "node": "BucketRP",
+     "port": "b"
     }
    },
    {
-    "id": "c072",
+    "id": "c074",
     "kind": "bond",
     "from": {
+     "node": "BucketPinion"
+    },
+    "to": {
      "node": "BucketRP",
      "port": "a"
+    }
+   },
+   {
+    "id": "c075",
+    "kind": "bond",
+    "from": {
+     "node": "BucketPinion"
     },
     "to": {
      "node": "BucketLever",
@@ -2101,7 +2179,7 @@
     }
    },
    {
-    "id": "c073",
+    "id": "c076",
     "kind": "bond",
     "from": {
      "node": "BucketLever",
@@ -2113,7 +2191,7 @@
     }
    },
    {
-    "id": "c074",
+    "id": "c077",
     "kind": "bond",
     "from": {
      "node": "FourBar",
@@ -2125,7 +2203,7 @@
     }
    },
    {
-    "id": "c075",
+    "id": "c078",
     "kind": "signal",
     "from": {
      "node": "BucketMount",
@@ -2137,7 +2215,7 @@
     }
    },
    {
-    "id": "c076",
+    "id": "c079",
     "kind": "signal",
     "from": {
      "node": "Linkage",
@@ -2149,7 +2227,7 @@
     }
    },
    {
-    "id": "c077",
+    "id": "c080",
     "kind": "signal",
     "from": {
      "node": "BucketRate",
@@ -2161,7 +2239,7 @@
     }
    },
    {
-    "id": "c078",
+    "id": "c081",
     "kind": "bond",
     "from": {
      "node": "BucketRod"
@@ -2172,7 +2250,7 @@
     }
    },
    {
-    "id": "c079",
+    "id": "c082",
     "kind": "wire",
     "from": {
      "node": "BucketServo",
@@ -2184,7 +2262,7 @@
     }
    },
    {
-    "id": "c080",
+    "id": "c083",
     "kind": "signal",
     "from": {
      "node": "BucketRate",
