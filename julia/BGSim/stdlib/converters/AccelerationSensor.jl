@@ -8,4 +8,5 @@
         y ~ ddt(v)
     end
     @causality a => (:effort_out, :fixed)
+    @orientation a => :in
 end

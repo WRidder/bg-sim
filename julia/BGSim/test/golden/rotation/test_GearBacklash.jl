@@ -2,8 +2,8 @@
 # `GearBacklash`), through the real pipeline.
 #
 # Model: two `Sf` sources hold both shafts at fixed speeds, so the block's relative angle is
-# `phi(t) = phi0 + fb*t` with `w = fb = a.f - b.f` (port a is driven at 0 and b at fb). The
-# spec's dead-zone law
+# `phi(t) = phi0 + fb*t` with `w = fb = a.f - b.f` (port a is driven at 0; `SfB` is set to -fb and
+# delivers it to b at the head of its bond, O15). The spec's dead-zone law
 #
 #   T = phi >  gap/2 ? max(k*(phi - gap/2) + d*w, 0) :
 #       phi < -gap/2 ? min(k*(phi + gap/2) + d*w, 0) : 0,
@@ -42,7 +42,7 @@ function backlash_static_model(phi0, fb)
                     "gap" => string(BACKLASH_GAP)),
                 starts = Dict{String,Any}("phi" => string(phi0))),
             bg_node("n3", "SfB", bg_ref("stdlib:bondgraph/Sf");
-                params = Dict{String,Any}("f" => string(fb))),
+                params = Dict{String,Any}("f" => string(-fb))),
         ],
         [
             bg_conn("c1", "bond", "n1", "p", "n2", "a"),

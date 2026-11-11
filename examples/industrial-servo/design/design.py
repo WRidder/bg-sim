@@ -218,20 +218,21 @@ def build(name: str, *, two_mass: bool, switching: bool, encoder: bool) -> dict:
     iqs = g.node("IqSens", ref("project:FlowSensor"), 780, 540 + y)
     bemf = g.node(
         "Bemf", ref("stdlib:bondgraph/MSe"), 620, 180 + y,
-        params={"gain": _num(KE)},
+        params={"gain": _num(-KE)},
     )
     wm = g.node("WmSens", ref("project:FlowSensor"), 960, 420 + y)
     g.bond((vq, "p"), qj, "v_q")
-    g.bond((mgy, "p2"), qj, "cross-coupling w_e L_d i_d")
+    # through pair (O13): one MGY bond arrives, the other leaves; the modulus WeL is negative
+    g.bond(qj, (mgy, "p2"), "cross-coupling w_e L_d i_d")
     g.bond(qj, (rq, "p"))
     g.bond(qj, (ilq, "p"))
     g.bond(qj, (iqs, "p"))
-    g.bond(qj, (bemf, "p"), "back-EMF -w_e psi_m")
+    g.bond((bemf, "p"), qj, "back-EMF -w_e psi_m")
     g.signal((wm, "y"), (bemf, "u"), "back-EMF speed")
 
     # --- torque gyrator: the measured i_q drives it through a flow source ---------------
     iqsrc = g.node("IqSrc", ref("stdlib:bondgraph/MSf"), 780, 420 + y,
-                   params={"gain": "-1.0"})
+                   params={"gain": "1.0"})
     gy = g.node("GY", ref("stdlib:bondgraph/GY"), 960, 300 + y,
                 params={"r": _num(KT)})
     g.bond((iqsrc, "p"), (gy, "p1"), "measured i_q")
@@ -272,8 +273,8 @@ def build(name: str, *, two_mass: bool, switching: bool, encoder: bool) -> dict:
         g.bond(s0, (tfl, "p1"), "twist w_m - w_L")
         g.bond((tfl, "p2"), lj, "w_L")
         g.bond(s0, kj, "relative velocity")
-        g.bond((kc, "p"), kj, "k_c = 800 N m/rad")
-        g.bond((dc, "p"), kj, "c_c = 0.02 N m s/rad")
+        g.bond(kj, (kc, "p"), "k_c = 800 N m/rad")
+        g.bond(kj, (dc, "p"), "c_c = 0.02 N m s/rad")
         g.bond(lj, (jl, "p"))
         g.bond(lj, (bl, "p"))
         g.bond(lj, (wl, "p"))
@@ -385,7 +386,7 @@ def build(name: str, *, two_mass: bool, switching: bool, encoder: bool) -> dict:
 
     # --- modulator modulus and recording sensors --------------------------------------
     wel = g.node("WeL", ref("stdlib:continuous/Gain"), 420, 100 + y,
-                 params={"k": _num(PP * LQ)})
+                 params={"k": _num(-PP * LQ)})
     g.signal((wm, "y"), (wel, "u"), "w_e L_q")
     g.signal((wel, "y"), (mgy, "u"))
     iphase = g.node("Iphase", ref("project:PhaseCurrent"), 960, 620 + y)

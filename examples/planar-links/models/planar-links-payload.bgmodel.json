@@ -244,6 +244,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n014",
         "name": "A3_Speed1",
         "block": {
@@ -256,7 +257,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -568,6 +569,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n032",
         "name": "A3_Speed2",
         "block": {
@@ -580,7 +582,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -910,6 +912,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n051",
         "name": "A3_Speed3",
         "block": {
@@ -922,7 +925,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}

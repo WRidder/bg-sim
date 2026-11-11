@@ -194,8 +194,10 @@ def plant(d: Diagram) -> None:
     d.node("GenInertia", "stdlib:bondgraph/I", 1360, y + 130, params={"i": "J_gen"},
            starts={"P": "J_gen*N_gear*rpm0*pi/30"})
     d.bond("Gen", None, "GenInertia", "p")
-    d.node("Generator", "stdlib:bondgraph/MSe", 1560, y)
-    d.bond("Gen", None, "Generator", "p")
+    # The generator absorbs the converter torque: an effort source at the tail of the Gen
+    # junction (its declared `out`) with gain -1, so it opposes the rotation.
+    d.node("Generator", "stdlib:bondgraph/MSe", 1560, y, params={"gain": "-1.0"})
+    d.bond("Generator", "p", "Gen", None)
     d.node("GenSpeed", "stdlib:converters/SpeedSensor", 1360, y - 120)
     d.bond("Gen", None, "GenSpeed", "a")
     d.note("**Drivetrain (rotation).** Rotor 1-junction: rotor inertia and aerodynamic torque. Shaft 0-junction: the "

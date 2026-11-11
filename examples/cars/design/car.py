@@ -277,8 +277,11 @@ def axle_diff(d: Diagram, name: str, src, left, right, x, y) -> None:
 def lsd(d: Diagram, name: str, left: str, right: str, r: float, x, y) -> None:
     """Viscous limited slip: a rotational damper between the two wheel spins of an axle."""
     d.node(name, "stdlib:rotation/RotationalDamper", x, y, params={"d": num(r)})
-    d.bond(left, "spin2", name, "a")
-    d.bond(right, "spin2", name, "b")
+    # Into the corner's LsdTF (a `through` TF whose other bond leaves it for the spin
+    # junction), so the bond arrives there; between two element ports the direction is
+    # notation only.
+    d.bond(name, "a", left, "spin2")
+    d.bond(name, "b", right, "spin2")
 
 
 def vehicle(d: Diagram, v: dict, start: dict, ground: str = "flat", terrain: dict | None = None,

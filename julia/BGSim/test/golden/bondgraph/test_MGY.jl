@@ -1,7 +1,7 @@
 # Golden test for `stdlib:bondgraph/MGY` (plan section 8, M2 row: the modulated gyrator),
 # through the real pipeline (`flatten` → `simulate`).
 #
-# Model: a flow source Sf = -2 drives port p1, the Sine source u(t) = 2 + sin(3 t) is the
+# Model: a flow source Sf = 2 drives port p1, the Sine source u(t) = 2 + sin(3 t) is the
 # modulus, and an inertia I (i = 1) sits on port p2. The flow source keeps every algebraic
 # port variable at zero at t = 0 (see the MTF golden test for why that matters).
 #
@@ -34,7 +34,7 @@ using .BondGraphGolden
                     "offset" => "2.0")),
             bg_node("n2", "MGY1", bg_ref("stdlib:bondgraph/MGY")),
             bg_node("n3", "Sf1", bg_ref("stdlib:bondgraph/Sf");
-                params = Dict{String,Any}("f" => "-2.0")),
+                params = Dict{String,Any}("f" => "2.0")),
             bg_node("n4", "I1", bg_ref("stdlib:bondgraph/I");
                 params = Dict{String,Any}("i" => "1.0")),
         ],

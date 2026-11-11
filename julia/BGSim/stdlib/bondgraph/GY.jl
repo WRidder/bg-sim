@@ -13,4 +13,5 @@
         p2.e ~ r * p1.f
     end
     @causality (p1, p2) => :gyrator
+    @orientation (p1, p2) => :through
 end

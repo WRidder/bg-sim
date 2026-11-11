@@ -348,7 +348,9 @@
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "gain": "-1.0"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -1046,11 +1048,11 @@
     "id": "c020",
     "kind": "bond",
     "from": {
-     "node": "n014"
-    },
-    "to": {
      "node": "n016",
      "port": "p"
+    },
+    "to": {
+     "node": "n014"
     }
    },
    {

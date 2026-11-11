@@ -9251,24 +9251,24 @@
         "id": "c067",
         "kind": "bond",
         "from": {
-          "node": "n025",
-          "port": "spin2"
-        },
-        "to": {
           "node": "n044",
           "port": "a"
+        },
+        "to": {
+          "node": "n025",
+          "port": "spin2"
         }
       },
       {
         "id": "c068",
         "kind": "bond",
         "from": {
-          "node": "n026",
-          "port": "spin2"
-        },
-        "to": {
           "node": "n044",
           "port": "b"
+        },
+        "to": {
+          "node": "n026",
+          "port": "spin2"
         }
       },
       {

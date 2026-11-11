@@ -7,4 +7,5 @@
         ddt(T) ~ a.f / C
         a.e ~ T
     end
+    @orientation a => :in
 end

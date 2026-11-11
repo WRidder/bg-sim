@@ -2535,7 +2535,9 @@
          },
          "rotation": 0,
          "flipX": false,
-         "params": {},
+         "params": {
+          "gain": "-1.0"
+         },
          "constants": {},
          "starts": {},
          "ui": {
@@ -2803,7 +2805,9 @@
          },
          "rotation": 0,
          "flipX": false,
-         "params": {},
+         "params": {
+          "gain": "-1.0"
+         },
          "constants": {},
          "starts": {},
          "ui": {
@@ -3071,7 +3075,9 @@
          },
          "rotation": 0,
          "flipX": false,
-         "params": {},
+         "params": {
+          "gain": "-1.0"
+         },
          "constants": {},
          "starts": {},
          "ui": {
@@ -4446,11 +4452,11 @@
          "id": "c096",
          "kind": "bond",
          "from": {
-          "node": "n52"
-         },
-         "to": {
           "node": "n53",
           "port": "p"
+         },
+         "to": {
+          "node": "n52"
          }
         },
         {
@@ -4686,11 +4692,11 @@
          "id": "c117",
          "kind": "bond",
          "from": {
-          "node": "n64"
-         },
-         "to": {
           "node": "n65",
           "port": "p"
+         },
+         "to": {
+          "node": "n64"
          }
         },
         {
@@ -4926,11 +4932,11 @@
          "id": "c138",
          "kind": "bond",
          "from": {
-          "node": "n76"
-         },
-         "to": {
           "node": "n77",
           "port": "p"
+         },
+         "to": {
+          "node": "n76"
          }
         },
         {

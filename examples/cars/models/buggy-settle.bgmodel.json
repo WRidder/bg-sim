@@ -7192,24 +7192,24 @@
         "id": "c056",
         "kind": "bond",
         "from": {
-          "node": "n014",
-          "port": "spin2"
-        },
-        "to": {
           "node": "n033",
           "port": "a"
+        },
+        "to": {
+          "node": "n014",
+          "port": "spin2"
         }
       },
       {
         "id": "c057",
         "kind": "bond",
         "from": {
-          "node": "n015",
-          "port": "spin2"
-        },
-        "to": {
           "node": "n033",
           "port": "b"
+        },
+        "to": {
+          "node": "n015",
+          "port": "spin2"
         }
       },
       {
@@ -7433,24 +7433,24 @@
         "id": "c077",
         "kind": "bond",
         "from": {
-          "node": "n016",
-          "port": "spin2"
-        },
-        "to": {
           "node": "n044",
           "port": "a"
+        },
+        "to": {
+          "node": "n016",
+          "port": "spin2"
         }
       },
       {
         "id": "c078",
         "kind": "bond",
         "from": {
-          "node": "n017",
-          "port": "spin2"
-        },
-        "to": {
           "node": "n044",
           "port": "b"
+        },
+        "to": {
+          "node": "n017",
+          "port": "spin2"
         }
       },
       {

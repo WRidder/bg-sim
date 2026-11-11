@@ -330,7 +330,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "amplitude": "-0.4386490844928604",
+          "amplitude": "0.4386490844928604",
           "frequency": "12.566370614359172"
         },
         "constants": {},

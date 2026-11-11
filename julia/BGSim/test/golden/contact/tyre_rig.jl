@@ -85,7 +85,7 @@ function _ty_kinematic(; vx = 20.0, vy = 0.0, w_rel = 20.0 / 0.288, z = 0.288, m
         bg_node("v", "Twist", _ty_d("inline" => _ty_d("source" => _TY_VEC6));
             params = _ty_d("c4" => string(vx), "c5" => "0.0", "c6" => string(vy))),
         bg_node("sf", "Carrier", bg_ref("stdlib:multibond/SfSpatial")),
-        bg_node("ws", "Spin", bg_ref("stdlib:bondgraph/Sf"); params = _ty_d("f" => string(-w_rel))),
+        bg_node("ws", "Spin", bg_ref("stdlib:bondgraph/Sf"); params = _ty_d("f" => string(w_rel))),
         bg_node("g", "Pose", bg_ref("stdlib:spatial/LocalPose3D");
             params = _ty_d("qw" => string(_TY_Q_AXLE[1]), "qx" => string(_TY_Q_AXLE[2]), "qy" => "0.0",
                 "qz" => "0.0", "x" => "0.0", "y" => "0.0", "z" => string(z))),

@@ -118,6 +118,19 @@ _sc_codes(diags) = Set(d.code for d in diags)
         flipped = deepcopy(doc)
         c = flipped["diagram"]["connections"][2]
         c["from"], c["to"] = c["to"], c["from"]
+        # The stdlib R's port is `in` (port orientation), so a bond out of the subsystem is E114;
+        # an inline R with the same law and no declared orientation takes either direction.
+        s_in, _ = _SC.scope_document(flipped, "Plant"; power_inputs = Dict("p" => "effort"),
+            input_values = Dict("p" => 3.0))
+        @test "E114" in _sc_codes(Compile.flatten(IR.parse_model(s_in)).diagnostics)
+        load = flipped["diagram"]["nodes"][2]["block"]["subsystem"]["diagram"]["nodes"][2]
+        load["block"] = Dict{String,Any}("inline" => Dict{String,Any}("source" => """
+        @block R begin
+            @ports p::Power{Generic}
+            @parameters r::Real = 1.0
+            @equations p.e ~ r * p.f
+        end
+        """))
         s2, _ = _SC.scope_document(flipped, "Plant"; power_inputs = Dict("p" => "effort"),
             input_values = Dict("p" => 3.0))
         @test flowing(s2) ≈ 1.5

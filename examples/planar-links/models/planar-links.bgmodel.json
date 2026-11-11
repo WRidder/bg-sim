@@ -262,6 +262,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n015",
         "name": "A1_Speed1",
         "block": {
@@ -274,7 +275,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -625,6 +626,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n035",
         "name": "A2_Speed1",
         "block": {
@@ -637,7 +639,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -967,6 +969,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n054",
         "name": "A2_Speed2",
         "block": {
@@ -979,7 +982,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -1330,6 +1333,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n074",
         "name": "A3_Speed1",
         "block": {
@@ -1342,7 +1346,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -1654,6 +1658,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n092",
         "name": "A3_Speed2",
         "block": {
@@ -1666,7 +1671,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}
@@ -1996,6 +2001,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O15",
         "id": "n111",
         "name": "A3_Speed3",
         "block": {
@@ -2008,7 +2014,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "gain": "1.0"
+          "gain": "-1.0"
         },
         "constants": {},
         "starts": {}

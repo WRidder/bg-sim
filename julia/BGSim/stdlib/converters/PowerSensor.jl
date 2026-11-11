@@ -16,4 +16,5 @@
         a.f + b.f ~ 0.0
         y ~ a.e * a.f
     end
+    @orientation (a, b) => :through
 end

@@ -598,7 +598,7 @@ _sim_ramp_model() = _sim_model(
         data = run0(
             [
                 _sim_node("n1", "Src", _sim_ref("stdlib:bondgraph/Sf");
-                    params = Dict{String,Any}("f" => "1.0")),
+                    params = Dict{String,Any}("f" => "-1.0")),
                 _sim_node("n2", "Pos", _sim_ref("stdlib:converters/PositionSensor");
                     starts = Dict{String,Any}("x" => "0.5")),
                 _sim_node("n3", "K", _sim_ref("stdlib:continuous/Gain");
@@ -611,7 +611,7 @@ _sim_ramp_model() = _sim_model(
         )
         @test data["Pos/x"][1] == 0.5
         @test data["K/y"][1] == 1.0
-        # the bond runs from the source to the sensor, so the sensor port sees -f
+        # the source delivers its `f` to the sensor at the head of the bond (O15): x falls
         @test isapprox(data["Pos/x"][end], 0.49; rtol = 1.0e-9)
 
         # A coil on a 1-junction inside a current loop: MTK keeps the source's bond flow

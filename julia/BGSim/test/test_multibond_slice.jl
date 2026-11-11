@@ -512,12 +512,12 @@ end
                 _mb4_node("n3", "T", _mb4_ref("stdlib:multibond/ScrewTF");
                     params = Dict{String,Any}("rx" => string(rx), "ry" => string(ry))),
                 _mb4_node("n4", "Sf", _mb4_ref("stdlib:bondgraph/Sf");
-                    params = Dict{String,Any}("f" => string(v))),
+                    params = Dict{String,Any}("f" => string(-v))),
             ],
             Any[
                 _mb4_conn("c1", "signal", "n1", "y", "n2", "u"),
                 _mb4_conn("c2", "bond", "n2", "p", "n3", "a"),
-                _mb4_conn("c3", "bond", "n3", "b", "n4", "p"),
+                _mb4_conn("c3", "bond", "n4", "p", "n3", "b"),   # Sf is `out` (O15): it delivers -v
             ],
         )
         @test isempty(_mb4_errors(_mb4_check(doc)))

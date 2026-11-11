@@ -271,7 +271,7 @@
     "rotation": 0,
     "flipX": false,
     "params": {
-     "gain": "1.0"
+     "gain": "-1.0"
     },
     "constants": {},
     "starts": {},
@@ -908,7 +908,7 @@
     "rotation": 0,
     "flipX": false,
     "params": {
-     "gain": "1.047202012380037"
+     "gain": "-1.047202012380037"
     },
     "constants": {},
     "starts": {},
@@ -1462,7 +1462,7 @@
     "rotation": 0,
     "flipX": false,
     "params": {
-     "gain": "c_rr*m_veh*g_n"
+     "gain": "-c_rr*m_veh*g_n"
     },
     "constants": {},
     "starts": {},
@@ -2915,11 +2915,11 @@
     "id": "c006",
     "kind": "bond",
     "from": {
-     "node": "n004"
-    },
-    "to": {
      "node": "n013",
      "port": "p"
+    },
+    "to": {
+     "node": "n004"
     }
    },
    {
@@ -3178,11 +3178,11 @@
     "id": "c030",
     "kind": "bond",
     "from": {
-     "node": "n025"
-    },
-    "to": {
      "node": "n031",
      "port": "p"
+    },
+    "to": {
+     "node": "n025"
     }
    },
    {
@@ -3455,11 +3455,11 @@
     "id": "c055",
     "kind": "bond",
     "from": {
-     "node": "n049"
-    },
-    "to": {
      "node": "n057",
      "port": "p"
+    },
+    "to": {
+     "node": "n049"
     }
    },
    {

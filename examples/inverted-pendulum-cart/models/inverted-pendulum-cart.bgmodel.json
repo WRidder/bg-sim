@@ -156,7 +156,7 @@
         "position": { "x": 910, "y": 630 },
         "rotation": 0,
         "flipX": false,
-        "params": { "gain": "-1.962" },
+        "params": { "gain": "1.962" },
         "constants": {},
         "starts": {},
         "ui": { "showLabel": true, "color": null }
@@ -380,8 +380,8 @@
       {
         "id": "b06",
         "kind": "bond",
-        "from": { "node": "n07", "port": "p" },
-        "to": { "node": "n06" },
+        "from": { "node": "n06" },
+        "to": { "node": "n07", "port": "p" },
         "route": [],
         "label": "v_x"
       },
@@ -420,8 +420,8 @@
       {
         "id": "b11",
         "kind": "bond",
-        "from": { "node": "n11" },
-        "to": { "node": "n10", "port": "p2" },
+        "from": { "node": "n10", "port": "p2" },
+        "to": { "node": "n11" },
         "route": [],
         "label": "v_y"
       },

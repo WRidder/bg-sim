@@ -91,6 +91,41 @@ Choices WP-O1 made where the decisions above leave room:
   with `scope: "@connections"`, the composite's ref and the `connect` line as `source`, and its message
   and hint spell the `connect(a, b)`.
 
+Choices WP-O2 made:
+
+- **O6/O13, scalar declarations.** `bondgraph/`: `C`, `I`, `R`, `MR`, `De`, `Df` `in`; `Se`, `MSe`, `Sf`, `MSf`
+  `out`; `TF`, `MTF`, `GY`, `MGY` `(p1, p2) => :through`; `RS` `p => :in`, `heat => :out`. `converters/`: the six
+  one-terminal sensors `in`, `PowerSensor` `(a, b) => :through`. `hydraulic/Volume`, `Accumulator`,
+  `rotation/Brake`, `thermal/HeatCapacitor`, `TemperatureSensor` `in`. Everything else in these categories stays
+  `any` (O15). No composite of these categories has an internal bond (all wires), so none changed.
+- **O15, the law.** `Sf`: `p.f ~ -f`; `MSf`: `p.f ~ -gain * u`. Nothing else in the two blocks changed.
+- **O13 is a relation, not a symmetry, for a gyrator.** A `through` pair constrains the two bond directions;
+  reversing *one* of its bonds on a 1-junction still negates the modulus (for `TF` `n`, for `GY`/`MGY` `r`/`u`).
+  The migration treats the two sides of a `through` block as one chain, so such a reversal is a `review` case unless
+  the junction on one side can be renamed. Met once: industrial-servo's dq coupling `MGY` (both bonds left it);
+  fixed by hand (`QJ -> MGY.p2` and the modulus gain `WeL.k` negated).
+- **O9/O19, the tool's idempotency marker.** A model cannot tell whether it predates a law change, so a node whose
+  law change the tool has accounted for gets `"$comment": "migrate_bond_orientation: O15"` (appended to an existing
+  comment). `--no-law-changes` skips the law step for a model written after the change. The law-changed blocks are
+  the tool's `LAW_CHANGES` table; WP-O3a adds the planar and spatial ones there.
+- **O9, the cost of a sign choice.** Per sign group the tool prefers, in this order: no change, negating a source
+  value, flipping a `through` block's ports, flipping an odd element (its port variables and its state change sign),
+  review. A source negation therefore beats renaming a junction whose inertia would flip.
+- **Causality fixture `r_r_loop.json`.** Its `R -> R` bond is an O4 error now; the two resistors sit on a
+  1-junction instead (the W202 algebraic loop is unchanged).
+- **Julia test rigs.** A rig that only uses an `Sf` to drive something keeps its assertions: its source value is
+  negated (`test_components`, `test_simulate`, the `MGY`, `MTF`, `PowerSensor`, `GearBacklash`,
+  `GearWithBacklash` goldens) or, where the value was negated only to work around the old law, the workaround goes
+  (`test_MSf` gain `1`, `RollingSphere` and `tyre_rig` spin `+W`). The `PowerSensor` golden's second placement
+  (`R -> sensor -> junction`, read -12 W) cannot be drawn any more (`R.p` is `in`); it now asserts E114.
+  `test_export_scope.jl`'s "both bond orientations" case bonded out of a subsystem port backed by `R`: it now asserts
+  E114 for the stdlib `R` and keeps the reversed-adapter check with an inline `R` (same law, no orientation).
+- **Left for WP-O3a: `planar/Revolute2DRigid`.** Its internal `connect(rate.p, axis)` bonds the scalar `Df` (now
+  `in`) out of it into the 1-junction `axis`: E114 in every model that uses the joint (no example does; six asserts
+  in `test_planar_mechanics.jl` fail). Reversing the bond on the 1-junction flips the `Df` reading, so `qdot`, `q`,
+  `qout`, `qdout` need a compensating sign (or the screw/drive bonds change with it). `planar/` is WP-O3a's, so
+  WP-O2 did not touch it.
+
 Open points, decided in the work package that meets them and recorded here:
 
 - **Two-terminal iconic sensors** (decided in WP-O0): they **stay `any`**.

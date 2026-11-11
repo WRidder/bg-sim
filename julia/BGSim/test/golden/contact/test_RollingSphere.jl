@@ -95,7 +95,7 @@ function rs_model(; alpha = 0.0, crr = 0.0, spin = nothing, rho = 0.0, t_end = 1
         push!(conns, bg_conn("b7", "bond", "j", "drive", "lk", nothing))
     else
         # Sf -> 0 -> drive, 0 -> lock (the C/R pair carries the drive torque)
-        push!(nodes, bg_node("sf", "Spin", bg_ref("stdlib:bondgraph/Sf"); params = Dict{String,Any}("f" => _rs(-W))))
+        push!(nodes, bg_node("sf", "Spin", bg_ref("stdlib:bondgraph/Sf"); params = Dict{String,Any}("f" => _rs(W))))
         push!(nodes, bg_node("z", "Hub", bg_junction(0)))
         append!(conns, Any[
             bg_conn("b7", "bond", "sf", "p", "z", nothing),

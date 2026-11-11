@@ -236,9 +236,9 @@ def locks(D: Diagram, q10, x0, *, shaker=None):
         x = 440 + 260 * (i - 1)
         if shaker and i == 1:
             A, W = shaker
-            D.node("ShakerRate", "stdlib:sources/Sine", x - 260, -420, params={"amplitude": -A * W, "frequency": W})
-            # the MSf flow enters the 0-junction and leaves it into the gimbal drive with the
-            # opposite sign of qdot1, so the source carries -A W sin(W t)
+            D.node("ShakerRate", "stdlib:sources/Sine", x - 260, -420, params={"amplitude": A * W, "frequency": W})
+            # the MSf delivers A W sin(W t) into the 0-junction (a flow source at the tail of its
+            # bond imposes +u on the junction), which passes it on to the gimbal drive and the lock
             D.node("Shaker", "stdlib:bondgraph/MSf", x - 120, -420)
             D.node("LockNode", "0", x, -300)
             D.sig("ShakerRate", "y", "Shaker", "u")
