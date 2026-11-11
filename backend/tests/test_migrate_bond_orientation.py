@@ -688,3 +688,138 @@ def test_iconic_sources_negated(mig, tmp_path):
     assert after["diagram"]["nodes"][5]["params"] == {"v": "-0.5"}
     assert after["diagram"]["nodes"][4]["starts"] == {"P": "0.3"}
     assert after["diagram"]["nodes"][7]["starts"] == {"P": "0.1"}
+
+
+# ---------------------------------------------------------------------------------------------
+# WP-O3c2: series sensors whose output is used, route layout
+# ---------------------------------------------------------------------------------------------
+
+SENSOR_CATALOG = {
+    "blocks": ICONIC_CATALOG["blocks"] + [
+        _block("stdlib:converters/TorqueSensor", ["a", "b"], [(("a",), "in"), (("b",), "in")], outputs=["y"]),
+    ]
+}
+
+
+def _run_sensor(mig, proj, check=False):
+    out = io.StringIO()
+    cat = mig.catalog_from_json(SENSOR_CATALOG)
+    status = mig.run([str(proj)], check=check, catalog=cat, law_changes=True, out=out)
+    return status, out.getvalue()
+
+
+def test_series_sensor_terminals_swapped(mig, tmp_path):
+    """planar-links: a source drives a 1-junction through a `TorqueSensor` (`Se -> Torque.b`,
+    `Torque.a -> J1`), and the sensed torque drives a block. `a` at the tail violates `in`; reversing
+    it flips that terminal, so the source chain flips too (value negated) and both terminals flip,
+    which negates `y`. Exchanging the two port names at the bond ends negates it back: `y` and the
+    junction keep their sign, of the sensor's port variables only the flows change sign."""
+    doc = model("m", [
+        _node("n1", "Src", ref("stdlib:bondgraph/Se"), {"e": "-1.0"}),
+        _node("n2", "Torque", ref("stdlib:converters/TorqueSensor")),
+        _node("n3", "J1", junction(1)),
+        _node("n4", "Mass", ref("stdlib:bondgraph/I"), {"i": "2.0"}, {"P": "0.3"}),
+        _node("n5", "K", ref("stdlib:continuous/Gain")),
+    ], [
+        bond("b1", ("n1", "p"), ("n2", "b")),
+        bond("b2", ("n2", "a"), "n3"),
+        bond("b3", "n3", ("n4", "p")),
+        signal("s1", ("n2", "y"), ("n5", "u")),
+    ])
+    expected = {"project": "proj", "models": {"m": {"checks": [
+        {"kind": "final_value", "signal": "Torque/y", "t": 1.0, "value": 0.5, "rtol": 1e-3},
+    ]}}}
+    proj = _project(tmp_path, {"m": doc}, expected)
+    status, report = _run_sensor(mig, proj)
+    assert status == 0, report
+    assert "[source] negate `Src`.e: -1.0 -> 1.0" in report
+    assert "swap the terminals `a` and `b` of `Torque`" in report
+    assert "Torque/y" not in report and "Torque/a.e" not in report and "Mass/" not in report
+    assert "Torque/a.f" in report and "Torque/b.f" in report
+    after = _read(proj, "m")
+    assert _conn(after, "b1")["to"] == {"node": "n2", "port": "a"}
+    assert _conn(after, "b2")["from"] == {"node": "n3"} and _conn(after, "b2")["to"] == {"node": "n2", "port": "b"}
+    assert after["diagram"]["nodes"][3]["starts"] == {"P": "0.3"}
+    checks = json.loads((proj / "expected.json").read_text(encoding="utf-8"))["models"]["m"]["checks"]
+    assert checks[0]["value"] == 0.5
+    status, report = _run_sensor(mig, proj)
+    assert status == 0 and "nothing to do" in report
+
+
+def test_series_sensor_bonded_twice_is_review(mig, tmp_path):
+    """The same sensor with a second bond at `b`, and an element of unknown law on the junction (so
+    renaming the junction is no way out): its terminals cannot be exchanged, review, nothing written."""
+    doc = model("m", [
+        _node("n1", "Src", ref("stdlib:bondgraph/Se")),
+        _node("n2", "Torque", ref("stdlib:converters/TorqueSensor")),
+        _node("n3", "J1", junction(1)),
+        _node("n4", "Strut", ref("project:Strut")),
+        _node("n5", "K", ref("stdlib:continuous/Gain")),
+        _node("n6", "J2", junction(1)),
+    ], [
+        bond("b1", ("n1", "p"), ("n2", "b")),
+        bond("b2", ("n2", "a"), "n3"),
+        bond("b3", "n3", ("n4", "j")),
+        bond("b4", "n6", ("n2", "b")),
+        signal("s1", ("n2", "y"), ("n5", "u")),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    before = (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8")
+    status, report = _run_sensor(mig, proj)
+    assert status == 2, report
+    assert "swap" not in report
+    assert (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8") == before
+
+
+def test_route_reversed_in_place(mig, tmp_path):
+    """A reversed bond's route is reversed by moving its items' text: the layout stays, so the
+    file equals the reversed document written with the original indentation."""
+    doc = model("m", [
+        _node("n1", "J1", junction(1)),
+        _node("n2", "Drag", ref("stdlib:bondgraph/R")),
+    ], [
+        dict(bond("b1", ("n2", "p"), "n1"), route=[{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 5, "y": 6}]),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    status, report = _run(mig, proj)
+    assert status == 0, report
+    want = json.loads(json.dumps(doc))
+    c = want["diagram"]["connections"][0]
+    c["from"], c["to"], c["route"] = c["to"], c["from"], list(reversed(c["route"]))
+    text = (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8")
+    assert text == json.dumps(want, indent=2) + "\n"
+
+
+def test_skip_one_law_change(mig, tmp_path):
+    """A model a build script regenerated after O15 (its `Sf` already written for the new law, no
+    marker) but before O7: `skip={"O15"}` leaves the `Sf` alone and still compensates the O7
+    change of the joint child on the same run."""
+    doc = model("m", [
+        _node("n1", "Belt", ref("stdlib:bondgraph/Sf"), {"f": "v_b"}),
+        _node("n2", "J0", junction(0)),
+        _node("n3", "Spring", ref("stdlib:bondgraph/C")),
+        _node("n4", "World", ref("stdlib:multibond/GroundSpatial")),
+        _node("n5", "Joint", ref("stdlib:spatial/Revolute3D")),
+        _node("n6", "Body", ref("stdlib:spatial/RigidBody3D")),
+    ], [
+        bond("b1", ("n1", "p"), "n2"),
+        bond("b2", "n2", ("n3", "p")),
+        bond("b3", ("n4", "p"), ("n5", "parent")),
+        bond("b4", ("n5", "child"), ("n6", "p")),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    out = io.StringIO()
+    status = mig.run([str(proj)], check=True, catalog=mig.catalog_from_json(MECH_CATALOG),
+                     skip=frozenset({"O15"}), out=out)
+    report = out.getvalue()
+    assert status == 1, report
+    assert "Belt" not in report
+    assert "`Joint` (stdlib:spatial/Revolute3D): law change O7 cancelled" in report
+    assert mig.main(["--check", "--catalog", str(_catalog_file(tmp_path)), "--skip-law-change", "O15",
+                     "--skip-law-change", "O7", str(proj)]) == 0
+
+
+def _catalog_file(tmp_path):
+    path = tmp_path / "catalog.json"
+    path.write_text(json.dumps(MECH_CATALOG), encoding="utf-8")
+    return path

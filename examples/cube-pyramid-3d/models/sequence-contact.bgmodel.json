@@ -6,6 +6,7 @@
   "diagram": {
     "nodes": [
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n01",
         "name": "Cube",
         "block": {
@@ -216,6 +217,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n10",
         "name": "C1",
         "block": {
@@ -311,6 +313,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n14",
         "name": "C2",
         "block": {
@@ -406,6 +409,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n18",
         "name": "C3",
         "block": {
@@ -501,6 +505,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n22",
         "name": "C4",
         "block": {
@@ -673,6 +678,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n29",
         "name": "WJoint1",
         "block": {
@@ -719,6 +725,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n31",
         "name": "Wheel1",
         "block": {
@@ -911,6 +918,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n39",
         "name": "WJoint2",
         "block": {
@@ -957,6 +965,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n41",
         "name": "Wheel2",
         "block": {
@@ -1149,6 +1158,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n49",
         "name": "WJoint3",
         "block": {
@@ -1195,6 +1205,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n51",
         "name": "Wheel3",
         "block": {
@@ -1387,6 +1398,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n59",
         "name": "WJoint4",
         "block": {
@@ -1433,6 +1445,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n61",
         "name": "Wheel4",
         "block": {
@@ -3318,29 +3331,29 @@
         "id": "c57",
         "kind": "bond",
         "from": {
-          "node": "n28",
-          "port": "b"
-        },
-        "to": {
           "node": "n01",
           "port": "p"
         },
+        "to": {
+          "node": "n28",
+          "port": "b"
+        },
         "route": [
-          {
-            "x": 760,
-            "y": 270
-          },
-          {
-            "x": 490,
-            "y": 270
-          },
-          {
-            "x": 490,
-            "y": 590
-          },
           {
             "x": 500,
             "y": 590
+          },
+          {
+            "x": 490,
+            "y": 590
+          },
+          {
+            "x": 490,
+            "y": 270
+          },
+          {
+            "x": 760,
+            "y": 270
           }
         ],
         "label": null
@@ -3865,33 +3878,33 @@
         "id": "c77",
         "kind": "bond",
         "from": {
-          "node": "n38",
-          "port": "b"
-        },
-        "to": {
           "node": "n01",
           "port": "p"
         },
+        "to": {
+          "node": "n38",
+          "port": "b"
+        },
         "route": [
-          {
-            "x": 760,
-            "y": 570
-          },
-          {
-            "x": 600,
-            "y": 570
-          },
-          {
-            "x": 600,
-            "y": 540
-          },
-          {
-            "x": 500,
-            "y": 540
-          },
           {
             "x": 500,
             "y": 590
+          },
+          {
+            "x": 500,
+            "y": 540
+          },
+          {
+            "x": 600,
+            "y": 540
+          },
+          {
+            "x": 600,
+            "y": 570
+          },
+          {
+            "x": 760,
+            "y": 570
           }
         ],
         "label": null
@@ -4417,45 +4430,45 @@
         "id": "c97",
         "kind": "bond",
         "from": {
-          "node": "n48",
-          "port": "b"
-        },
-        "to": {
           "node": "n01",
           "port": "p"
         },
+        "to": {
+          "node": "n48",
+          "port": "b"
+        },
         "route": [
-          {
-            "x": 760,
-            "y": 870
-          },
-          {
-            "x": 730,
-            "y": 870
-          },
-          {
-            "x": 730,
-            "y": 580
-          },
-          {
-            "x": 580,
-            "y": 580
-          },
-          {
-            "x": 580,
-            "y": 560
-          },
-          {
-            "x": 510,
-            "y": 560
-          },
-          {
-            "x": 510,
-            "y": 590
-          },
           {
             "x": 500,
             "y": 590
+          },
+          {
+            "x": 510,
+            "y": 590
+          },
+          {
+            "x": 510,
+            "y": 560
+          },
+          {
+            "x": 580,
+            "y": 560
+          },
+          {
+            "x": 580,
+            "y": 580
+          },
+          {
+            "x": 730,
+            "y": 580
+          },
+          {
+            "x": 730,
+            "y": 870
+          },
+          {
+            "x": 760,
+            "y": 870
           }
         ],
         "label": null
@@ -4977,45 +4990,45 @@
         "id": "c117",
         "kind": "bond",
         "from": {
-          "node": "n58",
-          "port": "b"
-        },
-        "to": {
           "node": "n01",
           "port": "p"
         },
+        "to": {
+          "node": "n58",
+          "port": "b"
+        },
         "route": [
-          {
-            "x": 760,
-            "y": 1170
-          },
-          {
-            "x": 760,
-            "y": 1130
-          },
-          {
-            "x": 880,
-            "y": 1130
-          },
-          {
-            "x": 880,
-            "y": 410
-          },
-          {
-            "x": 480,
-            "y": 410
-          },
-          {
-            "x": 480,
-            "y": 580
-          },
-          {
-            "x": 500,
-            "y": 580
-          },
           {
             "x": 500,
             "y": 590
+          },
+          {
+            "x": 500,
+            "y": 580
+          },
+          {
+            "x": 480,
+            "y": 580
+          },
+          {
+            "x": 480,
+            "y": 410
+          },
+          {
+            "x": 880,
+            "y": 410
+          },
+          {
+            "x": 880,
+            "y": 1130
+          },
+          {
+            "x": 760,
+            "y": 1130
+          },
+          {
+            "x": 760,
+            "y": 1170
           }
         ],
         "label": null

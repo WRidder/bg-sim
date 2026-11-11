@@ -7,7 +7,8 @@
 Usage::
 
     uv run tools/migrate_bond_orientation.py [--check] [--catalog FILE] [--project DIR]
-                                             [--no-law-changes] PATH [PATH ...]
+                                             [--no-law-changes] [--skip-law-change DECISION]
+                                             PATH [PATH ...]
 
 ``PATH`` is a model document (``*.bgmodel.json`` or any ``bgsim.model`` JSON) or an example /
 project directory (every ``models/*.bgmodel.json`` in it). The project directory of a model is
@@ -45,6 +46,10 @@ What the tool does, per model:
    * **source**: a source (``Se``, ``Sf``, ``MSe``, ``MSf``, an iconic ``SpeedSource``,
      ``VelocitySource`` or ``PressureSource``, or a two-terminal iconic source whose terminals all
      flip, ``SOURCES_MULTI``) whose value expression is negated;
+   * **neutral, terminals swapped**: a two-terminal series sensor (``SWAP_SENSORS``: torque,
+     force, current, flow and heat-flow sensors) whose terminals all flip and whose output ``y``
+     drives another block: the tool exchanges its two port names at the bond ends, which keeps
+     ``y`` (flipping both terminals negates ``y``, exchanging them negates it back);
    * **review**: anything else (an asymmetric law, a multi-port block on two chains, an iconic
      two-terminal element with only one terminal flipped, a detector whose output drives a
      controller, an inline block, ...). The tool never guesses: every edit of that group is
@@ -62,7 +67,9 @@ What the tool does, per model:
 
 A node whose law change has been accounted for gets a ``$comment`` marker
 (``migrate_bond_orientation: O15``), so a second run changes nothing: the tool is idempotent.
-``--no-law-changes`` skips the law step (for a model written after the change).
+``--no-law-changes`` skips the law step (for a model written after the change);
+``--skip-law-change O15`` skips the law step of one decision only (for a model written after the
+O15 change but before O7, such as one a build script regenerated in WP-O2).
 
 Files are edited in place, keeping their formatting (only the changed values are rewritten).
 ``--check`` writes nothing. Exit status: 0 nothing to do (or done), 1 with ``--check`` when there
@@ -246,6 +253,18 @@ ODD_MULTI: dict[str, tuple[str, ...]] = {
     "stdlib:converters/FlowSensor": ("y",),
     "stdlib:thermal/HeatFlowSensor": ("y",),
 }
+# The two-terminal series sensors: exchanging their two terminals negates the output `y` (the law
+# is antisymmetric in the terminals). When both terminals flip and `y` drives another block, the
+# tool swaps the terminals at the two bond ends instead of leaving a review case: flip plus swap
+# keeps `y`, and of the port variables only the listed kind (`e` or `f`) changes sign. Each
+# terminal must be bonded once, directly (not through a subsystem port).
+SWAP_SENSORS: dict[str, tuple[tuple[str, str], str]] = {
+    "stdlib:converters/TorqueSensor": (("a", "b"), "f"),
+    "stdlib:converters/ForceSensor": (("a", "b"), "f"),
+    "stdlib:converters/CurrentSensor": (("p", "n"), "e"),
+    "stdlib:converters/FlowSensor": (("a", "b"), "e"),
+    "stdlib:thermal/HeatFlowSensor": (("a", "b"), "e"),
+}
 # O20: the two-terminal iconic sources: with every terminal reversed, negating the value restores
 # the model.
 SOURCES_MULTI: dict[str, str] = {
@@ -275,6 +294,7 @@ COST_SOURCE = 1.0
 COST_ODD = 20.0
 COST_ODD_VAR = 5.0
 COST_THROUGH = 2.0
+COST_SWAP = 2.0
 COST_PORT = 0.1
 COST_REFERENCED = 1.0
 
@@ -416,14 +436,41 @@ class JsonDoc:
         self.edits.append((s.start, s.end, json.dumps(value, ensure_ascii=False)))
         self._set(path, value)
 
-    def swap(self, path_a: tuple, path_b: tuple) -> None:
-        sa, sb = self.span(path_a), self.span(path_b)
-        ta, tb = self.text[sa.start:sa.end], self.text[sb.start:sb.end]
-        self.edits.append((sa.start, sa.end, tb))
-        self.edits.append((sb.start, sb.end, ta))
-        va, vb = self.get(path_a), self.get(path_b)
-        self._set(path_a, vb)
-        self._set(path_b, va)
+    def _endpoint_text(self, path: tuple, port: str | None) -> str:
+        """The source text of a connection endpoint, with its `port` value replaced by `port`."""
+        s = self.span(path)
+        if port is None:
+            return self.text[s.start:s.end]
+        ps = s.children["port"]
+        return self.text[s.start:ps.start] + json.dumps(port) + self.text[ps.end:s.end]
+
+    def rewrite_endpoints(self, conn_path: tuple, reverse: bool, renames: dict[str, str]) -> None:
+        """Reverse a connection (exchange `from` and `to`) and/or rename the port of an endpoint;
+        `renames` is keyed by the endpoint's side before the reversal."""
+        fp, tp = conn_path + ("from",), conn_path + ("to",)
+        new_from = dict(self.get(fp), **({"port": renames["from"]} if "from" in renames else {}))
+        new_to = dict(self.get(tp), **({"port": renames["to"]} if "to" in renames else {}))
+        if reverse:
+            sf, st = self.span(fp), self.span(tp)
+            self.edits.append((sf.start, sf.end, self._endpoint_text(tp, renames.get("to"))))
+            self.edits.append((st.start, st.end, self._endpoint_text(fp, renames.get("from"))))
+            self._set(fp, new_to)
+            self._set(tp, new_from)
+            return
+        for side, new in (("from", new_from), ("to", new_to)):
+            if side in renames:
+                ps = self.span(conn_path + (side, "port"))
+                self.edits.append((ps.start, ps.end, json.dumps(renames[side])))
+                self._set(conn_path + (side,), new)
+
+    def reverse_array(self, path: tuple) -> None:
+        """Reverse an array in place, moving the source text of its items (so the layout stays)."""
+        items = self.span(path).children
+        texts = [self.text[s.start:s.end] for s in items]
+        for s, t in zip(items, reversed(texts)):
+            if self.text[s.start:s.end] != t:
+                self.edits.append((s.start, s.end, t))
+        self._set(path, list(reversed(self.get(path))))
 
     def set_key(self, obj_path: tuple, key: str, value: Any) -> None:
         obj = self.get(obj_path)
@@ -814,8 +861,10 @@ def _balanced(s: str) -> bool:
     return d == 0
 
 
-def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) -> tuple[Result, dict]:
-    """Plan the reversals and the sign edits. Returns the report and the edit plan."""
+def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool,
+            skip: frozenset[str] = frozenset()) -> tuple[Result, dict]:
+    """Plan the reversals and the sign edits. Returns the report and the edit plan. `skip` names
+    the law-change decisions (`O15`, `O7`) the model was written after."""
     res = Result(label)
     plan_reversals(m, cat)
 
@@ -857,7 +906,8 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
         return decision is not None and MARKER.format(decision=decision) in inst.node.get("$comment", "")
 
     def law_flip(inst: Inst) -> bool:
-        return law_changes and inst.ref in LAW_CHANGES and not marked(inst)
+        return (law_changes and inst.ref in LAW_CHANGES and LAW_CHANGES[inst.ref] not in skip
+                and not marked(inst))
 
     def law_ports(inst: Inst) -> set[str]:
         """The ports whose law changed sign (all ports when the table names none)."""
@@ -868,6 +918,28 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
     inst_ports: dict[str, list[str]] = defaultdict(list)
     for path, port in sorted(bonded):
         inst_ports[path].append(port)
+    # the bonds at each element port: (bond, the port is the bond's tail)
+    port_bonds: dict[tuple[str, str], list[tuple[Bond, bool]]] = defaultdict(list)
+    for b in m.bonds:
+        for e, is_tail in ((b.tail, True), (b.head, False)):
+            if e.kind == "P":
+                port_bonds[(e.path, e.port)].append((b, is_tail))
+
+    def swappable(inst: Inst) -> bool:
+        """Whether each terminal of a series sensor is bonded once, by a bond whose end names the
+        sensor's port directly (so the port name can be exchanged in that bond)."""
+        p, q = SWAP_SENSORS[inst.ref][0]
+        for port in (p, q):
+            pbs = port_bonds.get((inst.path, port), [])
+            if len(pbs) != 1:
+                return False
+            b, is_tail = pbs[0]
+            if b.review or b.conn_path[:-2] != inst.node_path[:-2]:
+                return False
+            ep = m.doc.get(b.conn_path + ("from" if is_tail else "to",))
+            if ep.get("node") != inst.node.get("id") or ep.get("port") != port:
+                return False
+        return True
 
     def iports(inst: Inst) -> list[str]:
         return inst_ports.get(inst.path, [])
@@ -891,8 +963,8 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
         if all(s == 1 for s in signs.values()):
             return ("neutral", "")
         if (inst.ref or "").startswith(FACE):
-            return ("review", f"the inside of `{inst.path.split('#')[0]}` ({inst.ref[len(FACE):]}) "
-                              "would change sign: its face bonds cannot be migrated by sign")
+            return ("review", (f"the inside of `{inst.path.split('#')[0]}` ({inst.ref[len(FACE):]}) "
+                               "would change sign: its face bonds cannot be migrated by sign"))
         if through:
             if len(set(signs.values())) == 1 and not lp:
                 return ("neutral", "")
@@ -913,6 +985,8 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
                                             for r in ODD_REST[inst.ref]):
                 return ("review", f"`{inst.path}` ({inst.ref}) flips sign and has a rest deflection")
             used = [o for o in inst.consumed_outputs if o in ODD_MULTI[inst.ref] or o in ODD_OUTPUTS]
+            if used and inst.ref in SWAP_SENSORS and swappable(inst):
+                return ("swap", "")
             if used:
                 return ("review", (f"`{inst.path}` ({inst.ref}) flips sign and its output "
                                    f"`{used[0]}` drives other blocks"))
@@ -958,6 +1032,8 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
                 total += COST_REVIEW
             elif cls == "source":
                 total += COST_SOURCE
+            elif cls == "swap":
+                total += COST_SWAP
             elif flipped and inst.ref in ODD_ALL:
                 total += COST_ODD + COST_ODD_VAR * len(ODD_ALL[inst.ref])
             elif flipped and len(iports(inst)) == 2:
@@ -998,7 +1074,7 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
             return puf.find(("C", chains.find((e.path, e.port))))[0]
         return puf.find(("J", e.path))[0]
 
-    plan = {"reverse": [], "params": [], "starts": [], "markers": []}
+    plan = {"reverse": [], "params": [], "starts": [], "markers": [], "renames": {}}
     for c in sorted(puf.bad, key=str):
         res.changes.append(Change("review", f"inconsistent signs around `{c[1]}`: left unchanged"))
     for b in m.bonds:
@@ -1040,6 +1116,16 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
                                                     f"({LAW_CHANGES[inst.ref]}), but its sign group needs review"))
             continue
         port_signs = {p: s_port(inst.path, p, sigma) for p in iports(inst) if (inst.path, p) in bonded}
+        if cls == "swap":
+            (pa, pb), kind = SWAP_SENSORS[inst.ref]
+            for port, other in ((pa, pb), (pb, pa)):
+                (b, is_tail), = port_bonds[(inst.path, port)]
+                plan["renames"].setdefault(id(b), (b, {}))[1]["from" if is_tail else "to"] = other
+            res.flipped.update({f"{inst.path}/{pa}.{kind}", f"{inst.path}/{pb}.{kind}"})
+            res.changes.append(Change("neutral", (f"swap the terminals `{pa}` and `{pb}` of `{inst.path}` "
+                                                  f"({inst.ref}): both flip, and its output `y`, which drives "
+                                                  "other blocks, keeps its sign")))
+            continue
         for p, s in port_signs.items():
             if s == -1 and "#" not in inst.path:
                 res.flipped.update({f"{inst.path}/{p}.e", f"{inst.path}/{p}.f"})
@@ -1212,11 +1298,16 @@ def _update_check(exp: JsonDoc, path: tuple, c: dict, flipped: set[str], res: Re
 
 
 def apply_plan(doc: JsonDoc, plan: dict) -> None:
+    reversed_ids = {id(b) for b in plan["reverse"]}
     for b in plan["reverse"]:
-        doc.swap(b.conn_path + ("from",), b.conn_path + ("to",))
+        renames = plan["renames"].get(id(b), (b, {}))[1]
+        doc.rewrite_endpoints(b.conn_path, reverse=True, renames=renames)
         conn = doc.get(b.conn_path)
         if conn.get("route"):
-            doc.replace(b.conn_path + ("route",), list(reversed(conn["route"])))
+            doc.reverse_array(b.conn_path + ("route",))
+    for key, (b, renames) in plan["renames"].items():
+        if key not in reversed_ids:
+            doc.rewrite_endpoints(b.conn_path, reverse=False, renames=renames)
     for inst, pname, new in plan["params"]:
         if "params" not in inst.node:
             raise RuntimeError(f"{inst.path} has no params object")
@@ -1259,7 +1350,8 @@ def collect(paths: list[str]) -> list[Path]:
 
 
 def run(paths: list[str], *, check: bool, catalog: dict[str, BlockInfo] | None = None,
-        project: Path | None = None, law_changes: bool = True, out=sys.stdout) -> int:
+        project: Path | None = None, law_changes: bool = True, skip: frozenset[str] = frozenset(),
+        out=sys.stdout) -> int:
     models = collect(paths)
     status = 0
     # group by project, so one expected.json is edited once
@@ -1277,7 +1369,7 @@ def run(paths: list[str], *, check: bool, catalog: dict[str, BlockInfo] | None =
             if doc.data.get("format") != "bgsim.model":
                 continue
             m = Model(doc)
-            res, plan = analyse(m, cat, str(mp), law_changes)
+            res, plan = analyse(m, cat, str(mp), law_changes, skip)
             update_model_refs(doc, res, apply=not check)
             if not check:
                 apply_plan(doc, plan)
@@ -1321,9 +1413,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--project", type=Path, help="the project directory of every model given")
     ap.add_argument("--no-law-changes", action="store_true",
                     help="do not compensate the law changes of LAW_CHANGES")
+    ap.add_argument("--skip-law-change", action="append", default=[], metavar="DECISION",
+                    choices=sorted(set(LAW_CHANGES.values())),
+                    help="do not compensate the law changes of one decision (O15 or O7), for a "
+                         "model written after it; repeatable")
     a = ap.parse_args(argv)
     cat = catalog_from_json(json.loads(a.catalog.read_text(encoding="utf-8"))) if a.catalog else None
-    return run(a.paths, check=a.check, catalog=cat, project=a.project, law_changes=not a.no_law_changes)
+    return run(a.paths, check=a.check, catalog=cat, project=a.project, law_changes=not a.no_law_changes,
+               skip=frozenset(a.skip_law_change))
 
 
 if __name__ == "__main__":

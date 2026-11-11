@@ -26,6 +26,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n02",
         "name": "Pivot",
         "block": {
@@ -82,6 +83,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n04",
         "name": "Body",
         "block": {
@@ -418,6 +420,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n18",
         "name": "WJoint1",
         "block": {
@@ -464,6 +467,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n20",
         "name": "Wheel1",
         "block": {
@@ -656,6 +660,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n28",
         "name": "WJoint2",
         "block": {
@@ -702,6 +707,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n30",
         "name": "Wheel2",
         "block": {
@@ -894,6 +900,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n38",
         "name": "WJoint3",
         "block": {
@@ -940,6 +947,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n40",
         "name": "Wheel3",
         "block": {
@@ -1132,6 +1140,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n48",
         "name": "WJoint4",
         "block": {
@@ -1178,6 +1187,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n50",
         "name": "Wheel4",
         "block": {
@@ -1639,21 +1649,21 @@
         "id": "c16",
         "kind": "bond",
         "from": {
-          "node": "n17",
-          "port": "b"
-        },
-        "to": {
           "node": "n04",
           "port": "p"
+        },
+        "to": {
+          "node": "n17",
+          "port": "b"
         },
         "route": [
           {
             "x": 340,
-            "y": 130
+            "y": 470
           },
           {
             "x": 340,
-            "y": 470
+            "y": 130
           }
         ],
         "label": null
@@ -1895,21 +1905,21 @@
         "id": "c31",
         "kind": "bond",
         "from": {
-          "node": "n27",
-          "port": "b"
-        },
-        "to": {
           "node": "n04",
           "port": "p"
+        },
+        "to": {
+          "node": "n27",
+          "port": "b"
         },
         "route": [
           {
             "x": 340,
-            "y": 370
+            "y": 470
           },
           {
             "x": 340,
-            "y": 470
+            "y": 370
           }
         ],
         "label": null
@@ -2151,21 +2161,21 @@
         "id": "c46",
         "kind": "bond",
         "from": {
-          "node": "n37",
-          "port": "b"
-        },
-        "to": {
           "node": "n04",
           "port": "p"
+        },
+        "to": {
+          "node": "n37",
+          "port": "b"
         },
         "route": [
           {
             "x": 340,
-            "y": 730
+            "y": 470
           },
           {
             "x": 340,
-            "y": 470
+            "y": 730
           }
         ],
         "label": null
@@ -2407,21 +2417,21 @@
         "id": "c61",
         "kind": "bond",
         "from": {
-          "node": "n47",
-          "port": "b"
-        },
-        "to": {
           "node": "n04",
           "port": "p"
+        },
+        "to": {
+          "node": "n47",
+          "port": "b"
         },
         "route": [
           {
             "x": 340,
-            "y": 970
+            "y": 470
           },
           {
             "x": 340,
-            "y": 470
+            "y": 970
           }
         ],
         "label": null

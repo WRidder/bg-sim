@@ -66,7 +66,7 @@ Every box is a documented primitive or a junction.
 
 ## Equations
 
-The CoM pose is **composed from $q$, never integrated** (D-MB6): $\theta = q + \pi/2$. Gravity applies the body-frame effort $(0,\ \sin\theta\; m g,\ \cos\theta\; m g)$ (the negative of the physical wrench, because a 1-junction sums efforts); through the link and the joint this is the physical pendulum torque $-m g L \sin q$. The Coriolis term is Breedveld's Eulerian junction structure, $e = -\mathrm{ad}(V)^T P$, with $P$ taken as a signal from `IPlanar`, so the inertia is never copied out of `I` (D-MB3). With $L = 0.5$ m the angle obeys
+The CoM pose is **composed from $q$, never integrated** (D-MB6): $\theta = q + \pi/2$. Gravity, bonded into the body junction like every source, applies the body-frame wrench $(0,\ -\sin\theta\; m g,\ -\cos\theta\; m g)$; through the link and the joint this is the physical pendulum torque $-m g L \sin q$. The Coriolis term is Breedveld's Eulerian junction structure, $e = -\mathrm{ad}(V)^T P$, with $P$ taken as a signal from `IPlanar`, so the inertia is never copied out of `I` (D-MB3). With $L = 0.5$ m the angle obeys
 
 $$(J + m L^2)\,\ddot q = -m g L \sin q .$$
 

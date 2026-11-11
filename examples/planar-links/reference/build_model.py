@@ -33,6 +33,11 @@ PAYLOAD = dict(m=1.0, I=0.0, r=0.1)  # point mass 0.1 m beyond the end of link 3
 G0 = 0.0  # X5.9b: the arms lie in the horizontal plane, no gravity for any arm (RigidBody2D g0)
 ARMS_IN_MODEL = ()  # set by build(); the base offsets only exist when several arms share a scene
 BASE_X = [0.0, 2.0, 4.2]  # arm base x in the scene (m), by arm position in the model
+MARKERS = {
+    "stdlib:planar/Revolute2DCompliant": "migrate_bond_orientation: O7",
+    "stdlib:planar/RigidBody2D": "migrate_bond_orientation: O7",
+    "stdlib:bondgraph/MSf": "migrate_bond_orientation: O15",
+}
 
 
 def num(x):
@@ -54,7 +59,12 @@ class Model:
             blk = {"junction": block}
         else:
             blk = {"ref": block}
+        # The port-orientation markers: the bond directions below follow the declared port
+        # orientations, so tools/migrate_bond_orientation.py must not compensate the law changes
+        # of these blocks again (O7: joints and bodies, O15: MSf).
+        marker = MARKERS.get(block)
         self.nodes.append({
+            **({"$comment": marker} if marker else {}),
             "id": nid, "name": name, "block": blk,
             "position": {"x": pos[0], "y": pos[1]}, "rotation": 0, "flipX": False,
             "params": {k: str(v) for k, v in (params or {}).items()},
@@ -149,7 +159,7 @@ def build_arm(M, n, mode, variant, payload, col, csvfile):
         if j == 1:
             M.bond(prev_node, prev_port, jn, "parent")       # ground -> shoulder
         else:
-            M.bond(jn, "parent", prev_node, None)            # elbow -> body 1-junction
+            M.bond(prev_node, None, jn, "parent")            # body 1-junction -> elbow
         M.bond(jn, "child", ln, "parent")
         if j < n:
             node1 = M.node(f"{tag}_N{j}", "1", pos=(bx + 320, y0 + 200))
@@ -193,7 +203,7 @@ def build_arm(M, n, mode, variant, payload, col, csvfile):
         bm = M.node(f"{tag}_Bm{j}", "stdlib:bondgraph/R", params={"r": num(L["B"])},
                     pos=(bx + 360, dy + 40))
         M.bond(J1, None, tf, "b")       # joint side
-        M.bond(tf, "a", M1, None)       # motor side, a.f = G b.f
+        M.bond(M1, None, tf, "a")       # motor side, a.f = G b.f
         M.bond(M1, None, jm, "p")
         M.bond(M1, None, bm, "p")
         # source (+ torque sensor in inverse mode); CSV column order: qd, tau_rtb, tau_an, q
@@ -201,8 +211,10 @@ def build_arm(M, n, mode, variant, payload, col, csvfile):
             src = M.node(f"{tag}_Speed{j}", "stdlib:bondgraph/MSf", params={"gain": "1.0"},
                          pos=(bx - 260, dy))
             ts = M.node(f"{tag}_Torque{j}", "stdlib:converters/TorqueSensor", pos=(bx - 130, dy))
-            M.bond(src, "p", ts, "b")
-            M.bond(ts, "a", J1, None)
+            # both sensor terminals are `in` (O20): the source bonds into `a`, the joint-side
+            # junction into `b`, so `y` is the torque the source delivers into the drive
+            M.bond(src, "p", ts, "a")
+            M.bond(J1, None, ts, "b")
             qd = pick(f"{tag}_qd{j}", j, (bx - 260, dy + 120))
             M.sig(qd, "y", src, "u")
             rt = pick(f"{tag}_tau_rtb{j}", n + j, (bx - 130, dy + 120))

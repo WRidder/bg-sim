@@ -56,8 +56,8 @@ The CoM pose is **composed from `q`, never integrated** (D-MB6): `ComposePose2D`
 multiplies the joint pose `(q, 0, 0)` by the constant CoM offset `(π/2, 0, −0.5)`,
 so the composed body angle is `θ = q + π/2` (the 90° body frame). `GravityPlanar`
 reads that pose and applies the CoM wrench — zero torque about the CoM, `R(θ)ᵀ` on
-the force, i.e. the body-frame effort `[0, sin(θ)·m·g, cos(θ)·m·g]` (the negative
-of the physical wrench, because a 1-junction sums the efforts). Through the link
+the force, i.e. the body-frame wrench `[0, −sin(θ)·m·g, −cos(θ)·m·g]`, bonded into
+the body junction like every source. Through the link
 transform and the joint this is the physical pendulum torque `−m·g·L·sin(q)`.
 `CoriolisPlanar` is Breedveld's Eulerian junction structure with `e = −ad(V)ᵀ·P`; it
 takes `P` as a signal from `IPlanar.Pm`, so the inertia `M` is never copied out of
