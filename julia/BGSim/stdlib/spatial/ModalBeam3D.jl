@@ -688,4 +688,8 @@
         pa => :flow_out
         pb => :flow_out
     end
+    @orientation begin
+        pa => :in
+        pb => :in
+    end
 end

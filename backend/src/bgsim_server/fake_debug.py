@@ -137,7 +137,7 @@ _GRANULARITIES = ("statement", "tick", "solverStep", "event")
 _SCOPE_MACROS = frozenset(
     {
         "constants", "parameters", "inputs", "outputs", "ports", "variables", "initial",
-        "equations", "discrete", "events", "causality", "components", "connections",
+        "equations", "discrete", "events", "causality", "orientation", "components", "connections",
         "observables",
     }
 )  # fmt: skip

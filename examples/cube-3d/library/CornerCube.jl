@@ -58,6 +58,11 @@
         m2::Power{Rotation}
         m3::Power{Rotation}
     end
+    @orientation begin
+        m1 => :in
+        m2 => :in
+        m3 => :in
+    end
     @parameters begin
         ms::Real = 0.18, [unit = "kg", min = 0, description = "Cube structure mass (frame, electronics, motors; wheels excluded)"]
         mw::Real = 0.08, [unit = "kg", min = 0, description = "Mass of one wheel"]

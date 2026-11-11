@@ -14,7 +14,7 @@ multi-model TVLQR tables, read at the plan time `tau` that the firmware publishe
 voltage and current; the fourth plot shows the phase, the links' energy (0 hanging, about 3.3 J upright) and
 the push. Sliders: the push, its time and the mass of link 2. **3D view:** as the nominal model.
 
-![Link angles, cart, voltage and phase over the run|900](assets/040e540d81fe.png)
+![Link angles, cart, voltage and phase over the run|900](assets/a5f06908f1dd.png)
 
 **Expected outcome:**
 

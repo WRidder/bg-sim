@@ -49,9 +49,13 @@ const _MB4_SWING = _MB4_M * _MB4_G * _MB4_L * (1 - cos(0.01))
 
 _mb4_load() = JSON3.read(read(_MB4_FIXTURE, String), Dict{String,Any})
 
+# The pendulum is stiff (the compliant pivot's translational mode is sqrt(kt/m) = 1e4 rad/s)
+# and, since O21 wrote FixedTransform2D's effort law explicitly, it compiles to a pure ODE, for
+# which "auto" would pick the explicit Tsit5. The runs name Rodas5P, the solver "auto" chose
+# while the implicit law still left an algebraic tearing variable.
 function _mb4_settings(; t_end = 4.0, points = 4001, reltol = 1.0e-9, abstol = 1.0e-11)
     return BGSim.RunSettings(
-        t_start = 0.0, t_end = t_end, solver = "auto", reltol = reltol, abstol = abstol,
+        t_start = 0.0, t_end = t_end, solver = "Rodas5P", reltol = reltol, abstol = abstol,
         output = Dict{String,Any}("mode" => "points", "points" => points),
     )
 end
@@ -265,8 +269,8 @@ end
 
     @testset "CoriolisPlanar: free-body integration against an independent RK4" begin
         # dP/dt = ad(V)^T P with V = M^-1 P. The block's 1-junction port effort is
-        # e = -ad(f)^T P (the same sign convention as GravityPlanar), so the inertia gets
-        # +ad(V)^T P. The reference is a small independent RK4 in the test.
+        # e = -ad(f)^T P; it sits beside the inertia on the body junction (both `in`, both
+        # bonds leave the junction), so the inertia gets +ad(V)^T P. The reference is a small independent RK4 in the test.
         function ref_rhs(P, J, m)
             V = (P[1] / J, P[2] / m, P[3] / m)
             ω, vx, vy = V
@@ -300,8 +304,10 @@ end
                     _mb4_node("n4", "Theta", _mb4_ref("stdlib:continuous/Integrator")),
                 ],
                 Any[
-                    _mb4_conn("c1", "bond", "n2", "p", "n1"),
-                    _mb4_conn("c2", "bond", "n3", "p", "n1"),
+                    # The inertia and the Coriolis block are `in`: their bonds leave the
+                    # body junction (port orientation, WP-O3a).
+                    _mb4_conn("c1", "bond", "n1", nothing, "n2", "p"),
+                    _mb4_conn("c2", "bond", "n1", nothing, "n3", "p"),
                     _mb4_conn("c3", "signal", "n2", "Pm", "n3", "P"),
                     _mb4_conn("c4", "signal", "n2", "wout", "n4", "u"),
                 ];
@@ -360,7 +366,7 @@ end
         data = _mb4_columns(dir)
         e = [data["C/p.e[$k]"][1] for k in 1:3]
         fr = [data["C/p.f[$k]"][1] for k in 1:3]
-        @test fr == -[V...]
+        @test fr == [V...]                  # SfPlanar delivers +u at its tail (O15)
         @test e[1] ≈ fr[2] * P[3] - fr[3] * P[2]
         @test e[2] ≈ -fr[1] * P[3]
         @test e[3] ≈ fr[1] * P[2]
@@ -368,8 +374,9 @@ end
     end
 
     @testset "SePlanar / SfPlanar / GroundPlanar: source and zero relations" begin
-        # Ground (flow source, f = 0) against an effort source on a direct bond: the Ground
-        # fixes the bond flow to zero and passes the effort through.
+        # Ground (flow source, f = 0) against an effort source on a 0-junction: both are
+        # `out`, so each bonds into the junction (a direct bond joins two `out` ports, E114).
+        # The Ground fixes the flow to zero and the common effort is the source's.
         W = (2.0, -1.0, 0.5)
         doc = _mb4_doc(
             "GroundSource",
@@ -377,10 +384,12 @@ end
                 _mb4_node("n1", "U", _mb4_inline(_mb4_vec_source(W))),
                 _mb4_node("n2", "G", _mb4_ref("stdlib:multibond/GroundPlanar")),
                 _mb4_node("n3", "E", _mb4_ref("stdlib:multibond/SePlanar")),
+                _mb4_node("n4", "J", Dict{String,Any}("junction" => "0")),
             ],
             Any[
                 _mb4_conn("c1", "signal", "n1", "y", "n3", "u"),
-                _mb4_conn("c2", "bond", "n2", "p", "n3", "p"),
+                _mb4_conn("c2", "bond", "n2", "p", "n4"),
+                _mb4_conn("c3", "bond", "n3", "p", "n4"),
             ],
         )
         @test isempty(_mb4_errors(_mb4_check(doc)))
@@ -410,7 +419,7 @@ end
             Any[
                 _mb4_conn("c1", "signal", "n1", "y", "n3", "u"),
                 _mb4_conn("c2", "bond", "n3", "p", "n2"),
-                _mb4_conn("c3", "bond", "n4", "p", "n2"),
+                _mb4_conn("c3", "bond", "n2", nothing, "n4", "p"),
             ],
         )
         @test isempty(_mb4_errors(_mb4_check(de_doc)))
@@ -424,7 +433,7 @@ end
         end
 
         # Df: a flow source and a Df on a 0-junction. The Df imposes zero effort and reads
-        # the junction flow, which is the negative of the source flow.
+        # the junction flow, which is the source flow (SfPlanar delivers +u at its tail, O15).
         V = (0.3, -0.2, 0.1)
         df_doc = _mb4_doc(
             "DfSensor",
@@ -437,7 +446,7 @@ end
             Any[
                 _mb4_conn("c1", "signal", "n1", "y", "n3", "u"),
                 _mb4_conn("c2", "bond", "n3", "p", "n2"),
-                _mb4_conn("c3", "bond", "n4", "p", "n2"),
+                _mb4_conn("c3", "bond", "n2", nothing, "n4", "p"),
             ],
         )
         @test isempty(_mb4_errors(_mb4_check(df_doc)))
@@ -447,7 +456,7 @@ end
         @test all(all(data["D/p.e[$k]"] .== 0.0) for k in 1:3)
         for k in 1:3
             @test data["D/y[$k]"][1] == data["D/p.f[$k]"][1]
-            @test isapprox(data["D/y[$k]"][1], -V[k]; atol = 1e-14)
+            @test isapprox(data["D/y[$k]"][1], V[k]; atol = 1e-14)
         end
     end
 
@@ -470,9 +479,14 @@ end
             conns = Any[
                 _mb4_conn("c1", "signal", "n1", "y", "n3", "u"),
                 _mb4_conn("c2", "signal", "n2", "y", "n4", "u"),
+                # `(a, b)` is a `through` pair and both sources are `out`: the flow source
+                # meets `b` on a 0-junction, so one bond arrives at the transform and one
+                # leaves it.
                 _mb4_conn("c3", "bond", "n3", "p", "n5", "a"),
-                _mb4_conn("c4", "bond", "n5", "b", "n4", "p"),
+                _mb4_conn("c4", "bond", "n5", "b", "n7"),
+                _mb4_conn("c6", "bond", "n4", "p", "n7"),
             ]
+            push!(nodes, _mb4_node("n7", "Jb", Dict{String,Any}("junction" => "0")))
             if tfad
                 push!(nodes, _mb4_node("n6", "G", _mb4_inline(pose)))
                 push!(conns, _mb4_conn("c5", "signal", "n6", "y", "n5", "g"))
@@ -512,12 +526,16 @@ end
                 _mb4_node("n3", "T", _mb4_ref("stdlib:multibond/ScrewTF");
                     params = Dict{String,Any}("rx" => string(rx), "ry" => string(ry))),
                 _mb4_node("n4", "Sf", _mb4_ref("stdlib:bondgraph/Sf");
-                    params = Dict{String,Any}("f" => string(v))),
+                    params = Dict{String,Any}("f" => string(-v))),
+                _mb4_node("n5", "Jb", Dict{String,Any}("junction" => "0")),
             ],
             Any[
                 _mb4_conn("c1", "signal", "n1", "y", "n2", "u"),
+                # `(a, b)` is a `through` pair: the Se bond arrives at `a`, `b` leaves into a
+                # 0-junction that the Sf (`out`, O15: it delivers -v) also bonds into.
                 _mb4_conn("c2", "bond", "n2", "p", "n3", "a"),
-                _mb4_conn("c3", "bond", "n3", "b", "n4", "p"),
+                _mb4_conn("c3", "bond", "n3", "b", "n5"),
+                _mb4_conn("c4", "bond", "n4", "p", "n5"),
             ],
         )
         @test isempty(_mb4_errors(_mb4_check(doc)))
@@ -585,7 +603,8 @@ end
         data = _mb4_columns(dir)
         e = [data["W/p.e[$k]"][1] for k in 1:3]
         physical = [0.0, -sin(theta) * m * g0, -cos(theta) * m * g0]
-        @test isapprox(e, -physical; atol = 1e-12)
+        # GravityPlanar is `out` and its port effort is the gravity wrench itself (WP-O3a).
+        @test isapprox(e, physical; atol = 1e-12)
         for k in 1:3
             @test data["D/y[$k]"][1] ≈ e[k]
         end
@@ -811,6 +830,39 @@ end
             ce = sum(data["Coriolis/p.e[$k]"][i] * data["Coriolis/p.f[$k]"][i]
                      for k in 1:3)
             @test abs(ce) <= 1.0e-9 * max(1.0, abs(jp), abs(jc))
+        end
+    end
+
+    # O21: the body frame may be mounted at any angle. The mounting angle only rotates the
+    # body frame about the CoM (isotropic in the plane for the swing), so the joint angle is
+    # the same for every theta, and FixedTransform2D's power identity holds at each sample.
+    # Its implicit effort law used to leave MTK an observed `Link/b.e[3]` divided by
+    # cos(theta), which missed this identity at theta = pi/2 (and would at -pi/2).
+    @testset "the transform's power identity at every mounting angle (O21)" begin
+        runs = Dict{Float64,Dict{String,Vector{Float64}}}()
+        for theta in (0.0, 0.3, pi / 2, Float64(pi), -pi / 2)
+            BGSim.clear_compile_cache!()
+            doc = _mb4_load()
+            doc["diagram"]["nodes"][3]["params"]["theta"] = repr(theta)   # Link
+            doc["diagram"]["nodes"][7]["params"]["theta"] = repr(theta)   # Local
+            result, dir = _mb4_run(doc; t_end = 1.0, points = 1001)
+            @test result.status == "done"
+            data = _mb4_columns(dir)
+            worst = 0.0
+            for i in eachindex(data["time"])
+                la = sum(data["Link/a.e[$k]"][i] * data["Link/a.f[$k]"][i] for k in 1:3)
+                lb = sum(data["Link/b.e[$k]"][i] * data["Link/b.f[$k]"][i] for k in 1:3)
+                worst = max(worst, abs(la + lb) / max(1.0, abs(la), abs(lb)))
+            end
+            @test worst <= 1.0e-9
+            println("J-MB4 mounting angle ", theta, ": transform power identity ", worst)
+            runs[theta] = data
+        end
+        q_ref = runs[pi / 2]["Joint/qout"]
+        for theta in keys(runs)
+            dq = maximum(abs.(runs[theta]["Joint/qout"] .- q_ref))
+            @test dq <= 1.0e-9
+            println("J-MB4 mounting angle ", theta, ": max|q - q(pi/2)| = ", dq)
         end
     end
 

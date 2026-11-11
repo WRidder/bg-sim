@@ -23,10 +23,10 @@ baseline-vs-variant comparisons.
 ## Plant (bond graph)
 
 ```
-Vd(MSe) → DJ(1) ── Rd(R_s) ── Id(L_d) ── IdSens ── MGY(u = ω_e L_q)
-Vq(MSe) → QJ(1) ── Rq(R_s) ── Iq(L_q) ── IqSens ── Bemf(MSe, +k_e ω_m)
+Vd(MSe) → DJ(1) ── Rd(R_s) ── Id(L_d) ── IdSens ── MGY(u = −ω_e L_q)
+Vq(MSe) → QJ(1) ── Rq(R_s) ── Iq(L_q) ── IqSens ── Bemf(MSe, −k_e ω_m)
                  └─ MGY ← DJ          └─ GY(r = k_t = 1.5·p·ψ_m) → MJ(1)
-Iq(IqSens) ── MSf(−1) ── GY.p1
+Iq(IqSens) ── MSf(+1) ── GY.p1
 MJ(1) ── Jm(I) ── Bm(R) ── WmSens ── Theta(integrator)
 ```
 
@@ -42,17 +42,18 @@ v_q = R_s·i_q + L_q·di_q/dt + ω_e·(L_d·i_d + ψ_m)
 
 - `DJ` / `QJ` are the d and q 1-junctions. `Rd`/`Id` and `Rq`/`Iq` are the stator
   resistance and inductance; `IdSens`/`IqSens` are `FlowSensor`s.
-- `MGY` (`p1` on `DJ`, `p2` on `QJ`) has the signal modulus `u = ω_e·L_q`, from the
-  `WeL` gain `p·L` of the measured speed. Its two equations give the
+- `MGY` (`p1` on `DJ`, `p2` on `QJ`) has the signal modulus `u = −ω_e·L_q`, from the
+  `WeL` gain `−p·L` of the measured speed (the negative sign is what the through
+  pair needs: `MGY → DJ` leaves, `QJ → MGY` arrives). Its two equations give the
   `−ω_e L_q i_q` and `+ω_e L_d i_d` cross terms (the surface-mount assumption
   `L_d = L_q = L` makes one gyrator exact; a salient machine would add the
   `ω_e(L_d−L_q)i_d` term as an MSe).
-- `Bemf` is an `MSe` on `QJ` with gain `+k_e` and input `ω_m`. With the bond from the
-  junction to the MSe, the junction sees `−k_e ω_m`, i.e. the `+ω_e ψ_m` back-EMF of
+- `Bemf` is an `MSe` on `QJ` with gain `−k_e` and input `ω_m`, bonded from the source
+  into the junction, so the junction sees `−k_e ω_m`, i.e. the `+ω_e ψ_m` back-EMF of
   the q equation.
 - `GY` has `r = k_t = 1.5·p·ψ_m = 0.48 N·m/A`; its p2 torque is `+k_t i_q` into `MJ`.
-  The measured `i_q` drives its p1 through `IqSrc`, an `MSf` with gain `−1` (the
-  flow sign of a port on the `from` end). This `MSf` is the **dq 3/2 power-scale
+  The measured `i_q` drives its p1 through `IqSrc`, an `MSf` with gain `+1`, bonded
+  from the source into `GY.p1`. This `MSf` is the **dq 3/2 power-scale
   interface**: the per-axis dq electrical bond carries `v_d i_d + v_q i_q` while the
   shaft carries `T_e ω_m = 1.5 k_e i_q ω_m`; the gyrator supplies the torque and the
   MSf absorbs the difference. It is a bond-graph element driven by a sensor, not a

@@ -40,4 +40,9 @@
         b.f ~ -Q
         shaft.e ~ T
     end
+    @orientation begin
+        a => :in
+        b => :in
+        shaft => :in
+    end
 end

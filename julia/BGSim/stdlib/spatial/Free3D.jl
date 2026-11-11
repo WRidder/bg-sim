@@ -9,14 +9,17 @@
     # parent frame** (D-MB6, no Euler angles, no gimbal lock), with the tangent-space RHS of
     # `PoseIntegrator3D`:
     #
-    #     V_rel = child.f - Ad(g)^-1 parent.f,     g = (R(Q), p)
+    #     V_rel = V_c - Ad(g)^-1 parent.f,     g = (R(Q), p)
     #     ddt(Q) = 0.5 Q (x) [0, V_rel[1:3]],      ddt(p) = R(Q) V_rel[4:6]
     #
     # (`R V_rel[4:6]` is the child-origin velocity relative to the parent frame, so `q.qdot = 0`
-    # identically). There is nothing to constrain: `child.e = -drive.e` componentwise,
-    # `parent.e = -Ad(g)^-T child.e`, and the port power
-    # `parent.e.parent.f + child.e.child.f + sum drive_k.e*drive_k.f` is identically zero.
+    # identically). There is nothing to constrain: `W_c = -drive.e` componentwise,
+    # `parent.e = -Ad(g)^-T W_c`, and the port power
+    # `parent.e.parent.f + W_c.V_c + sum drive_k.e*drive_k.f` is identically zero.
     # `GroundSpatial -> Free3D -> RigidBody3D` is a floating body whose pose is `pose`.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -61,12 +64,12 @@ R[3, 3] ~ (qw * qw - qx * qx - qy * qy + qz * qz) / s
         u[1] ~ parent.f[4] - (py * parent.f[3] - pz * parent.f[2])
         u[2] ~ parent.f[5] - (pz * parent.f[1] - px * parent.f[3])
         u[3] ~ parent.f[6] - (px * parent.f[2] - py * parent.f[1])
-        Vrel[1] ~ child.f[1] - (R[1, 1] * parent.f[1] + R[2, 1] * parent.f[2] + R[3, 1] * parent.f[3])
-        Vrel[4] ~ child.f[4] - (R[1, 1] * u[1] + R[2, 1] * u[2] + R[3, 1] * u[3])
-        Vrel[2] ~ child.f[2] - (R[1, 2] * parent.f[1] + R[2, 2] * parent.f[2] + R[3, 2] * parent.f[3])
-        Vrel[5] ~ child.f[5] - (R[1, 2] * u[1] + R[2, 2] * u[2] + R[3, 2] * u[3])
-        Vrel[3] ~ child.f[3] - (R[1, 3] * parent.f[1] + R[2, 3] * parent.f[2] + R[3, 3] * parent.f[3])
-        Vrel[6] ~ child.f[6] - (R[1, 3] * u[1] + R[2, 3] * u[2] + R[3, 3] * u[3])
+        Vrel[1] ~ -child.f[1] - (R[1, 1] * parent.f[1] + R[2, 1] * parent.f[2] + R[3, 1] * parent.f[3])
+        Vrel[4] ~ -child.f[4] - (R[1, 1] * u[1] + R[2, 1] * u[2] + R[3, 1] * u[3])
+        Vrel[2] ~ -child.f[2] - (R[1, 2] * parent.f[1] + R[2, 2] * parent.f[2] + R[3, 2] * parent.f[3])
+        Vrel[5] ~ -child.f[5] - (R[1, 2] * u[1] + R[2, 2] * u[2] + R[3, 2] * u[3])
+        Vrel[3] ~ -child.f[3] - (R[1, 3] * parent.f[1] + R[2, 3] * parent.f[2] + R[3, 3] * parent.f[3])
+        Vrel[6] ~ -child.f[6] - (R[1, 3] * u[1] + R[2, 3] * u[2] + R[3, 3] * u[3])
 ddt(qw) ~ -0.5 * (Vrel[1] * qx + Vrel[2] * qy + Vrel[3] * qz)
 ddt(qx) ~ 0.5 * (Vrel[1] * qw + Vrel[3] * qy - Vrel[2] * qz)
 ddt(qy) ~ 0.5 * (Vrel[2] * qw + Vrel[1] * qz - Vrel[3] * qx)
@@ -74,15 +77,15 @@ ddt(qz) ~ 0.5 * (Vrel[3] * qw + Vrel[2] * qx - Vrel[1] * qy)
         ddt(px) ~ R[1, 1] * Vrel[4] + R[1, 2] * Vrel[5] + R[1, 3] * Vrel[6]
         ddt(py) ~ R[2, 1] * Vrel[4] + R[2, 2] * Vrel[5] + R[2, 3] * Vrel[6]
         ddt(pz) ~ R[3, 1] * Vrel[4] + R[3, 2] * Vrel[5] + R[3, 3] * Vrel[6]
-        child.e[1] ~ -drive1.e
-        child.e[2] ~ -drive2.e
-        child.e[3] ~ -drive3.e
-        child.e[4] ~ -drive4.e
-        child.e[5] ~ -drive5.e
-        child.e[6] ~ -drive6.e
+        child.e[1] ~ drive1.e
+        child.e[2] ~ drive2.e
+        child.e[3] ~ drive3.e
+        child.e[4] ~ drive4.e
+        child.e[5] ~ drive5.e
+        child.e[6] ~ drive6.e
         for k in 1:3
-            Wa[k] ~ R[k, 1] * child.e[1] + R[k, 2] * child.e[2] + R[k, 3] * child.e[3]
-            Wl[k] ~ R[k, 1] * child.e[4] + R[k, 2] * child.e[5] + R[k, 3] * child.e[6]
+            Wa[k] ~ -(R[k, 1] * child.e[1] + R[k, 2] * child.e[2] + R[k, 3] * child.e[3])
+            Wl[k] ~ -(R[k, 1] * child.e[4] + R[k, 2] * child.e[5] + R[k, 3] * child.e[6])
         end
         # parent.e = -[R W_ang + p x (R W_lin); R W_lin]
         parent.e[1] ~ -(Wa[1] + (py * Wl[3] - pz * Wl[2]))
@@ -121,5 +124,15 @@ ddt(qz) ~ 0.5 * (Vrel[3] * qw + Vrel[2] * qx - Vrel[1] * qy)
         drive4 => :flow_out
         drive5 => :flow_out
         drive6 => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive1 => :in
+        drive2 => :in
+        drive3 => :in
+        drive4 => :in
+        drive5 => :in
+        drive6 => :in
     end
 end

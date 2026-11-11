@@ -14,7 +14,7 @@ Every number below is a check in `expected.json`, run by `uv run examples/run_ch
 
 The uncontrolled rolling (`free` against `reference`, 1.5 m/s, 0.05 rad lean, no motor) is the sensitive case: the free robot has a slowly growing nutation, and the two models separate after about 2.5 s, which the slip and the joint compliance of the bond graph are enough to cause.
 
-![Uncontrolled rolling, bond graph|1000](assets/43e21e82619e.png)
+![Uncontrolled rolling, bond graph|1000](assets/aa659bc7ca86.png)
 
 ![Uncontrolled rolling, reference model|1000](assets/2880db6cf668.png)
 
@@ -22,7 +22,7 @@ The uncontrolled rolling (`free` against `reference`, 1.5 m/s, 0.05 rad lean, no
 
 Without damping and drive (model `free`: undamped joints, the tilt held by a spring) the bond graph's energy book `Energy/Ebal` = kinetic + potential + contact spring energy + integrated contact loss stays constant to 3.4 mJ over 6 s. The contact losses are **2.6 mJ in the first 2 s** of clean rolling and **1.18 J by 6 s**, once the nutation makes the tyre side-slip. The reference model (no contact) conserves its energy to 0.3 mJ over 2 s. In the showcase, `Ebal` (with the motor work subtracted) holds to 2.8 mJ against 5.5 J of motor work.
 
-![Energy book of the showcase|1000](assets/68cb97d61d87.png)
+![Energy book of the showcase|1000](assets/b10964a6e321.png)
 
 ## The steady turn
 

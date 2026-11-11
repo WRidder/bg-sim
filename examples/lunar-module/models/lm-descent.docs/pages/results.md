@@ -1,6 +1,6 @@
 # Results
 
-![Descent: altitude, velocities, throttle, mass|900](assets/b6b3de2e2927.png)
+![Descent: altitude, velocities, throttle, mass|900](assets/f7a1954a03f8.png)
 
 The braking phase covers 470 km of range and loses most of the 1,695 m/s; the approach phase starts 8.5 km out:
 
@@ -8,11 +8,11 @@ The braking phase covers 470 km of range and loses most of the 1,695 m/s; the ap
 
 In the landing phase the model follows Aldrin's calls. The vertical lines mark the time of four callouts; the model passes those altitudes close to the calls:
 
-![Landing phase: altitude, rates, propellant, hover time|900](assets/23534faf70d2.png)
+![Landing phase: altitude, rates, propellant, hover time|900](assets/b67a442196ae.png)
 
 At touchdown the LM tilts 4.5° as the horizontal-velocity loop brakes the forward drift. One aft pad touches first, then the LM rocks onto the forward pad and settles level, 3 in into the soil:
 
-![Touchdown: pad forces, tilt, pad height|900](assets/b55cb0c19ba9.png)
+![Touchdown: pad forces, tilt, pad height|900](assets/a8407181567b.png)
 
 ## Against the published data
 

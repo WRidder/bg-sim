@@ -66,7 +66,7 @@ Every box is a documented primitive or a junction.
 
 ## Equations
 
-The CoM pose is **composed from $q$, never integrated** (D-MB6): $\theta = q + \pi/2$. Gravity applies the body-frame effort $(0,\ \sin\theta\; m g,\ \cos\theta\; m g)$ (the negative of the physical wrench, because a 1-junction sums efforts); through the link and the joint this is the physical pendulum torque $-m g L \sin q$. The Coriolis term is Breedveld's Eulerian junction structure, $e = -\mathrm{ad}(V)^T P$, with $P$ taken as a signal from `IPlanar`, so the inertia is never copied out of `I` (D-MB3). With $L = 0.5$ m the angle obeys
+The CoM pose is **composed from $q$, never integrated** (D-MB6): $\theta = q + \pi/2$. Gravity, bonded into the body junction like every source, applies the body-frame wrench $(0,\ -\sin\theta\; m g,\ -\cos\theta\; m g)$; through the link and the joint this is the physical pendulum torque $-m g L \sin q$. The Coriolis term is Breedveld's Eulerian junction structure, $e = -\mathrm{ad}(V)^T P$, with $P$ taken as a signal from `IPlanar`, so the inertia is never copied out of `I` (D-MB3). With $L = 0.5$ m the angle obeys
 
 $$(J + m L^2)\,\ddot q = -m g L \sin q .$$
 
@@ -99,7 +99,7 @@ The editor's Run uses `t_end` = 4 s (4001 points, `reltol` 1e-9, `abstol` 1e-11)
 | KE/PE swing $m g L (1 - \cos q_0)$ | 2.4524796e-4 J |
 | drift divided by swing | 7.2431e-12 (target 1e-6) |
 | states | 6 (P 3, d 2, q 1), all differential |
-| adaptive steps | 4072 for 4 s, 10072 for 10 s |
+| run cost | no fast transient; the model pins the stiff solver `Rodas5P` |
 
 ## What `expected.json` checks
 

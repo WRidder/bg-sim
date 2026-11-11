@@ -1,10 +1,10 @@
 # Results and checks
 
-![Load speed, voltage and the estimate over the whole run|900](assets/72f19f8e0de3.png)
+![Load speed, voltage and the estimate over the whole run|900](assets/8aceed98ed3a.png)
 
 The zoom on the load step at 1 s shows the dip, the recovery and the rod segments ringing:
 
-![Zoom on the load step|900](assets/44d59d64147e.png)
+![Zoom on the load step|900](assets/9fda131acdf0.png)
 
 ## Acceptance checks (`expected.json`, README measurements)
 

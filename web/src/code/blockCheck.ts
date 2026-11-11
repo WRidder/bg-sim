@@ -75,6 +75,7 @@ function interfaceFrom(value: unknown): BlockInterface | null {
     ports: array("ports") as BlockInterface["ports"],
     variables: array("variables") as BlockInterface["variables"],
     causality: array("causality") as BlockInterface["causality"],
+    orientation: array("orientation") as BlockInterface["orientation"],
   };
 }
 

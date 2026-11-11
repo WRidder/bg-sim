@@ -2,7 +2,7 @@
 
 A six-cup bellows vacuum gripper on a gantry picks a closed 10 kg carton (0.5 x 0.3 x 0.3 m) from a conveyor, lifts it 0.15 m, moves it 1 m, lowers it onto the place table and releases it. The parcel is a free rigid body. It hangs on six [SuctionCup](block:Cup1) elements. Each cup holds by its vacuum, has a compliant bellows, slips by friction, peels when a tilting moment lifts one side of the lip, and leaks air through its lip, through the material and through a lifted lip. A [VacuumGenerator](block:Gen) with an ejector characteristic evacuates a [manifold](block:Manifold), and a [line](block:Line1) runs from the manifold to each cup.
 
-![The model canvas|900](assets/8814d21528ff.png)
+![The model canvas|900](assets/17a0b6a38bfb.png)
 
 The example answers three questions:
 

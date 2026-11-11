@@ -6,7 +6,7 @@ The V-2 (A4) launched straight up, as in the post-war sounding flights:
 * 25 t of thrust at sea level, rising to 29 t in vacuum as the ambient pressure falls (the nozzle's exit area is 0.39 m²);
 * U.S. Standard Atmosphere 1976, drag with a Mach table, inverse-square gravity.
 
-![The model canvas|900](assets/64f85283115d.png)
+![The model canvas|900](assets/8c9cdffcd693.png)
 
 | block | role |
 | --- | --- |

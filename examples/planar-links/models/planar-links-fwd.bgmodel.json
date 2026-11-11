@@ -43,6 +43,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n003",
         "name": "A1_Joint1",
         "block": {
@@ -88,6 +89,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n005",
         "name": "A1_Body1",
         "block": {
@@ -391,6 +393,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n022",
         "name": "A2_Joint1",
         "block": {
@@ -436,6 +439,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n024",
         "name": "A2_Body1",
         "block": {
@@ -666,6 +670,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n037",
         "name": "A2_Joint2",
         "block": {
@@ -711,6 +716,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n039",
         "name": "A2_Body2",
         "block": {
@@ -1030,6 +1036,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n057",
         "name": "A3_Joint1",
         "block": {
@@ -1075,6 +1082,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n059",
         "name": "A3_Body1",
         "block": {
@@ -1305,6 +1313,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n072",
         "name": "A3_Joint2",
         "block": {
@@ -1350,6 +1359,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n074",
         "name": "A3_Body2",
         "block": {
@@ -1596,6 +1606,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n088",
         "name": "A3_Joint3",
         "block": {
@@ -1641,6 +1652,7 @@
         "starts": {}
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n090",
         "name": "A3_Body3",
         "block": {
@@ -2028,11 +2040,11 @@
         "id": "c011",
         "kind": "bond",
         "from": {
-          "node": "n011",
-          "port": "a"
+          "node": "n012"
         },
         "to": {
-          "node": "n012"
+          "node": "n011",
+          "port": "a"
         }
       },
       {
@@ -2236,11 +2248,11 @@
         "id": "c029",
         "kind": "bond",
         "from": {
-          "node": "n029",
-          "port": "a"
+          "node": "n030"
         },
         "to": {
-          "node": "n030"
+          "node": "n029",
+          "port": "a"
         }
       },
       {
@@ -2340,11 +2352,11 @@
         "id": "c038",
         "kind": "bond",
         "from": {
-          "node": "n037",
-          "port": "parent"
+          "node": "n025"
         },
         "to": {
-          "node": "n025"
+          "node": "n037",
+          "port": "parent"
         }
       },
       {
@@ -2481,11 +2493,11 @@
         "id": "c050",
         "kind": "bond",
         "from": {
-          "node": "n046",
-          "port": "a"
+          "node": "n047"
         },
         "to": {
-          "node": "n047"
+          "node": "n046",
+          "port": "a"
         }
       },
       {
@@ -2689,11 +2701,11 @@
         "id": "c068",
         "kind": "bond",
         "from": {
-          "node": "n064",
-          "port": "a"
+          "node": "n065"
         },
         "to": {
-          "node": "n065"
+          "node": "n064",
+          "port": "a"
         }
       },
       {
@@ -2793,11 +2805,11 @@
         "id": "c077",
         "kind": "bond",
         "from": {
-          "node": "n072",
-          "port": "parent"
+          "node": "n060"
         },
         "to": {
-          "node": "n060"
+          "node": "n072",
+          "port": "parent"
         }
       },
       {
@@ -2920,11 +2932,11 @@
         "id": "c088",
         "kind": "bond",
         "from": {
-          "node": "n080",
-          "port": "a"
+          "node": "n081"
         },
         "to": {
-          "node": "n081"
+          "node": "n080",
+          "port": "a"
         }
       },
       {
@@ -3024,11 +3036,11 @@
         "id": "c097",
         "kind": "bond",
         "from": {
-          "node": "n088",
-          "port": "parent"
+          "node": "n075"
         },
         "to": {
-          "node": "n075"
+          "node": "n088",
+          "port": "parent"
         }
       },
       {
@@ -3165,11 +3177,11 @@
         "id": "c109",
         "kind": "bond",
         "from": {
-          "node": "n097",
-          "port": "a"
+          "node": "n098"
         },
         "to": {
-          "node": "n098"
+          "node": "n097",
+          "port": "a"
         }
       },
       {

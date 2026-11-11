@@ -4,14 +4,14 @@
     # constraints** instead of the stiff springs of `Revolute3D`. It is the `kr, kt -> Inf`
     # limit of `Revolute3D`: the chart is `H(q) = (Rz(q), 0)` and
     #
-    #     V_rel = child.f - Ad(H)^-1 parent.f,      V_rel[1, 2, 4, 5, 6] = 0,   qdot = V_rel[3]
-    #     child.e = [F[1], F[2], tau, Fl[1], Fl[2], Fl[3]]
-    #     parent.e = -Ad(H)^-T child.e = -[R (F, tau); R Fl]
+    #     V_rel = V_c - Ad(H)^-1 parent.f,      V_rel[1, 2, 4, 5, 6] = 0,   qdot = V_rel[3]
+    #     W_c = [F[1], F[2], tau, Fl[1], Fl[2], Fl[3]]
+    #     parent.e = -Ad(H)^-T W_c = -[R (F, tau); R Fl]
     #
     # `F` (N*m) and `Fl` (N) are the **constraint reactions** (Lagrange multipliers): no equation
     # defines them, the five velocity constraints take their place, so the block stays balanced
     # and, with `Ja = 0`, the port power closes identically (`parent.e.parent.f +
-    # child.e.child.f + drive.e*qdot = 0`: the reactions do no work on an admissible twist).
+    # W_c.V_c + drive.e*qdot = 0`: the reactions do no work on an admissible twist).
     # The axial rows below carry `tau + Ja*qdd`, the drive effort plus the armature.
     #
     # The constraints are written at the **velocity** level on the body twists. The link poses are
@@ -39,6 +39,9 @@
     # Joint frame = parent port frame (frame-neutral, like `Revolute3D`): place and orient the
     # axis with `FixedTransform3DNeutral` on either side. D-MB8: the drive is a **Rotation** port
     # (N*m, rad/s). `pose` is `H` on the D-MB6 chart `(q_w, q_x, q_y, q_z, p)`.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -78,22 +81,22 @@
         vn[2] ~ -sq * parent.f[4] + cq * parent.f[5]
         vn[3] ~ parent.f[6]
         # The five hard constraints: zero relative twist off the axis.
-        child.f[1] ~ wn[1]
-        child.f[2] ~ wn[2]
-        child.f[4] ~ vn[1]
-        child.f[5] ~ vn[2]
-        child.f[6] ~ vn[3]
-        child.f[3] ~ wn[3] + qdot
+        child.f[1] ~ -wn[1]
+        child.f[2] ~ -wn[2]
+        child.f[4] ~ -vn[1]
+        child.f[5] ~ -vn[2]
+        child.f[6] ~ -vn[3]
+        child.f[3] ~ -(wn[3] + qdot)
         ddt(qdot) ~ qdd
         q ~ q0 + int(qdot, 0.0)
-        # child.e = [F; tau; Fl]: the reactions are the multipliers of the constraints above.
-        child.e[1] ~ F[1]
-        child.e[2] ~ F[2]
-        child.e[3] ~ tau + Ja * qdd
-        child.e[4] ~ Fl[1]
-        child.e[5] ~ Fl[2]
-        child.e[6] ~ Fl[3]
-        # parent.e = -Ad(H)^-T child.e = -[R (F, tau); R Fl]
+        # W_c = [F; tau; Fl]: the reactions are the multipliers of the constraints above.
+        child.e[1] ~ -F[1]
+        child.e[2] ~ -F[2]
+        child.e[3] ~ -(tau + Ja * qdd)
+        child.e[4] ~ -Fl[1]
+        child.e[5] ~ -Fl[2]
+        child.e[6] ~ -Fl[3]
+        # parent.e = -Ad(H)^-T W_c = -[R (F, tau); R Fl]
         parent.e[1] ~ -(cq * F[1] - sq * F[2])
         parent.e[2] ~ -(sq * F[1] + cq * F[2])
         parent.e[3] ~ -(tau + Ja * qdd)
@@ -120,5 +123,10 @@
     @causality begin
         (parent, child) => :transformer
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

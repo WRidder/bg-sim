@@ -56,4 +56,5 @@
                    M[4, 6] * a.e[4] + M[5, 6] * a.e[5] + M[6, 6] * a.e[6])
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

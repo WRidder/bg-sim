@@ -6,4 +6,5 @@
         p.f[3] ~ 0.0
     end
     @causality p => (:flow_out, :fixed)
+    @orientation p => :out
 end

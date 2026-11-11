@@ -11,7 +11,7 @@ The fuel rates of the candidates are the plant's own engine map, so the strategy
 agree. The battery term includes its internal loss, so the ECMS does not cycle the battery for
 nothing.
 
-![Diagram|1000](assets/4bdf0617b2b3.png)
+![Diagram|1000](assets/ee78f1abb4fd.png)
 
 ## Readouts
 

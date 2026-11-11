@@ -4,12 +4,11 @@
     # whose point is fixed in the body, the contact point of a wheel travels around the rim:
     # it is recomputed at every instant as the lowest point of the rim towards the plane.
     #
-    # Mounting: bond the wheel body's port (`RigidBody3D.p`, a 1-junction) DIRECTLY to `p`
-    # (bond from the body to this element), with the body frame at the wheel centre and the
-    # AXLE ALONG THE BODY z AXIS. As for `ContactPoint` on its mount, the port flow is then the
-    # NEGATIVE body twist `-[w; v]` (body frame) and the port effort is the contact wrench ON
-    # the body about its centre, so the port power `e . f` is the power absorbed by the
-    # contact (spring storage + dissipation). `g` is the world pose of the wheel centre (the
+    # Mounting: the wheel body's port (`RigidBody3D.p`, a 1-junction) attaches DIRECTLY to `p`,
+    # with the body frame at the wheel centre and the AXLE ALONG THE BODY z AXIS. As for
+    # `ContactPoint`, the port flow is the body twist `[w; v]` (body frame) and the port
+    # effort is minus the contact wrench on the body about its centre, so the port power
+    # `e . f` is the power absorbed by the contact (spring storage + dissipation). `g` is the world pose of the wheel centre (the
     # body pose, e.g. a `PoseIntegrator3D` output).
     #
     # Geometry (world frame, `n` the plane normal, `a = R(g) e_z` the axle):
@@ -143,13 +142,13 @@
         lz ~ (R[1, 3] * fr[2] - R[2, 3] * fr[1]) / wl
         camber ~ asin(an)
         # World angular velocity and the rim point velocity v_p = R v + w x r (the port flow is
-        # the NEGATIVE body twist).
-        wx ~ -(R[1, 1] * p.f[1] + R[1, 2] * p.f[2] + R[1, 3] * p.f[3])
-        wy ~ -(R[2, 1] * p.f[1] + R[2, 2] * p.f[2] + R[2, 3] * p.f[3])
-        wz ~ -(R[3, 1] * p.f[1] + R[3, 2] * p.f[2] + R[3, 3] * p.f[3])
-        v1 ~ -(R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6]) + (wy * rz - wz * ry)
-        v2 ~ -(R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6]) + (wz * rx - wx * rz)
-        v3 ~ -(R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6]) + (wx * ry - wy * rx)
+        # the body twist).
+        wx ~ R[1, 1] * p.f[1] + R[1, 2] * p.f[2] + R[1, 3] * p.f[3]
+        wy ~ R[2, 1] * p.f[1] + R[2, 2] * p.f[2] + R[2, 3] * p.f[3]
+        wz ~ R[3, 1] * p.f[1] + R[3, 2] * p.f[2] + R[3, 3] * p.f[3]
+        v1 ~ R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6] + (wy * rz - wz * ry)
+        v2 ~ R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6] + (wz * rx - wx * rz)
+        v3 ~ R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6] + (wx * ry - wy * rx)
         vn ~ fr[1] * v1 + fr[2] * v2 + fr[3] * v3
         # Contact point and penetration.
         xc ~ g[5] + rx
@@ -185,14 +184,15 @@
         Tw1 ~ ry * Fw3 - rz * Fw2 - bsp * wn * fr[1]
         Tw2 ~ rz * Fw1 - rx * Fw3 - bsp * wn * fr[2]
         Tw3 ~ rx * Fw2 - ry * Fw1 - bsp * wn * fr[3]
-        # Port effort = body-frame wrench on the wheel (with the negative twist as the flow, the
-        # port power is the absorbed power).
-        p.e[1] ~ R[1, 1] * Tw1 + R[2, 1] * Tw2 + R[3, 1] * Tw3
-        p.e[2] ~ R[1, 2] * Tw1 + R[2, 2] * Tw2 + R[3, 2] * Tw3
-        p.e[3] ~ R[1, 3] * Tw1 + R[2, 3] * Tw2 + R[3, 3] * Tw3
-        p.e[4] ~ R[1, 1] * Fw1 + R[2, 1] * Fw2 + R[3, 1] * Fw3
-        p.e[5] ~ R[1, 2] * Fw1 + R[2, 2] * Fw2 + R[3, 2] * Fw3
-        p.e[6] ~ R[1, 3] * Fw1 + R[2, 3] * Fw2 + R[3, 3] * Fw3
+        # Port effort = minus the body-frame wrench on the wheel (with the twist as the flow,
+        # the port power is the absorbed power).
+        p.e[1] ~ -(R[1, 1] * Tw1 + R[2, 1] * Tw2 + R[3, 1] * Tw3)
+        p.e[2] ~ -(R[1, 2] * Tw1 + R[2, 2] * Tw2 + R[3, 2] * Tw3)
+        p.e[3] ~ -(R[1, 3] * Tw1 + R[2, 3] * Tw2 + R[3, 3] * Tw3)
+        p.e[4] ~ -(R[1, 1] * Fw1 + R[2, 1] * Fw2 + R[3, 1] * Fw3)
+        p.e[5] ~ -(R[1, 2] * Fw1 + R[2, 2] * Fw2 + R[3, 2] * Fw3)
+        p.e[6] ~ -(R[1, 3] * Fw1 + R[2, 3] * Fw2 + R[3, 3] * Fw3)
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :in
 end

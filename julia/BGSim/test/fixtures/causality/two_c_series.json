@@ -46,16 +46,16 @@
       {
         "id": "c1",
         "kind": "bond",
-        "from": { "node": "n1", "port": "p" },
-        "to": { "node": "n2" },
+        "from": { "node": "n2" },
+        "to": { "node": "n1", "port": "p" },
         "route": [],
         "label": null
       },
       {
         "id": "c2",
         "kind": "bond",
-        "from": { "node": "n3", "port": "p" },
-        "to": { "node": "n2" },
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "p" },
         "route": [],
         "label": null
       }

@@ -89,7 +89,7 @@ function _fem_rail(; s0 = 0.08, v = 0.0, zeta = 0.0, damp = 1.0, g_car = 9.81, t
         bg_conn("c1", "bond", "n1", "A", "n2", "p"),
         bg_conn("c2", "bond", "n1", "A", "n3", "p"),
         bg_conn("c3", "signal", "n4", "g", "n1", "gA"),
-        bg_conn("c4", "bond", "n5", "parent", "n1", "E"),
+        bg_conn("c4", "bond", "n1", "E", "n5", "parent"),      # `parent` is `in` (WP-O3a)
         bg_conn("c5", "bond", "n5", "child", "n6", "p"),
         bg_conn("c6", "signal", "n1", "poseE", "n7", "gp"),
         bg_conn("c7", "signal", "n5", "pose", "n7", "gl"),
@@ -100,9 +100,11 @@ function _fem_rail(; s0 = 0.08, v = 0.0, zeta = 0.0, damp = 1.0, g_car = 9.81, t
         bg_conn("c12", "wire", "n10", "b", "n5", "drive"),
         bg_conn("c13", "signal", "n12", "y", "n11", "u"),
         bg_conn("c14", "wire", "n11", "a", "n13", "a"),
-        bg_conn("c15", "bond", "n13", "b", "n1", "S"),
+        # The slide spring and damper bond from the junction face `S` (WP-O3a: its junction
+        # flow is the slide rate, so the `any` port takes it at the head of the bond).
+        bg_conn("c15", "bond", "n1", "S", "n13", "b"),
         bg_conn("c16", "wire", "n11", "a", "n14", "a"),
-        bg_conn("c17", "bond", "n14", "b", "n1", "S"),
+        bg_conn("c17", "bond", "n1", "S", "n14", "b"),
     ]
     return bg_model("FemRail", nodes, conns; t_end = t_end, points = points, solver = "Rodas5P",
         reltol = 1e-9, abstol = 1e-13)

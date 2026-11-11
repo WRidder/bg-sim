@@ -548,5 +548,17 @@
     "source": null,
     "node": null,
     "connection": null
+  },
+  {
+    "code": "E114",
+    "severity": "error",
+    "message": "bond `c41` runs from `p` of `C1` to junction `J3`, but `p` of `C1` is declared `in`: a bond must end at an `in` port",
+    "hint": "reverse bond `c41`, so that it runs from junction `J3` to `p` of `C1`",
+    "path": "Plant/C1",
+    "block": "stdlib:bondgraph/C",
+    "scope": null,
+    "source": null,
+    "node": "n63",
+    "connection": "c41"
   }
 ]

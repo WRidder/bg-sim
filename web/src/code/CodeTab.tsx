@@ -325,6 +325,7 @@ export function CodeTab() {
         : interfaceFromBlockCheck(
             result.interface,
             blockNameOf(text) ?? inlineNode?.name ?? "Inline block",
+            text,
           );
     publishInlineInterface(target.nodeId, text, iface);
   }

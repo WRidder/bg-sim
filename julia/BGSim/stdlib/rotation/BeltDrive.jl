@@ -22,4 +22,8 @@
         a.e ~ r_a * F
         b.e ~ -r_b * F
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

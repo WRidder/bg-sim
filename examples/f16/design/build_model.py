@@ -210,8 +210,10 @@ def landing_gear(d: Diagram, xcg: str, st: dict) -> None:
         d.bond(f"N_{leg}", None, f"Contact_{leg}", "n")
         d.junction(f"Lift_{leg}", 0, x + 520, y - 200)
         d.bond(f"N_{leg}", None, f"Lift_{leg}", None)
-        d.node(f"Retract_{leg}", "stdlib:bondgraph/MSf", x + 520, y - 320)
-        d.bond(f"Lift_{leg}", None, f"Retract_{leg}", "p")
+        # the retraction rate leaves the 0-junction into the strut, so the flow source (at the tail
+        # of its bond, its declared `out`) delivers -lift_rate
+        d.node(f"Retract_{leg}", "stdlib:bondgraph/MSf", x + 520, y - 320, params={"gain": "-1.0"})
+        d.bond(f"Retract_{leg}", "p", f"Lift_{leg}", None)
         d.sig("GearAct", "lift_rate", f"Retract_{leg}", "u")
         d.junction(f"Strut_{leg}", 1, x + 640, y - 200)
         d.bond(f"Lift_{leg}", None, f"Strut_{leg}", None)

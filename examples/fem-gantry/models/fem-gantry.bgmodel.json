@@ -2448,12 +2448,12 @@
         "id": "c57",
         "kind": "bond",
         "from": {
-          "node": "WeldA",
-          "port": "parent"
-        },
-        "to": {
           "node": "X1Car",
           "port": "p"
+        },
+        "to": {
+          "node": "WeldA",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -2574,12 +2574,12 @@
         "id": "c66",
         "kind": "bond",
         "from": {
-          "node": "PivotB",
-          "port": "parent"
-        },
-        "to": {
           "node": "X2Car",
           "port": "p"
+        },
+        "to": {
+          "node": "PivotB",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -2686,12 +2686,12 @@
         "id": "c74",
         "kind": "bond",
         "from": {
-          "node": "YGuide",
-          "port": "parent"
-        },
-        "to": {
           "node": "Beam",
           "port": "E"
+        },
+        "to": {
+          "node": "YGuide",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -2784,12 +2784,12 @@
         "id": "c81",
         "kind": "bond",
         "from": {
-          "node": "YMotor",
-          "port": "b"
-        },
-        "to": {
           "node": "Beam",
           "port": "S"
+        },
+        "to": {
+          "node": "YMotor",
+          "port": "b"
         },
         "route": [],
         "label": null

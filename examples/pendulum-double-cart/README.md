@@ -51,10 +51,6 @@ Motor(ElectricDrive) -- Gear -- Pulley(RackAndPinion) -- Belt(SpringDamper) -- R
 - **Poses** are composed, never integrated (`ComposePose2D`/`LocalPose2D`); gravity reads the composed pose.
 - **Disturbance**: `ExternalWrenchPlanar` (`Push`) on the tip link's 1-junction, fed by a `Pulse` source: a
   force perpendicular to the link and its moment about the centre of mass (lever L − c).
-- **Bond directions matter.** A bond's half arrow sets the sign of the junction equations, so every joint's
-  `parent` port is bonded *towards* the junction of the body it hangs from (`Joint.parent → N`). Bonded the
-  other way (junction → `parent`) the reaction forces of the joint on a *moving* parent (the cart) have the
-  wrong sign; a fixed base cannot show it.
 
 ## Design (`design/design.py`, `uv run`, CasADi + IPOPT + SciPy)
 

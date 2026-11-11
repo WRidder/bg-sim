@@ -23,6 +23,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n02",
         "name": "Pivot",
         "block": {
@@ -89,6 +90,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n05",
         "name": "Body",
         "block": {
@@ -110,6 +112,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n07",
         "name": "WheelJ",
         "block": {
@@ -138,6 +141,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n09",
         "name": "Wheel",
         "block": {
@@ -396,11 +400,11 @@
         "id": "c05",
         "kind": "bond",
         "from": {
-          "node": "n07",
-          "port": "parent"
+          "node": "n04"
         },
         "to": {
-          "node": "n04"
+          "node": "n07",
+          "port": "parent"
         },
         "route": [],
         "label": null

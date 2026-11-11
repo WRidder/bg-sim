@@ -970,11 +970,11 @@ per-component units from the J-MB2 table): `IPlanar` (+ `Pm`, `wout` taps), `Cor
   forces `a.f = -Ad(g) b.f` **and** `a.e = Ad(g)^-T b.e`. The C-MB1 hand-written fixture's
   `+Ad` pair is not power-continuous; the multibond blocks use the continuous pair.
 * **ScrewTF.** `a.f = S b.f` with `S = [1, ry, -rx]` needs `b.e = -S^T a.e`.
-* **Gravity.** The physical gravity wrench at the CoM is
+* **Gravity.** (Superseded: since WP-O3a the junction flow of a body is the true twist and `GravityPlanar` gives `p.e = +W`; see "Port orientation (E114)" at the end.) The physical gravity wrench at the CoM is
   `W = [0, -sin(theta) m g0, -cos(theta) m g0]` in the body frame. A 1-junction sums
   efforts, so the port effort is `-W` (`[0, sin(theta) m g0, cos(theta) m g0]`).
 * **Coriolis.** The block's port effort is `e = [f2 P3 - f3 P2, -f1 P3, f1 P2]` for its
-  own port flow `f`. On a 1-junction the Coriolis bond flow is `-V_body`, so the inertia
+  own port flow `f`. (Superseded: since WP-O3a the body is built `node -> coriolis.p`, so the Coriolis port flow is `+V_body`; the effort law is unchanged. See "Port orientation (E114)" at the end.) With the old bond `inertia.p -> node` the Coriolis bond flow was `-V_body`, so the inertia
   receives `+ad(V_body)^T P`: `dP/dt = ad(V)^T P + W`. The free-body test compares against
   an independent RK4 of that equation (errors **3.8e-14, 1.7e-14, 4.1e-15** relative for
   the reviewer's three P0 cases), and also checks the convention-independent invariants
@@ -1366,6 +1366,8 @@ neutral and one instance attaches to `GroundPlanar` (world) **and** to a link-1 
 
 ## 3. `FixedJoint2D` lever arm: the finding is the port orientation, not `x != 0`
 
+> **Superseded (port orientation, WP-O3a, plan/PORT_ORIENTATION_PLAN.md O7; see "Port orientation (E114)" at the end of this file).** `FixedJoint2D` is now a `through` pair (`(parent, child) => :through`) and a mount keeps its `b` on the body side; the reverse-causality case below still fails at theta = +-pi/2 (O21). The measurements stay as history.
+
 Probe result (run, not guessed): the block is written in the **joint -> fixed -> body** causal
 direction (`parent.f` from `child.f`, `child.e` from `parent.e`). In that direction, which is
 what the X-MB2 arm uses (`Link1`/`Link2` have `x = 0.2` with their **child** on the body
@@ -1412,6 +1414,8 @@ The 2-link rigid chain: 15 unknowns / 4 differential, model.check W201 2, post-c
 (3 per inertia), run `E901`. Both sets are asserted in `test_planar_mechanics.jl`.
 
 ## 5. `ExternalWrenchPlanar` input is the physical wrench
+
+> **Superseded (port orientation, WP-O3a, plan/PORT_ORIENTATION_PLAN.md O7; see "Port orientation (E114)" at the end of this file).** The law below (`p.e = -w`) is the one before the body was rebuilt; `p.e` is now `+w`, the wrench itself, and the input is still the physical wrench.
 
 `p.e = -w` now (was `p.e = w`), so the three inputs `wr/wx/wy` are the physical external
 wrench `W_ext` and a body on a 1-junction feels `+W_ext` (`dP/dt = +W_ext`); the element
@@ -1625,7 +1629,7 @@ against the analytic direction).
 
 * `CoriolisSpatial`: `p.e = -ad(f)^T P` component-wise (the spatial EJS); the element power is
   0 (`V^T ad(V)^T P = 0`), and the free-body run reproduces the body-frame Euler equation.
-* `ExternalWrenchSpatial` takes the **physical** wrench as six scalar inputs (N*m x3, N x3)
+* (Superseded for `ExternalWrenchSpatial` and `GravitySpatial` by WP-O3a: `p.e` is now `+W`, see "Port orientation (E114)" at the end.) `ExternalWrenchSpatial` takes the **physical** wrench as six scalar inputs (N*m x3, N x3)
   and sets `p.e = -W`; a body on a 1-junction feels `+W_ext` (component units proven end to
   end: a torque moves only the angular momentum, a force only the linear one).
 * `GravitySpatial`: `p.e = [0; m g0 R(g)[3,:]]` (the negative of the physical gravity wrench
@@ -1664,7 +1668,7 @@ against the analytic direction).
 
 * **Axis = local z of the joint frame.** Place and orient a joint with `FixedTransform3D` /
   `FixedTransform3DNeutral` on either side; `[S | N]` is then the identity (up to the pitch).
-* **Port orientation in rigs.** Transformers are `a.f = -Ad(g) b.f`, `b.e = Ad(g)^T a.e`; side
+* **Port orientation in rigs.** (The mounting rule stands: the mount keeps `b` on the body side. The rest of the bond directions of this block are superseded by the declared orientations; see "Port orientation (E114)" at the end.) Transformers are `a.f = -Ad(g) b.f`, `b.e = Ad(g)^T a.e`; side
   `a` attaches to the joint port, side `b` to the ground/body, and `g` is the body-side pose in
   the joint-side frame. The opposite orientation gives NaN at initialisation. Bonds run
   `transform.b -> body.p`; the reverse flips the relative-rate sign.
@@ -1870,3 +1874,97 @@ Probed and measured on the Planar Links example, not read:
    calls: hold/linear tables add every breakpoint in the run window, cubic tables only the
    first and last (the extrapolation corner). It is merged with the discrete tick times in
    `simulate` (`init_kwargs`).
+
+# Port orientation (E114) (verified on branch `port-orientation`)
+
+Design record: `plan/PORT_ORIENTATION_PLAN.md` (decisions O1 to O22, the per-package "Choices" lists) and
+`plan/wps/port-orientation/` (orientation table, sign-change lists, per-package choices). User rules: the
+manual section "Bond direction and port orientation" (`web/src/manual/pages/03-building-models.md`). This
+section is the short version for someone who changes the compiler or a block.
+
+## The sign rule in the code
+
+* The rule did not change (O1): a bond from X to Y gives `Y.f = f_b`, `X.f = -f_b`, and the efforts
+  likewise. A bond between two element ports gets those two equations in `connect.jl`.
+* A bond with a junction at one end becomes a `Flat.JunctionBond` (`connect.jl`, the loop that builds
+  `junction.bonds`). `into = (t.kind == :junction)` is true when the junction is the head, that is, when the
+  port sits at the tail. `junctions.jl` then writes `X.f = -f_b` for such a port (`_junction_bond_exprs` negates
+  the port's flow ids) and adds the effort to the junction sum with the sign that goes with it.
+* Between two junctions the bond makes its own virtual `(e, f)` pair, so a 1-1 or 0-0 bond is neutral to the
+  model. A 0-1 bond is not: the 0-junction effort enters the 1-junction sum with the other sign. That is why
+  O14 leaves 0-1 bonds free (they set a reference direction) and does not check any bond between two junctions.
+
+## Where the check lives
+
+* Language: `@orientation` is a scope like `@causality` (`src/syntax/`, `OrientationDecl`, accessors
+  `orientation(pb)`, `port_orientation(pb, port)`, `orientation_ports`, `orientation_kind`). Shape errors are
+  E001, name errors E003. Instantiation copies the entries into the flat block (`src/compile/instantiate.jl`).
+* Check: `check_orientations!` in `src/compile/connect.jl`, called from `classify_connections!` after the
+  port-conflict check, on the valid bonds of the flattened connection list. It does not touch wires or signals.
+  The cases, one E114 each:
+  * an end at an `in` port that is not the head, or at an `out` port that is not the tail (hint: reverse it);
+  * a bond whose two ends are both `in` or both `out` (O4, hint: put a junction in between);
+  * a `through` pair whose two bonds both arrive or both leave (O13, a local check: the pair is only compared
+    with itself, not with the neighbours);
+  * a bond to a leaf power port that no entry names (O22, `_leaf_undeclared`; junctions, composite faces that
+    are junctions and wires are exempt).
+* An end is checked against the leaf port it resolves to and against every textual-composite face it passes
+  (`_orientation_anchors`, `b.composite_orientation`). A composite-internal `connect(a, b)` is a bond from `a` to
+  `b` and is reported on the composite node with `scope: "@connections"`. The bond stays in the model, so one
+  E114 does not cascade into E101/E103/E106.
+
+## The catalog shape
+
+`orientation: [{ "ports": [...], "kind": "in" | "out" | "through" }]` is a required field of `catalogBlock` and
+`blockInterface` (`contracts/schemas/catalog.schema.json`, right after `causality`); `ports` has one or two unique
+names (two only for `through`). A port named in no entry is `any` in the catalog and, since O22, is not bondable.
+TypeScript, Python and Julia shapes change together (CLAUDE.md, Conventions). The editor reads the same field
+(`web/src/editor/connectionRules.ts` and the inspector) for auto-orientation and for the disabled reverse action.
+
+## The conventions (O6, O13, O15, O16, O20)
+
+* In: storage, dissipation, fields, contacts, detectors and sensors, and every iconic power port (O20), so a bond
+  to an iconic port always ends at the port and behaves like the wired node.
+* Out: the bond-graph sources `Se`, `Sf`, `MSe`, `MSf`, gravity, external wrench and their planar and spatial
+  forms. The flow sources impose `+f` at the tail (`p.f ~ -f`, O15).
+* Through: `TF`, `GY`, `MTF`, `MGY`, `TFAd*`, `FixedTransform*`, `JointTransform*`, `FixedJoint2D`, `PowerSensor`.
+  Their laws are written in the into-block form and work either way round. Reversing *one* bond of a `through` pair
+  on a 1-junction still negates the modulus.
+* Joints: `parent` in, `child` out, `drive` in. The joint law changes on the child side only (`V_c = -child.f`,
+  `W_c = -child.e`). A dissipator or sensor on a drive goes through a junction (O4, O16).
+* Mechanics (O7): `RigidBody2D/3D` are built `node -> inertia.p`, `node -> coriolis.p`, `gravity.p -> node`,
+  `node -> flow.p`, so the junction flow is the true twist. A contact's port flow is the body twist and its port
+  effort is minus the wrench on the body. A mount keeps `b` on the body side. An `any` port on a body face, which
+  O22 forbids to bond, was the hazard before: it compiled and read the negated twist.
+
+## The two numerical lessons (O21)
+
+* Do not leave a division by a geometric factor that can vanish in an observed port variable. When the solver's
+  tearing of an implicit transform law leaves `x / cos(theta)` or `x / sin(theta)` in an observed variable, write
+  the law explicitly in the direction that needs no division. `FixedTransform2D` and `JointTransform2D` state
+  `b.e = Ad^T a.e` componentwise for that reason (`test_multibond_slice.jl` power identity at 1e-9 failed through
+  `Link/b.e[3]` observed via `cos(pi/2)`). The models then compile to a pure ODE, so `solver: "auto"` can pick a
+  non-stiff method that stops at MaxIters on a stiff joint: pin `Rodas5P` there. A test tolerance is never the fix.
+* A mount turned round, with `a` toward the body, is a badly conditioned causality. `planar/FixedJoint2D` used with
+  reverse causality still fails at theta = +-pi/2, and a spatial mount with `a` toward the body fails at
+  axis-aligned rotations (the initialization divides by a zero rotation entry). Both are older than this work.
+  Keep `b` on the body side; the migration tool only reverses bonds and never changes which side of a `through`
+  block faces the body.
+
+## The migration tool and its limit
+
+`tools/migrate_bond_orientation.py` (tests: `backend/tests/test_migrate_bond_orientation.py`) reads the catalog and
+a model, reverses every bond that violates the declarations, and works per 1-junction cluster (O19): it follows
+element-to-element bonds and `through` pairs, picks the cheapest equivalent sign choice, and classifies each
+reversal as neutral, source (the value is negated), swapped series sensor, or review (left to a person; the tool
+never edits a review group). It negates start values and signal references of odd elements on a flipped chain.
+`--check` only reports.
+
+The limit: a model without markers cannot say whether it was written before or after a law change (O15 `Sf`/`MSf`,
+O7 the mechanics blocks). A node whose law change the tool has accounted for gets
+`"$comment": "migrate_bond_orientation: O15"` (or `O7`), so a second run does nothing. For a model written after the
+change and carrying no marker (a generator output), use `--no-law-changes` or `--skip-law-change O7` /
+`--skip-law-change O15`; without them the tool reports false "law change cancelled" edits (for example `Belt.f`
+negated in vdp-belt). The tool knows no law of a project library block, so it cannot see changes there; the
+example's `expected.json` checks cover them. Generated examples are fixed in their generator and regenerated, not
+migrated.

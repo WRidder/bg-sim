@@ -117,8 +117,9 @@ _cz_with_code(diagnostics, code) = [d for d in diagnostics if d.code == code]
         @test isempty(_cz_with_code(flat.diagnostics, "W202"))
 
         causality = Compile.model_check(doc).causality
-        @test causality["c1"].strokeAt == "to"     # C1: effort out, integral
-        @test causality["c2"].strokeAt == "from"   # C2: effort in at its port, derivative
+        # The bonds run J0 -> C (the C ports are `in`), so the C end is `to`.
+        @test causality["c1"].strokeAt == "from"   # C1: effort out, integral
+        @test causality["c2"].strokeAt == "to"     # C2: effort in at its port, derivative
     end
 
     @testset "Se-Se conflict on a 0-junction: E106" begin

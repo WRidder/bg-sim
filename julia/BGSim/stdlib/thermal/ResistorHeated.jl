@@ -25,4 +25,9 @@
         P ~ v * i
         heat.f ~ -P
     end
+    @orientation begin
+        p => :in
+        n => :in
+        heat => :in
+    end
 end

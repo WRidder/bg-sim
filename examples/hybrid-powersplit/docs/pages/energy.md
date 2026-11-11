@@ -20,9 +20,9 @@ target is 0.09 below the standstill target, which leaves room for the braking en
   $s = s_0\,(1 - k_p (soc - soc_t)/0.1)$. Here $P_b$ is the battery power of the quasi-static
   planetary balance with the machine losses, and $s_0 = 2.6$ is the charge-sustaining factor.
 
-![Rule-based: speed tracking, engine power and SOC on the NEDC|1000](assets/83e69c424fcd.png)
+![Rule-based: speed tracking, engine power and SOC on the NEDC|1000](assets/2eb9303aba88.png)
 
-![ECMS: engine power, SOC and the SOC-corrected equivalence factor|1000](assets/33220f914a29.png)
+![ECMS: engine power, SOC and the SOC-corrected equivalence factor|1000](assets/9cf5a3c62b4f.png)
 
 ## Comparison (NEDC, hot start, 11.01 km)
 

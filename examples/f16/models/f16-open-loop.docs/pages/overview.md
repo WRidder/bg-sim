@@ -2,7 +2,7 @@
 
 The nonlinear F-16 of Stevens & Lewis (*Aircraft Control and Simulation*, Section 3.6), on the low-speed wind-tunnel data of NASA TP-1538. Three aircraft are trimmed at the book's point, 502 ft/s (153 m/s) at sea level, with the centre of gravity at 0.30, 0.35 and 0.38 of the mean chord, and each is released on its own mode. The further aft the CG, the less the airframe weathercocks into the wind: at 0.38 it is statically unstable.
 
-![The model canvas|900](assets/34bd111a1108.png)
+![The model canvas|900](assets/3667084db799.png)
 
 | block | role |
 | --- | --- |

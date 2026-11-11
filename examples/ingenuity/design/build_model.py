@@ -156,7 +156,7 @@ def propulsion(d: Diagram, carrier: str | None, x0: float, y0: float, stand: boo
             d.node(f"Hub{tag}", "stdlib:multibond/FixedTransform3DNeutral", x + 780, y + 300,
                    params={"x": "0.0", "y": "0.0", "z": num(-(z - ZCG))})
             d.node(f"HubWrench{tag}", "stdlib:multibond/ExternalWrenchSpatial", x + 640, y + 300)
-            # a wrench source bonds out of its port (as in the stdlib examples): source -> mount -> body
+            # sources point at the body: wrench -> mount.a, mount.b -> body
             d.bond(f"HubWrench{tag}", "p", f"Hub{tag}", "a")
             d.bond(f"Hub{tag}", "b", carrier, "p")
             for p in ("tx", "ty", "tz", "fx", "fy", "fz"):

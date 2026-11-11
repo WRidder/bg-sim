@@ -23,4 +23,5 @@
         p.e[5] ~ by * p.f[5]
         p.e[6] ~ bz * p.f[6]
     end
+    @orientation p => :in
 end

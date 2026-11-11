@@ -1,6 +1,6 @@
 # Results
 
-![alpha, load factor and speed|900](assets/2b605ddb732c.png)
+![alpha, load factor and speed|900](assets/70565f1b8cc7.png)
 
 | quantity | Protected | Unprotected |
 | --- | --- | --- |

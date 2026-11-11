@@ -16,8 +16,8 @@
     # translations are parent-frame coordinates, which is what makes the chart division-free.
     # Both adjoints use this pose:
     #
-    #     V_rel    = child.f - Ad(H)^-1 parent.f        (the body twist of H, exactly)
-    #     parent.e = -Ad(H)^-T child.e                   (exactly power-continuous)
+    #     V_rel    = V_c - Ad(H)^-1 parent.f        (the body twist of H, exactly)
+    #     parent.e = -Ad(H)^-T W_c                   (exactly power-continuous)
     #
     # and the chart rates are the closed-form inverse of the chart Jacobian:
     #
@@ -26,10 +26,10 @@
     #
     # The deflection lever of the J-MB7 term (`qdot = n . V_rel - n . (w_p x dl)`) is the
     # `w_p x p` part of `Ad(H)^-1` and is therefore exact. The conjugate wrench is
-    # `child.e = [(I - [g] + g g^T) F; Rg^T (Fx, Fy, tau)]` with `F = kr dth + br dth'`,
+    # `W_c = [(I - [g] + g g^T) F; Rg^T (Fx, Fy, tau)]` with `F = kr dth + br dth'`,
     # `Fx,y = kt dl + bt dl'`, so on a run
     #
-    #     parent.e.parent.f + child.e.child.f + drive.e*qdot
+    #     parent.e.parent.f + W_c.V_c + drive.e*qdot
     #         = d/dt(1/2 kr|dth|^2 + 1/2 kt|dl|^2) + br|dth'|^2 + bt|dl'|^2 [+ ts*qdot]
     #
     # holds identically and the pose is exactly the integral of the twists, so the energy of a
@@ -37,6 +37,9 @@
     #
     # D-MB8: the drive is a **Translation** port (N, m/s). `pose` is `H` on the D-MB6 chart:
     # the quaternion `(1, g)` (the consumers normalise) and the origin `(dl_x, dl_y, q)`.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -104,11 +107,11 @@
         for i in 1:3
             wn[i] ~ R[1, i] * parent.f[1] + R[2, i] * parent.f[2] + R[3, i] * parent.f[3]
             vn[i] ~ R[1, i] * u[1] + R[2, i] * u[2] + R[3, i] * u[3]
-            Vrel[i] ~ child.f[i] - wn[i]
+            Vrel[i] ~ -child.f[i] - wn[i]
         end
-        Vrel[4] ~ child.f[4] - vn[1]
-        Vrel[5] ~ child.f[5] - vn[2]
-        Vrel[6] ~ child.f[6] - vn[3]
+        Vrel[4] ~ -child.f[4] - vn[1]
+        Vrel[5] ~ -child.f[5] - vn[2]
+        Vrel[6] ~ -child.f[6] - vn[3]
         # xdot = B V_rel: Gibbs kinematics for the rotation, (dl', qdot) = R v for the translation
         gw ~ g[1] * Vrel[1] + g[2] * Vrel[2] + g[3] * Vrel[3]
         thd[1] ~ Vrel[1] + (g[2] * Vrel[3] - g[3] * Vrel[2]) + g[1] * gw
@@ -130,21 +133,21 @@
         Fp[1] ~ kt * dl[1] + bt * dld[1]
         Fp[2] ~ kt * dl[2] + bt * dld[2]
         Fp[3] ~ tau
-        # child.e = B^T [F; Fp]: (I - [g] + g g^T) F and R^T Fp
+        # W_c = B^T [F; Fp]: (I - [g] + g g^T) F and R^T Fp
         gF ~ g[1] * F[1] + g[2] * F[2] + g[3] * F[3]
-        child.e[1] ~ F[1] - (g[2] * F[3] - g[3] * F[2]) + g[1] * gF
-        child.e[2] ~ F[2] - (g[3] * F[1] - g[1] * F[3]) + g[2] * gF
-        child.e[3] ~ F[3] - (g[1] * F[2] - g[2] * F[1]) + g[3] * gF
-        child.e[4] ~ R[1, 1] * Fp[1] + R[2, 1] * Fp[2] + R[3, 1] * Fp[3]
-        child.e[5] ~ R[1, 2] * Fp[1] + R[2, 2] * Fp[2] + R[3, 2] * Fp[3]
-        child.e[6] ~ R[1, 3] * Fp[1] + R[2, 3] * Fp[2] + R[3, 3] * Fp[3]
-        # parent.e = -Ad(H)^-T child.e = -[R child.e_ang + p x Fp; Fp]
-        parent.e[1] ~ -(R[1, 1] * child.e[1] + R[1, 2] * child.e[2] + R[1, 3] * child.e[3] +
-                        (dl[2] * tau - q * Fp[2]))
-        parent.e[2] ~ -(R[2, 1] * child.e[1] + R[2, 2] * child.e[2] + R[2, 3] * child.e[3] +
-                        (q * Fp[1] - dl[1] * tau))
-        parent.e[3] ~ -(R[3, 1] * child.e[1] + R[3, 2] * child.e[2] + R[3, 3] * child.e[3] +
-                        (dl[1] * Fp[2] - dl[2] * Fp[1]))
+        child.e[1] ~ -(F[1] - (g[2] * F[3] - g[3] * F[2]) + g[1] * gF)
+        child.e[2] ~ -(F[2] - (g[3] * F[1] - g[1] * F[3]) + g[2] * gF)
+        child.e[3] ~ -(F[3] - (g[1] * F[2] - g[2] * F[1]) + g[3] * gF)
+        child.e[4] ~ -(R[1, 1] * Fp[1] + R[2, 1] * Fp[2] + R[3, 1] * Fp[3])
+        child.e[5] ~ -(R[1, 2] * Fp[1] + R[2, 2] * Fp[2] + R[3, 2] * Fp[3])
+        child.e[6] ~ -(R[1, 3] * Fp[1] + R[2, 3] * Fp[2] + R[3, 3] * Fp[3])
+        # parent.e = -Ad(H)^-T W_c = -[R W_c_ang + p x Fp; Fp]
+        parent.e[1] ~ R[1, 1] * child.e[1] + R[1, 2] * child.e[2] + R[1, 3] * child.e[3] -
+            (dl[2] * tau - q * Fp[2])
+        parent.e[2] ~ R[2, 1] * child.e[1] + R[2, 2] * child.e[2] + R[2, 3] * child.e[3] -
+            (q * Fp[1] - dl[1] * tau)
+        parent.e[3] ~ R[3, 1] * child.e[1] + R[3, 2] * child.e[2] + R[3, 3] * child.e[3] -
+            (dl[1] * Fp[2] - dl[2] * Fp[1])
         parent.e[4] ~ -Fp[1]
         parent.e[5] ~ -Fp[2]
         parent.e[6] ~ -Fp[3]
@@ -174,5 +177,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

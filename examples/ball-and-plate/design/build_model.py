@@ -222,9 +222,10 @@ K_LOCK, B_LOCK = 1.0e4, 10.0
 
 def lock_preload(q10, x0):
     """Start value of the lock spring X that holds the ball's weight torque at the start tilt
-    (the spring's q falls as q1 rises, so q0 = -tau / k)."""
+    (the gimbal drive is at the head of its bond, so the spring's q rises with q1 and q0 = tau / k;
+    the spring is relaxed at q1 = q10 - q0)."""
     tx, _ = weight_torque(q10, 0.0, x0, 0.0)
-    return -tx / K_LOCK
+    return tx / K_LOCK
 
 
 def locks(D: Diagram, q10, x0, *, shaker=None):
@@ -236,9 +237,9 @@ def locks(D: Diagram, q10, x0, *, shaker=None):
         x = 440 + 260 * (i - 1)
         if shaker and i == 1:
             A, W = shaker
-            D.node("ShakerRate", "stdlib:sources/Sine", x - 260, -420, params={"amplitude": -A * W, "frequency": W})
-            # the MSf flow enters the 0-junction and leaves it into the gimbal drive with the
-            # opposite sign of qdot1, so the source carries -A W sin(W t)
+            D.node("ShakerRate", "stdlib:sources/Sine", x - 260, -420, params={"amplitude": A * W, "frequency": W})
+            # the MSf delivers A W sin(W t) into the 0-junction (a flow source at the tail of its
+            # bond imposes +u on the junction), which passes it on to the gimbal drive and the lock
             D.node("Shaker", "stdlib:bondgraph/MSf", x - 120, -420)
             D.node("LockNode", "0", x, -300)
             D.sig("ShakerRate", "y", "Shaker", "u")
@@ -248,7 +249,7 @@ def locks(D: Diagram, q10, x0, *, shaker=None):
             D.bond("LockNode", None, f"Lock{ax}")
         else:
             D.node(f"Lock{ax}", "1", x, -160)
-            D.bond("Gimbal", f"drive{i}", f"Lock{ax}")
+            D.bond(f"Lock{ax}", None, "Gimbal", f"drive{i}")
         q0 = lock_preload(q10, x0) if (i == 1 and not shaker) else 0.0
         D.node(f"Spring{ax}", "stdlib:bondgraph/C", x - 60, -60, params={"c": 1.0 / K_LOCK}, starts={"q": q0})
         D.node(f"Damper{ax}", "stdlib:bondgraph/R", x + 60, -60, params={"r": B_LOCK})
@@ -465,7 +466,7 @@ def free_model():
     locks(D, FREE_TILT, FREE_X0)
     D.node("Energy", "project:RigEnergy", 1180, 460,
            params={"mb": rig.M_BALL, "mp": rig.M_PLATE, "g0": rig.G0, "k_lock": K_LOCK, "q10": FREE_TILT, "q20": 0.0,
-                   "dq1": lock_preload(FREE_TILT, FREE_X0)})
+                   "dq1": -lock_preload(FREE_TILT, FREE_X0)})
     for a, pa, b in (("Ball", "P", "Pb"), ("Ball", "V", "Vb"), ("PoseBall", "g", "gb"), ("Plate", "P", "Pp"),
                      ("Plate", "V", "Vp"), ("PosePlate", "g", "gp"), ("Contact", "Ec", "Ec"), ("Contact", "Pd", "Pd"),
                      ("Gimbal", "q1out", "q1"), ("Gimbal", "q2out", "q2")):

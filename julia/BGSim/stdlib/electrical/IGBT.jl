@@ -26,4 +26,8 @@
         i_diode ~ ifelse(-v > V_f, (-v - V_f) / R_d, 0.0)
         c.f ~ i_sw - i_diode
     end
+    @orientation begin
+        c => :in
+        e => :in
+    end
 end

@@ -14,22 +14,25 @@
     #     H(q, dth, dl) = (R, h q ez + R dl),    R = Rz(q) Rg(dth/2),
     #
     # `Rg(g)` the rotation of the quaternion `(1, g)` (Gibbs vector `g = dth/2`, polynomial
-    # over `D = 1 + |g|^2`). Both adjoints use this pose (`V_rel = child.f - Ad(H)^-1 parent.f`,
-    # `parent.e = -Ad(H)^-T child.e`), the rotational rates are the `Revolute3D` ones
+    # over `D = 1 + |g|^2`). Both adjoints use this pose (`V_rel = V_c - Ad(H)^-1 parent.f`,
+    # `parent.e = -Ad(H)^-T W_c`), the rotational rates are the `Revolute3D` ones
     # (`qdot = w_z + g_x w_y - g_y w_x`, `dth' = B23 w`) and the translational deflection rate is
     #
     #     dl' = v - w x dl - h qdot n,     n = Rg^T ez = Rg[3, :]
     #
     # (the body velocity of `h q ez` is `h qdot R^T ez`). The conjugate wrench is
-    # `child.e = B^T [tau; F; Fl]`: the drive torque is replaced by `tau - h (n . Fl)` in the
+    # `W_c = B^T [tau; F; Fl]`: the drive torque is replaced by `tau - h (n . Fl)` in the
     # rotational rows (the pitch couples the axial force into the screw torque) and the angular
     # rows carry the lever `Fl x dl`; `F = kr dth + br dth'`, `Fl = kt dl + bt dl'`. On a run
     #
-    #     parent.e.parent.f + child.e.child.f + drive.e*qdot
+    #     parent.e.parent.f + W_c.V_c + drive.e*qdot
     #         = d/dt(1/2 kr|dth|^2 + 1/2 kt|dl|^2) + br|dth'|^2 + bt|dl'|^2
     #
     # holds identically and the pose is exactly the integral of the twists (energy with gravity
     # closes to solver tolerance at every stiffness). `pose` is `H` on the D-MB6 chart.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -103,11 +106,11 @@
         for i in 1:3
             wn[i] ~ R[1, i] * parent.f[1] + R[2, i] * parent.f[2] + R[3, i] * parent.f[3]
             vn[i] ~ R[1, i] * u[1] + R[2, i] * u[2] + R[3, i] * u[3]
-            Vrel[i] ~ child.f[i] - wn[i]
+            Vrel[i] ~ -child.f[i] - wn[i]
         end
-        Vrel[4] ~ child.f[4] - vn[1] - (wn[2] * dl[3] - wn[3] * dl[2])
-        Vrel[5] ~ child.f[5] - vn[2] - (wn[3] * dl[1] - wn[1] * dl[3])
-        Vrel[6] ~ child.f[6] - vn[3] - (wn[1] * dl[2] - wn[2] * dl[1])
+        Vrel[4] ~ -child.f[4] - vn[1] - (wn[2] * dl[3] - wn[3] * dl[2])
+        Vrel[5] ~ -child.f[5] - vn[2] - (wn[3] * dl[1] - wn[1] * dl[3])
+        Vrel[6] ~ -child.f[6] - vn[3] - (wn[1] * dl[2] - wn[2] * dl[1])
         qdot ~ Vrel[3] + gx * Vrel[2] - gy * Vrel[1]
         q ~ q0 + int(qdot, 0.0)
         thd[1] ~ (1.0 + gx * gx - gy * gy) * Vrel[1] + 2.0 * gx * gy * Vrel[2] + 2.0 * gy * Vrel[3]
@@ -129,13 +132,13 @@
         tq[1] ~ -gy * ta + (1.0 + gx * gx - gy * gy) * F[1] + 2.0 * gx * gy * F[2]
         tq[2] ~ gx * ta + 2.0 * gx * gy * F[1] + (1.0 - gx * gx + gy * gy) * F[2]
         tq[3] ~ ta + 2.0 * gy * F[1] - 2.0 * gx * F[2]
-        child.e[1] ~ tq[1] + (Fl[2] * dl[3] - Fl[3] * dl[2])
-        child.e[2] ~ tq[2] + (Fl[3] * dl[1] - Fl[1] * dl[3])
-        child.e[3] ~ tq[3] + (Fl[1] * dl[2] - Fl[2] * dl[1])
-        child.e[4] ~ Fl[1]
-        child.e[5] ~ Fl[2]
-        child.e[6] ~ Fl[3]
-        # parent.e = -Ad(H)^-T child.e = -[R tq + (h q ez) x Wl; Wl], Wl = R Fl (the lever R dl cancels)
+        child.e[1] ~ -(tq[1] + (Fl[2] * dl[3] - Fl[3] * dl[2]))
+        child.e[2] ~ -(tq[2] + (Fl[3] * dl[1] - Fl[1] * dl[3]))
+        child.e[3] ~ -(tq[3] + (Fl[1] * dl[2] - Fl[2] * dl[1]))
+        child.e[4] ~ -Fl[1]
+        child.e[5] ~ -Fl[2]
+        child.e[6] ~ -Fl[3]
+        # parent.e = -Ad(H)^-T W_c = -[R tq + (h q ez) x Wl; Wl], Wl = R Fl (the lever R dl cancels)
         for i in 1:3
             Wl[i] ~ R[i, 1] * Fl[1] + R[i, 2] * Fl[2] + R[i, 3] * Fl[3]
         end
@@ -169,5 +172,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

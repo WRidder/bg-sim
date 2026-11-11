@@ -11,7 +11,7 @@ Both vehicles are the same 3D bond graph: a `Free3D` joint from the ground to th
 1-junction `Body`, on which sit the modulated inertia `Inertia` (project `VariableInertia3D`), the
 gyroscopic `Coriolis`, the twist tap `Twist` and three wrench sources (thrust, gravity, drag). The
 mass leaving the vehicle (propellant and jettisoned stages) takes its momentum with it through six
-`MR` elements on the joint's drive ports, modulated by `Seq` (`FlightSequence`).
+`MR` elements on the joint's drive axes (a 1-junction per drive port), modulated by `Seq` (`FlightSequence`).
 """
 
 from __future__ import annotations
@@ -96,18 +96,23 @@ def vehicle(dg: Diagram, *, m0: str, v0: str, seq_params: dict, seq_consts: dict
     n["GravityW"] = dg.node("GravityW", "stdlib:multibond/ExternalWrenchSpatial", 660, 560)
     n["DragW"] = dg.node("DragW", "stdlib:multibond/ExternalWrenchSpatial", 800, 520)
     dg.bond(n["World"], "p", n["Free"], "parent")
-    dg.bond(n["Body"], None, n["Free"], "child")
-    for k in ("Inertia", "Coriolis", "Twist", "ThrustW", "GravityW", "DragW"):
+    dg.bond(n["Free"], "child", n["Body"], None)
+    for k in ("Inertia", "Coriolis", "Twist"):
         dg.bond(n["Body"], None, n[k], "p")
+    for k in ("ThrustW", "GravityW", "DragW"):
+        dg.bond(n[k], "p", n["Body"], None)
     dg.sig(n["Inertia"], "Pm", n["Coriolis"], "P", "momentum")
-    # the momentum that leaves with the exhaust and the dropped stages: MR on each joint drive
+    # the momentum that leaves with the exhaust and the dropped stages: MR on each joint drive axis
+    # (a 1-junction per drive port: a drive and an MR are both `in`)
     outs = []
     for k in range(1, 7):
+        axis = dg.node(f"Axis{k}", "junction:1", 120, 440 + 60 * k)
         nid = dg.node(f"Out{k}", "stdlib:bondgraph/MR", 240, 440 + 60 * k)
-        dg.bond(n["Free"], f"drive{k}", nid, "p")
+        dg.bond(axis, None, n["Free"], f"drive{k}")
+        dg.bond(axis, None, nid, "p")
         outs.append(nid)
     dg.note("Body: 1-junction of the vehicle. Inertia = modulated spatial I (m(t), J(t)); "
-            "Out1..6 = MR, r = -dm/dt and -dJ/dt: the leaving mass takes its momentum with it.", 400, 80, 520, 60)
+            "Out1..6 = MR on the joint's drive axes (1-junctions Axis1..6), r = -dm/dt and -dJ/dt: the leaving mass takes its momentum with it.", 400, 80, 520, 60)
 
     # ---------------------------------------------------------------- mass budget and engines
     n["Seq"] = dg.node("Seq", "project:FlightSequence", 40, 820, params=seq_params, constants=seq_consts)

@@ -31,4 +31,5 @@
         p ~ p_gas + beta / V_dead * 0.5 * (V_f - sqrt(V_f * V_f + (p_tr * V_dead / beta) * (p_tr * V_dead / beta)))
         a.e ~ p
     end
+    @orientation a => :in
 end

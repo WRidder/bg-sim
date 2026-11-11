@@ -14,4 +14,5 @@
         dc.f ~ -u * shaft.f
     end
     @causality (shaft, dc) => :transformer
+    @orientation (dc, shaft) => :through
 end

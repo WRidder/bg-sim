@@ -3288,12 +3288,12 @@
          "id": "Heli_c094",
          "kind": "bond",
          "from": {
-          "node": "n33",
+          "node": "n03",
           "port": "p"
          },
          "to": {
           "node": "n32",
-          "port": "a"
+          "port": "b"
          }
         },
         {
@@ -3301,10 +3301,10 @@
          "kind": "bond",
          "from": {
           "node": "n32",
-          "port": "b"
+          "port": "a"
          },
          "to": {
-          "node": "n03",
+          "node": "n33",
           "port": "p"
          }
         },
@@ -3332,11 +3332,11 @@
          "id": "Heli_c098",
          "kind": "bond",
          "from": {
-          "node": "n34"
-         },
-         "to": {
           "node": "n33",
           "port": "s"
+         },
+         "to": {
+          "node": "n34"
          }
         },
         {

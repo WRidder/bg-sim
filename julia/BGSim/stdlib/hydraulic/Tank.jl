@@ -3,4 +3,5 @@
     @parameters p::Real = 1.0e5, [unit = "Pa", description = "Tank pressure"]
     @equations a.e ~ p
     @causality a => (:effort_out, :fixed)
+    @orientation a => :in
 end

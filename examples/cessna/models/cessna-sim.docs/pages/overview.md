@@ -9,7 +9,7 @@ The flyable Cessna 172P, standing on runway 36 with the engine at idle and flaps
 
 The same model is the FMU of the flight simulator `apps/cessna-sim`.
 
-![The model canvas|900](assets/150aecd1f731.png)
+![The model canvas|900](assets/bf13b6253813.png)
 
 | block | role |
 | --- | --- |
@@ -28,6 +28,6 @@ The same model is the FMU of the flight simulator `apps/cessna-sim`.
 
 The airfield has runway 36, a taxiway, an apron, a hangar, a tower and a windsock. The control surfaces, the flaps, the steered nose wheel and the propeller move. Picture at 30 s, climbing out at 25 ft:
 
-![3D view at t = 30 s|600](assets/d3e02e959295.png)
+![3D view at t = 30 s|600](assets/caf47c7b39f3.png)
 
 Continue with [the landing gear](page:gear), [the results](page:results) and [the FMU](page:fmu).

@@ -1297,12 +1297,12 @@
         "id": "c016",
         "kind": "bond",
         "from": {
-          "node": "n14",
-          "port": "b"
-        },
-        "to": {
           "node": "n11",
           "port": "p"
+        },
+        "to": {
+          "node": "n14",
+          "port": "b"
         },
         "label": null
       },
@@ -1479,12 +1479,12 @@
         "id": "c030",
         "kind": "bond",
         "from": {
-          "node": "n23",
-          "port": "b"
-        },
-        "to": {
           "node": "n11",
           "port": "p"
+        },
+        "to": {
+          "node": "n23",
+          "port": "b"
         },
         "label": null
       },
@@ -1648,12 +1648,12 @@
         "id": "c043",
         "kind": "bond",
         "from": {
-          "node": "n33",
-          "port": "b"
-        },
-        "to": {
           "node": "n26",
           "port": "p"
+        },
+        "to": {
+          "node": "n33",
+          "port": "b"
         },
         "label": null
       },

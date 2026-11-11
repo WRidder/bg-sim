@@ -287,8 +287,8 @@ BELT_PITCH = 0.045  # m, stripe pitch on the drawn belt: 12 pitches over its 0.5
 
 def belt_rig(prefix: str, friction: str, fparams: dict, energy: bool) -> Diagram:
     s = Diagram(prefix)
-    # a port flow is positive into its element: the source that drives the junction carries -v_b
-    s.node("Belt", "stdlib:bondgraph/Sf", 40, 220, params={"f": "-v_b"})
+    # the flow source at the tail of its bond delivers v_b to the junction
+    s.node("Belt", "stdlib:bondgraph/Sf", 40, 220, params={"f": "v_b"})
     s.node("Jb", "0", 240, 220)
     s.node("Fric", friction, 240, 60, params=fparams)
     s.node("Fm", "stdlib:bondgraph/De", 240, 400)

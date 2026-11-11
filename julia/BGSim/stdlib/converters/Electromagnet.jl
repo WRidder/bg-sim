@@ -58,4 +58,10 @@
         a => :effort_out
         b => :effort_out
     end
+    @orientation begin
+        p => :in
+        n => :in
+        a => :in
+        b => :in
+    end
 end

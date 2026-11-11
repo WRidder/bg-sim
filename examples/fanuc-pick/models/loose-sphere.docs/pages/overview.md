@@ -6,6 +6,6 @@ When the gripper accelerates, the carton moves and the ball lags. It rolls to th
 
 ![The ball moving in the see-through carton|700](assets/89e23fb8bdd1.png)
 
-![Ball position in the carton, wall force and cup utilisation|900](assets/a03e3c0110ab.png)
+![Ball position in the carton, wall force and cup utilisation|900](assets/7d909c6f9478.png)
 
-![Path of the ball centre in the carton (top view)|500](assets/b51442f0a580.png)
+![Path of the ball centre in the carton (top view)|500](assets/302949b8f173.png)

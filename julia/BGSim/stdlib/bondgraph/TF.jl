@@ -10,4 +10,5 @@
         p2.f ~ -n * p1.f
     end
     @causality (p1, p2) => :transformer
+    @orientation (p1, p2) => :through
 end

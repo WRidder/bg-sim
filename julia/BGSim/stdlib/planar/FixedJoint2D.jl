@@ -39,4 +39,5 @@
         pose[3] ~ y
     end
     @causality (parent, child) => :transformer
+    @orientation (parent, child) => :through
 end

@@ -14,4 +14,10 @@
         p2.e - n2.e ~ transresistance * p1.f
         p2.f + n2.f ~ 0.0
     end
+    @orientation begin
+        p1 => :in
+        n1 => :in
+        p2 => :in
+        n2 => :in
+    end
 end

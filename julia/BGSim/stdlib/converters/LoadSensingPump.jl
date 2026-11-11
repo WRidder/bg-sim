@@ -92,4 +92,10 @@
         ls.f ~ 0.0
     end
     @causality ls => (:flow_out, :fixed)
+    @orientation begin
+        a => :in
+        b => :in
+        shaft => :in
+        ls => :in
+    end
 end

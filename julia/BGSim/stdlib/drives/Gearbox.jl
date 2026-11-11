@@ -37,4 +37,8 @@
         connect(sense_b.y, power.u2)
         connect(power.y, P)
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

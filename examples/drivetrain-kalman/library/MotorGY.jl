@@ -8,6 +8,7 @@
         a::Power{Electrical}
         b::Power{Rotation}
     end
+    @orientation (a, b) => :through
     @parameters r::Real = 1.0, [unit = "V*s/rad", description = "Gyrator modulus (torque constant)"]
     @equations begin
         a.e ~ -r * b.f

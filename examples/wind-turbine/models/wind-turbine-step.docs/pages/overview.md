@@ -2,7 +2,7 @@
 
 The wind steps every 60 s: 10, 12, 14, 18, 14, 12 and 10 m/s. See [the turbine](project:turbine) and [the controller](project:controller).
 
-![The step responses|900](assets/eca6dcde1096.png)
+![The step responses|900](assets/f6a3c4658bcb.png)
 
 ## What you see
 
@@ -15,4 +15,4 @@ The wind steps every 60 s: 10, 12, 14, 18, 14, 12 and 10 m/s. See [the turbine](
 - Lower the PI gain `kp` on the dashboard and compare the overspeed after the step to 18 m/s.
 - Move `v_low` below 8 m/s to see region 2 and region 1½.
 
-![The model canvas|900](assets/2e0535785335.png)
+![The model canvas|900](assets/45010aceca2f.png)

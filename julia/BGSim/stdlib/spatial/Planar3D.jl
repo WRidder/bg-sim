@@ -13,22 +13,25 @@
     #     H = (R, (q2, q3, dz)),    R = Rz(q1) Rg(dth/2),
     #
     # `Rg(g)` the rotation of the quaternion `(1, g)` (Gibbs vector `g = dth/2`, polynomial over
-    # `D = 1 + |g|^2`). Both adjoints use this pose (`V_rel = child.f - Ad(H)^-1 parent.f`,
-    # `parent.e = -Ad(H)^-T child.e`), so the deflection lever of the in-plane rates is the
+    # `D = 1 + |g|^2`). Both adjoints use this pose (`V_rel = V_c - Ad(H)^-1 parent.f`,
+    # `parent.e = -Ad(H)^-T W_c`), so the deflection lever of the in-plane rates is the
     # `w_p x p` part of `Ad(H)^-1` and exact. The chart rates are the closed-form inverse of
     # the Jacobian:
     #
     #     qdot1 = w_z + g_x w_y - g_y w_x,   dth' = B23 w        (as Revolute3D)
     #     (qdot2, qdot3, dz') = R v                                (parent-frame origin velocity)
     #
-    # The conjugate wrench is `child.e = [B_rot^T (tau1, F); R^T (tau2, tau3, fz)]` with
+    # The conjugate wrench is `W_c = [B_rot^T (tau1, F); R^T (tau2, tau3, fz)]` with
     # `F = kr dth + br dth'`, `fz = kt dz + bt dz'`. On a run
     #
-    #     parent.e.parent.f + child.e.child.f + sum drive_k.e*qdot_k
+    #     parent.e.parent.f + W_c.V_c + sum drive_k.e*qdot_k
     #         = d/dt(1/2 kr|dth|^2 + 1/2 kt dz^2) + br|dth'|^2 + bt dz'^2
     #
     # holds identically and the pose is exactly the integral of the twists. `pose` is `H` on
     # the D-MB6 chart (quaternion `Rz(q1) (x) (1, g)`, origin `(q2, q3, dz)`).
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
@@ -114,11 +117,11 @@
         for i in 1:3
             wn[i] ~ R[1, i] * parent.f[1] + R[2, i] * parent.f[2] + R[3, i] * parent.f[3]
             vn[i] ~ R[1, i] * u[1] + R[2, i] * u[2] + R[3, i] * u[3]
-            Vrel[i] ~ child.f[i] - wn[i]
+            Vrel[i] ~ -child.f[i] - wn[i]
         end
-        Vrel[4] ~ child.f[4] - vn[1]
-        Vrel[5] ~ child.f[5] - vn[2]
-        Vrel[6] ~ child.f[6] - vn[3]
+        Vrel[4] ~ -child.f[4] - vn[1]
+        Vrel[5] ~ -child.f[5] - vn[2]
+        Vrel[6] ~ -child.f[6] - vn[3]
         # xdot = B V_rel
         qd1 ~ Vrel[3] + gx * Vrel[2] - gy * Vrel[1]
         thd[1] ~ (1.0 + gx * gx - gy * gy) * Vrel[1] + 2.0 * gx * gy * Vrel[2] + 2.0 * gy * Vrel[3]
@@ -140,17 +143,17 @@
         Fp[1] ~ tau2
         Fp[2] ~ tau3
         Fp[3] ~ fz
-        # child.e = [B_rot^T (tau1, F); R^T Fp]
+        # W_c = [B_rot^T (tau1, F); R^T Fp]
         tq[1] ~ -gy * tau1 + (1.0 + gx * gx - gy * gy) * F[1] + 2.0 * gx * gy * F[2]
         tq[2] ~ gx * tau1 + 2.0 * gx * gy * F[1] + (1.0 - gx * gx + gy * gy) * F[2]
         tq[3] ~ tau1 + 2.0 * gy * F[1] - 2.0 * gx * F[2]
-        child.e[1] ~ tq[1]
-        child.e[2] ~ tq[2]
-        child.e[3] ~ tq[3]
-        child.e[4] ~ R[1, 1] * Fp[1] + R[2, 1] * Fp[2] + R[3, 1] * Fp[3]
-        child.e[5] ~ R[1, 2] * Fp[1] + R[2, 2] * Fp[2] + R[3, 2] * Fp[3]
-        child.e[6] ~ R[1, 3] * Fp[1] + R[2, 3] * Fp[2] + R[3, 3] * Fp[3]
-        # parent.e = -Ad(H)^-T child.e = -[R tq + p x Fp; Fp], p = (q2, q3, dz)
+        child.e[1] ~ -tq[1]
+        child.e[2] ~ -tq[2]
+        child.e[3] ~ -tq[3]
+        child.e[4] ~ -(R[1, 1] * Fp[1] + R[2, 1] * Fp[2] + R[3, 1] * Fp[3])
+        child.e[5] ~ -(R[1, 2] * Fp[1] + R[2, 2] * Fp[2] + R[3, 2] * Fp[3])
+        child.e[6] ~ -(R[1, 3] * Fp[1] + R[2, 3] * Fp[2] + R[3, 3] * Fp[3])
+        # parent.e = -Ad(H)^-T W_c = -[R tq + p x Fp; Fp], p = (q2, q3, dz)
         parent.e[1] ~ -(R[1, 1] * tq[1] + R[1, 2] * tq[2] + R[1, 3] * tq[3] + (q3 * fz - dz * tau3))
         parent.e[2] ~ -(R[2, 1] * tq[1] + R[2, 2] * tq[2] + R[2, 3] * tq[3] + (dz * tau2 - q2 * fz))
         parent.e[3] ~ -(R[3, 1] * tq[1] + R[3, 2] * tq[2] + R[3, 3] * tq[3] + (q2 * tau3 - q3 * tau2))
@@ -187,5 +190,12 @@
         drive1 => :flow_out
         drive2 => :flow_out
         drive3 => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive1 => :in
+        drive2 => :in
+        drive3 => :in
     end
 end

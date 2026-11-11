@@ -57,4 +57,8 @@
         a.f ~ qa
         b.f ~ -q[N]
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

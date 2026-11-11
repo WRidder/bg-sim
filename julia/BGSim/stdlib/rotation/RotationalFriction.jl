@@ -22,4 +22,8 @@
         a.e ~ (Fc + (Fs - Fc) * exp(-abs(a.f - b.f) / v_s)) * s + Fv * (a.f - b.f)
         b.e ~ -a.e
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

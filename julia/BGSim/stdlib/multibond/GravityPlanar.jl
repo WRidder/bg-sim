@@ -8,11 +8,11 @@
     @equations begin
         # g = (theta, x, y) is the body pose in the world. Gravity acts at the body origin
         # (the CoM, D-MB3), so the body-frame wrench is [0, -sin(theta)*m*g0,
-        # -cos(theta)*m*g0]. A 1-junction sums efforts, so the PORT effort that injects
-        # that wrench into the inertia is its negative: e_gravity = -W_gravity.
+        # -cos(theta)*m*g0]. An effort source: the port effort is that wrench.
         p.e[1] ~ 0.0
-        p.e[2] ~ sin(g[1]) * m * g0
-        p.e[3] ~ cos(g[1]) * m * g0
+        p.e[2] ~ -sin(g[1]) * m * g0
+        p.e[3] ~ -cos(g[1]) * m * g0
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :out
 end

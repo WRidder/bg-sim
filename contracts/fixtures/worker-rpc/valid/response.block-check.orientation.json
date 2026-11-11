@@ -1,0 +1,24 @@
+{
+  "$comment": "A block.check response for an inline block that declares @orientation (plan/PORT_ORIENTATION_PLAN.md O2, O13): `s => :out` and the through pair `(a, b) => :through`. A power port named in no entry would be `any`.",
+  "id": 45,
+  "result": {
+    "diagnostics": [],
+    "interface": {
+      "constants": [],
+      "parameters": [],
+      "inputs": [{ "name": "u", "type": "Real", "size": [], "unit": null }],
+      "outputs": [],
+      "ports": [
+        { "name": "s", "domain": "Generic", "size": [], "frame": null },
+        { "name": "a", "domain": "Generic", "size": [], "frame": null },
+        { "name": "b", "domain": "Generic", "size": [], "frame": null }
+      ],
+      "variables": [],
+      "causality": [],
+      "orientation": [
+        { "ports": ["s"], "kind": "out" },
+        { "ports": ["a", "b"], "kind": "through" }
+      ]
+    }
+  }
+}

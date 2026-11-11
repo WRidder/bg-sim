@@ -13,4 +13,8 @@
         a.e ~ k * (x - x_free)
         b.e ~ -a.e
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

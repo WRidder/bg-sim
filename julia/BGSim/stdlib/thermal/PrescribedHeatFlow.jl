@@ -6,4 +6,5 @@
         a.f ~ -Q
     end
     @causality a => (:flow_out, :fixed)
+    @orientation a => :in
 end

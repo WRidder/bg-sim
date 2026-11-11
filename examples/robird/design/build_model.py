@@ -173,7 +173,7 @@ def build(name: str, init: dict, t_end: float, controller=None, extra_plots=None
         Rb = R_par @ M_R @ P.rz(joint_params.get("q0", 0.0))
         bd = b.node(f"B{tag}", "stdlib:spatial/RigidBody3D", x + 600, y,
                     params={"m": mass, "J": J, "g0": P.G}, starts={"inertia/P": p_lin(Rb, mass)})
-        b.bond(mt, "b", parent_body, "p")
+        b.bond(parent_body, "p", mt, "b")
         b.bond(mt, "a", j, "parent")
         b.bond(j, "child", lk, "a")
         b.bond(lk, "b", bd, "p")

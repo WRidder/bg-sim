@@ -1,7 +1,7 @@
 # Golden test for `stdlib:bondgraph/MTF` (plan section 8, M2 row: the modulated
 # transformer), through the real pipeline (`flatten` → `simulate`).
 #
-# Model: a flow source Sf = -2 drives port p1, the Sine source u(t) = 2 + sin(3 t) is the
+# Model: a flow source Sf = 2 drives port p1, the Sine source u(t) = 2 + sin(3 t) is the
 # modulus, and a capacitor C (c = 1) sits on port p2 — the transformer charging a capacitor
 # is the dual of the gyrator driving an inertia (see `test_MGY.jl`). A flow source is used
 # on purpose: an effort source would force the transformer's secondary effort to a non-zero
@@ -36,7 +36,7 @@ using .BondGraphGolden
                     "offset" => "2.0")),
             bg_node("n2", "MTF1", bg_ref("stdlib:bondgraph/MTF")),
             bg_node("n3", "Sf1", bg_ref("stdlib:bondgraph/Sf");
-                params = Dict{String,Any}("f" => "-2.0")),
+                params = Dict{String,Any}("f" => "2.0")),
             bg_node("n4", "C1", bg_ref("stdlib:bondgraph/C");
                 params = Dict{String,Any}("c" => "1.0")),
         ],

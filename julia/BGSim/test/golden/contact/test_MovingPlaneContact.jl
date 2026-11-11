@@ -73,8 +73,9 @@ import BGSim.Library
         i1, i2 = findlast(<=(0.55), t), findlast(<=(0.65), t)
         vx = (cols["Pose/g[5]"][i2] - cols["Pose/g[5]"][i1]) / (t[i2] - t[i1])
         @test vx ≈ 2V / 7 rtol = 1e-4
-        # the port flow is minus the point twist, and w_y is the same in the body-aligned point frame
-        @test -bg_value(cols, "Belt/p.f[2]", 0.6) ≈ -(5V / 7) / MPC_R rtol = 1e-4
+        # the port flow is the point twist (WP-O3a), and w_y is the same in the body-aligned
+        # point frame
+        @test bg_value(cols, "Belt/p.f[2]", 0.6) ≈ -(5V / 7) / MPC_R rtol = 1e-4
         @test abs(bg_value(cols, "Belt/slip", 0.6)) < 1e-5
         @test bg_value(cols, "Belt/f_n", 0.6) ≈ Fw rtol = 1e-4
         # the edge: the contact point leaves the face at u1 = -w1

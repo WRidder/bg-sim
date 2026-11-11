@@ -9,7 +9,7 @@
 
 **Estimator.** Each angle has an α-β-γ filter: the steady-state Kalman filter of a white-jerk model, tuned to the sensor noise. It gives the angles and the rates.
 
-![Link 1 and the arm during balance: true angle, quantised AS5048 reading and estimate|900](assets/7ef8e5f7e597.png)
+![Link 1 and the arm during balance: true angle, quantised AS5048 reading and estimate|900](assets/0e6c8c80d252.png)
 
 **Balance.** A discrete LQR at 1 kHz, designed with the one-cycle EtherCAT delay as an extra state:
 
@@ -19,10 +19,10 @@ The state is the arm, link 1 and link 2 (angles, then rates), followed by the la
 
 **Swing-up.** A Hermite-Simpson collocation trajectory (CasADi/IPOPT, 3 s, |τ| ≤ 6 N·m, |arm| ≤ 3 rad), tracked by a time-varying LQR. The firmware latches the balance LQR once the weighted state error drops below 0.35. The torque target is clamped to ±12 N·m.
 
-![Swing-up and balance: link angles, arm, torque, current, gear deflection and mode|900](assets/ec72a5b8bd68.png)
+![Swing-up and balance: link angles, arm, torque, current, gear deflection and mode|900](assets/03f1e540b863.png)
 
-![3D view at t = 3.2 s, during the swing-up|500](assets/1b594a883dcd.png)
+![3D view at t = 3.2 s, during the swing-up|500](assets/9d8220973967.png)
 
 **Disturbance** (model `actilink-push`). While the pendulum balances, a 0.3 N, 50 ms push on the link-2 tip deflects link 2 by about 5°. The arm swings out by 55°, and the LQR recovers within 1.4 s. A 0.4 N push is still recovered; at 0.5 N the arm runs away.
 
-![Push on link 2 at 2 s|900](assets/3873469c27a9.png)
+![Push on link 2 at 2 s|900](assets/9f108a7e5f7b.png)

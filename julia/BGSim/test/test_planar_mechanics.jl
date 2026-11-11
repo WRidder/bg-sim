@@ -224,8 +224,10 @@ function _pm_prismatic(; m = 2.0, k = 200.0, phi = 0.0, q0 = 0.1, g0 = 0.0)
         Any[
             _pm_conn("c1", "bond", "n1", "p", "n2", "parent"),
             _pm_conn("c2", "bond", "n2", "child", "n3", "p"),
-            _pm_conn("c3", "bond", "n2", "drive", "n6"),
-            _pm_conn("c4", "bond", "n4", "a", "n6"),
+            # `drive` is `in`: its bond leaves the axis junction, and so does the spring's,
+            # so the spring still sees the drive's flow (port orientation, WP-O3a).
+            _pm_conn("c3", "bond", "n6", nothing, "n2", "drive"),
+            _pm_conn("c4", "bond", "n6", nothing, "n4", "a"),
             _pm_conn("c5", "wire", "n4", "b", "n5", "a"),
             _pm_conn("c6", "signal", "n7", "g", "n3", "g"),
         ])
@@ -315,7 +317,7 @@ function _pm_chain2(; q1 = 0.4, q2 = -0.6, g0 = 0.0,
             _pm_conn("c2", "bond", "n2", "child", "n3", "parent"),
             _pm_conn("c3", "bond", "n3", "child", "n4"),
             _pm_conn("c4", "bond", "n5", "p", "n4"),
-            _pm_conn("c5", "bond", "n6", "parent", "n4"),
+            _pm_conn("c5", "bond", "n4", nothing, "n6", "parent"),   # `parent` is `in`
             _pm_conn("c6", "bond", "n6", "child", "n7", "parent"),
             _pm_conn("c7", "bond", "n7", "child", "n8"),
             _pm_conn("c8", "bond", "n9", "p", "n8"),
@@ -392,10 +394,10 @@ function _pm_elbow(; lever = false)
         # asserts the diagnostics of the topology, not a trajectory.
         push!(nodes, _pm_node("n7", "Lever", _pm_ref("stdlib:planar/FixedJoint2D");
             params = Dict{String,Any}("x" => "0.2", "y" => "0.0", "theta" => "0.0")))
-        push!(connections, _pm_conn("c5", "bond", "n7", "parent", "n4"))
+        push!(connections, _pm_conn("c5", "bond", "n4", nothing, "n7", "parent"))
         push!(connections, _pm_conn("c6", "bond", "n7", "child", "n6", "parent"))
     else
-        push!(connections, _pm_conn("c5", "bond", "n6", "parent", "n4"))
+        push!(connections, _pm_conn("c5", "bond", "n4", nothing, "n6", "parent"))
     end
     return _pm_doc("TwoLinkElbow", nodes, connections)
 end
@@ -743,15 +745,17 @@ const _PM_REFS = [
             # The pivot-offset terms are load-bearing in the effort relation: check the
             # documented parent.e from child.e at samples across the swing.
             for i in (1, 500, 2000, 4000)
-                ce = [data["Joint/child.e[$k]"][i] for k in 1:3]
+                # W_c = -child.e is the wrench the child body exerts on the joint (the child
+                # port counts into the joint; WP-O3a): parent.e = -Ad^T W_c.
+                wc = [-data["Joint/child.e[$k]"][i] for k in 1:3]
                 pe = [data["Joint/parent.e[$k]"][i] for k in 1:3]
                 qq = q[i]
-                @test isapprox(pe[1], -(ce[1] +
-                                        (sin(qq) * rx - cos(qq) * ry) * ce[2] +
-                                        (cos(qq) * rx + sin(qq) * ry) * ce[3]);
+                @test isapprox(pe[1], -(wc[1] +
+                                        (sin(qq) * rx - cos(qq) * ry) * wc[2] +
+                                        (cos(qq) * rx + sin(qq) * ry) * wc[3]);
                     atol = 1e-10)
-                @test isapprox(pe[2], -(cos(qq) * ce[2] - sin(qq) * ce[3]); atol = 1e-10)
-                @test isapprox(pe[3], -(sin(qq) * ce[2] + cos(qq) * ce[3]); atol = 1e-10)
+                @test isapprox(pe[2], -(cos(qq) * wc[2] - sin(qq) * wc[3]); atol = 1e-10)
+                @test isapprox(pe[3], -(sin(qq) * wc[2] + cos(qq) * wc[3]); atol = 1e-10)
             end
             # And the joint still conserves power with the offset present.
             jp = [sum(data["Joint/parent.e[$k]"][i] * data["Joint/parent.f[$k]"][i]
@@ -860,10 +864,12 @@ const _PM_REFS = [
         println("rigid variant dummy derivatives = ", dummies)
         # FIX-MB-4: the achieved derivative-causal set. The two physical pivot translations
         # are dummy derivatives of the joint-frame velocity (`Joint/xform/b.f[2]`, `[3]`); the
-        # third dummy is the first body twist tap component (`Body/flow/p.f[1]`).
+        # third dummy is the first component of the body twist, at whichever of its aliased
+        # ports MTK keeps (`Body/coriolis/p.f[1]` since the body's internal bonds leave its
+        # junction, WP-O3a; `Body/flow/p.f[1]` before).
         @test length(dummies) == 3
         @test count(n -> occursin("/xform/b.f[", n), dummies) == 2
-        @test count(n -> occursin("Body/flow/p.f[1]", n), dummies) == 1
+        @test count(n -> occursin("Body/coriolis/p.f[1]", n), dummies) == 1
         differential = ModelingToolkit.collect_differential_variables(lowered.model.system)
         @test length(differential) == 2      # the joint angle and one velocity component
         # The momentum itself is eliminated in favour of the twist it is aliased to (IPlanar
@@ -922,7 +928,7 @@ const _PM_REFS = [
         dummies = [n for n in string.(unknowns) if occursin(Char(0x02cd), n)]
         @test length(dummies) == 4
         @test count(n -> occursin("J1/xform/b.f[", n), dummies) == 2
-        @test count(n -> occursin("flow/p.f[1]", n), dummies) == 2
+        @test count(n -> occursin("coriolis/p.f[1]", n), dummies) == 2   # see the rigid variant
         warnings = Compile.post_compile_warnings(flat, lowered.model.system)
         w201 = [d for d in warnings if d.code == "W201"]
         @test length(w201) == 6

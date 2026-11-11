@@ -64,7 +64,7 @@ def render_readme(prm, measured: dict) -> str:
     w("")
     w("Angles: `q1` is the absolute angle of link 1 from +x (hanging −π/2, upright +π/2), the other joint angles are relative. The model has an inline block `Upright` with the absolute link angles from upright, `Upright/a1..a" + str(n) + "`, used for plots and checks.")
     w("")
-    w("Every bond points from the port into the junction. A reversed bond flips the junction's sign convention, and the plant stops matching its equations (found the hard way while building this example).")
+    w("The bonds follow the declared port orientations (`BodyJ → Joint.parent`, `Link.child → BodyJ`, `Body.p → BodyJ`, `Hit.p → BodyJ`), so each link junction carries the link's true twist.")
     w("")
     w("## Design (`design/`)")
     w("")

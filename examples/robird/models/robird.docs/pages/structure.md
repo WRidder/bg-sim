@@ -22,7 +22,6 @@
 * **Power balance.** The aerodynamic wrench enters as an external wrench on each body, so the power given to the air is exactly $-\sum F_i\cdot v_i$ ([PaSum](block:PaSum), taps `Pa` of every aerodynamic block); with the
   flapping drive it closes the energy budget: the aerodynamic power averages 16.2 W against 23.0 W electrical.
 
-Bond orientation matters in this framework: the mount transform is bonded **towards** the parent body (`Mount.b -> Body.p`), the joint child through a link **towards** the child body (`Link.b -> Body.p`);
-the opposite orientation of the mount flips the sign of the parent twist (the first version of this model failed at $t = 0$ with a relative velocity of $2 U$).
+The bonds follow the declared port orientations: the parent body bonds into its mount (`Body.p -> Mount.b`, `Mount.a -> Joint.parent`) and the joint child through a link into the child body (`Joint.child -> Link.a`, `Link.b -> Body.p`).
 
 States: about 107 continuous states by count (fuselage 13, each wing segment 12, each tail flap 12, motor current and speed, crank angle, two shaft twists, three servo filters, power average, motor-controller integrator), solved by the `auto` stiff solver at `reltol` 1e-4; 44 s of wall time for the 60 s run.

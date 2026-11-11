@@ -52,4 +52,8 @@
         P_loss ~ T_loss * a.f
     end
     @causality (a, b) => :transformer
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

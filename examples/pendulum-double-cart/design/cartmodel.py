@@ -112,7 +112,7 @@ def build(P: Plant, block: str, *, free: bool = False, th0=None, x0: float = 0.0
         bd = M.node(f"Body{j + 1}", "stdlib:planar/RigidBody2D", X(col) + 220, 500,
                     params={"m": _num(P.m[j]), "J": _num(P.J[j]), "g0": _num(G0)})
         dr = M.node(f"Passive{j + 1}", "stdlib:bondgraph/Se", X(col), 220, params={"e": "0.0"})
-        M.bond(jn, "parent", prev_node)
+        M.bond(prev_node, None, jn, "parent")
         M.bond(jn, "child", ln, "parent")
         M.bond(ln, "child", nj)
         M.bond(bd, "p", nj)

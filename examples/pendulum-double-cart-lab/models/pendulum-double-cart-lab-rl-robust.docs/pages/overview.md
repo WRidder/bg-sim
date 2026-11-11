@@ -17,7 +17,7 @@ policy's chatter reaches the 24 V clamp (red zone) all through the balance. Slid
 the encoder noise (0 to 0.08° rms, the realism range) and the loop delay (0 to 2 ms). **3D view:** a visible
 jitter of about a degree while it balances.
 
-![Link angles, cart and voltage over the run|900](assets/f22a0494863f.png)
+![Link angles, cart and voltage over the run|900](assets/fa3e72bfb12e.png)
 
 **Expected outcome:**
 

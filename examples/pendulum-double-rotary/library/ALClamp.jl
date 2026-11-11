@@ -14,4 +14,5 @@
         p.e ~ k * phi + d * p.f
         tau ~ p.e
     end
+    @orientation p => :in
 end

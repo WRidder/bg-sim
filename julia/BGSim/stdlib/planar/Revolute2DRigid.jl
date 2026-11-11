@@ -50,6 +50,7 @@
     @outputs qout::Real, [unit = "rad"]
     @outputs qdout::Real, [unit = "rad/s"]
     @outputs pose::Vec{3}
+    @orientation child => :out
     @components begin
         node = Junction(0)
         xform = TFAdNeutral()
@@ -66,7 +67,7 @@
         connect(xform.b, child)
         connect(screw.b, axis)
         connect(drive, axis)
-        connect(rate.p, axis)
+        connect(axis, rate.p)
         connect(rate.y, qint.u)
         connect(qint.y, jointpose.q)
         connect(qint.y, qout)

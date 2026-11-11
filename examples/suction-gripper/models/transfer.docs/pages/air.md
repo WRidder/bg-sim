@@ -31,6 +31,6 @@ Each cup chamber is a capacitance: $\dot p = p_{atm}(Q_{leak} + Q_{por} + Q_{vac
 
 ## Pick-up
 
-![Vacuum build-up and flows (cardboard, 60 l/min)|800](assets/54aa0eea9ce6.png)
+![Vacuum build-up and flows (cardboard, 60 l/min)|800](assets/216684b27989.png)
 
 When the valve opens, the generator first evacuates the manifold and the six chambers. The steady state is where the generator curve meets the leak demand. With cardboard and 60 l/min this is 48.3 kPa per cup, with a free-air flow of 11.6 l/min.

@@ -167,8 +167,8 @@ def payload_chain(bracket: str, x0: int, y_pose: int) -> tuple[list, list]:
         node("n25", "PPayload", "multibond/ComposePose3D", x0 + 180, y_pose),
     ]
     conns = wc + [
-        # bonds point into the body they load (joint.parent -> body, as in the library examples)
-        conn("c5", "bond", "WeldB", "parent", bracket, "B"),
+        # a joint's parent port is `in` (body -> joint.parent), its child port `out`
+        conn("c5", "bond", bracket, "B", "WeldB", "parent"),
         conn("c5b", "bond", "WeldB", "child", "n6", "a"),
         conn("c6", "bond", "n6", "b", "n7", "p"),
         conn("c26", "signal", bracket, "poseB", "n26", "gp"),
@@ -213,7 +213,7 @@ def turntable() -> dict:
     conns = wa_conns + pay_conns + [
         conn("c1", "bond", "n1", "p", "n2", "parent"),
         conn("c2", "bond", "n2", "child", "n3", "p"),
-        conn("c3", "bond", "WeldA", "parent", "n3", "p"),
+        conn("c3", "bond", "n3", "p", "WeldA", "parent"),
         conn("c4", "bond", "WeldA", "child", "n4", "a"),
         conn("c4b", "bond", "n4", "b", "n5", "A"),
         conn("c10", "signal", "n10", "v", "n16", "u1"),

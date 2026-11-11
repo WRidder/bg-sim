@@ -196,7 +196,7 @@ def add_module(dg: Diagram, ox: float, oy: float, with_body_port: bool = True, p
             starts={"x": "h_nom + dh0" if trim else "h_rest"})
     dg.node("Jb", "1", X + 480, Y + 480)
     dg.node("Chassis", "stdlib:bondgraph/I", X + 640, Y + 400, params={"i": "m_b"})
-    dg.node("Weight", "stdlib:bondgraph/Se", X + 640, Y + 480, params={"e": "m_b*g0"})
+    dg.node("Weight", "stdlib:bondgraph/Se", X + 640, Y + 480, params={"e": "-m_b*g0"})
     dg.node("Jg", "0", X + 380, Y + 540)
     dg.node("GapRate", "stdlib:bondgraph/Df", X + 380, Y + 680)
     dg.node("Gap", "stdlib:continuous/Integrator", X + 540, Y + 680, starts={"x": "h_nom + dh0" if trim else "h_rest"})
@@ -213,13 +213,13 @@ def add_module(dg: Diagram, ox: float, oy: float, with_body_port: bool = True, p
     dg.bond("Jv", None, "EM", "p")
     dg.wire("EM", "n", "Gnd", "p")
     # mechanical bonds
-    dg.bond("Jr", None, "Rail", "p")
+    dg.bond("Rail", "p", "Jr", None)
     dg.bond("Jb", None, "EM", "a")
     dg.bond("Jr", None, "EM", "b")
     dg.bond("Jr", None, "Skid", "a")
     dg.bond("Jb", None, "Skid", "b")
     dg.bond("Jb", None, "Chassis", "p")
-    dg.bond("Jb", None, "Weight", "p")
+    dg.bond("Weight", "p", "Jb", None)
     dg.bond("Jb", None, "Sus", "a")
     if with_body_port:
         dg.bond("Jq", None, "Sus", "b")
@@ -390,13 +390,13 @@ def model_module() -> dict:
     add_module(dg, 700, 0)
     # body share on Jq: mass, weight and a payload step
     dg.node("Body", "stdlib:bondgraph/I", 1700, 560, params={"i": "m_c"})
-    dg.node("BodyWeight", "stdlib:bondgraph/Se", 1700, 640, params={"e": "m_c*g0"})
-    dg.node("Load", "stdlib:bondgraph/MSe", 1700, 720, params={"gain": "1.0"})
+    dg.node("BodyWeight", "stdlib:bondgraph/Se", 1700, 640, params={"e": "-m_c*g0"})
+    dg.node("Load", "stdlib:bondgraph/MSe", 1700, 720, params={"gain": "-1.0"})
     dg.node("LoadStep", "stdlib:sources/Step", 1500, 720,
             params={"t_step": "t_load", "initial": "0.0", "final": "dm_load*g0"})
     dg.bond("Jq", None, "Body", "p")
-    dg.bond("Jq", None, "BodyWeight", "p")
-    dg.bond("Jq", None, "Load", "p")
+    dg.bond("BodyWeight", "p", "Jq", None)
+    dg.bond("Load", "p", "Jq", None)
     dg.sig("LoadStep", "y", "Load", "u")
     # reference: step from the skid gap to the nominal gap, prefiltered
     dg.node("RefStep", "stdlib:sources/Step", 40, 40,
@@ -491,9 +491,9 @@ def model_open_loop() -> dict:
     dg = Diagram()
     add_module(dg, 700, 0, trim=True)
     dg.node("Body", "stdlib:bondgraph/I", 1700, 560, params={"i": "m_c"})
-    dg.node("BodyWeight", "stdlib:bondgraph/Se", 1700, 640, params={"e": "m_c*g0"})
+    dg.node("BodyWeight", "stdlib:bondgraph/Se", 1700, 640, params={"e": "-m_c*g0"})
     dg.bond("Jq", None, "Body", "p")
-    dg.bond("Jq", None, "BodyWeight", "p")
+    dg.bond("BodyWeight", "p", "Jq", None)
     dg.node("RefHold", "stdlib:sources/Constant", 40, 40, params={"value": "h_nom"})
     dg.sig("RefHold", "y", "Ctl", "h_ref")
     dg.node("RailHold", "stdlib:sources/Constant", 40, 640, params={"value": "0.0"})
@@ -596,15 +596,19 @@ def model_vehicle() -> dict:
         y0 = 40 if tag == "F" else 760
         dg.node(f"Mod{tag}", module_subsystem(tag), X, y0)
         # kinematic lever: the module point moves with v_z - x*w_y (z up); a 0-junction adds the heave velocity
-        # and the pinion flow (radius x_m, from the pitch rate); the module sees it as a downward velocity
+        # and the pinion flow (radius x_m, from the pitch rate); the module sees it as a downward velocity.
+        # Both rack-and-pinion terminals are `in` (the junctions bond into them); the rear module sits behind
+        # the centre of mass (x = -x_m), so a -1 transformer turns the pitch rate round before its pinion.
         dg.node(f"Lever{tag}", "stdlib:converters/RackAndPinion", 960, y0 + 120, params={"r": "x_m"})
         dg.node(f"Z{tag}", "0", 1100, y0 + 100)
         dg.bond("Jz", None, f"Z{tag}", None)
         if tag == "F":
             dg.bond("Jt", None, f"Lever{tag}", "a")
         else:
-            dg.bond(f"Lever{tag}", "a", "Jt", None)
-        dg.bond(f"Lever{tag}", "b", f"Z{tag}", None)
+            dg.node(f"Flip{tag}", "stdlib:bondgraph/TF", 860, y0 + 120, params={"n": "-1.0"})
+            dg.bond("Jt", None, f"Flip{tag}", "p1")
+            dg.bond(f"Flip{tag}", "p2", f"Lever{tag}", "a")
+        dg.bond(f"Z{tag}", None, f"Lever{tag}", "b")
         # the forward speed has a vertical component in the world when the car is pitched: R31 = -2 q_y
         dg.node(f"Climb{tag}", "stdlib:bondgraph/MTF", 960, y0 + 200)
         dg.bond("Jx", None, f"Climb{tag}", "p1")

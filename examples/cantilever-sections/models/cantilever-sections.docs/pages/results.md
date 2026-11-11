@@ -4,7 +4,7 @@
 
 ![250 N step at 0.2 s: tip deflection and root stress|900](assets/a38e63bc672c.png)
 
-![Settled at 9.9 s (x10): the bars bend 41 and 39 mm, the I-beam 1.9 mm|700](assets/3dc173ec25b2.png)
+![Settled at 9.9 s (x10): the bars bend 41 and 39 mm, the I-beam 1.9 mm|700](assets/5da617b60d2b.png)
 
 | at 10 s | round bar | square bar | IPE 100 | reference |
 | --- | --- | --- | --- | --- |

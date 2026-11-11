@@ -10,4 +10,8 @@
         ddt(i) ~ (p.e - n.e) / L
         p.f ~ i
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

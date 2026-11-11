@@ -2,7 +2,7 @@
 
 The aft-CG F-16 (xcg 0.38, an unstable pole of +0.66 1/s at the book's trim) flown by a pitch-rate command law at 400 ft/s and 25 000 ft, the low-dynamic-pressure corner of the envelope (84 psf, Mach 0.39). **Sched** reads its gains from tables over dynamic pressure and Mach; **Frozen** has the same law with the gains of a 1000 ft/s, 2000 ft point (qbar 1100 psf). Both get a 5 deg/s pitch-rate command from 1 to 4 s.
 
-![The model canvas|900](assets/2359dbc1d92c.png)
+![The model canvas|900](assets/57a38f68ffc6.png)
 
 | block | role |
 | --- | --- |

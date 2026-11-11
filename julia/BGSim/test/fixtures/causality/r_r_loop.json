@@ -1,5 +1,5 @@
 {
-  "$comment": "J2.4 causality fixture: two free resistors joined by one bond. No source, storage or junction can fix the causality, so SCAP has to choose arbitrarily and the equations around the bond are an algebraic loop (W202 naming both R instances). The bond contributes two equations and each R one, so the model balances (4 unknowns, 4 equations).",
+  "$comment": "J2.4 causality fixture: two free resistors on one 1-junction (each R port is `in`, so the two cannot share a bond: plan/PORT_ORIENTATION_PLAN.md O4). No source or storage can fix the causality, so SCAP has to choose arbitrarily and the equations around the junction are an algebraic loop (W202 naming both R instances).",
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "RRLoop",
@@ -28,13 +28,33 @@
         "constants": {},
         "starts": {},
         "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 270, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
       }
     ],
     "connections": [
       {
         "id": "c1",
         "kind": "bond",
-        "from": { "node": "n1", "port": "p" },
+        "from": { "node": "n3" },
+        "to": { "node": "n1", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n3" },
         "to": { "node": "n2", "port": "p" },
         "route": [],
         "label": null

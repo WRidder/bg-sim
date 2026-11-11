@@ -6,7 +6,7 @@ $$\dot y = \mathrm{clamp}\Big(\frac{du}{dt} + k (u - y),\; \pm 60\ \mathrm{deg/s
 
 reverses as soon as the command does (the derivative term, through a `FilteredDerivative` with $T_f$ = 0.01 s); the slow pull-back $k = 0.5$ 1/s brings the output back onto the command afterwards. It gives up some amplitude for much less phase lag, the idea behind the phase-compensated rate limiter Saab introduced in the Gripen's flight control after its PIO accidents.
 
-![theta, stabilator rate and deflection|900](assets/1289aa85e126.png)
+![theta, stabilator rate and deflection|900](assets/26464187f1f4.png)
 
 | attitude error, peak-to-peak | 2-4 s | 4-6 s | 6-8 s | 8-10 s |
 | --- | --- | --- | --- | --- |

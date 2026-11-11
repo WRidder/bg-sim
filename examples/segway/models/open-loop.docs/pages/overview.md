@@ -2,7 +2,7 @@
 
 **Scenario.** No control: the gains are zero and the motors give no torque. The transporter starts **0.002 rad** off upright and falls forward with free wheels. The tilt grows as $e^{5.23\,t}$, so it doubles every 0.13 s: the controller has to react within a few hundredths of a second.
 
-![The model canvas|1000](assets/3dcc109292df.png)
+![The model canvas|1000](assets/f52c8d374f08.png)
 
 ![Pitch and pitch rate of the free fall|700](assets/f8c904ae6c09.png)
 

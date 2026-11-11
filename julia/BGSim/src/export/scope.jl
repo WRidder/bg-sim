@@ -28,13 +28,17 @@ end
 
 # The interface flow is the flow *into the subsystem*, so `<port>_e * <port>_f` is the power
 # the subsystem absorbs. Port variables count power into their own element, so the adapter's
-# flow has the opposite sign; the effort is shared.
-function _adapter_source(domain, imposed)
+# flow has the opposite sign; the effort is shared. That holds at either end of the bond, so
+# the adapter declares the orientation of the end it takes (O22: a bonded port declares one):
+# `out` when the bond runs from the adapter into the subsystem, `in` when the subsystem's bond
+# arrives at the adapter, the direction the original outside bond had.
+function _adapter_source(domain, imposed, orientation::Symbol = :out)
     imposes, measures = imposed === :effort ? ("p.e ~ u", "y ~ -p.f") : ("p.f ~ -u", "y ~ p.e")
     causality = imposed === :effort ? ":effort_out" : ":flow_out"
     return """
     @block ScopeAdapter_$(domain)_$(imposed === :effort ? "e" : "f") begin
         @ports p::Power{$domain}
+        @orientation p => :$orientation
         @inputs u::Real
         @outputs y::Real
         @equations begin
@@ -143,10 +147,12 @@ function scope_document(doc::AbstractDict, path::AbstractString;
             end
             ckind = outside === nothing ? (domain == "Generic" ? "bond" : "wire") : outside.kind
             aid = "scope_a_" * pname
+            sub_first = outside !== nothing && outside.sub_is == "from"
+            source = _adapter_source(domain, imposed, sub_first ? :in : :out)
             push!(nodes, Dict{String,Any}("id" => aid, "name" => fresh(pname * "_port"),
-                "block" => Dict{String,Any}("inline" => Dict{String,Any}("source" => _adapter_source(domain, imposed)))))
+                "block" => Dict{String,Any}("inline" => Dict{String,Any}("source" => source))))
             sub_ep, a_ep = _scope_ep(id, pname), _scope_ep(aid, "p")
-            push!(conns, outside !== nothing && outside.sub_is == "from" ?
+            push!(conns, sub_first ?
                 _scope_conn("scope_c_" * pname, ckind, sub_ep, a_ep) :
                 _scope_conn("scope_c_" * pname, ckind, a_ep, sub_ep))
             iname, oname = imposed === :effort ? (pname * "_e", pname * "_f") : (pname * "_f", pname * "_e")

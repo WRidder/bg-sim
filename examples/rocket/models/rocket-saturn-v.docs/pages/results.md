@@ -1,12 +1,12 @@
 # Results
 
-![Altitude, speed, mass and acceleration|900](assets/8eb1b098fef8.png)
+![Altitude, speed, mass and acceleration|900](assets/997c30729d99.png)
 
 The acceleration climbs to 3.9 g before the S-IC's outboard cutoff, drops at each staging, and steps down at the S-II's mixture-ratio shift.
 
 ![Pitch program, attitude and flight-path angle; the gimbal angle|900](assets/e30d27ff3484.png)
 
-![Mach, dynamic pressure and thrust in the S-IC burn|900](assets/f09658aa17f7.png)
+![Mach, dynamic pressure and thrust in the S-IC burn|900](assets/d66bf4bc546f.png)
 
 ## Against the flight evaluation report
 

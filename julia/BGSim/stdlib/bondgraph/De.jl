@@ -6,4 +6,5 @@
         y ~ p.e
     end
     @causality p => (:flow_out, :fixed)
+    @orientation p => :in
 end

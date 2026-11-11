@@ -261,7 +261,7 @@ def bond_graph(name, comment, x0, c, t_end, points, plots, scene="scenes/gyrover
     D.node("Pendulum", "stdlib:spatial/RigidBody3D", 1180, 300,
            params={"m": num(P["m_p"]), "J": vec(s["Jp"]), "g0": num(P["g0"])}, starts={"inertia/P": vec(s["Pp"])})
     D.node("MountA", "stdlib:multibond/FixedTransform3DNeutral", 820, 140)
-    D.bond("MountA", "b", "Wheel", "p")
+    D.bond("Wheel", "p", "MountA", "b")
     D.bond("MountA", "a", "Axle", "parent")
     D.bond("Axle", "child", "LinkP", "a")
     D.bond("LinkP", "b", "Pendulum", "p")
@@ -280,7 +280,7 @@ def bond_graph(name, comment, x0, c, t_end, points, plots, scene="scenes/gyrover
     D.node("Gimbal", "stdlib:spatial/RigidBody3D", 1740, 140,
            params={"m": num(s["mg"]), "J": vec(s["Jg"]), "g0": num(P["g0"])}, starts={"inertia/P": vec(s["Pg"])})
     D.node("Flywheel", "stdlib:spatial/Rotor3D", 1920, 140, params={"Ja": num(P["Jra"])}, starts={"h": num(s["h"])})
-    D.bond("MountT", "b", "Pendulum", "p")
+    D.bond("Pendulum", "p", "MountT", "b")
     D.bond("MountT", "a", "Tilt", "parent")
     D.bond("Tilt", "child", "LinkG", "a")
     D.bond("LinkG", "b", "Gimbal", "p")

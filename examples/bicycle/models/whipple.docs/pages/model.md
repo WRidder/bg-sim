@@ -1,6 +1,6 @@
 # Model and bond graph
 
-![The model canvas|1000](assets/7d281c88b9f1.png)
+![The model canvas|1000](assets/bcb5f80dd672.png)
 
 Every body, joint and contact is a library block:
 

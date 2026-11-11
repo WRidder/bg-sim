@@ -7,4 +7,5 @@
         p.e ~ q / c
     end
     @causality p => :effort_out
+    @orientation p => :in
 end

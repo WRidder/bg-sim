@@ -73,6 +73,8 @@ import { imageFromDataTransfer } from "./nodeImage";
 import { applyNodeImage } from "./nodeImageApply";
 import { activeDiagram } from "./subsystemPath";
 import { checkConnection, type PortDescriptor } from "./connectionRules";
+import { ReverseBondItem } from "./ReverseBondItem";
+import { checkReverse } from "./reverseBond";
 import {
   descriptorForPort,
   interfaceForBlock,
@@ -1633,6 +1635,15 @@ function CanvasInner() {
     [view, menu],
   );
 
+  // May the bond be reversed, and what does the reversal do (port orientation, plan O8 and O14)?
+  const menuReverse = useMemo(
+    () =>
+      view !== null && index !== null && menuConnection !== null && menuConnection.kind === "bond"
+        ? checkReverse(view, index, menuConnection)
+        : null,
+    [view, index, menuConnection],
+  );
+
   // Plotting from the canvas (plan 7.5): a bond offers the port's effort/flow/
   // power, an instance offers its recorded outputs. The signal ids come from
   // the current run manifest, so the store can reject an id the run lacks.
@@ -2238,18 +2249,14 @@ function CanvasInner() {
           {menu.kind === "edge" && menuConnection !== null ? (
             <>
               {menuConnection.kind === "bond" ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  data-testid="reverse-bond"
-                  onClick={() =>
+                <ReverseBondItem
+                  check={menuReverse}
+                  onReverse={() =>
                     runMenuAction(() =>
                       useDocumentStore.getState().reverseConnection(menuConnection.id),
                     )
                   }
-                >
-                  Reverse bond direction
-                </button>
+                />
               ) : null}
               {menuPlotTargets.map((target) => (
                 <button

@@ -200,7 +200,7 @@ def flex_model(plant, dz: dict, fz: dict, name: str, kind: str) -> dict:
     dg["connections"] = [c for c in dg["connections"]
                          if not (c["from"]["node"] == "w1" and c["to"]["node"] == "ca2")]
     _connect(doc, "bond", ("j1", "child"), ("arm", "A"))
-    _connect(doc, "bond", ("t2", "b"), ("arm", "B"))
+    _connect(doc, "bond", ("arm", "B"), ("t2", "b"))
     _connect(doc, "signal", ("w1", "g"), ("arm", "gA"))
     _connect(doc, "signal", ("arm", "poseB"), ("ca2", "gp"))
     if kind == "lowpass":

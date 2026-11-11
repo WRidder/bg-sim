@@ -79,7 +79,7 @@ function _jf_model(; kk = 1.0e7, q0 = 0.4, qd0 = 1.0, tau = (0.0, 0.0, 1.0),
         bg_conn("k1", "bond", "ground", "p", "free", "parent"),
         bg_conn("k2", "bond", "free", "child", "bj0", nothing),
         bg_conn("k3", "bond", "b0", "p", "bj0", nothing),
-        bg_conn("k4", "bond", "t1", "b", "bj0", nothing),
+        bg_conn("k4", "bond", "bj0", nothing, "t1", "b"),   # the mount is `through` (WP-O3a)
         bg_conn("k5", "bond", "t1", "a", "j1", "parent"),
         bg_conn("k6", "bond", "j1", "child", "link", "a"),
         bg_conn("k7", "bond", "link", "b", "bj1", nothing),

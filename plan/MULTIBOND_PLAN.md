@@ -195,6 +195,8 @@ A revolute joint shows:
           [R friction, C/R compliance variants, limit C/R]
 ```
 
+> **Superseded by `plan/PORT_ORIENTATION_PLAN.md` (O3, O7, O13, O20).** The two sketches above show the topology only; their bond directions and signs are not those of the current library. `RigidBody2D/3D` are built `node -> inertia.p`, `node -> coriolis.p`, `gravity.p -> node`, `node -> flow.p`, so the junction flow is the true twist `V`. A contact (`ContactPoint` and the other contact blocks) is `in` and is bonded body to contact (through a mount: `Body -> Mount.b`, `Mount.a -> Contact`), with its port flow the body twist and its port effort minus the wrench on the body. A joint has `parent` in, `child` out and `drive` in, and its law changed on the child side (`V_c = -child.f`, `W_c = -child.e`). Mounts and transforms are `through` pairs that keep `b` on the body side. Every bond is checked against the declared `@orientation` (E114). Where later sections of this file speak of a negated twist, a reversed bond at a contact or the sign of a gravity or wrench effort, read them as history.
+
 No opaque body or joint: every box is a standard vector primitive or a signal block. This is
 the design's intent, expressed with the primitives that actually exist. The body composite
 aliases a single `m` parameter into `I` and `Gravity`; the inertia `J` and the matrix `M` live

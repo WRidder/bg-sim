@@ -4,4 +4,4 @@ Joint blended motion (family 4) at 80 % of every joint rate, acceleration and je
 
 The optimum of the same family holds with a margin of 0.5 and takes 1.61 s (`pick-place-best`).
 
-![Cup utilisation, vacuum per zone, drop detection and robot limits|900](assets/6f0bc88bdcd7.png)
+![Cup utilisation, vacuum per zone, drop detection and robot limits|900](assets/3102530b73c8.png)

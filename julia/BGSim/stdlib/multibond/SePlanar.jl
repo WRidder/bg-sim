@@ -7,4 +7,5 @@
         p.e[3] ~ u[3]
     end
     @causality p => (:effort_out, :fixed)
+    @orientation p => :out
 end

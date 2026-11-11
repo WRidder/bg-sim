@@ -1921,11 +1921,11 @@
         "id": "b014",
         "kind": "bond",
         "from": {
-          "node": "t2",
-          "port": "b"
+          "node": "bj1"
         },
         "to": {
-          "node": "bj1"
+          "node": "t2",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -2086,11 +2086,11 @@
         "id": "b026",
         "kind": "bond",
         "from": {
-          "node": "t3",
-          "port": "b"
+          "node": "bj2"
         },
         "to": {
-          "node": "bj2"
+          "node": "t3",
+          "port": "b"
         },
         "route": [],
         "label": null

@@ -96,4 +96,5 @@
         end
     end
     @causality p => :flow_out
+    @orientation p => :in
 end

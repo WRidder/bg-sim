@@ -38,4 +38,5 @@
         Q ~ u * Q_max * f + (1 - u) * G_rel * (a.e - p_rel)
         a.f ~ Q
     end
+    @orientation a => :in
 end

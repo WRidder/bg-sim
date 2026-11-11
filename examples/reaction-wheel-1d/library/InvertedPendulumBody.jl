@@ -7,6 +7,10 @@
         a::Power{Rotation}
         b::Power{Rotation}
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
     @parameters begin
         J::Real = 4e-3, [unit = "kg*m^2", min = 0, description = "Moment of inertia about the edge"]
         m::Real = 0.6, [unit = "kg", min = 0, description = "Body mass"]

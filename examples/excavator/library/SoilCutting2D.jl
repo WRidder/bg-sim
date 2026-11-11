@@ -20,7 +20,7 @@
     # The soil in the bucket weighs m_s = rho_s V/swell; its weight acts at (rsx, rsy) in the
     # bucket frame (its inertia is not modelled).
     #
-    # Port and sign (as `DeckContact2D`): bond FROM this port TO the bucket body's port. The
+    # Port and sign (as `DeckContact2D`): the bucket body's junction bonds into this port. The
     # port flow is the bucket twist (omega, vx, vy) in the body frame, `g` the bucket's
     # centre-of-mass pose (theta, x, y), and the port effort is minus the wrench of the
     # cutting force and the soil weight on the body, so the port power is the power the soil
@@ -100,4 +100,5 @@
         p.e[2] ~ -(fbx + wbx)
         p.e[3] ~ -(fby + wby)
     end
+    @orientation p => :in
 end

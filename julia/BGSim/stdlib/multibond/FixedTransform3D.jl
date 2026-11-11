@@ -1,7 +1,6 @@
 @block FixedTransform3D begin
     # The only legal bridge between two named spatial frames (D-MB5): a = parent, b = child.
-    # Both ports declare the frame their twist/wrench are expressed in, so a bond from a world
-    # port to `a` and a bond from `b` to a body port check E007-clean.
+    # Both ports declare the frame their twist/wrench are expressed in, so a world-frame port at `a` and a body-frame port at `b` check E007-clean.
     #
     # The constant pose `g = (q_w, q_x, q_y, q_z, x, y, z)` is the child pose in the parent
     # frame (the D-MB6 chart, quaternion first). With the angular-first `Ad(g)` of
@@ -74,4 +73,5 @@
         b.e[6] ~ R[1, 3] * a.e[4] + R[2, 3] * a.e[5] + R[3, 3] * a.e[6]
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

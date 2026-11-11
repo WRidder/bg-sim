@@ -30,4 +30,5 @@
         compression ~ q
     end
     @causality j => :effort_out
+    @orientation j => :in
 end

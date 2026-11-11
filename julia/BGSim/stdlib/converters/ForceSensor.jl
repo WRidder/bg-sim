@@ -10,4 +10,8 @@
         a.e ~ y
         b.e ~ -y
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

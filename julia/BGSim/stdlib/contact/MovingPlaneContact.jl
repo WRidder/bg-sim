@@ -11,8 +11,8 @@
     # Mounting (causality), exactly as `ContactPoint`: `FixedTransform3DNeutral` with the
     # CONTACT on side `a` and the body on side `b`; the mount pose is the body pose in the
     # sphere-centre frame (identity when the port frame is the body frame at the centre of a
-    # ball). `p.f` is then the NEGATIVE centre twist and `p.e` the wrench on the body in the
-    # centre frame, so `e . f` is the power the contact absorbs from the body.
+    # ball). `p.f` is the centre twist and `p.e` minus the wrench on the body in the centre
+    # frame, so `e . f` is the power the contact absorbs from the body.
     #
     # Geometry (carrier frame axes = world axes, the carrier translates only): the face at
     # slide position `xs` has its centre at `O = pc + o + a xs` and the outward unit normal `n`
@@ -185,13 +185,13 @@
         t21 ~ n2 * t13 - n3 * t12
         t22 ~ n3 * t11 - n1 * t13
         t23 ~ n1 * t12 - n2 * t11
-        # Body motion in the world: the port flow is the NEGATIVE centre twist (mount side a).
-        om1 ~ -(R[1, 1] * p.f[1] + R[1, 2] * p.f[2] + R[1, 3] * p.f[3])
-        om2 ~ -(R[2, 1] * p.f[1] + R[2, 2] * p.f[2] + R[2, 3] * p.f[3])
-        om3 ~ -(R[3, 1] * p.f[1] + R[3, 2] * p.f[2] + R[3, 3] * p.f[3])
-        v1 ~ -(R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6])
-        v2 ~ -(R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6])
-        v3 ~ -(R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6])
+        # Body motion in the world: the port flow is the centre twist.
+        om1 ~ R[1, 1] * p.f[1] + R[1, 2] * p.f[2] + R[1, 3] * p.f[3]
+        om2 ~ R[2, 1] * p.f[1] + R[2, 2] * p.f[2] + R[2, 3] * p.f[3]
+        om3 ~ R[3, 1] * p.f[1] + R[3, 2] * p.f[2] + R[3, 3] * p.f[3]
+        v1 ~ R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6]
+        v2 ~ R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6]
+        v3 ~ R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6]
         # Face pose and velocity: carried by the carrier, slid along the axis.
         d1 ~ g[5] - (pc[1] + ox + e1 * xs)
         d2 ~ g[6] - (pc[2] + oy + e2 * xs)
@@ -238,17 +238,21 @@
         tq3 ~ r * (ft1 * t23 - ft2 * t13)
         Pd ~ gate * (Fc - Fk) * xd + ft1 * s1 + ft2 * s2
         Pc ~ F[1] * vc[1] + F[2] * vc[2] + F[3] * vc[3]
-        # Port efforts: the wrench on the body in the centre frame, and the slide force.
-        p.e[1] ~ R[1, 1] * tq1 + R[2, 1] * tq2 + R[3, 1] * tq3
-        p.e[2] ~ R[1, 2] * tq1 + R[2, 2] * tq2 + R[3, 2] * tq3
-        p.e[3] ~ R[1, 3] * tq1 + R[2, 3] * tq2 + R[3, 3] * tq3
-        p.e[4] ~ R[1, 1] * F[1] + R[2, 1] * F[2] + R[3, 1] * F[3]
-        p.e[5] ~ R[1, 2] * F[1] + R[2, 2] * F[2] + R[3, 2] * F[3]
-        p.e[6] ~ R[1, 3] * F[1] + R[2, 3] * F[2] + R[3, 3] * F[3]
+        # Port efforts: minus the wrench on the body in the centre frame, and the slide force.
+        p.e[1] ~ -(R[1, 1] * tq1 + R[2, 1] * tq2 + R[3, 1] * tq3)
+        p.e[2] ~ -(R[1, 2] * tq1 + R[2, 2] * tq2 + R[3, 2] * tq3)
+        p.e[3] ~ -(R[1, 3] * tq1 + R[2, 3] * tq2 + R[3, 3] * tq3)
+        p.e[4] ~ -(R[1, 1] * F[1] + R[2, 1] * F[2] + R[3, 1] * F[3])
+        p.e[5] ~ -(R[1, 2] * F[1] + R[2, 2] * F[2] + R[3, 2] * F[3])
+        p.e[6] ~ -(R[1, 3] * F[1] + R[2, 3] * F[2] + R[3, 3] * F[3])
         j.e ~ F[1] * e1 + F[2] * e2 + F[3] * e3
     end
     @causality begin
         p => (:effort_out, :fixed)
         j => (:effort_out, :fixed)
+    end
+    @orientation begin
+        p => :in
+        j => :in
     end
 end

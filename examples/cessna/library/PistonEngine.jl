@@ -99,4 +99,5 @@
         ff_gph ~ ff_pph / 6.0
     end
     @causality p => :effort_out
+    @orientation p => :in
 end

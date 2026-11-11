@@ -149,11 +149,9 @@ def build(kind: str) -> Diagram:
         d.node(f"Gen{k}", "stdlib:contact/VacuumGenerator", x0 + 700, y0 + 140,
                {"dp_max": "dp_max", "Q_max": "Q_max", "n": "1", "G_rel": "G_rel"})
         d.node(f"PM{k}", "stdlib:multibond/FixedTransform3DNeutral", x0 + 860, y0, point_mount(i))
-        # bonds: gripper -> joint -> rod -> cup -> parcel. A port at the tail of a bond sees minus
-        # the bond flow: the joint mounts bond FROM their b port INTO the body junction (as the
-        # bodies themselves and panda-3d's link transforms do), so the joints get positive twists;
-        # the cup mounts bond from the junction (as suction-gripper), so the cups get negative ones.
-        d.conn("bond", f"JM{k}", "b", "TJ", None)
+        # bonds: gripper -> joint -> rod -> cup -> parcel. Each junction carries its body's twist:
+        # a joint parent (through its mount) and a cup (through its mount) are bonded from it.
+        d.conn("bond", "TJ", None, f"JM{k}", "b")
         d.conn("bond", f"JM{k}", "a", f"Rod{k}", "parent")
         d.conn("bond", f"Rod{k}", "child", f"RM{k}", "a")
         d.conn("bond", f"RM{k}", "b", f"RJ{k}", None)

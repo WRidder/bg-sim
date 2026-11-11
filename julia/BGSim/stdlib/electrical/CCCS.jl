@@ -15,4 +15,10 @@
         p2.f ~ gain * p1.f
         p2.f + n2.f ~ 0.0
     end
+    @orientation begin
+        p1 => :in
+        n1 => :in
+        p2 => :in
+        n2 => :in
+    end
 end

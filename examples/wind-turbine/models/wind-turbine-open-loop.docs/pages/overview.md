@@ -2,7 +2,7 @@
 
 The turbine at 8 m/s with a fixed pitch ([PitchFixed](block:PitchFixed), 0°) and a fixed generator torque ([TorqueCmd](block:TorqueCmd)), with no controller. It starts in the region-2 steady state of `design/design.py`. See [the turbine](project:turbine).
 
-![Ring-downs and the torque step|900](assets/102edacfbe71.png)
+![Ring-downs and the torque step|900](assets/0083dcaf5fae.png)
 
 ## What you see
 

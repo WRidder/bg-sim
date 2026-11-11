@@ -10,4 +10,8 @@
         b.e ~ -a.e / r
     end
     @causality (a, b) => :transformer
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

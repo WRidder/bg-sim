@@ -2,7 +2,7 @@
 
 The IEC 61400-1 extreme operating gust on a mean wind of 12 m/s, just above rated. The gust magnitude is class IB for this rotor, 5.2 m/s. The wind first dips by 1.4 m/s, then rises 3.8 m/s above the mean within 5 s, and dips again. [Gust](block:Gust) is the gust shape. See [the controller](project:controller).
 
-![The gust|900](assets/277e4b761bc2.png)
+![The gust|900](assets/1abc2c22fcbe.png)
 
 ## What you see
 

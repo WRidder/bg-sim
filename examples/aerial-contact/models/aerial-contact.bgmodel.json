@@ -3143,12 +3143,12 @@
         "id": "b63",
         "kind": "bond",
         "from": {
-          "node": "n35",
-          "port": "b"
-        },
-        "to": {
           "node": "n03",
           "port": "p"
+        },
+        "to": {
+          "node": "n35",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -3255,12 +3255,12 @@
         "id": "b71",
         "kind": "bond",
         "from": {
-          "node": "n41",
-          "port": "b"
-        },
-        "to": {
           "node": "n38",
           "port": "p"
+        },
+        "to": {
+          "node": "n41",
+          "port": "b"
         },
         "route": [],
         "label": null

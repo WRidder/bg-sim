@@ -2,7 +2,7 @@
 
 The same three-joint arm as `rrr-torque`, built from the M3 spatial stdlib following the patterns of the six-axis `arm`, driven by the same torque sources, controller and references (DEC-M5-2). The two are compared joint by joint.
 
-![The model canvas|900](assets/8ca3c8379cf8.png)
+![The model canvas|900](assets/b8d9ced11b51.png)
 
 ## Construction
 
@@ -14,7 +14,7 @@ The same three-joint arm as `rrr-torque`, built from the M3 spatial stdlib follo
 
 The joint angles are [J1/qout](signal:J1/qout), [J2/qout](signal:J2/qout), [J3/qout](signal:J3/qout); the controller [Ctrl](block:Ctrl) is the `ArmCtrl3R` of `rrr` (gains 354/334/46 and 35.4/33.4/4.6).
 
-![Joint angles and tracking errors of the multibond arm|900](assets/9039d4598cd3.png)
+![Joint angles and tracking errors of the multibond arm|900](assets/5cbecd985b16.png)
 
 ## Tolerance of the comparison
 

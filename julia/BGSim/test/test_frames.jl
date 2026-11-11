@@ -157,6 +157,7 @@ function _sink_block(domain::AbstractString, frame)
     return """
     @block Sink$(domain) begin
         @ports p::Power{$domain}$frame_attr
+        @orientation p => :in
         @equations begin
             $equations
         end
@@ -175,6 +176,7 @@ function _ground_block(domain::AbstractString, frame)
     return """
     @block Ground$(domain) begin
         @ports p::Power{$domain}$frame_attr
+        @orientation p => :out
         @equations $equation
         @causality p => (:flow_out, :fixed)
     end
@@ -186,6 +188,7 @@ function _generic_sink_block(frame = nothing)
     return """
     @block GenericSink begin
         @ports p::Power{Generic}$frame_attr
+        @orientation p => :in
         @equations p.f ~ 0.0
     end
     """
@@ -201,9 +204,10 @@ function _pass_block(domain::AbstractString, from_frame, to_frame)
             a::Power{$domain}$fa
             b::Power{$domain}$fb
         end
+        @orientation (a, b) => :through
         @equations begin
             for k in 1:$n
-                a.f[k] ~ b.f[k]
+                a.f[k] ~ -b.f[k]
                 b.e[k] ~ a.e[k]
             end
         end
@@ -617,9 +621,10 @@ end
                 a::Power{Planar}, [frame = "world"]
                 b::Power{Planar}, [frame = "arm"]
             end
+            @orientation (a, b) => :through
             @equations begin
                 for k in 1:3
-                    a.f[k] ~ b.f[k]
+                    a.f[k] ~ -b.f[k]
                     b.e[k] ~ a.e[k]
                 end
             end
@@ -650,9 +655,10 @@ end
                 a::Power{Planar}, [frame = "body"]
                 b::Power{Planar}, [frame = "arm"]
             end
+            @orientation (a, b) => :through
             @equations begin
                 for k in 1:3
-                    a.f[k] ~ b.f[k]
+                    a.f[k] ~ -b.f[k]
                     b.e[k] ~ a.e[k]
                 end
             end
@@ -911,6 +917,7 @@ end
                 """
                 @block CompSinkPlanar begin
                     @ports p::Power{Planar}
+                    @orientation p => :in
                     @equations begin
                         for k in 1:3
                             p.f[k] ~ 0.0
@@ -924,6 +931,7 @@ end
                 """
                 @block CompSinkBody begin
                     @ports p::Power{Planar}, [frame = "body"]
+                    @orientation p => :in
                     @equations begin
                         for k in 1:3
                             p.f[k] ~ 0.0

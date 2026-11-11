@@ -10,16 +10,16 @@
     # Kinematics. With the axis direction n = (cos phi, sin phi) and the perpendicular
     # m = (-sin phi, cos phi), the joint pose is g(q) = (0, q*n), the screw is S = [0, n] and
     #
-    #     V_rel = child.f - Ad(g(q))^-1 parent.f,
+    #     V_rel = V_c - Ad(g(q))^-1 parent.f,
     #     qdot  = n . V_rel[2:3],   ddt(q) = qdot,
     #     dr    = V_rel[1]        (rotation deflection,      ddt(dr) = V_rel[1]),
     #     d     = m . V_rel[2:3]  (perpendicular deflection, ddt(d)  = m . V_rel[2:3]),
     #     fr = kr*dr + br*V_rel[1],   fd = kd*d + bd*(m . V_rel[2:3]),
-    #     child.e = [fr, -sin(phi)*fd + cos(phi)*tau, cos(phi)*fd + sin(phi)*tau],
-    #     tau = n . child.e[2:3]  (the axial force the drive balances),  drive.e = -tau,
-    #     parent.e = -Ad(g)^-T child.e.
+    #     W_c = [fr, -sin(phi)*fd + cos(phi)*tau, cos(phi)*fd + sin(phi)*tau],
+    #     tau = n . W_c[2:3]  (the axial force the drive balances),  drive.e = -tau,
+    #     parent.e = -Ad(g)^-T W_c.
     #
-    # Power: `parent.e.parent.f + child.e.child.f + drive.e*qdot = fr*V_rel[1] + fd*d_dot`,
+    # Power: `parent.e.parent.f + W_c.V_c + drive.e*qdot = fr*V_rel[1] + fd*d_dot`,
     # i.e. exactly the two spring/damper powers, so with br = bd = 0 the joint is conservative.
     # Both hard directions are compliant, so every state stays integral (no W201); `kr, kd ->
     # Inf` gives the rigid prismatic joint.
@@ -30,6 +30,9 @@
     # overshoot and `s = dx/dd`, applied like the drive (`drive.e = -tau + fs`). No `ifelse`,
     # so no switching event. The limits are structural constants; the default `-Inf`/`Inf`
     # leaves each stop out of the equations.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Planar}
         child::Power{Planar}
@@ -70,21 +73,21 @@
         f_stop::Real, [unit = "N", description = "Hard-stop force on the joint displacement (0 without stops)"]
     end
     @equations begin
-        Vrel[1] ~ child.f[1] - parent.f[1]
-        Vrel[2] ~ child.f[2] + q * sin(phi) * parent.f[1] - parent.f[2]
-        Vrel[3] ~ child.f[3] - q * cos(phi) * parent.f[1] - parent.f[3]
+        Vrel[1] ~ -child.f[1] - parent.f[1]
+        Vrel[2] ~ -child.f[2] + q * sin(phi) * parent.f[1] - parent.f[2]
+        Vrel[3] ~ -child.f[3] - q * cos(phi) * parent.f[1] - parent.f[3]
         qdot ~ cos(phi) * Vrel[2] + sin(phi) * Vrel[3] + parent.f[1] * d
         q ~ q0 + int(qdot, 0.0)
         ddt(dr) ~ Vrel[1]
         ddt(d) ~ -sin(phi) * Vrel[2] + cos(phi) * Vrel[3]
         fr ~ kr * dr + br * Vrel[1]
         fd ~ kd * d + bd * (-sin(phi) * Vrel[2] + cos(phi) * Vrel[3])
-        child.e[1] ~ fr
-        child.e[2] ~ -sin(phi) * fd + cos(phi) * tau
-        child.e[3] ~ cos(phi) * fd + sin(phi) * tau
-        parent.e[1] ~ -(child.e[1] - q * sin(phi) * child.e[2] + q * cos(phi) * child.e[3])
-        parent.e[2] ~ -child.e[2]
-        parent.e[3] ~ -child.e[3]
+        child.e[1] ~ -fr
+        child.e[2] ~ sin(phi) * fd - cos(phi) * tau
+        child.e[3] ~ -cos(phi) * fd - sin(phi) * tau
+        parent.e[1] ~ child.e[1] - q * sin(phi) * child.e[2] + q * cos(phi) * child.e[3]
+        parent.e[2] ~ child.e[2]
+        parent.e[3] ~ child.e[3]
         if q_min > -Inf || q_max < Inf
             f_stop ~ ifelse(q_max < Inf,
                 0.5 * k_stop * ((q - q_max) + sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) +
@@ -115,5 +118,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

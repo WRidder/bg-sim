@@ -122,6 +122,7 @@ function classify_connections!(b::Builder)
         _classify_one!(b, state, i, attempts, bond_attempts, sources)
     end
     _check_port_conflicts!(b, states)
+    check_orientations!(b, states)
     _record_junction_bonds!(b, states)
     wires, wire_of_conn = _build_wire_groups!(states)
     return ConnPlan(
@@ -419,6 +420,286 @@ function _check_port_conflicts!(b::Builder, states::Vector{ConnState})
             end
         end
     end
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Port orientation (plan/PORT_ORIENTATION_PLAN.md, O3, O4, O13, O14): E114
+# ---------------------------------------------------------------------------------------
+
+"""    OrientationAnchor(owner, port, kind, pair, ref)
+
+One declared orientation that one end of a bond must satisfy. `owner` is the path of the
+instance that declares it: the leaf block the end resolves to, or a textual composite whose
+face the end passes through. `kind` is `:in`, `:out` or `:through`; `pair` is the other port
+of a `through` pair (`nothing` otherwise); `ref` is the declaring block."""
+struct OrientationAnchor
+    owner::String
+    port::Symbol
+    kind::Symbol
+    pair::Union{Symbol,Nothing}
+    ref::String
+end
+
+_anchor_label(a::OrientationAnchor) = "`$(a.port)` of `$(_owner(a.owner))`"
+
+function _push_anchor!(out, decls, owner::String, port::Symbol, ref::String)
+    for o in decls
+        port in BGSim.orientation_ports(o) || continue
+        ports = BGSim.orientation_ports(o)
+        kind = BGSim.orientation_kind(o)
+        pair = kind === :through ? (ports[1] === port ? ports[2] : ports[1]) : nothing
+        push!(out, OrientationAnchor(owner, port, kind, pair, ref))
+        break   # a port has one orientation; `check_block` reports a second entry (E003)
+    end
+    return out
+end
+
+"""    _orientation_anchors(b, ep) -> Vector{OrientationAnchor}
+
+The declared orientations one bond end must satisfy, as the flattened connection list sees
+the end: the `@orientation` entry of the leaf port it resolves to, and that of every textual
+composite face it passes through on the way (a composite may declare the orientation of its
+own ports). A junction end has none: a model junction, and a composite face that is an
+internal junction unless the composite declares an orientation for it. So a bond between two
+junctions is never checked (O14)."""
+function _orientation_anchors(b::Builder, ep::RawEndpoint)
+    out = OrientationAnchor[]
+    if ep.kind == :power && ep.port !== nothing
+        st = get(b.state_by_path, ep.path, nothing)
+        st === nothing || _push_anchor!(out, BGSim.orientation(st.pb), ep.path, ep.port, st.ref)
+    end
+    if ep.face !== nothing
+        for (path, port) in get(b.face_chain, ep.face, Tuple{String,Symbol}[ep.face])
+            entry = get(b.composite_orientation, path, nothing)
+            entry === nothing && continue
+            _push_anchor!(out, entry[2], path, port, entry[1])
+        end
+    end
+    return out
+end
+
+# What the user sees at one end of a bond: the face for an end reached through a subsystem
+# or composite port, the instance port or junction otherwise.
+function _orientation_end_label(ep::RawEndpoint)
+    ep.face === nothing && return _endpoint_label(ep)
+    return "`$(ep.face[2])` of `$(_owner(ep.face[1]))`"
+end
+
+# "`p` of `C1` is declared `in`", naming the exposing face when the declaration sits on an
+# internal port.
+function _anchor_text(a::OrientationAnchor, ep::RawEndpoint)
+    shown = ep.face === nothing ? (ep.path, ep.port) : ep.face
+    (a.owner, a.port) == shown && return "$(_anchor_label(a)) is declared `$(a.kind)`"
+    return "$(_anchor_label(a)), which $(_orientation_end_label(ep)) exposes, is declared `$(a.kind)`"
+end
+
+_composite_source(b::Builder, state::ConnState) =
+    get(b.conn_source, (state.diagram, state.conn.id), nothing)
+
+function _bond_label(b::Builder, state::ConnState)
+    src = _composite_source(b, state)
+    src === nothing && return "bond `$(state.conn.id)`"
+    return "bond `connect($(src.from_text), $(src.to_text))` of `$(_owner(state.diagram))`"
+end
+
+function _reverse_hint(b::Builder, state::ConnState)
+    src = _composite_source(b, state)
+    src === nothing && return "reverse bond `$(state.conn.id)`, so that it runs from " *
+                              "$(_orientation_end_label(state.to)) to $(_orientation_end_label(state.from))"
+    return "reverse the bond: write `connect($(src.to_text), $(src.from_text))`"
+end
+
+# One E114. A bond inside a textual composite points at its `connect` line and the composite's
+# node; a bond reaching a face is reported on the subsystem or composite node the user sees.
+function _orientation_diag!(b::Builder, state::ConnState, ep::RawEndpoint; message, hint)
+    src = _composite_source(b, state)
+    if src !== nothing
+        push!(
+            b.diagnostics,
+            diag(
+                "E114",
+                message;
+                hint = hint,
+                path = isempty(state.diagram) ? nothing : state.diagram,
+                block = src.ref,
+                scope = "@connections",
+                source = SourceRef(source_kind(src.ref), src.ref, src.range),
+                node = src.node,
+                connection = state.conn.id,
+            ),
+        )
+        return nothing
+    end
+    if ep.face !== nothing
+        path = ep.face[1]
+        node = get(b.boundary_nodes, path, ep.node)
+        entry = get(b.composite_orientation, path, nothing)
+        block = entry === nothing ? nothing : entry[1]
+    else
+        path, node, block = ep.path, ep.node, _endpoint_block(b, ep)
+    end
+    push!(
+        b.diagnostics,
+        diag(
+            "E114",
+            message;
+            hint = hint,
+            path = isempty(path) ? nothing : path,
+            block = block,
+            node = isempty(node) ? nothing : node,
+            connection = state.conn.id,
+        ),
+    )
+    return nothing
+end
+
+"""    check_orientations!(b, states)
+
+E114, the bond-direction rule of the declared port orientations (O3, O4, O13):
+
+- the end of a bond at an `in` port is the bond's head (`to`), and the end at an `out` port
+  its tail (`from`); a violating bond is reported once, with the hint to reverse it;
+- a bond between two `in` or two `out` ports cannot be fixed by reversing it: the hint is to
+  put a junction in between;
+- of the two bonds at a `(a, b) => :through` pair, one arrives and the other leaves. One bonded
+  port alone is never an error;
+- O22: a bond end at a power port that no `@orientation` entry of its (leaf, inline or project)
+  block names is an E114 of its own, once per such end ("`X.p` declares no orientation"). A
+  junction end, including a composite face that is a junction inside, needs no declaration.
+
+Only valid bonds are checked; wires and signal connections have no direction. An end is
+checked against the port it finally reaches through subsystem and composite faces (and any
+orientation a composite declares on a face it passes), so composite `@connections` are
+checked like diagram bonds. The bond stays in the model: E114 is an error, but it does not
+cascade into balance or causality diagnostics."""
+function check_orientations!(b::Builder, states::Vector{ConnState})
+    through_ends = Dict{Tuple{String,Symbol},Vector{Tuple{Int,Symbol}}}()
+    pairs = Set{Tuple{String,Symbol,Symbol}}()
+    for (i, state) in enumerate(states)
+        (state.valid && state.conn.kind == :bond) || continue
+        ends = ((state.from, :tail), (state.to, :head))
+        anchors = [_orientation_anchors(b, ep) for (ep, _) in ends]
+        # O22: an end at a leaf power port that no `@orientation` entry names is its own E114.
+        # That end is then not checked further (one diagnostic per bond end); the other end is.
+        for (k, (ep, _)) in enumerate(ends)
+            _leaf_undeclared(b, ep) || continue
+            _undeclared_diag!(b, state, ep)
+            anchors[k] = OrientationAnchor[]
+        end
+        violated = Tuple{OrientationAnchor,RawEndpoint}[]
+        for (k, (ep, role)) in enumerate(ends)
+            for a in anchors[k]
+                if a.kind === :through
+                    push!(get!(through_ends, (a.owner, a.port), Tuple{Int,Symbol}[]), (i, role))
+                    key = String(a.port) < String(a.pair) ? (a.owner, a.port, a.pair) :
+                          (a.owner, a.pair, a.port)
+                    push!(pairs, key)
+                elseif (a.kind === :in && role !== :head) || (a.kind === :out && role !== :tail)
+                    push!(violated, (a, ep))
+                end
+            end
+        end
+        isempty(violated) && continue
+        fixed(k) = [a for a in anchors[k] if a.kind === :in || a.kind === :out]
+        same = intersect(Set(a.kind for a in fixed(1)), Set(a.kind for a in fixed(2)))
+        bond = _bond_label(b, state)
+        if !isempty(same)
+            # O4: two fixed ports of one kind; no direction satisfies both.
+            kind = :in in same ? :in : :out
+            a1 = first(a for a in fixed(1) if a.kind === kind)
+            a2 = first(a for a in fixed(2) if a.kind === kind)
+            _orientation_diag!(
+                b, state, last(first(v for v in violated if v[1].kind === kind));
+                message = "$bond joins two `$kind` ports, $(_anchor_label(a1)) and " *
+                          "$(_anchor_label(a2)): no direction of the bond satisfies both",
+                hint = kind === :in ?
+                       "put a junction in between, with a bond from the junction to each `in` port" :
+                       "put a junction in between, with a bond from each `out` port to the junction",
+            )
+            continue
+        end
+        parts = [_anchor_text(a, ep) for (a, ep) in violated]
+        rule = if all(v -> v[1].kind === :in, violated)
+            "a bond must end at an `in` port"
+        elseif all(v -> v[1].kind === :out, violated)
+            "a bond must start at an `out` port"
+        else
+            "the bond must run from the `out` port to the `in` port"
+        end
+        _orientation_diag!(
+            b, state, last(first(violated));
+            message = "$bond runs from $(_orientation_end_label(state.from)) to " *
+                      "$(_orientation_end_label(state.to)), but $(join(parts, " and ")): $rule",
+            hint = _reverse_hint(b, state),
+        )
+    end
+    for key in sort!(collect(pairs))
+        _check_through_pair!(b, states, key, through_ends)
+    end
+    return nothing
+end
+
+# O22: true when `ep` reaches a power port of a block (leaf, inline, or the leaf behind a
+# subsystem or composite face) that no `@orientation` entry of that block names. A junction
+# end, a composite face that is a junction inside, and an unresolved end are never undeclared.
+function _leaf_undeclared(b::Builder, ep::RawEndpoint)
+    (ep.kind == :power && ep.port !== nothing) || return false
+    st = get(b.state_by_path, ep.path, nothing)
+    st === nothing && return false
+    return !any(o -> ep.port in BGSim.orientation_ports(o), BGSim.orientation(st.pb))
+end
+
+function _undeclared_diag!(b::Builder, state::ConnState, ep::RawEndpoint)
+    st = b.state_by_path[ep.path]
+    leaf = "`$(_owner(ep.path)).$(ep.port)`"
+    shown = ep.face === nothing ? "" :
+            " (exposed as $(_orientation_end_label(ep)))"
+    _orientation_diag!(
+        b, state, ep;
+        message = "$(_bond_label(b, state)) reaches $leaf$shown, but $leaf declares no orientation: " *
+                  "add `@orientation $(ep.port) => :in`, `:out` or a `(a, b) => :through` " *
+                  "pair to the block `$(st.ref)`",
+        hint = "a bond needs a declared orientation at every end that is not a junction: `in` when the " *
+               "block's law assumes the bond arrives at the port (storage, dissipation, contacts, sensors), " *
+               "`out` when it assumes the bond leaves (sources), `through` for the two sides of a " *
+               "pass-through two-port",
+    )
+    return nothing
+end
+
+# O13: the two bonds of a `through` pair have opposite directions relative to the block.
+function _check_through_pair!(b::Builder, states, key, through_ends)
+    owner, p, q = key
+    at_p = get(through_ends, (owner, p), Tuple{Int,Symbol}[])
+    at_q = get(through_ends, (owner, q), Tuple{Int,Symbol}[])
+    (length(at_p) == 1 && length(at_q) == 1) || return nothing
+    (i, rp), (j, rq) = at_p[1], at_q[1]
+    (i == j || rp !== rq) && return nothing
+    sp, sq = states[i], states[j]
+    # The bond at q's end is the one reported; its end at the block carries the location.
+    ep_q = rq === :head ? sq.to : sq.from
+    verb = rp === :head ? "arrive at" : "leave"
+    # Suggest a bond whose other end is free: reversing it fixes the pair without breaking an
+    # `in`/`out` port elsewhere.
+    free(state, role) = all(
+        x -> x.kind === :through,
+        _orientation_anchors(b, role === :head ? state.from : state.to),
+    )
+    hint = if free(sq, rq)
+        _reverse_hint(b, sq)
+    elseif free(sp, rp)
+        _reverse_hint(b, sp)
+    else
+        "neither bond can be reversed, because the other end of each is a fixed `in` or `out` " *
+        "port: put a junction between `$(_owner(owner))` and one of them"
+    end
+    _orientation_diag!(
+        b, sq, ep_q;
+        message = "$(_bond_label(b, sp)) and $(_bond_label(b, sq)) both $verb `$(_owner(owner))` " *
+                  "at `$p` and `$q`, but the `through` pair (`$p`, `$q`) needs one bond to arrive and the other to leave",
+        hint = hint,
+    )
     return nothing
 end
 

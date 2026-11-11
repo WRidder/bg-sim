@@ -7,9 +7,9 @@ frequency** while all valves are closed. From **3 to 6 s** the boom joystick ([L
 trapped in both chambers: the boom rings again, now with the rod side pressurised as well, and only lightly damped
 (the cylinder friction and the valve leakage are the only losses).
 
-![The model canvas: supply and LS line (left), the three valve sections and cylinders, the linkage|900](assets/dba21eae4c6b.png)
+![The model canvas: supply and LS line (left), the three valve sections and cylinders, the linkage|900](assets/616e86384fec.png)
 
-![Boom pressures, rod extension, pump and LS pressures, flows and power|900](assets/29103e39498a.png)
+![Boom pressures, rod extension, pump and LS pressures, flows and power|900](assets/096856d5fec4.png)
 
 **Expected outcome** (checked by `expected.json`):
 
@@ -25,7 +25,7 @@ The single-DOF estimate of the boom frequency, with the boom-joint inertia and t
 β(A²/V_A + A_r²/V_B), gives 2.60 Hz; the coupled 3-DOF mode at 2.49 Hz is what the bond graph shows. The
 cylinder forces agree within the Coulomb band of the cylinder friction.
 
-![The front at 6 s, the end of the lift|600](assets/58362d4b34b9.png)
+![The front at 6 s, the end of the lift|600](assets/65e63869c0cf.png)
 
 **Blocks.** [Pump](block:Pump) (`LoadSensingPump`), [Vpump](block:Vpump) and [Vls](block:Vls) the pump and LS
 lines, [BoomComp](block:BoomComp) and [BoomValve](block:BoomValve) the boom section,

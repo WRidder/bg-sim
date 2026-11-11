@@ -3,6 +3,10 @@
         a::Power{Rotation}
         b::Power{Rotation}
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
     @parameters begin
         k::Real   = 1e4,  [unit = "N*m/rad", min = 0, description = "Tooth contact stiffness"]
         d::Real   = 5.0,  [unit = "N*m*s/rad", min = 0, description = "Contact damping"]

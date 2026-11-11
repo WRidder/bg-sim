@@ -12,7 +12,7 @@ force on the cart swings the chain up from hanging at rest and balances it uprig
 - [Mon](block:Mon) (`QuadCartMonitor`) computes the link angles, the energy per link, the stacked energy and
   the energy ledger from the bodies' twists and poses.
 
-![The model canvas|900](assets/4d7322f29d6a.png)
+![The model canvas|900](assets/aee913042e6e.png)
 
 ![3D view at t = 10 s: the chain balanced upright|500](assets/60d6b8cb39e8.png)
 

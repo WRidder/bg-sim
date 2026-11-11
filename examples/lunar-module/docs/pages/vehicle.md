@@ -8,7 +8,7 @@ Three models of Eagle, the lunar module of Apollo 11, on one 3D (multibond) bond
 | [Landing by hand](model:lm-hover) | the landing phase (P66) flown from the dashboard, with Armstrong's propellant |
 | [Ascent](model:lm-ascent) | lift-off from the descent stage to orbit insertion, 7 min 17 s |
 
-![The descent model: the variable-mass body on top, propulsion, guidance and attitude in the middle, the landing gear below|900](assets/066f29d663cb.png)
+![The descent model: the variable-mass body on top, propulsion, guidance and attitude in the middle, the landing gear below|900](assets/0e9fcdb5b170.png)
 
 ## The bond graph
 

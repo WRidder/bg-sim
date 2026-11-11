@@ -16,7 +16,7 @@ A truss is a frame of straight bars joined by pins. The bars carry only an axial
 
 ## Bar by bar: `PinNode2D` and `Bar2D`
 
-The port of a `PinNode2D` is its 1-junction, and so are the ends of a `Bar2D`. Bond the bars to the nodes in any bond direction, as many as you need. Wire each node's `g` to the bar inputs `ga` (end `a`) and `gb` (end `b`), so the bar knows where its ends are.
+The port of a `PinNode2D` is its 1-junction, and so are the ends of a `Bar2D`. Bond the bars to the nodes, as many as you need. These are bonds between two junctions, which are not checked, so either direction works. Wire each node's `g` to the bar inputs `ga` (end `a`) and `gb` (end `b`), so the bar knows where its ends are.
 
 `PinNode2D` has the constant `support`: `free`, `pinned` (x and y fixed) or `roller` (y fixed, x free). The parameter `m` is the node mass. A bar's own mass is not in the bar: add half of `rho A L` of every bar to the mass of each of its nodes. The output `R` is the reaction of the support.
 
@@ -66,7 +66,7 @@ To scale the strength of every bar with one [global parameter](page:parameters) 
 Put the deck nodes first in `Truss2D`, numbered from left to right: nodes 1 to `nd` form the road surface.
 
 - `MovingLoad2D` (constants `nn`, `nd`) applies a load `P` that starts at `s0` and moves at `v`. Two neighbouring deck nodes share the load by linear shape functions. Wire the truss's `x` to its input and its `Fx`, `Fy` to the truss.
-- `DeckContact2D` (constants `nn`, `nd`, `nw`) puts `nw` wheels of a planar body on the deck. The wheels sit at (`rx`, `ry`) in the body frame with radius `r`. Each tyre is a spring `k` with damping `c`, and the damping grows with the deflection. A wheel is carried by one deck panel at a time, the one it presses into most, and it rolls over a deck node on the node itself, so the tyre force has no jumps where the deck bends. The input `Fd` is a drive force along the deck, shared by the wheels in contact. Bond the block's port **to** the body (from the contact to the body), feed it the body pose `g` and the truss outputs `x`, `y`, `xd`, `yd`, and wire its `Fx`, `Fy` to the truss.
+- `DeckContact2D` (constants `nn`, `nd`, `nw`) puts `nw` wheels of a planar body on the deck. The wheels sit at (`rx`, `ry`) in the body frame with radius `r`. Each tyre is a spring `k` with damping `c`, and the damping grows with the deflection. A wheel is carried by one deck panel at a time, the one it presses into most, and it rolls over a deck node on the node itself, so the tyre force has no jumps where the deck bends. The input `Fd` is a drive force along the deck, shared by the wheels in contact. The block's port `p` is `in`: bond the body to it (`Body -> DeckContact2D.p`), feed it the body pose `g` and the truss outputs `x`, `y`, `xd`, `yd`, and wire its `Fx`, `Fy` to the truss.
 
 ## In the 3D view
 

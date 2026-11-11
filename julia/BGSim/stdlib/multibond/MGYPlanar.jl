@@ -23,4 +23,5 @@
         b.e[3] ~ -(G[1, 3] * a.f[1] + G[2, 3] * a.f[2] + G[3, 3] * a.f[3])
     end
     @causality (a, b) => :gyrator
+    @orientation (a, b) => :through
 end

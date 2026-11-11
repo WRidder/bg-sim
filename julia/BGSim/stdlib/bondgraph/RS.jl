@@ -16,4 +16,8 @@
         P ~ watt * p.e * p.f
         heat.f ~ -P
     end
+    @orientation begin
+        p => :in
+        heat => :out
+    end
 end

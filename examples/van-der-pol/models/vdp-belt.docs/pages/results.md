@@ -1,6 +1,6 @@
 # Results
 
-![Block velocity (cubic rig, textbook, full Stribeck curve), position and slip, first 10 s|900](assets/e1a458014db3.png)
+![Block velocity (cubic rig, textbook, full Stribeck curve), position and slip, first 10 s|900](assets/c0447c0294fe.png)
 
 ![Phase portrait of the cubic rig in Van der Pol units, against the textbook equation|560](assets/5b68440db951.png)
 

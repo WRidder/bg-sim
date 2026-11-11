@@ -31,7 +31,7 @@ Motor: R = 2.5 Ω, L = 0.5 mH, k_t = 0.03 N m/A, rotor J_m = 5e-06 kg m²; gear 
 
 Angles: `q1` is the absolute angle of link 1 from +x (hanging −π/2, upright +π/2), the other joint angles are relative. The model has an inline block `Upright` with the absolute link angles from upright, `Upright/a1..a2`, used for plots and checks.
 
-Every bond points from the port into the junction. A reversed bond flips the junction's sign convention, and the plant stops matching its equations (found the hard way while building this example).
+The bonds follow the declared port orientations (`BodyJ → Joint.parent`, `Link.child → BodyJ`, `Body.p → BodyJ`, `Hit.p → BodyJ`), so each link junction carries the link's true twist.
 
 ## Design (`design/`)
 

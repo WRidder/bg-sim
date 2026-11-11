@@ -1,7 +1,7 @@
 @block PinNode2D begin
     # A truss pin node: a point mass that translates in the plane and passes no moment, with
     # an optional support (pinned or roller). Its single port IS the node's 1-junction, so any
-    # number of `Bar2D` ends (and loads) bond to it, in either bond direction. The mass is
+    # number of `Bar2D` ends (and loads) bond to it. The mass is
     # the node's own mass plus its share of the bar masses (half of each bar that meets it).
     #
     #   p (1-junction) ── PointMass2D (I on x, y; zero angular flow; support)
@@ -36,7 +36,7 @@
     end
     @connections begin
         connect(p, node)
-        connect(mass.p, node)
+        connect(node, mass.p)
         connect(mass.g, g)
         connect(mass.v, v)
         connect(mass.R, R)

@@ -1,0 +1,29 @@
+{
+  "$comment": "Invalid: the orientation entry of TF has kind \"pass\"; an orientation kind is in, out or through (plan/PORT_ORIENTATION_PLAN.md O13).",
+  "language": "0.1.0",
+  "blocks": [
+    {
+      "ref": "inline:tf",
+      "name": "TF",
+      "group": "Bond graph",
+      "release": "0.1",
+      "description": "Transformer.",
+      "icon": "bg-tf",
+      "constants": [],
+      "parameters": [],
+      "inputs": [],
+      "outputs": [],
+      "ports": [
+        { "name": "a", "domain": "Generic", "size": [] },
+        { "name": "b", "domain": "Generic", "size": [] }
+      ],
+      "variables": [],
+      "causality": [],
+      "orientation": [{ "ports": ["a", "b"], "kind": "pass" }],
+      "source": "@block TF begin\n    @ports begin\n        a::Power{Generic}\n        b::Power{Generic}\n    end\n    @equations begin\n        a.e ~ 2.0 * b.e\n        b.f ~ -2.0 * a.f\n    end\n    @orientation (a, b) => :pass\nend",
+      "path": "inline/tf.jl"
+    }
+  ],
+  "junctions": [],
+  "domains": []
+}

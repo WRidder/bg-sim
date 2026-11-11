@@ -556,12 +556,12 @@
         "id": "c6",
         "kind": "bond",
         "from": {
-          "node": "YGuide",
-          "port": "parent"
-        },
-        "to": {
           "node": "Beam",
           "port": "E"
+        },
+        "to": {
+          "node": "YGuide",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -780,12 +780,12 @@
         "id": "c25",
         "kind": "bond",
         "from": {
-          "node": "SlideSpring",
-          "port": "b"
-        },
-        "to": {
           "node": "Beam",
           "port": "S"
+        },
+        "to": {
+          "node": "SlideSpring",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -794,12 +794,12 @@
         "id": "c26",
         "kind": "bond",
         "from": {
-          "node": "SlideDamper",
-          "port": "b"
-        },
-        "to": {
           "node": "Beam",
           "port": "S"
+        },
+        "to": {
+          "node": "SlideDamper",
+          "port": "b"
         },
         "route": [],
         "label": null

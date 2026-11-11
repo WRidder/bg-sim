@@ -3,8 +3,8 @@
     # plan's `JointTransform` for the planar domain. It carries the same adjoint equations as
     # `TFAd` (component-wise `Ad(g)`), and it is the transform a joint uses to bridge its
     # parent-side and child-side frames: the two ports declare the joint role frames
-    # `parent` and `child`, so a bond from a `parent`-frame port to `a` and from `b` to a
-    # `child`-frame port is E007-clean, while any other named frame on those bonds is
+    # `parent` and `child`, so a `parent`-frame port at `a` and a `child`-frame port at `b`
+    # are E007-clean, while any other named frame on those bonds is
     # reported (D-MB5: only a transform bridges frames).
     #
     # The pose input `g = (theta, x, y)` is the child pose in the parent frame. With `Ad(g)`
@@ -25,10 +25,13 @@
         a.f[1] ~ -b.f[1]
         a.f[2] ~ -(g[3] * b.f[1] + cos(g[1]) * b.f[2] - sin(g[1]) * b.f[3])
         a.f[3] ~ g[2] * b.f[1] - sin(g[1]) * b.f[2] - cos(g[1]) * b.f[3]
-        a.e[1] ~ b.e[1] + (sin(g[1]) * g[2] - cos(g[1]) * g[3]) * b.e[2] +
-                 (cos(g[1]) * g[2] + sin(g[1]) * g[3]) * b.e[3]
-        a.e[2] ~ cos(g[1]) * b.e[2] - sin(g[1]) * b.e[3]
-        a.e[3] ~ sin(g[1]) * b.e[2] + cos(g[1]) * b.e[3]
+        # O21: the effort relation in the explicit form b.e = Ad(g)^T a.e (the same causal
+        # direction as the flow relation, as TFAd): the implicit a.e = Ad^-T b.e left MTK a
+        # division by cos(g[1]) or sin(g[1]).
+        b.e[1] ~ a.e[1] + g[3] * a.e[2] - g[2] * a.e[3]
+        b.e[2] ~ cos(g[1]) * a.e[2] + sin(g[1]) * a.e[3]
+        b.e[3] ~ -sin(g[1]) * a.e[2] + cos(g[1]) * a.e[3]
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

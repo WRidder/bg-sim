@@ -86,4 +86,5 @@
         connect(pel.y, P_el)
         connect(pmech.y, P_mech)
     end
+    @orientation shaft => :in
 end

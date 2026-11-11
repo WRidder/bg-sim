@@ -1,6 +1,6 @@
 # Results and checks
 
-![Speed, position and q-axis current of the baseline run|900](assets/b3616fbc470f.png)
+![Speed, position and q-axis current of the baseline run|900](assets/c10543a3e1df.png)
 
 Zoom on the speed step at 0.05 s (the current saturates at the 15 A limit):
 

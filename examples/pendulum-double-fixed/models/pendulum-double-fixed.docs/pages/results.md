@@ -1,14 +1,14 @@
 # Results and checks
 
-![Link angles, motor voltage and controller phase over the whole run|900](assets/7b975f056d54.png)
+![Link angles, motor voltage and controller phase over the whole run|900](assets/c48a59b0f05e.png)
 
 ## Swing-up and catch
 
-![Swing-up from hanging, first seconds|900](assets/275c789b0ab0.png)
+![Swing-up from hanging, first seconds|900](assets/952908a4b13f.png)
 
 ## Disturbance and recovery
 
-![The tip force pulse and the recovery|900](assets/126c9120ab09.png)
+![The tip force pulse and the recovery|900](assets/a208d51d106b.png)
 
 ## Numbers
 

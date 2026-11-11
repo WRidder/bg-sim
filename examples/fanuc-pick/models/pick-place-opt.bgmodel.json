@@ -2174,11 +2174,11 @@
         "id": "fp005",
         "kind": "bond",
         "from": {
-          "node": "JM1",
-          "port": "b"
+          "node": "TJ"
         },
         "to": {
-          "node": "TJ"
+          "node": "JM1",
+          "port": "b"
         }
       },
       {
@@ -2396,11 +2396,11 @@
         "id": "fp024",
         "kind": "bond",
         "from": {
-          "node": "JM2",
-          "port": "b"
+          "node": "TJ"
         },
         "to": {
-          "node": "TJ"
+          "node": "JM2",
+          "port": "b"
         }
       },
       {
@@ -2618,11 +2618,11 @@
         "id": "fp043",
         "kind": "bond",
         "from": {
-          "node": "JM3",
-          "port": "b"
+          "node": "TJ"
         },
         "to": {
-          "node": "TJ"
+          "node": "JM3",
+          "port": "b"
         }
       },
       {
@@ -2840,11 +2840,11 @@
         "id": "fp062",
         "kind": "bond",
         "from": {
-          "node": "JM4",
-          "port": "b"
+          "node": "TJ"
         },
         "to": {
-          "node": "TJ"
+          "node": "JM4",
+          "port": "b"
         }
       },
       {
@@ -3062,11 +3062,11 @@
         "id": "fp081",
         "kind": "bond",
         "from": {
-          "node": "JM5",
-          "port": "b"
+          "node": "TJ"
         },
         "to": {
-          "node": "TJ"
+          "node": "JM5",
+          "port": "b"
         }
       },
       {

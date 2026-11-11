@@ -254,8 +254,10 @@ function _mb8_free(; J = (1.0, 2.0, 3.0), m = 2.0,
                 "pz" => string(pose0[7]))),
     ]
     conns = Any[
-        bg_conn("c1", "bond", "n2", "p", "n1", nothing),
-        bg_conn("c2", "bond", "n3", "p", "n1", nothing),
+        # ISpatial and CoriolisSpatial are `in`: their bonds leave the body junction;
+        # GravitySpatial is `out` and bonds into it (port orientation, WP-O3a).
+        bg_conn("c1", "bond", "n1", nothing, "n2", "p"),
+        bg_conn("c2", "bond", "n1", nothing, "n3", "p"),
         bg_conn("c3", "bond", "n4", "p", "n1", nothing),
         bg_conn("c4", "signal", "n2", "Pm", "n3", "P"),
         bg_conn("c5", "signal", "n2", "twout", "n5", "tw"),
@@ -680,11 +682,15 @@ end
                     bg_node("n3", "A", bg_ref("stdlib:multibond/SeSpatial")),
                     bg_node("n4", "B", bg_ref("stdlib:multibond/SfSpatial")),
                     bg_node("n5", "T", bg_ref(ref); params = params),
+                    bg_node("jb", "Jb", bg_junction("1")),
                 ], Any[
                     bg_conn("c1", "signal", "n1", "y", "n3", "u"),
                     bg_conn("c2", "signal", "n2", "y", "n4", "u"),
+                    # `(a, b)` is a `through` pair and SfSpatial is `out`: the flow
+                    # source meets `b` on a 1-junction (the bond flows are equal).
                     bg_conn("c3", "bond", "n3", "p", "n5", "a"),
-                    bg_conn("c4", "bond", "n5", "b", "n4", "p"),
+                    bg_conn("c4", "bond", "n5", "b", "jb", nothing),
+                    bg_conn("c6", "bond", "n4", "p", "jb", nothing),
                 ]; t_end = 0.01, points = 2, reltol = 1.0e-10, abstol = 1.0e-12)
                 @test isempty(_mb8_errors(_mb8_check(doc)))
                 columns, result, _ = bg_run(doc)
@@ -716,11 +722,13 @@ end
                 bg_node("n4", "B", bg_ref("stdlib:multibond/SfSpatial")),
                 bg_node("n5", "T", bg_ref("stdlib:multibond/MTFSpatial")),
                 _mb8_vec6("mod", "Uu", n),
+                bg_node("jb", "Jb", bg_junction("1")),
             ], Any[
                 bg_conn("c1", "signal", "n1", "y", "n3", "u"),
                 bg_conn("c2", "signal", "n2", "y", "n4", "u"),
                 bg_conn("c3", "bond", "n3", "p", "n5", "a"),
-                bg_conn("c4", "bond", "n5", "b", "n4", "p"),
+                bg_conn("c4", "bond", "n5", "b", "jb", nothing),
+                bg_conn("c6", "bond", "n4", "p", "jb", nothing),
                 bg_conn("c5", "signal", "mod", "y", "n5", "u"),
             ]; t_end = 0.01, points = 2, reltol = 1.0e-10, abstol = 1.0e-12)
             @test isempty(_mb8_errors(_mb8_check(doc)))
@@ -764,7 +772,7 @@ end
                 conns = Any[
                     bg_conn("c1", "signal", "n1", "y", "n2", "u"),
                     bg_conn("c2", "bond", "n2", "p", "n3", "a"),
-                    bg_conn("c3", "bond", "n4", "p", "n3", "b"),
+                    bg_conn("c3", "bond", "n3", "b", "n4", "p"),
                 ]
                 if modnode !== nothing
                     push!(nodes, modnode)
@@ -805,7 +813,8 @@ end
             @test abs(dot(V, transpose(adV) * P)) <=
                   1.0e-12 * max(1.0, norm(V) * norm(transpose(adV) * P))
             # The block: a flow source on a direct bond drives the port, the momentum is a
-            # signal. Its recorded own flow is the source twist with the bond's sign.
+            # signal. Its recorded own flow is the source twist (SfSpatial delivers +u at the
+            # tail of its bond, O15).
             doc = bg_model("Coriolis$case", Any[
                 _mb8_vec6("n1", "Uv", V),
                 _mb8_vec6("n2", "Up", P),
@@ -821,7 +830,7 @@ end
             @test result.status == "done"
             f = _mb8_vec(columns, "Cor/p.f", 1)
             e = _mb8_vec(columns, "Cor/p.e", 1)
-            @test isapprox(f, -V; atol = 1e-12)
+            @test isapprox(f, V; atol = 1e-12)
             adf = BGSim.ad(BGSim.Twist{6}(f...))
             expected = -transpose(adf) * P
             @test isapprox(e, expected; atol = 1e-11)
@@ -853,11 +862,12 @@ end
         columns, result, _ = bg_run(doc)
         @test result.status == "done"
         t = columns["time"]
-        # ddt(q[k]) = p.f[k] and p.e[k] = k[k]*q[k]: the port flow is the source's -F, so
-        # q[k] = -F[k]*t and the effort is -k[k]*F[k]*t.
+        # ddt(q[k]) = p.f[k] and p.e[k] = k[k]*q[k]: the port flow is the source's F
+        # (SfSpatial delivers +u at its tail, O15), so q[k] = F[k]*t and the effort is
+        # k[k]*F[k]*t.
         for kk in 1:6
-            @test isapprox(columns["C/p.f[$kk]"], -F[kk] .* ones(length(t)); atol = 1e-12)
-            @test maximum(abs.(columns["C/p.e[$kk]"] .- (-k[kk] * F[kk] .* t))) <= 1e-11
+            @test isapprox(columns["C/p.f[$kk]"], F[kk] .* ones(length(t)); atol = 1e-12)
+            @test maximum(abs.(columns["C/p.e[$kk]"] .- (k[kk] * F[kk] .* t))) <= 1e-11
         end
 
         E = [1.1, -0.9, 0.6, 2.0, -3.0, 1.5]
@@ -904,7 +914,7 @@ end
         ], Any[
             bg_conn("c1", "signal", "n1", "y", "n2", "u"),
             bg_conn("c2", "bond", "n2", "p", "n3", nothing),
-            bg_conn("c3", "bond", "n4", "p", "n3", nothing),
+            bg_conn("c3", "bond", "n3", nothing, "n4", "p"),
         ]; t_end = 0.1, points = 2, reltol = 1.0e-10, abstol = 1.0e-12)
         columns, result, _ = bg_run(doc)
         @test result.status == "done"
@@ -918,7 +928,7 @@ end
         ], Any[
             bg_conn("c1", "signal", "n1", "y", "n2", "u"),
             bg_conn("c2", "bond", "n2", "p", "n3", nothing),
-            bg_conn("c3", "bond", "n4", "p", "n3", nothing),
+            bg_conn("c3", "bond", "n3", nothing, "n4", "p"),
         ]; t_end = 0.1, points = 2, reltol = 1.0e-10, abstol = 1.0e-12)
         columns, result, _ = bg_run(doc)
         @test result.status == "done"
@@ -966,10 +976,10 @@ end
         @test maximum(abs.(columns["I/P[5]"] .- fy .* t)) <= 1e-9
         @test maximum(abs.(columns["I/P[6]"] .- fz .* t)) <= 1e-9
         @test maximum(maximum(abs.(columns["I/P[$k]"])) for k in (1, 2, 3)) <= 1e-12
-        # The port effort is -W_ext: the element supplies the negative of the physical wrench
-        # to the 1-junction, and the inertia feels +W_ext.
-        @test isapprox(columns["W/p.e[4]"][1], -fx; atol = 1e-12)
-        @test isapprox(columns["W/p.e[6]"][1], -fz; atol = 1e-12)
+        # The port effort is W_ext: the element is `out` and supplies the physical wrench to
+        # the 1-junction, and the inertia feels +W_ext (WP-O3a).
+        @test isapprox(columns["W/p.e[4]"][1], fx; atol = 1e-12)
+        @test isapprox(columns["W/p.e[6]"][1], fz; atol = 1e-12)
 
         tau = 1.4
         doc = _mb8_free(m = m, J = (0.5, 1.0, 1.5), g0 = 0.0,
@@ -1010,9 +1020,13 @@ end
             conns = Any[
                 bg_conn("c1", "signal", "n1", "y", "n3", "u"),
                 bg_conn("c2", "signal", "n2", "y", "n4", "u"),
+                # `(a, b)` is a `through` pair: the Se bond arrives at `a`, `b` leaves into a
+                # 1-junction that the Sf (`out`) also bonds into.
                 bg_conn("c3", "bond", "n3", "p", "n5", "a"),
-                bg_conn("c4", "bond", "n4", "p", "n5", "b"),
+                bg_conn("c4", "bond", "n5", "b", "jb", nothing),
+                bg_conn("c6", "bond", "n4", "p", "jb", nothing),
             ]
+            push!(nodes, bg_node("jb", "Jb", bg_junction("1")))
             if label == "Joint"
                 push!(nodes, bg_node("n6", "Pose", _mb8_inline(_MB8_POSE_CONST);
                     params = pose_params))
@@ -1091,9 +1105,9 @@ end
             bg_node("mo", "Mount", bg_ref("stdlib:multibond/FixedTransform3DNeutral");
                 params = Dict{String,Any}("z" => "-0.5")),
         ], Any[
-            bg_conn("c1", "bond", "ia", "p", "na", nothing),
-            bg_conn("c2", "bond", "mo", "a", "na", nothing),
-            bg_conn("c3", "bond", "ib", "p", "nb", nothing),
+            bg_conn("c1", "bond", "na", nothing, "ia", "p"),
+            bg_conn("c2", "bond", "na", nothing, "mo", "a"),
+            bg_conn("c3", "bond", "nb", nothing, "ib", "p"),
             bg_conn("c4", "bond", "mo", "b", "nb", nothing),
         ]; t_end = 0.1, points = 2, reltol = 1.0e-9, abstol = 1.0e-11)
         mounted = _mb8_check(doc)
@@ -1114,9 +1128,9 @@ end
             bg_node("po", "Pose", _mb8_inline(_MB8_POSE_CONST);
                 params = Dict{String,Any}("z" => "-0.5")),
         ], Any[
-            bg_conn("c1", "bond", "ia", "p", "na", nothing),
-            bg_conn("c2", "bond", "jt", "a", "na", nothing),
-            bg_conn("c3", "bond", "ib", "p", "nb", nothing),
+            bg_conn("c1", "bond", "na", nothing, "ia", "p"),
+            bg_conn("c2", "bond", "na", nothing, "jt", "a"),
+            bg_conn("c3", "bond", "nb", nothing, "ib", "p"),
             bg_conn("c4", "bond", "jt", "b", "nb", nothing),
             bg_conn("c5", "signal", "po", "g", "jt", "g"),
         ]; t_end = 0.1, points = 2, reltol = 1.0e-9, abstol = 1.0e-11)
@@ -1138,11 +1152,15 @@ end
             bg_node("n4", "B", bg_ref("stdlib:multibond/SfSpatial")),
             bg_node("n5", "T", bg_ref("stdlib:multibond/FixedTransform3D");
                 params = Dict{String,Any}("z" => "-0.5")),
+            bg_node("jb", "Jb", bg_junction("1")),
         ], Any[
             bg_conn("c1", "signal", "n1", "y", "n3", "u"),
             bg_conn("c2", "signal", "n2", "y", "n4", "u"),
+            # The Sf (`out`) meets `b` on a 1-junction: one bond arrives at the transform
+            # and one leaves it.
             bg_conn("c3", "bond", "n3", "p", "n5", "a"),
-            bg_conn("c4", "bond", "n4", "p", "n5", "b"),
+            bg_conn("c4", "bond", "n5", "b", "jb", nothing),
+            bg_conn("c6", "bond", "n4", "p", "jb", nothing),
         ]; t_end = 0.01, points = 2, reltol = 1.0e-10, abstol = 1.0e-12)
         runcheck = _mb8_check(doc)
         @test isempty(_mb8_errors(runcheck))
@@ -1184,9 +1202,9 @@ end
         ], Any[
             bg_conn("c1", "signal", "n1", "g", "n3", "gp"),
             bg_conn("c2", "signal", "n2", "g", "n3", "gl"),
-            bg_conn("c3", "bond", "n5", "p", "n4", nothing),
+            bg_conn("c3", "bond", "n4", nothing, "n5", "p"),
             bg_conn("c4", "bond", "n6", "p", "n4", nothing),
-            bg_conn("c5", "bond", "n7", "p", "n4", nothing),
+            bg_conn("c5", "bond", "n4", nothing, "n7", "p"),
             bg_conn("c6", "signal", "n3", "g", "n6", "g"),
             bg_conn("c7", "signal", "n5", "Pm", "n7", "P"),
         ]; t_end = 1.0, points = 101, reltol = 1.0e-9, abstol = 1.0e-11)
@@ -1205,14 +1223,15 @@ end
         t = columns["time"]
         q = q0 .+ rate .* t
         # The composed pose is the analytic rotation about x, so the gravity port effort is
-        # e = [0, 0, 0, 0, m g0 sin q, m g0 cos q] (GravityPlanar's spatial form).
+        # the gravity wrench e = [0, 0, 0, 0, -m g0 sin q, -m g0 cos q] (GravitySpatial is
+        # `out` and supplies the physical wrench, WP-O3a).
         @test maximum(maximum(abs.(columns["G/p.e[$k]"])) for k in 1:4) <= 1e-12
-        @test maximum(abs.(columns["G/p.e[5]"] .- m * g0 .* sin.(q))) <= 1e-9
-        @test maximum(abs.(columns["G/p.e[6]"] .- m * g0 .* cos.(q))) <= 1e-9
+        @test maximum(abs.(columns["G/p.e[5]"] .+ m * g0 .* sin.(q))) <= 1e-9
+        @test maximum(abs.(columns["G/p.e[6]"] .+ m * g0 .* cos.(q))) <= 1e-9
         println("J-MB8 composed gravity: e[5] error = ",
-            maximum(abs.(columns["G/p.e[5]"] .- m * g0 .* sin.(q))),
+            maximum(abs.(columns["G/p.e[5]"] .+ m * g0 .* sin.(q))),
             ", e[6] error = ",
-            maximum(abs.(columns["G/p.e[6]"] .- m * g0 .* cos.(q))),
+            maximum(abs.(columns["G/p.e[6]"] .+ m * g0 .* cos.(q))),
             ", states = ", flat.stats.states)
     end
 

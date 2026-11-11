@@ -11,4 +11,8 @@
         a.f ~ Q * u
         b.f ~ -Q * u
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

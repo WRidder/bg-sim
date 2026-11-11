@@ -99,6 +99,7 @@ export type { CausalityDecl } from "./catalog";
 export type { ConstantDecl } from "./catalog";
 export type { DomainVariable } from "./catalog";
 export type { IoDecl } from "./catalog";
+export type { OrientationDecl } from "./catalog";
 export type { ParameterDecl } from "./catalog";
 export type { PlanarComponents } from "./catalog";
 export type { PlanarDomain } from "./catalog";

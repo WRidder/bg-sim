@@ -64,9 +64,9 @@
     end
     @connections begin
         connect(A, nodeA)
-        connect(beam.pa, nodeA)
+        connect(nodeA, beam.pa)
         connect(B, nodeB)
-        connect(beam.pb, nodeB)
+        connect(nodeB, beam.pb)
         connect(gA, beam.gA)
         connect(beam.pose, pose)
         connect(beam.poseB, poseB)

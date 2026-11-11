@@ -24,7 +24,7 @@
         "position": { "x": 530, "y": 70 },
         "rotation": 0,
         "flipX": false,
-        "params": { "gain": "2943.0" },
+        "params": { "gain": "-2943.0" },
         "constants": {},
         "starts": {},
         "ui": { "showLabel": true, "color": null }
@@ -36,7 +36,7 @@
         "position": { "x": 510, "y": 630 },
         "rotation": 0,
         "flipX": false,
-        "params": { "gain": "392.4" },
+        "params": { "gain": "-392.4" },
         "constants": {},
         "starts": {},
         "ui": { "showLabel": true, "color": null }
@@ -275,8 +275,8 @@
       {
         "id": "b02",
         "kind": "bond",
-        "from": { "node": "n04" },
-        "to": { "node": "n02", "port": "p" },
+        "from": { "node": "n02", "port": "p" },
+        "to": { "node": "n04" },
         "route": [],
         "label": "sprung weight"
       },
@@ -315,8 +315,8 @@
       {
         "id": "b07",
         "kind": "bond",
-        "from": { "node": "n08" },
-        "to": { "node": "n03", "port": "p" },
+        "from": { "node": "n03", "port": "p" },
+        "to": { "node": "n08" },
         "route": [],
         "label": "unsprung weight"
       },

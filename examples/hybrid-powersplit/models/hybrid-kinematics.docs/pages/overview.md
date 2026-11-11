@@ -4,7 +4,7 @@ The THS-II planetary set alone. A 60 N·m torque step at 0.5 s on the carrier (t
 drives the sun and the ring against viscous loads: 0.05 N·m·s/rad on the sun (inertia 0.02
 kg·m²) and 0.4 N·m·s/rad on the ring (0.2 kg·m²).
 
-![Diagram: the bond-graph planetary (top) and the stdlib PlanetaryGear twin (bottom)|900](assets/ef7514243b38.png)
+![Diagram: the bond-graph planetary (top) and the stdlib PlanetaryGear twin (bottom)|900](assets/57ee6b6323e6.png)
 
 Blocks: [Engine](block:Engine) (MSe, fed by [EngineStep](block:EngineStep)) on the
 [Carrier](block:Carrier) 1-junction, the [Planetary](block:Planetary) subsystem (TFc, TFs, TFr

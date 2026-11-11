@@ -117,7 +117,7 @@ function _um_c_model(name, fixed_ref, fixed_port)
         _um_node("n2", "J1", Dict{String,Any}("junction" => "1")),
         _um_node("n3", "C1", _um_ref("stdlib:bondgraph/C")),
     ], Any[
-        _um_conn("c1", "bond", "n1", fixed_port, "n2"),
+        _um_conn("c1", "bond", "n2", nothing, "n1", fixed_port),   # a fixed end is `in` (O20)
         _um_conn("c2", "bond", "n2", nothing, "n3", "p"),
     ])
 end

@@ -1,6 +1,6 @@
 # Model and bond graph
 
-![The model canvas|1000](assets/3305e5afef24.png)
+![The model canvas|1000](assets/ce503a5becee.png)
 
 Three rigid bodies, two joints, a rotor and a contact, all library blocks:
 

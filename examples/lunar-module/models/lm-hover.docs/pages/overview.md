@@ -8,7 +8,7 @@ The landing phase (P66, "rate of descent") was flown by hand: each click of the 
 
 The guidance is the descent model's P66 loop: the throttle holds the commanded descent rate, and the attitude tilts the thrust to reach the commanded forward speed. The engine stops at touchdown or when the usable propellant is gone.
 
-![The model canvas|900](assets/f7dae399b9ae.png)
+![The model canvas|900](assets/d43abd91e45b.png)
 
 | block | role |
 | --- | --- |

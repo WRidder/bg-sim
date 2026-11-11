@@ -2,7 +2,7 @@
 # `GearWithBacklash`, a composite through `@components`), through the real pipeline.
 #
 # Model (the J2.6 acceptance structure, now on the stdlib composite): an `Sf` flow source
-# drives the input at -0.3 rad/s, the composite's `b` drives an `Inertia` (J = 0.01), whose
+# drives the input at 0.3 rad/s, the composite's `b` drives an `Inertia` (J = 0.01), whose
 # other side is a `FixedShaft`. The gear is 10:1 with eta = 0.9, so the output side starts at
 # 0.03 rad/s, crosses the 0.01 rad backlash and makes contact.
 #
@@ -28,7 +28,7 @@ function gwb_torque(phi, w; k = GWB_K, d = GWB_D, gap = GWB_GAP)
 end
 
 @testset "golden: GearWithBacklash" begin
-    f = -0.3
+    f = 0.3
     model = bg_model(
         "GearWithBacklashDrive",
         [
@@ -73,6 +73,6 @@ end
     @test isapprox(columns["G1/gear/a.e"][i], torque[i] / (10.0 * 0.9);
         rtol = 1.0e-6, atol = 1.0e-9)
     # The input speed is held; the output speed is the ratio times it while in contact.
-    @test isapprox(columns["G1/gear/a.f"][1], -f; rtol = 1e-12)
-    @test isapprox(columns["G1/gear/b.f"][1], -f / 10.0; rtol = 1e-12)
+    @test isapprox(columns["G1/gear/a.f"][1], f; rtol = 1e-12)
+    @test isapprox(columns["G1/gear/b.f"][1], f / 10.0; rtol = 1e-12)
 end

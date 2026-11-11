@@ -18,7 +18,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "f": "-v_b"
+          "f": "v_b"
         },
         "constants": {},
         "starts": {},
@@ -381,7 +381,7 @@
                   "rotation": 0,
                   "flipX": false,
                   "params": {
-                    "f": "-v_b"
+                    "f": "v_b"
                   },
                   "constants": {},
                   "starts": {},

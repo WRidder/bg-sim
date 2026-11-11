@@ -25,7 +25,8 @@
 # Statement-level items in `@equations` / `@initial` are `Equation`, `IfEquation` or
 # `ForEquation`. `@discrete` bodies hold `Assign`, `IfStatement`, `ForStatement` and
 # `CallStatement` nodes; an `@events` entry is one `EventDecl`, and a `@discrete` scope is one
-# `DiscreteScope`. Declarations are `Decl`; `@causality` entries are `CausalityDecl`.
+# `DiscreteScope`. Declarations are `Decl`; `@causality` entries are `CausalityDecl`, and
+# `@orientation` entries are `OrientationDecl`.
 
 """    Expr
 
@@ -565,6 +566,34 @@ causality_value(c::CausalityDecl) = c.value
 source_range(c::CausalityDecl) = c.range
 
 # ---------------------------------------------------------------------------------------
+# Orientation (plan/PORT_ORIENTATION_PLAN.md, O2 and O13)
+# ---------------------------------------------------------------------------------------
+
+"""
+    OrientationDecl(ports, kind, range)
+
+One `@orientation` entry: the bond direction a power port expects.
+
+| written | `ports` | `kind` | meaning |
+| --- | --- | --- | --- |
+| `p => :in` | `[:p]` | `:in` | the bond at `p` ends here (its head, `to`, is at `p`) |
+| `p => :out` | `[:p]` | `:out` | the bond at `p` starts here (its tail, `from`, is at `p`) |
+| `(a, b) => :through` | `[:a, :b]` | `:through` | of the two bonds, one arrives and the other leaves |
+
+A power port named in no entry is `any`: either direction. The compiler enforces the entries
+on every bond (E114); wires and signal connections are never checked.
+"""
+struct OrientationDecl
+    ports::Vector{Symbol}
+    kind::Symbol
+    range::SourceRange
+end
+
+orientation_ports(o::OrientationDecl) = o.ports
+orientation_kind(o::OrientationDecl) = o.kind
+source_range(o::OrientationDecl) = o.range
+
+# ---------------------------------------------------------------------------------------
 # Textual subsystems: @components / @connections (J2.6, decision D5)
 # ---------------------------------------------------------------------------------------
 
@@ -670,14 +699,15 @@ source_range(o::ObservationDecl) = o.range
 
 The result of [`parse_block`](@ref): the block's name, its reference and source text, its
 declarations per scope, its equations (continuous and initial), its `@discrete` scopes and
-`@events` entries, its causality declarations, its `@components` / `@connections` textual
-subsystem (J2.6), and the diagnostics the parser itself produced (E000 and structural E001).
-`check_block` adds the semantic checks.
+`@events` entries, its causality and orientation declarations, its `@components` /
+`@connections` textual subsystem (J2.6), and the diagnostics the parser itself produced (E000
+and structural E001). `check_block` adds the semantic checks.
 
 Accessors (do not read the fields directly):
 [`block_name`](@ref), [`block_ref`](@ref), [`block_source`](@ref), [`scopes`](@ref),
 [`declarations`](@ref), [`equations`](@ref), [`initial_equations`](@ref),
-[`discrete_scopes`](@ref), [`events`](@ref), [`causality`](@ref), [`ports`](@ref),
+[`discrete_scopes`](@ref), [`events`](@ref), [`causality`](@ref), [`orientation`](@ref),
+[`port_orientation`](@ref), [`ports`](@ref),
 [`components`](@ref), [`connections`](@ref),
 [`block_range`](@ref), [`block_filename`](@ref), [`block_diagnostics`](@ref).
 """
@@ -693,6 +723,7 @@ struct ParsedBlock
     discrete_items::Vector{Any}
     event_items::Vector{Any}
     causality_items::Vector{CausalityDecl}
+    orientation_items::Vector{OrientationDecl}
     component_items::Vector{ComponentDecl}
     connection_items::Vector{ConnectDecl}
     observation_items::Vector{ObservationDecl}
@@ -748,6 +779,23 @@ events(pb::ParsedBlock) = copy(pb.event_items)
 
 The `@causality` entries in source order."""
 causality(pb::ParsedBlock) = copy(pb.causality_items)
+
+"""    orientation(pb) -> Vector{OrientationDecl}
+
+The `@orientation` entries in source order; empty for a block that declares none."""
+orientation(pb::ParsedBlock) = copy(pb.orientation_items)
+
+"""    port_orientation(pb, port::Symbol) -> Symbol
+
+The declared orientation of one power port: `:in`, `:out`, `:through` (the port is one side
+of a `(a, b) => :through` pair) or `:any` when no `@orientation` entry names it. The first
+entry that names the port wins; `check_block` reports a port named twice (E003)."""
+function port_orientation(pb::ParsedBlock, port::Symbol)
+    for o in pb.orientation_items
+        port in o.ports && return o.kind
+    end
+    return :any
+end
 
 """    ports(pb) -> Vector{Decl}
 
@@ -875,6 +923,11 @@ end
 function Base.show(io::IO, c::CausalityDecl)
     print(io, '(', join(string.(c.ports), ", "), ") => ", c.kind)
     c.value === nothing || print(io, '/', c.value)
+end
+function Base.show(io::IO, o::OrientationDecl)
+    # The source form: `p => :in`, `(a, b) => :through`.
+    lhs = length(o.ports) == 1 ? string(o.ports[1]) : "(" * join(string.(o.ports), ", ") * ")"
+    print(io, lhs, " => :", o.kind)
 end
 
 # ---------------------------------------------------------------------------------------

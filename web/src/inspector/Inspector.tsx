@@ -232,6 +232,7 @@ export function Inspector({ diagnostics }: InspectorProps) {
             <ConnectionInspector
               connection={connection}
               nodes={diagram.nodes}
+              connections={diagram.connections}
               index={index}
               frames={current ? liveFrames : {}}
               domains={current ? liveDomains : {}}

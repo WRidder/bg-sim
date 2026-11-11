@@ -27,4 +27,8 @@
         a.e ~ -b.e / n + T_loss
     end
     @causality (a, b) => :transformer
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

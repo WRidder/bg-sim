@@ -354,7 +354,7 @@
         },
         "constants": {},
         "starts": {
-          "q": "9.84127983688316e-06"
+          "q": "-9.84127983688316e-06"
         },
         "ui": {
           "showLabel": true,
@@ -678,11 +678,11 @@
         "id": "b007",
         "kind": "bond",
         "from": {
-          "node": "n003",
-          "port": "drive1"
+          "node": "n013"
         },
         "to": {
-          "node": "n013"
+          "node": "n003",
+          "port": "drive1"
         },
         "label": null
       },
@@ -714,11 +714,11 @@
         "id": "b010",
         "kind": "bond",
         "from": {
-          "node": "n003",
-          "port": "drive2"
+          "node": "n016"
         },
         "to": {
-          "node": "n016"
+          "node": "n003",
+          "port": "drive2"
         },
         "label": null
       },

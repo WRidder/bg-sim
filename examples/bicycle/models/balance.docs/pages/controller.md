@@ -1,6 +1,6 @@
 # Controller
 
-![The model canvas: the 3D bicycle and the controller|1000](assets/ec9f6ee901b6.png)
+![The model canvas: the 3D bicycle and the controller|1000](assets/d55e04a33c7c.png)
 
 A state feedback on the steer torque, designed by LQR on the [linear model](model:balance-linear) at 3 m/s (`design/design.py`):
 

@@ -319,7 +319,7 @@ function _ja_arm_model(arm, drives; kk, zeta = 0.7, q0, qdd0 = zeros(length(arm)
             push!(nodes, bg_node("t$i", "T$i", bg_ref("stdlib:multibond/FixedTransform3DNeutral");
                 params = _ja_posepar(qi, pi_)))
             bond!("t$i", "a", jn, "parent")
-            bond!("t$i", "b", "bj$(i - 1)", nothing)
+            bond!("bj$(i - 1)", nothing, "t$i", "b")   # the mount is `through` (WP-O3a)
         else
             bond!("mount", "a", jn, "parent")
         end

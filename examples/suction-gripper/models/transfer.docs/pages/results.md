@@ -1,6 +1,6 @@
 # Results
 
-![The default transfer: acceleration, cup utilisation, vacuum, parcel position|900](assets/c0222862a591.png)
+![The default transfer: acceleration, cup utilisation, vacuum, parcel position|900](assets/28730b81cae0.png)
 
 ## Simulation against the hand calculation
 

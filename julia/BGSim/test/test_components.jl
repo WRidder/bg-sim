@@ -125,7 +125,7 @@ function _comp_torque(phi, w; k = _COMP_K, d = _COMP_D, gap = _COMP_GAP)
 end
 
 """A driven `GearWithBacklash` model: a flow source at the input, an inertia at the output."""
-function _comp_drive(g1block; f = -0.3)
+function _comp_drive(g1block; f = 0.3)
     return _comp_model(
         "GearDrive",
         Any[
@@ -190,7 +190,7 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
         @test isempty(gwb.interface.parameters)
         @test isempty(gwb.interface.variables)
         pb = gwb.ast
-        @test scopes(pb) == [:ports, :components, :connections]
+        @test scopes(pb) == [:ports, :orientation, :components, :connections]
 
         comps = components(pb)
         @test [component_name(c) for c in comps] == [:gear, :play]
@@ -563,7 +563,7 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
             end
         end
         """)
-        fmw = _comp_flat(_comp_drive(wrap; f = -0.3))
+        fmw = _comp_flat(_comp_drive(wrap; f = 0.3))
         @test isempty(fmw.diagnostics)
         wid = Set(v.id for v in fmw.variables)
         @test "G1/inner/gear/a.e" in wid
@@ -626,7 +626,7 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
             "ConstCase",
             Any[
                 _comp_node("n1", "Sf1", _comp_ref("stdlib:bondgraph/Sf");
-                    params = Dict("f" => "-0.4")),
+                    params = Dict("f" => "0.4")),
                 _comp_node("n2", "W1", const_case),
                 _comp_node("n3", "J1", _comp_ref("stdlib:rotation/Inertia");
                     params = Dict("J" => "0.01")),
@@ -659,7 +659,7 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
                         params = Dict("k" => "1e4", "d" => "5.0", "gap" => "0.01"),
                         starts = Dict("phi" => string(phi0))),
                     _comp_node("n3", "SfB", _comp_ref("stdlib:bondgraph/Sf");
-                        params = Dict("f" => string(fb))),
+                        params = Dict("f" => string(-fb))),
                 ],
                 Any[
                     _comp_conn("c1", "bond", "n1", "p", "n2", "a"),
@@ -685,7 +685,8 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
             @test cols["P1/T"][1] == expected
             @test cols["P1/a.e"][1] == expected
             @test cols["P1/b.e"][1] == -expected
-            # w = a.f - b.f = 0 - (-fb) = fb, so `phi` ramps at `fb` (and stands still for 0).
+            # SfB is set to -fb, so it delivers b.f = -fb (O15); w = a.f - b.f = fb, and `phi`
+            # ramps at `fb` (and stands still for 0).
             @test isapprox(cols["P1/phi"][end], phi0 + fb * 0.01; atol = 1e-12)
             for i in eachindex(cols["time"])
                 @test cols["P1/T"][i] ==

@@ -20,7 +20,7 @@ environment can draw a parameter set per episode. The lumped link masses, centre
 friction of the joints, the carriage and the motor, the cable springs, commutation ripple and cogging. Sensor
 quantisation, noise and the loop delay stay in the environment.
 
-![The plant: the bond graph, the export inputs and outputs, the realism forces|900](assets/7fb96e577903.png)
+![The plant: the bond graph, the export inputs and outputs, the realism forces|900](assets/ac9db4d18e34.png)
 
 **Dashboard.** The FMU's view: cart position and velocity, the joint encoder angles $q_1$, $q_2$ (rad),
 voltage and current; plots of the encoders, the cart, voltage and current, and the realism forces. No monitor

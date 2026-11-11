@@ -20,4 +20,5 @@
         T ~ n_faces * r_eff * max(f_n, 0.0) * (mu_c + (mu_s - mu_c) * exp(-abs(a.f) / w_s)) * s
         a.e ~ T
     end
+    @orientation a => :in
 end

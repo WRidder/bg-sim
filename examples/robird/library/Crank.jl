@@ -55,4 +55,9 @@
         phi_kin ~ Phi * (sin(psi + psi0) + h2 * sin(2.0 * (psi + psi0) + ph2))
         dphi_out ~ dphi
     end
+    @orientation begin
+        a => :in
+        bL => :in
+        bR => :in
+    end
 end

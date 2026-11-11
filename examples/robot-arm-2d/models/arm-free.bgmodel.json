@@ -23,6 +23,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n02",
         "name": "Joint1",
         "block": {
@@ -89,6 +90,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n05",
         "name": "Body1",
         "block": {
@@ -110,6 +112,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n07",
         "name": "Joint2",
         "block": {
@@ -159,6 +162,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n09",
         "name": "Body2",
         "block": {
@@ -450,11 +454,11 @@
         "id": "c05",
         "kind": "bond",
         "from": {
-          "node": "n07",
-          "port": "parent"
+          "node": "n04"
         },
         "to": {
-          "node": "n04"
+          "node": "n07",
+          "port": "parent"
         },
         "route": [],
         "label": null

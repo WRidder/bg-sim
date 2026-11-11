@@ -18,6 +18,7 @@
 
 import type { DomainName, ValueType } from "../contracts/catalog";
 import type { ConnectionKind, Model } from "../contracts/model";
+import { orientBond, type PortOrientation } from "./portOrientation";
 
 export type PortKind = "power" | "signal";
 export type SignalDirection = "input" | "output";
@@ -37,6 +38,8 @@ export interface PortDescriptor {
   type: ValueType | null;
   size: number[];
   unit: string | null;
+  /** The bond direction a power port declares; absent is `any` (see portOrientation.ts). */
+  orientation?: PortOrientation;
 }
 
 export type ConnectionCheck =
@@ -270,6 +273,15 @@ export function checkConnection(doc: Model, a: PortDescriptor, b: PortDescriptor
 
   const domain: DomainName =
     a.domain === "Generic" ? b.domain : b.domain === "Generic" ? a.domain : a.domain;
+  // A bond has a direction and the orientations of its ports decide it (plan O8): whichever end the
+  // user started at, the bond runs out -> in. A wire has no direction and is not checked.
+  if (kind === "bond") {
+    const oriented = orientBond(doc, a, b);
+    if (!oriented.ok) {
+      return { ok: false, reason: oriented.reason };
+    }
+    return { ok: true, kind, from: oriented.from, to: oriented.to, domain };
+  }
   return { ok: true, kind, from: a, to: b, domain };
 }
 

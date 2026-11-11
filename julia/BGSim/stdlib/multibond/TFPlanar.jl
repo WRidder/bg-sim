@@ -31,4 +31,5 @@
         b.e[3] ~ -n[3] * a.e[3]
     end
     @causality (a, b) => :transformer
+    @orientation (a, b) => :through
 end

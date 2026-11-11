@@ -13,6 +13,6 @@ The two panels next to the pier are X-braced, so the truss is **statically indet
 - Move **Lorry mass** to 20000 kg: bar 27 holds at 77 % of its buckling load. Move **Diagonal 27: buckling capacity** to 1.0 for the design bridge.
 - **3D view**: bars are coloured by their utilisation (blue compression, red tension), a failed bar is drawn snapped, and the roller's seats turn red if it rolls off.
 
-![3D view: bar 27 has buckled, the lorry crosses the pier|700](assets/8ff78c38677f.png)
+![3D view: bar 27 has buckled, the lorry crosses the pier|700](assets/45bee631a496.png)
 
 Continue with [the structure](page:structure) and [the results](page:results). The member failure and the roller seat work as in `bridge-failure`.

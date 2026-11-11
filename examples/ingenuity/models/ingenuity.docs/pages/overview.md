@@ -2,11 +2,11 @@
 
 Ingenuity takes off at 1 s, climbs at 1 m/s to 3 m, flies 5 m east in 8 s, turns 90 deg, descends at 1 m/s and lands on the yellow pad, all at Flight One's density (0.0165 kg/m³) and rotor speed (2537 rpm). See [the vehicle](project:vehicle) for the model and [the validation](project:validation) for the published data.
 
-![The model canvas|900](assets/fdfad88b7e16.png)
+![The model canvas|900](assets/bd40f5d1e7f6.png)
 
 ![Climbing: t = 4 s|300](assets/8427e6b2f0f0.png) ![Flying east: t = 13 s|300](assets/2a92bdedffc0.png) ![Turning: t = 19 s|300](assets/59c71238fa90.png)
 
-![The flight|900](assets/b4a0e5373b0f.png)
+![The flight|900](assets/809c2d1879b5.png)
 
 ## What you see
 

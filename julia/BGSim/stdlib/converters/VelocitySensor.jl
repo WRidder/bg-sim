@@ -6,4 +6,5 @@
         y ~ a.f
     end
     @causality a => (:effort_out, :fixed)
+    @orientation a => :in
 end

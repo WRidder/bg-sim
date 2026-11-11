@@ -75,12 +75,51 @@ The standard `R` is linear. A nonlinear resistor is a small library block with o
     end
     @equations p.f ~ -a * p.e + b * p.e^3
     @causality p => :flow_out
+    @orientation p => :in
 end
 ```
+
+The `@orientation` line is required for a block that is bonded to a junction. See **Port orientation** below.
 
 `:flow_out` means the element sets the flow (the conductance form, `i = g(v)`). `:effort_out` means it sets the effort (the resistance form, `F = F(w)`, such as a friction contact driven by a slip velocity). The **van-der-pol** example (in the Example gallery) builds Van der Pol oscillators this way. One is a tunnel-diode LC oscillator, the other a block on a spring riding a belt with a falling friction curve.
 
 Units are written as attributes, for example `R::Real = 1.0, [unit = "Ohm"]`, and are checked for consistency. A scaled unit (`deg`, `%`, `mm`, `rpm`) needs an explicit conversion where it meets the SI unit, such as `q_max*deg` (see [Parameters](page:parameters)). The full language is described in the modeling language spec in the repository (`spec/`).
+
+### Port orientation
+
+Every power port that a bond reaches must say which way the bond runs. A bond to a port without a declaration is the error `E114` ("declares no orientation"), and the editor refuses the bond. Declare the orientation with `@orientation`, on one line or in a `begin … end` block, next to `@causality`:
+
+```julia
+@orientation p => :in                 # the bond ends at p
+@orientation begin
+    s => :out                         # the bond starts at s
+    (a, b) => :through                # one of the two bonds arrives, the other leaves
+end
+```
+
+To choose, ask which way power flows in the equations you wrote. Port variables count positive into the block.
+
+| Kind | Use it for | The block |
+| --- | --- | --- |
+| `:in` | anything that sees the junction's flow as its own: storage, dissipation, a field or contact, a detector or sensor, a load | takes the bond from a junction |
+| `:out` | a source that pushes on the junction | starts the bond toward a junction |
+| `:through` | a pass-through pair such as a transformer, a gyrator, a mount or a series sensor, whose equations work whichever of the two bonds arrives | one bond arrives and the other leaves |
+
+A port that sits on a mechanical body follows the same rule, and the body's flow is its true twist: a contact or a damper there is `in`, a wrench source is `out`. The standard library blocks declare their orientation already; the table in **Bond direction and port orientation** on the [Building models](page:building-models) page lists them. A port whose block declares nothing can be wired but not bonded, so give every power port of a project library block an entry if you want to bond it.
+
+A small example, a constant force source for a translation junction. The force acts on whatever the bond points at, so the port is `out`:
+
+```julia
+@block ConstForce begin
+    @ports p::Power{Translation}
+    @parameters F::Real = 1.0, [unit = "N"]
+    @equations p.e ~ F
+    @causality p => (:effort_out, :fixed)
+    @orientation p => :out
+end
+```
+
+Write `p.e ~ F` for an `out` effort source and `p.f ~ -f` for an `out` flow source: the junction at the head of the bond then receives `+F` or `+f`. A block that declares `in` writes its law for the junction's flow, as the `TunnelDiode` above does. If a bond is refused with `E114`, the fix is in the diagram (reverse the bond, or put a junction in between), unless the declaration itself is wrong for your equations.
 
 ### Vectors, matrices and linear solves
 

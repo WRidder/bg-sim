@@ -5,7 +5,7 @@
     # axial is rigid). It replaces a `RigidBody3D`: the beam's own mass and rotational inertia
     # are in it. The physics, the modal bond graph and the equations are in `ModalBeam3D`;
     # this composite gives each end its own 1-junction, so the ends bond like a body port
-    # (a joint child, a transform or another body attach directly, in any bond direction).
+    # (a joint child, a transform or another body attach directly).
     #
     #   A (1-junction) ── ModalBeam3D.pa      ModalBeam3D.pb ── B (1-junction)
     #                            gA ──► gravity, pose, poseB
@@ -84,9 +84,9 @@
     end
     @connections begin
         connect(A, nodeA)
-        connect(beam.pa, nodeA)
+        connect(nodeA, beam.pa)
         connect(B, nodeB)
-        connect(beam.pb, nodeB)
+        connect(nodeB, beam.pb)
         connect(gA, beam.gA)
         connect(beam.pose, pose)
         connect(beam.poseB, poseB)

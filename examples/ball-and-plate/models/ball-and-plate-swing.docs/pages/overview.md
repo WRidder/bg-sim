@@ -16,6 +16,6 @@ which `design/design.py` integrates for the ball centre h = 15.7 mm above the ax
 agrees with that equation to **0.1 %** at 1, 2, 3 and 4 s. The plate's angular acceleration also
 modulates the normal force by ±0.05 N ([Contact/f_n](signal:Contact/f_n)).
 
-![Plate angle, both positions and the normal force|900](assets/10364fa7b0ad.png)
+![Plate angle, both positions and the normal force|900](assets/01fcdc811718.png)
 
 The rig: [the ball-and-plate rig](project:rig).

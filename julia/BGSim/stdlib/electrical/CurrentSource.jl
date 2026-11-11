@@ -10,4 +10,8 @@
         p.f + n.f ~ 0.0
     end
     @causality p => (:flow_out, :fixed)
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

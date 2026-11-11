@@ -21,6 +21,6 @@
 
 So the wheel rolls: the creep is five orders of magnitude below the speed, and the bond graph follows the exact-rolling reference to 0.27 mm over the 33 m loop. The one systematic difference is the rolling radius, smaller by the static penetration (0.18 mm).
 
-![Slip and contact forces in the mission|1000](assets/87fa580afbf5.png)
+![Slip and contact forces in the mission|1000](assets/b274aa91f4b4.png)
 
 Where the model departs from exact rolling: when the uncontrolled robot (model `free`) nutates after about 3 s, the tyre side-slips (up to 0.05 m/s) and the contact dissipates 1.18 J by 6 s; the reference model cannot show this.

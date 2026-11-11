@@ -7,4 +7,5 @@
         p.f ~ P / i
     end
     @causality p => :flow_out
+    @orientation p => :in
 end

@@ -1,6 +1,6 @@
 # Results
 
-![The demo run|900](assets/036a3fb6f39f.png)
+![The demo run|900](assets/b19d2755123c.png)
 
 | check | bg-sim | reference |
 | --- | --- | --- |

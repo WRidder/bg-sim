@@ -174,12 +174,11 @@ def model() -> dict:
     conns = [
         conn("c1", "bond", "n1", "p", "n2", "parent"),
         conn("c2", "bond", "n2", "child", "n3", "p"),
-        # every bond points into the body it loads (joint.parent -> body, as in the library
-        # examples): body -> joint.parent would hand the parent body the reversed reaction
-        conn("c3", "bond", "n4", "parent", "n3", "p"),
+        # a joint's parent port is `in` (body -> joint.parent), its child port `out`
+        conn("c3", "bond", "n3", "p", "n4", "parent"),
         conn("c4", "bond", "n4", "child", "n5", "a"),
         conn("c5", "bond", "n5", "b", "n6", "A"),
-        conn("c6", "bond", "n7", "parent", "n6", "B"),
+        conn("c6", "bond", "n6", "B", "n7", "parent"),
         conn("c7", "bond", "n7", "child", "n8", "p"),
         conn("c8", "wire", "n9", "a", "n10", "a"),
         conn("c9", "wire", "n10", "b", "n2", "drive"),

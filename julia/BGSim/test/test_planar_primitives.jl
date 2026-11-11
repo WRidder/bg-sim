@@ -581,7 +581,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         data = _mb5_columns(dir)
         e = _mb5_at(data, "R/p.e")
         f = _mb5_at(data, "R/p.f")
-        @test isapprox(f, -v; atol = 1e-12)          # the source bond flips the flow
+        @test isapprox(f, v; atol = 1e-12)           # SfPlanar delivers +v at its tail (O15)
         @test isapprox(e, b .* f; atol = 1e-12)
         power = sum(e[j] * f[j] for j in 1:3)
         @test power ≈ sum(b[j] * f[j]^2 for j in 1:3) atol = 1e-14
@@ -650,8 +650,9 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         resultf, dirf = _mb5_run(docf)
         @test resultf.status == "done"
         dataf = _mb5_columns(dirf)
-        @test isapprox(_mb5_at(dataf, "S/p.f"), collect(v); atol = 1e-13)
-        @test isapprox(_mb5_at(dataf, "D/y"), -collect(v); atol = 1e-13)
+        # MSfPlanar delivers `(vr, vx, vy)` at its tail (O15): `p.f = -v`, the sensor reads +v.
+        @test isapprox(_mb5_at(dataf, "S/p.f"), -collect(v); atol = 1e-13)
+        @test isapprox(_mb5_at(dataf, "D/y"), collect(v); atol = 1e-13)
         @test all(_mb5_at(dataf, "S/p.e") .== 0.0)
     end
 
@@ -681,11 +682,11 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         result, dir = _mb5_run(doc)
         @test result.status == "done"
         data = _mb5_columns(dir)
-        # FIX-MB-4: the inputs are the **physical external wrench** `W_ext`; the element is an
-        # effort source, so its port effort is `-W_ext` (the wrench it supplies to the
-        # junction). The detector therefore reads `-w`.
-        @test isapprox(_mb5_at(data, "E/p.e"), -collect(w); atol = 1e-13)
-        @test isapprox(_mb5_at(data, "D/y"), -collect(w); atol = 1e-14)
+        # FIX-MB-4: the inputs are the **physical external wrench** `W_ext`. The element is an
+        # `out` effort source and its port effort is `W_ext` itself (WP-O3a), so the detector
+        # reads `w`.
+        @test isapprox(_mb5_at(data, "E/p.e"), collect(w); atol = 1e-13)
+        @test isapprox(_mb5_at(data, "D/y"), collect(w); atol = 1e-14)
         @test all(_mb5_at(data, "E/p.f") .== 0.0)
 
         # The sign convention: the body on the 1-junction feels the physical wrench, so
@@ -711,7 +712,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 _mb5_conn("c2", "signal", "n2", "y", "n4", "wx"),
                 _mb5_conn("c3", "signal", "n3", "y", "n4", "wy"),
                 _mb5_conn("c4", "bond", "n4", "p", "n5"),
-                _mb5_conn("c5", "bond", "n6", "p", "n5"),
+                _mb5_conn("c5", "bond", "n5", nothing, "n6", "p"),   # the inertia is `in`
             ];
             t_end = 0.1, points = 11,
         )
@@ -749,12 +750,16 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                     _mb5_node("n4", "B", _mb5_ref("stdlib:multibond/SfPlanar")),
                     _mb5_node("n5", "T", _mb5_ref("stdlib:multibond/TFPlanar");
                         params = Dict{String,Any}("n" => "[$(n[1]), $(n[2]), $(n[3])]")),
+                    _mb5_node("n9", "Jb", Dict{String,Any}("junction" => "1")),
                 ],
                 Any[
                     _mb5_conn("c1", "signal", "n1", "y", "n3", "u"),
                     _mb5_conn("c2", "signal", "n2", "y", "n4", "u"),
                     _mb5_conn("c3", "bond", "n3", "p", "n5", "a"),
-                    _mb5_conn("c4", "bond", "n5", "b", "n4", "p"),
+                    # `(a, b)` is a `through` pair and SfPlanar is `out`: `b` and the source
+                    # meet on a 1-junction, so `b.f = -F` as on the old direct bond.
+                    _mb5_conn("c4", "bond", "n5", "b", "n9"),
+                    _mb5_conn("c8", "bond", "n4", "p", "n9"),
                 ],
             )
             @test isempty(_mb5_errors(_mb5_check(doc)))
@@ -805,7 +810,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 Any[
                     _mb5_conn("c1", "signal", "n1", "y", "n2", "u"),
                     _mb5_conn("c2", "bond", "n2", "p", "n3", "a"),
-                    _mb5_conn("c3", "bond", "n4", "p", "n3", "b"),
+                    _mb5_conn("c3", "bond", "n3", "b", "n4", "p"),   # the R load is `in`
                 ],
             )
             @test isempty(_mb5_errors(_mb5_check(doc)))
@@ -851,13 +856,16 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                     _mb5_node("n4", "A", _mb5_ref("stdlib:multibond/SePlanar")),
                     _mb5_node("n5", "B", _mb5_ref("stdlib:multibond/SfPlanar")),
                     _mb5_node("n6", "T", _mb5_ref("stdlib:multibond/MTFPlanar")),
+                    _mb5_node("n9", "Jb", Dict{String,Any}("junction" => "1")),
                 ],
                 Any[
                     _mb5_conn("c1", "signal", "n1", "y", "n4", "u"),
                     _mb5_conn("c2", "signal", "n2", "y", "n5", "u"),
                     _mb5_conn("c3", "signal", "n3", "y", "n6", "u"),
                     _mb5_conn("c4", "bond", "n4", "p", "n6", "a"),
-                    _mb5_conn("c5", "bond", "n6", "b", "n5", "p"),
+                    # `b` and the `out` flow source meet on a 1-junction (b.f = -F as before).
+                    _mb5_conn("c5", "bond", "n6", "b", "n9"),
+                    _mb5_conn("c8", "bond", "n5", "p", "n9"),
                 ],
             )
             @test isempty(_mb5_errors(_mb5_check(doc)))
@@ -904,7 +912,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 _mb5_conn("c1", "signal", "n1", "y", "n3", "u"),
                 _mb5_conn("c2", "signal", "n2", "G", "n4", "G"),
                 _mb5_conn("c3", "bond", "n3", "p", "n4", "a"),
-                _mb5_conn("c4", "bond", "n5", "p", "n4", "b"),
+                _mb5_conn("c4", "bond", "n4", "b", "n5", "p"),   # the R load is `in`
             ],
         )
         @test isempty(_mb5_errors(_mb5_check(doc)))
@@ -964,13 +972,16 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                         _mb5_node("n3", "A", _mb5_ref("stdlib:multibond/SePlanar")),
                         _mb5_node("n4", "B", _mb5_ref("stdlib:multibond/SfPlanar")),
                         _mb5_node("n5", "T", _mb5_ref(block_ref); params = params),
+                        _mb5_node("n9", "Jb", Dict{String,Any}("junction" => "1")),
                         extra_nodes...,
                     ],
                     Any[
                         _mb5_conn("c1", "signal", "n1", "y", "n3", "u"),
                         _mb5_conn("c2", "signal", "n2", "y", "n4", "u"),
                         _mb5_conn("c3", "bond", "n3", "p", "n5", "a"),
-                        _mb5_conn("c4", "bond", "n5", "b", "n4", "p"),
+                        # `b` and the `out` flow source meet on a 1-junction (b.f = -F).
+                        _mb5_conn("c4", "bond", "n5", "b", "n9"),
+                        _mb5_conn("c8", "bond", "n4", "p", "n9"),
                         extra_conns...,
                     ],
                 )
@@ -1015,13 +1026,16 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 _mb5_node("n4", "A", _mb5_ref("stdlib:multibond/SePlanar")),
                 _mb5_node("n5", "B", _mb5_ref("stdlib:multibond/SfPlanar")),
                 _mb5_node("n6", "T", _mb5_ref("stdlib:multibond/MTFPlanar")),
+                _mb5_node("n9", "Jb", Dict{String,Any}("junction" => "1")),
             ],
             Any[
                 _mb5_conn("c1", "signal", "n1", "y", "n4", "u"),
                 _mb5_conn("c2", "signal", "n2", "y", "n5", "u"),
                 _mb5_conn("c3", "signal", "n3", "y", "n6", "u"),
                 _mb5_conn("c4", "bond", "n4", "p", "n6", "a"),
-                _mb5_conn("c5", "bond", "n6", "b", "n5", "p"),
+                # `b` and the `out` flow source meet on a 1-junction (b.f = -F as before).
+                _mb5_conn("c5", "bond", "n6", "b", "n9"),
+                _mb5_conn("c8", "bond", "n5", "p", "n9"),
             ];
             t_end = 1.0, points = 1001,
         )
@@ -1078,7 +1092,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 _mb5_conn("c1", "signal", "n1", "y", "n3", "u"),
                 _mb5_conn("c2", "signal", "n2", "G", "n4", "G"),
                 _mb5_conn("c3", "bond", "n3", "p", "n4", "a"),
-                _mb5_conn("c4", "bond", "n5", "p", "n4", "b"),
+                _mb5_conn("c4", "bond", "n4", "b", "n5", "p"),   # the R load is `in`
             ];
             t_end = 1.5, points = 1501,
         )
@@ -1109,6 +1123,9 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         # `g = (theta, x, y)` is a signal input, so the adjoint itself changes every step.
         # An inertia is driven through the transform: `dP/dt = -b.e = -Ad(g(t))^T E`, which is
         # integrated independently (RK4) from the analytic `g(t)` and compared to the run.
+        # The inertia is `in`, so its bond leaves the junction (WP-O3a) and it sees the
+        # junction flow and effort with the opposite sign of the old element-to-junction bond:
+        # `I/P` is the negative of the `P` below, and its start is `-P0`.
         g1, g2, g3, w = 0.6, 0.15, -0.2, 1.7
         E = [0.5, -0.8, 1.1]
         P0 = [0.03, -0.02, 0.05]
@@ -1128,14 +1145,14 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 _mb5_node("n6", "I", _mb5_ref("stdlib:multibond/IPlanar");
                     params = Dict{String,Any}("J" => string(J), "m" => string(m)),
                     starts = Dict{String,Any}("P" =>
-                        "[$(P0[1]), $(P0[2]), $(P0[3])]")),
+                        "[$(-P0[1]), $(-P0[2]), $(-P0[3])]")),
             ],
             Any[
                 _mb5_conn("c1", "signal", "n1", "y", "n4", "g"),
                 _mb5_conn("c2", "signal", "n2", "y", "n3", "u"),
                 _mb5_conn("c3", "bond", "n3", "p", "n4", "a"),
                 _mb5_conn("c4", "bond", "n4", "b", "n5"),
-                _mb5_conn("c5", "bond", "n6", "p", "n5"),
+                _mb5_conn("c5", "bond", "n5", nothing, "n6", "p"),
             ];
             t_end = 1.0, points = 1001,
         )
@@ -1147,7 +1164,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         @test run.status == "done"
         data = _mb5_columns(dir)
         t = data["time"]
-        P = [data["I/P[$k]"] for k in 1:3]
+        P = [-data["I/P[$k]"] for k in 1:3]
         worst = 0.0
         for i in (1, 250, 500, 1000)
             ti = t[i]
@@ -1202,6 +1219,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 return """
                 @block $name begin
                     @ports p::Power{Planar}, [frame = "$frame"]
+                    @orientation p => :in
                     @parameters begin
                         f1::Real = 0.0, [unit = "rad/s", description = "Twist 1"]
                         f2::Real = 0.0, [unit = "m/s", description = "Twist 2"]
@@ -1219,6 +1237,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
             return """
             @block $name begin
                 @ports p::Power{Planar}, [frame = "$frame"]
+                @orientation p => :out
                 @parameters begin
                     e1::Real = 0.0, [unit = "N*m", description = "Wrench 1"]
                     e2::Real = 0.0, [unit = "N", description = "Wrench 2"]
@@ -1346,10 +1365,10 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                         "by" => string(b[3]))),
             ],
             Any[
-                _mb5_conn("c1", "bond", "n2", "p", "n1"),
-                _mb5_conn("c2", "bond", "n3", "p", "n1"),
-                _mb5_conn("c3", "bond", "n4", "p", "n1"),
-                _mb5_conn("c4", "bond", "n5", "p", "n1"),
+                _mb5_conn("c1", "bond", "n1", nothing, "n2", "p"),
+                _mb5_conn("c2", "bond", "n1", nothing, "n3", "p"),
+                _mb5_conn("c3", "bond", "n1", nothing, "n4", "p"),
+                _mb5_conn("c4", "bond", "n1", nothing, "n5", "p"),
                 _mb5_conn("c5", "signal", "n2", "Pm", "n3", "P"),
             ];
             t_end = 2.0, points = 2001,
@@ -1362,8 +1381,8 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         @test result.status == "done"
         data = _mb5_columns(dir)
 
-        # All four elements hang off the same 1-junction with a bond from the element to the
-        # junction, so every port sees the inertia's twist V (the junction ties the bond
+        # All four elements hang off the same 1-junction with a bond from the junction to the
+        # element (all four are `in`), so every port sees the inertia's twist V (the junction ties the bond
         # flows; the flip is the same for all four). The junction sums the efforts to zero:
         #   e_I = -(e_Coriolis + e_C + e_R) = ad(V)^T P - k q - b V,
         # because the block's effort is -ad(V)^T P. That is the free body with a spring and
@@ -1434,9 +1453,10 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
     # A closed bond graph: source, C, R, TF, GY, sink
     # -----------------------------------------------------------------------------------
     @testset "closed bond graph: power is conserved" begin
-        # All five junctions bonds run element -> 1-junction, so every port sees the body
-        # twist V. The effort source supplies u, the inertia integrates, the C stores, the R
-        # and the transformer branch dissipate. The chain is TF(n) -> GY(diag g) -> R2, so
+        # The source bonds into the 1-junction and the four `in` elements (inertia, C, R and
+        # the TF's `a`) are reached by bonds leaving it, so every port sees the body twist V.
+        # The effort source supplies u, the inertia integrates, the C stores, the R and the
+        # transformer branch dissipate. The chain is TF(n) -> GY(diag g) -> R2, so
         # the sink R2 is reflected as R_eff = g^2/(n^2 r) on the TF's primary port.
         J, m = 0.02, 1.5
         k = [40.0, 25.0, 30.0]
@@ -1485,12 +1505,12 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 _mb5_conn("c2", "signal", "n2", "y", "n4", "ux"),
                 _mb5_conn("c3", "signal", "n3", "y", "n4", "uy"),
                 _mb5_conn("c4", "bond", "n4", "p", "n5"),
-                _mb5_conn("c5", "bond", "n6", "p", "n5"),
-                _mb5_conn("c6", "bond", "n7", "p", "n5"),
-                _mb5_conn("c7", "bond", "n8", "p", "n5"),
-                _mb5_conn("c8", "bond", "n9", "a", "n5"),
+                _mb5_conn("c5", "bond", "n5", nothing, "n6", "p"),
+                _mb5_conn("c6", "bond", "n5", nothing, "n7", "p"),
+                _mb5_conn("c7", "bond", "n5", nothing, "n8", "p"),
+                _mb5_conn("c8", "bond", "n5", nothing, "n9", "a"),
                 _mb5_conn("c9", "bond", "n9", "b", "n10", "a"),
-                _mb5_conn("c10", "bond", "n11", "p", "n10", "b"),
+                _mb5_conn("c10", "bond", "n10", "b", "n11", "p"),
             ];
             t_end = 2.0, points = 8001,
         )
@@ -1552,11 +1572,12 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         end
 
         # The 1-junction power sum is zero and the global ledger closes: the source power
-        # supplied equals the stored energy plus the two dissipated powers.
-        junction_power = [sum(_mb5_at(data, "S/p.e", i)[j] * V[j][i] +
-                              _mb5_at(data, "B/p.e", i)[j] * V[j][i] +
-                              _mb5_at(data, "C/p.e", i)[j] * V[j][i] +
-                              _mb5_at(data, "R/p.e", i)[j] * V[j][i] +
+        # supplied equals the stored energy plus the two dissipated powers. The source's bond
+        # arrives at the junction and the other four leave it.
+        junction_power = [sum(_mb5_at(data, "S/p.e", i)[j] * V[j][i] -
+                              _mb5_at(data, "B/p.e", i)[j] * V[j][i] -
+                              _mb5_at(data, "C/p.e", i)[j] * V[j][i] -
+                              _mb5_at(data, "R/p.e", i)[j] * V[j][i] -
                               _mb5_at(data, "T/a.e", i)[j] * V[j][i] for j in 1:3)
                           for i in eachindex(t)]
         scale = maximum(abs, junction_power) + 1.0
@@ -1571,7 +1592,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                   sum(_mb5_at(data, "L/p.e", i)[j] * (-_mb5_at(data, "G/b.f", i)[j])
                       for j in 1:3)
                   for i in eachindex(t)]
-        supplied = -_mb5_simpson(t, source_power)
+        supplied = _mb5_simpson(t, source_power)
         stored_change = stored[end] - stored[1]
         used = _mb5_simpson(t, dissip)
         @test isapprox(supplied, stored_change + used; rtol = 1e-6, atol = 1e-9)

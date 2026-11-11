@@ -9,11 +9,11 @@
     # and the friction, and every term of the moving surface (the face's rotation rate and
     # acceleration) enters the ball's motion.
     #
-    # Mounting: bond each body's port (`RigidBody3D.p`, a 1-junction) DIRECTLY to `a` (face
-    # body) and `b` (sphere body), each bond from the body to this element, as for
-    # `RollingDisk`. The port flows are then the NEGATIVE body twists `-[w; v]` (body frames)
-    # and the port efforts are the contact wrenches ON the bodies about their origins, so
-    # `a.e . a.f + b.e . b.f` is the power the contact absorbs. `ga` is the world pose of body
+    # Mounting: each body's port (`RigidBody3D.p`, a 1-junction) attaches DIRECTLY to `a`
+    # (face body) and `b` (sphere body), as for `RollingDisk`. The port flows are the body
+    # twists `[w; v]` (body frames) and the port efforts are minus the contact wrenches on the
+    # bodies about their origins, so `a.e . a.f + b.e . b.f` is the power the contact
+    # absorbs. `ga` is the world pose of body
     # a's frame, `gb` that of the sphere centre (D-MB6 chart, e.g. `ComposePose3D` or
     # `PoseIntegrator3D` outputs).
     #
@@ -205,19 +205,19 @@
         la[1] ~ gb[5] - r * n[1] - ga[5]
         la[2] ~ gb[6] - r * n[2] - ga[6]
         la[3] ~ gb[7] - r * n[3] - ga[7]
-        # World twists (the port flows are the negative body twists).
-        wa[1] ~ -(Ra[1, 1] * a.f[1] + Ra[1, 2] * a.f[2] + Ra[1, 3] * a.f[3])
-        wa[2] ~ -(Ra[2, 1] * a.f[1] + Ra[2, 2] * a.f[2] + Ra[2, 3] * a.f[3])
-        wa[3] ~ -(Ra[3, 1] * a.f[1] + Ra[3, 2] * a.f[2] + Ra[3, 3] * a.f[3])
-        va[1] ~ -(Ra[1, 1] * a.f[4] + Ra[1, 2] * a.f[5] + Ra[1, 3] * a.f[6])
-        va[2] ~ -(Ra[2, 1] * a.f[4] + Ra[2, 2] * a.f[5] + Ra[2, 3] * a.f[6])
-        va[3] ~ -(Ra[3, 1] * a.f[4] + Ra[3, 2] * a.f[5] + Ra[3, 3] * a.f[6])
-        wb[1] ~ -(Rb[1, 1] * b.f[1] + Rb[1, 2] * b.f[2] + Rb[1, 3] * b.f[3])
-        wb[2] ~ -(Rb[2, 1] * b.f[1] + Rb[2, 2] * b.f[2] + Rb[2, 3] * b.f[3])
-        wb[3] ~ -(Rb[3, 1] * b.f[1] + Rb[3, 2] * b.f[2] + Rb[3, 3] * b.f[3])
-        vb[1] ~ -(Rb[1, 1] * b.f[4] + Rb[1, 2] * b.f[5] + Rb[1, 3] * b.f[6])
-        vb[2] ~ -(Rb[2, 1] * b.f[4] + Rb[2, 2] * b.f[5] + Rb[2, 3] * b.f[6])
-        vb[3] ~ -(Rb[3, 1] * b.f[4] + Rb[3, 2] * b.f[5] + Rb[3, 3] * b.f[6])
+        # World twists (the port flows are the body twists).
+        wa[1] ~ Ra[1, 1] * a.f[1] + Ra[1, 2] * a.f[2] + Ra[1, 3] * a.f[3]
+        wa[2] ~ Ra[2, 1] * a.f[1] + Ra[2, 2] * a.f[2] + Ra[2, 3] * a.f[3]
+        wa[3] ~ Ra[3, 1] * a.f[1] + Ra[3, 2] * a.f[2] + Ra[3, 3] * a.f[3]
+        va[1] ~ Ra[1, 1] * a.f[4] + Ra[1, 2] * a.f[5] + Ra[1, 3] * a.f[6]
+        va[2] ~ Ra[2, 1] * a.f[4] + Ra[2, 2] * a.f[5] + Ra[2, 3] * a.f[6]
+        va[3] ~ Ra[3, 1] * a.f[4] + Ra[3, 2] * a.f[5] + Ra[3, 3] * a.f[6]
+        wb[1] ~ Rb[1, 1] * b.f[1] + Rb[1, 2] * b.f[2] + Rb[1, 3] * b.f[3]
+        wb[2] ~ Rb[2, 1] * b.f[1] + Rb[2, 2] * b.f[2] + Rb[2, 3] * b.f[3]
+        wb[3] ~ Rb[3, 1] * b.f[1] + Rb[3, 2] * b.f[2] + Rb[3, 3] * b.f[3]
+        vb[1] ~ Rb[1, 1] * b.f[4] + Rb[1, 2] * b.f[5] + Rb[1, 3] * b.f[6]
+        vb[2] ~ Rb[2, 1] * b.f[4] + Rb[2, 2] * b.f[5] + Rb[2, 3] * b.f[6]
+        vb[3] ~ Rb[3, 1] * b.f[4] + Rb[3, 2] * b.f[5] + Rb[3, 3] * b.f[6]
         # Material point velocities at the contact point and their difference.
         ua[1] ~ va[1] + wa[2] * la[3] - wa[3] * la[2]
         ua[2] ~ va[2] + wa[3] * la[1] - wa[1] * la[3]
@@ -275,22 +275,26 @@
         Ta[1] ~ -(la[2] * F[3] - la[3] * F[2]) - Tr[1]
         Ta[2] ~ -(la[3] * F[1] - la[1] * F[3]) - Tr[2]
         Ta[3] ~ -(la[1] * F[2] - la[2] * F[1]) - Tr[3]
-        # Port efforts: the wrenches on the bodies in their body frames.
-        b.e[1] ~ Rb[1, 1] * Tb[1] + Rb[2, 1] * Tb[2] + Rb[3, 1] * Tb[3]
-        b.e[2] ~ Rb[1, 2] * Tb[1] + Rb[2, 2] * Tb[2] + Rb[3, 2] * Tb[3]
-        b.e[3] ~ Rb[1, 3] * Tb[1] + Rb[2, 3] * Tb[2] + Rb[3, 3] * Tb[3]
-        b.e[4] ~ Rb[1, 1] * F[1] + Rb[2, 1] * F[2] + Rb[3, 1] * F[3]
-        b.e[5] ~ Rb[1, 2] * F[1] + Rb[2, 2] * F[2] + Rb[3, 2] * F[3]
-        b.e[6] ~ Rb[1, 3] * F[1] + Rb[2, 3] * F[2] + Rb[3, 3] * F[3]
-        a.e[1] ~ Ra[1, 1] * Ta[1] + Ra[2, 1] * Ta[2] + Ra[3, 1] * Ta[3]
-        a.e[2] ~ Ra[1, 2] * Ta[1] + Ra[2, 2] * Ta[2] + Ra[3, 2] * Ta[3]
-        a.e[3] ~ Ra[1, 3] * Ta[1] + Ra[2, 3] * Ta[2] + Ra[3, 3] * Ta[3]
-        a.e[4] ~ -(Ra[1, 1] * F[1] + Ra[2, 1] * F[2] + Ra[3, 1] * F[3])
-        a.e[5] ~ -(Ra[1, 2] * F[1] + Ra[2, 2] * F[2] + Ra[3, 2] * F[3])
-        a.e[6] ~ -(Ra[1, 3] * F[1] + Ra[2, 3] * F[2] + Ra[3, 3] * F[3])
+        # Port efforts: minus the wrenches on the bodies in their body frames.
+        b.e[1] ~ -(Rb[1, 1] * Tb[1] + Rb[2, 1] * Tb[2] + Rb[3, 1] * Tb[3])
+        b.e[2] ~ -(Rb[1, 2] * Tb[1] + Rb[2, 2] * Tb[2] + Rb[3, 2] * Tb[3])
+        b.e[3] ~ -(Rb[1, 3] * Tb[1] + Rb[2, 3] * Tb[2] + Rb[3, 3] * Tb[3])
+        b.e[4] ~ -(Rb[1, 1] * F[1] + Rb[2, 1] * F[2] + Rb[3, 1] * F[3])
+        b.e[5] ~ -(Rb[1, 2] * F[1] + Rb[2, 2] * F[2] + Rb[3, 2] * F[3])
+        b.e[6] ~ -(Rb[1, 3] * F[1] + Rb[2, 3] * F[2] + Rb[3, 3] * F[3])
+        a.e[1] ~ -(Ra[1, 1] * Ta[1] + Ra[2, 1] * Ta[2] + Ra[3, 1] * Ta[3])
+        a.e[2] ~ -(Ra[1, 2] * Ta[1] + Ra[2, 2] * Ta[2] + Ra[3, 2] * Ta[3])
+        a.e[3] ~ -(Ra[1, 3] * Ta[1] + Ra[2, 3] * Ta[2] + Ra[3, 3] * Ta[3])
+        a.e[4] ~ Ra[1, 1] * F[1] + Ra[2, 1] * F[2] + Ra[3, 1] * F[3]
+        a.e[5] ~ Ra[1, 2] * F[1] + Ra[2, 2] * F[2] + Ra[3, 2] * F[3]
+        a.e[6] ~ Ra[1, 3] * F[1] + Ra[2, 3] * F[2] + Ra[3, 3] * F[3]
     end
     @causality begin
         a => (:effort_out, :fixed)
         b => (:effort_out, :fixed)
+    end
+    @orientation begin
+        a => :in
+        b => :in
     end
 end

@@ -214,7 +214,7 @@ def build_plant(d: Doc, P: Plant, q0: list[float], free: bool, d_static: bool, b
         if k == 0:
             d.bond("Ground.p", "Joint1.parent")
         else:
-            d.bond(f"Joint{k + 1}.parent", f"BodyJ{k}")
+            d.bond(f"BodyJ{k}", f"Joint{k + 1}.parent")
         if k > 0:  # a passive joint: zero torque on the drive port
             d.node(f"Free{k + 1}", ref("stdlib:bondgraph/Se"), xk, y0 - 150.0, params={"e": "0.0"})
             d.bond(f"Free{k + 1}.p", f"Joint{k + 1}.drive")

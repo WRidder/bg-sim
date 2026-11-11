@@ -33,4 +33,4 @@ and creeps at most at the smoothing speed. For the 46 N setting the band is [46,
 
 Outside the grip zone the jaws travel at 30 mm/s with the full 2.5 A. From 1 mm before the expected part (`x_pre`) the speed limit blends to `v_grip` = 3 mm/s and the current limit to the grip current $I_{grip} = F_{set}/(\eta\, k_t\, G)$. On the part the speed error saturates the current at $I_{grip}$, so the motor torque, and through the drive train the grip force, is set by the current limit:
 
-![Closing: travel, speed, current and grip force|900](assets/c8c65828be9b.png)
+![Closing: travel, speed, current and grip force|900](assets/83475382efdb.png)

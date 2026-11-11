@@ -22,4 +22,5 @@
         wout ~ p.f[1]
     end
     @causality p => :flow_out
+    @orientation p => :in
 end

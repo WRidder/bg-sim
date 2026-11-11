@@ -8,7 +8,7 @@ strategy 0) chooses the engine state and operating point. The [HCU](block:HCU)
 is that of [hybrid-ev-mode](model:hybrid-ev-mode). The energy management is described in
 [the project docs](project:energy).
 
-![Diagram|1000](assets/4bdf0617b2b3.png)
+![Diagram|1000](assets/ee78f1abb4fd.png)
 
 ## Readouts
 
@@ -23,7 +23,7 @@ is that of [hybrid-ev-mode](model:hybrid-ev-mode). The energy management is desc
 - Braking: [Meters/RegenShare/y](signal:Meters/RegenShare/y) 0.986. Only 16 kJ of the 1.21 MJ
   braking demand goes to the friction brakes.
 
-![EUDC: speed, planetary speeds (the lever in time), power flow and SOC|1000](assets/c8225de49f7d.png)
+![EUDC: speed, planetary speeds (the lever in time), power flow and SOC|1000](assets/63c0be7c4502.png)
 
 On the EUDC the planetary speeds show the power split at work. At 70 to 100 km/h the engine runs
 slower than the ring, so the sun turns backwards. MG1 then motors and MG2 generates: the

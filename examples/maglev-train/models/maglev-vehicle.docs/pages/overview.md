@@ -2,7 +2,7 @@
 
 A car section of 53 t on **two levitation modules**, each the module of [maglev-module](model:maglev-module) with the masses and the magnet doubled (two chassis pairs, half the car body each). The car body is a 3D rigid body. At 0.1 s the gap reference drops from the skid gap to 10 mm and the car lifts off (it rises 6.7 mm). At 4 s the long stator starts a speed profile: 1 m/s² up to **430 km/h** (119.4 s), 30 s of cruise, and the same deceleration. The guideway is a row of 24.768 m spans that **sag by 3 mm** at mid-span, with one smooth **2 mm bump** (a joint between two beams) at 8.5 km.
 
-![The model canvas|900](assets/fb73f176cdb7.png)
+![The model canvas|900](assets/e9be3106acf8.png)
 
 ## What to try
 

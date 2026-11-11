@@ -2,9 +2,9 @@
 
 ## The plain move
 
-![The default run: axes, motor forces, the beam's peak stress and the racking|900](assets/0cfb278bf4a4.png)
+![The default run: axes, motor forces, the beam's peak stress and the racking|900](assets/b97db38d3229.png)
 
-![Just after the move out (x100): the beam and the carriage still ring|900](assets/fafeb698aee4.png)
+![Just after the move out (x100): the beam and the carriage still ring|900](assets/4f5be72a95df.png)
 
 | plain move, 0.5 m at 10 m/s² | BGSim | scipy modal model |
 | --- | --- | --- |
@@ -19,9 +19,9 @@ The scipy model (`design/reference.py`) is an independent linear model of the tw
 
 ## Shaping
 
-![The plain move into its end position: 47 Hz ringing|900](assets/5db27f0eae59.png)
+![The plain move into its end position: 47 Hz ringing|900](assets/ce9824ee4e51.png)
 
-![The ZVD-shaped move: the 47 Hz ringing is gone, the 167 Hz carriage rocking remains|900](assets/f91a5f8e37d4.png)
+![The ZVD-shaped move: the 47 Hz ringing is gone, the 167 Hz carriage rocking remains|900](assets/20d740db6ae5.png)
 
 | move | settling | residual | peak | racking | peak stress |
 | --- | --- | --- | --- | --- | --- |

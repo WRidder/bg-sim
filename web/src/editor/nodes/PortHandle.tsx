@@ -23,6 +23,7 @@ import {
   SIGNAL_ARROW_SIZE,
 } from "../geometry";
 import type { PortSpec } from "../nodeInterface";
+import { orientationLabel } from "../portOrientation";
 
 export interface PortHandleProps {
   nodeId: string;
@@ -83,8 +84,12 @@ export function PortHandle({ nodeId, port, position, domain, state, exposed = nu
   // A multibond port stays one logical point (plan 7.2): the port glyph shows
   // N parallel ticks for the N strokes, and no second port is created.
   const strokes = isPower ? multibondStrokes(domain) : 1;
+  const orientation =
+    isPower && port.orientation !== undefined && port.orientation.kind !== "any"
+      ? ` · orientation ${orientationLabel(port.orientation)}`
+      : "";
   const base = isPower
-    ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}`
+    ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}${orientation}`
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
   const title = exposed === null ? base : `${base} · exposed as subsystem port ${exposed}`;
   const isSignalInput = !isPower && port.kind === "input";
@@ -147,6 +152,7 @@ export function PortHandle({ nodeId, port, position, domain, state, exposed = nu
       data-kind={port.kind}
       data-direction={direction}
       data-domain={domain}
+      data-orientation={isPower ? (port.orientation?.kind ?? "any") : undefined}
       data-type={port.type}
       data-state={state}
       data-exposed={exposed ?? undefined}

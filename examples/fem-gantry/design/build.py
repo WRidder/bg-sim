@@ -272,7 +272,7 @@ def end_joint(d: Diagram, tag: str, car: str, port: str, px: int, py: int, weld:
         d.wire(f"{tag}Ground", "a", f"{tag}Friction", "a")
         d.wire(f"{tag}Friction", "b", tag, "drive")
     d.add(f"{tag}Bracket", "multibond/FixedTransform3DNeutral", px + 120, py, {"z": fmt(ZB - ZX)})
-    d.bond(tag, "parent", car, "p")
+    d.bond(car, "p", tag, "parent")
     d.bond(tag, "child", f"{tag}Bracket", "a")
     d.bond(f"{tag}Bracket", "b", "Beam", port)
     d.add(f"P{tag}", "multibond/ComposePose3D", px, py + 120)
@@ -294,7 +294,7 @@ def y_carriage(d: Diagram, px: int, py: int, servo: bool) -> None:
     d.add("YOffset", "multibond/FixedTransform3DNeutral", px + 120, py, {"x": fmt(CX), "y": fmt(CY)})
     d.add("YCar", "spatial/RigidBody3D", px + 240, py,
           {"m": fmt(M_YC), "J": vec(J_YC), "g0": "g_y" if not servo else "0.0"})
-    d.bond("YGuide", "parent", "Beam", "E")
+    d.bond("Beam", "E", "YGuide", "parent")
     d.bond("YGuide", "child", "YOffset", "a")
     d.bond("YOffset", "b", "YCar", "p")
     d.add("YCoupling", "translation/Fixed", px - 120, py - 120)
@@ -306,7 +306,7 @@ def y_carriage(d: Diagram, px: int, py: int, servo: bool) -> None:
     d.wire("YCouplingDamper", "b", "YGuide", "drive")
     d.add("YMotor", "translation/ForceSource", px - 120, py - 240, {"F": "1.0"})
     d.add("YStator", "translation/Fixed", px - 240, py - 240)
-    d.bond("YMotor", "b", "Beam", "S")          # b on the slide: a positive F moves the carriage to +s
+    d.bond("Beam", "S", "YMotor", "b")          # b on the slide: a positive F moves the carriage to +s
     d.wire("YMotor", "a", "YStator", "a")
     if servo:
         d.add("YRef", "sources/Constant", px - 360, py - 400, {"value": "y_c"})
@@ -538,8 +538,8 @@ def static_model() -> dict:
     d.add("SlideDamper", "translation/Damper", 820, 100, {"d": fmt(damping(1.0e5, M_YC, 0.7))})
     d.wire("SlideGround", "a", "SlideSpring", "a")
     d.wire("SlideGround", "a", "SlideDamper", "a")
-    d.bond("SlideSpring", "b", "Beam", "S")
-    d.bond("SlideDamper", "b", "Beam", "S")
+    d.bond("Beam", "S", "SlideSpring", "b")
+    d.bond("Beam", "S", "SlideDamper", "b")
     bindings = [pose("beam", "Beam/pose"), pose("ycar", "PYCar/g"), pose("tool", "PTool/g"), mode_shapes()]
     plots = [
         {"id": "p1", "title": "Rail frame under the carriage, world z (m): the beam's x deflection + 0.03",

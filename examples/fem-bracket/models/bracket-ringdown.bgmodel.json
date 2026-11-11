@@ -314,12 +314,12 @@
         "id": "c5",
         "kind": "bond",
         "from": {
-          "node": "WeldB",
-          "port": "parent"
-        },
-        "to": {
           "node": "n3",
           "port": "B"
+        },
+        "to": {
+          "node": "WeldB",
+          "port": "parent"
         },
         "route": [],
         "label": null

@@ -7,7 +7,7 @@ standard model of that effect, the **Whipple/Carvallo bicycle**, with the benchm
 
 Four rigid bodies: the **rear frame** with a rigid rider (85 kg), the **front fork** with the handlebar (4 kg), a **rear wheel** (r = 0.3 m) and a **front wheel** (r = 0.35 m), hinged at the two hubs and the steer axis. The wheels are thin discs (knife edges) that roll without slipping on a level floor. There is no friction in the joints, no rider control and no tyre model.
 
-![The 3D view of model balance at 6 s: the bicycle leans 0.1 rad into a right turn|800](assets/bd35ebfcd752.png)
+![The 3D view of model balance at 6 s: the bicycle leans 0.1 rad into a right turn|800](assets/befe39c0a088.png)
 
 ## Two forms of the same bicycle
 

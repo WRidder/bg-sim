@@ -30,6 +30,7 @@
         "ui": { "showLabel": true, "color": null }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n3",
         "name": "Joint",
         "block": { "ref": "stdlib:multibond/Revolute2D" },
@@ -100,6 +101,7 @@
         "ui": { "showLabel": true, "color": null }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n8",
         "name": "Gravity",
         "block": { "ref": "stdlib:multibond/GravityPlanar" },
@@ -192,16 +194,16 @@
       {
         "id": "c02",
         "kind": "bond",
-        "from": { "node": "n11", "port": "p" },
-        "to": { "node": "n2" },
+        "from": { "node": "n2" },
+        "to": { "node": "n11", "port": "p" },
         "route": [],
         "label": null
       },
       {
         "id": "c03",
         "kind": "bond",
-        "from": { "node": "n3", "port": "parent" },
-        "to": { "node": "n2" },
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "parent" },
         "route": [],
         "label": null
       },
@@ -224,8 +226,8 @@
       {
         "id": "c06",
         "kind": "bond",
-        "from": { "node": "n7", "port": "p" },
-        "to": { "node": "n6" },
+        "from": { "node": "n6" },
+        "to": { "node": "n7", "port": "p" },
         "route": [],
         "label": null
       },
@@ -240,16 +242,16 @@
       {
         "id": "c08",
         "kind": "bond",
-        "from": { "node": "n9", "port": "p" },
-        "to": { "node": "n6" },
+        "from": { "node": "n6" },
+        "to": { "node": "n9", "port": "p" },
         "route": [],
         "label": null
       },
       {
         "id": "c09",
         "kind": "bond",
-        "from": { "node": "n10", "port": "p" },
-        "to": { "node": "n6" },
+        "from": { "node": "n6" },
+        "to": { "node": "n10", "port": "p" },
         "route": [],
         "label": null
       },
@@ -300,7 +302,7 @@
   "settings": {
     "t_start": 0.0,
     "t_end": 4.0,
-    "solver": "auto",
+    "solver": "Rodas5P",
     "reltol": 1e-9,
     "abstol": 1e-11,
     "max_step": null,

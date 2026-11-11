@@ -5,13 +5,16 @@
     #
     #     tau_f = bv*qdot + Fc*tanh(qdot/v_eps)
     #
-    # acting between the drive and the link (`drive.e = -child.e[1] + tau_f`), so the link
+    # acting between the drive and the link (`drive.e = -W_c[1] + tau_f`), so the link
     # feels `-tau_f` and the joint's port power identity gains exactly `tau_f*qdot <= 0`:
     # friction can only remove energy. `tanh` is the regularisation the plan asks for
     # (`ContactPoint`'s scheme, D-MB11); `v_eps` is the width over which it becomes Coulomb.
     #
     # Stick/slip: for `|tau_applied| < Fc` the drive holds the link (`qdot -> 0`), above it
     # the link slips and `tau_f -> Fc*sign(qdot)`.
+    #
+    # Child side: `V_c = -child.f` is the child body's twist and `W_c = -child.e` the wrench the
+    # child body exerts on the joint (port variables count into the joint).
     @ports begin
         parent::Power{Planar}
         child::Power{Planar}
@@ -44,26 +47,26 @@
         tauout::Real, [unit = "N*m"]
     end
     @equations begin
-        Vrel[1] ~ child.f[1] - parent.f[1]
-        Vrel[2] ~ child.f[2] - ((sin(q) * rx - cos(q) * ry) * parent.f[1] +
+        Vrel[1] ~ -child.f[1] - parent.f[1]
+        Vrel[2] ~ -child.f[2] - ((sin(q) * rx - cos(q) * ry) * parent.f[1] +
                                 cos(q) * parent.f[2] + sin(q) * parent.f[3])
-        Vrel[3] ~ child.f[3] - ((cos(q) * rx + sin(q) * ry) * parent.f[1] -
+        Vrel[3] ~ -child.f[3] - ((cos(q) * rx + sin(q) * ry) * parent.f[1] -
                                 sin(q) * parent.f[2] + cos(q) * parent.f[3])
         qdot ~ Vrel[1]
         q ~ q0 + int(qdot, 0.0)
-        ddt(d[1]) ~ Vrel[2] + child.f[1] * d[2]
-        ddt(d[2]) ~ Vrel[3] - child.f[1] * d[1]
+        ddt(d[1]) ~ Vrel[2] - child.f[1] * d[2]
+        ddt(d[2]) ~ Vrel[3] + child.f[1] * d[1]
         fs[1] ~ 0.0
         fs[2] ~ kt * d[1] + bt * Vrel[2]
         fs[3] ~ kt * d[2] + bt * Vrel[3]
         tf ~ Fv * qdot + Fc * tanh(qdot / v_eps)
-        child.e[2] ~ fs[2]
-        child.e[3] ~ fs[3]
-        parent.e[1] ~ -(child.e[1] + (sin(q) * rx - cos(q) * ry) * child.e[2] +
-                        (cos(q) * rx + sin(q) * ry) * child.e[3])
-        parent.e[2] ~ -(cos(q) * child.e[2] - sin(q) * child.e[3])
-        parent.e[3] ~ -(sin(q) * child.e[2] + cos(q) * child.e[3])
-        drive.e ~ -child.e[1] + tf
+        child.e[2] ~ -fs[2]
+        child.e[3] ~ -fs[3]
+        parent.e[1] ~ (child.e[1] + (sin(q) * rx - cos(q) * ry) * child.e[2] +
+                       (cos(q) * rx + sin(q) * ry) * child.e[3])
+        parent.e[2] ~ cos(q) * child.e[2] - sin(q) * child.e[3]
+        parent.e[3] ~ sin(q) * child.e[2] + cos(q) * child.e[3]
+        drive.e ~ child.e[1] + tf
         drive.f ~ qdot
         qout ~ q
         qdout ~ qdot
@@ -81,5 +84,10 @@
         parent => :effort_out
         child => :effort_out
         drive => :flow_out
+    end
+    @orientation begin
+        parent => :in
+        child => :out
+        drive => :in
     end
 end

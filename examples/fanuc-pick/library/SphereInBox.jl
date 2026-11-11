@@ -4,8 +4,8 @@
     #
     # Mounting as `SuctionCup`: a `FixedTransform3DNeutral` (identity) on each side with this
     # element on side `a` of both mounts; `a` faces the carton body, `b` the content body. The
-    # port flows are the negative body twists, the efforts the wrenches ON the carton (`a.e`,
-    # about its body origin, body frame) and ON the content (`b.e`, about its centre, own frame).
+    # port flows are the body twists, the efforts minus the wrenches on the carton (`a.e`, about
+    # its body origin, body frame) and on the content (`b.e`, about its centre, own frame).
     # `gb`, `gc` are the two world poses (D-MB6 chart). The carton frame is the box body frame
     # shifted by `o`; the walls are the planes |x_i| = h_i of the carton frame.
     #
@@ -162,18 +162,18 @@
         rr[1] ~ Rb[1, 1] * (gc[5] - gb[5]) + Rb[2, 1] * (gc[6] - gb[6]) + Rb[3, 1] * (gc[7] - gb[7]) - ox
         rr[2] ~ Rb[1, 2] * (gc[5] - gb[5]) + Rb[2, 2] * (gc[6] - gb[6]) + Rb[3, 2] * (gc[7] - gb[7]) - oy
         rr[3] ~ Rb[1, 3] * (gc[5] - gb[5]) + Rb[2, 3] * (gc[6] - gb[6]) + Rb[3, 3] * (gc[7] - gb[7]) - oz
-        wb[1] ~ -a.f[1]
-        vb[1] ~ -a.f[4]
-        wcb[1] ~ -(Rbc[1, 1] * b.f[1] + Rbc[1, 2] * b.f[2] + Rbc[1, 3] * b.f[3])
-        vcb[1] ~ -(Rbc[1, 1] * b.f[4] + Rbc[1, 2] * b.f[5] + Rbc[1, 3] * b.f[6])
-        wb[2] ~ -a.f[2]
-        vb[2] ~ -a.f[5]
-        wcb[2] ~ -(Rbc[2, 1] * b.f[1] + Rbc[2, 2] * b.f[2] + Rbc[2, 3] * b.f[3])
-        vcb[2] ~ -(Rbc[2, 1] * b.f[4] + Rbc[2, 2] * b.f[5] + Rbc[2, 3] * b.f[6])
-        wb[3] ~ -a.f[3]
-        vb[3] ~ -a.f[6]
-        wcb[3] ~ -(Rbc[3, 1] * b.f[1] + Rbc[3, 2] * b.f[2] + Rbc[3, 3] * b.f[3])
-        vcb[3] ~ -(Rbc[3, 1] * b.f[4] + Rbc[3, 2] * b.f[5] + Rbc[3, 3] * b.f[6])
+        wb[1] ~ a.f[1]
+        vb[1] ~ a.f[4]
+        wcb[1] ~ Rbc[1, 1] * b.f[1] + Rbc[1, 2] * b.f[2] + Rbc[1, 3] * b.f[3]
+        vcb[1] ~ Rbc[1, 1] * b.f[4] + Rbc[1, 2] * b.f[5] + Rbc[1, 3] * b.f[6]
+        wb[2] ~ a.f[2]
+        vb[2] ~ a.f[5]
+        wcb[2] ~ Rbc[2, 1] * b.f[1] + Rbc[2, 2] * b.f[2] + Rbc[2, 3] * b.f[3]
+        vcb[2] ~ Rbc[2, 1] * b.f[4] + Rbc[2, 2] * b.f[5] + Rbc[2, 3] * b.f[6]
+        wb[3] ~ a.f[3]
+        vb[3] ~ a.f[6]
+        wcb[3] ~ Rbc[3, 1] * b.f[1] + Rbc[3, 2] * b.f[2] + Rbc[3, 3] * b.f[3]
+        vcb[3] ~ Rbc[3, 1] * b.f[4] + Rbc[3, 2] * b.f[5] + Rbc[3, 3] * b.f[6]
         d_xp ~ r + 1 * rr[1] - hx
         u_xp[1] ~ (vcb[1]) - (vb[1] + wb[2] * (rr[3] + oz) - wb[3] * (rr[2] + oy))
         u_xp[2] ~ (vcb[2] + (wcb[3] * (1 * r))) - (vb[2] + wb[3] * (rr[1] + 1 * r + ox) - wb[1] * (rr[3] + oz))
@@ -273,18 +273,18 @@
         F[3] ~ F_xp[3] + F_xm[3] + F_yp[3] + F_ym[3] + F_zp[3] + F_zm[3]
         Tq[3] ~ ((1 * r) * F_xp[2]) + ((-1 * r) * F_xm[2]) + (-((1 * r) * F_yp[1])) + (-((-1 * r) * F_ym[1]))
         Tbx[3] ~ -(((rr[1] + 1 * r + ox) * F_xp[2] - (rr[2] + oy) * F_xp[1]) + ((rr[1] + -1 * r + ox) * F_xm[2] - (rr[2] + oy) * F_xm[1]) + ((rr[1] + ox) * F_yp[2] - (rr[2] + 1 * r + oy) * F_yp[1]) + ((rr[1] + ox) * F_ym[2] - (rr[2] + -1 * r + oy) * F_ym[1]) + ((rr[1] + ox) * F_zp[2] - (rr[2] + oy) * F_zp[1]) + ((rr[1] + ox) * F_zm[2] - (rr[2] + oy) * F_zm[1]))
-        b.e[1] ~ Rbc[1, 1] * Tq[1] + Rbc[2, 1] * Tq[2] + Rbc[3, 1] * Tq[3]
-        b.e[4] ~ Rbc[1, 1] * F[1] + Rbc[2, 1] * F[2] + Rbc[3, 1] * F[3]
-        a.e[1] ~ Tbx[1]
-        a.e[4] ~ -F[1]
-        b.e[2] ~ Rbc[1, 2] * Tq[1] + Rbc[2, 2] * Tq[2] + Rbc[3, 2] * Tq[3]
-        b.e[5] ~ Rbc[1, 2] * F[1] + Rbc[2, 2] * F[2] + Rbc[3, 2] * F[3]
-        a.e[2] ~ Tbx[2]
-        a.e[5] ~ -F[2]
-        b.e[3] ~ Rbc[1, 3] * Tq[1] + Rbc[2, 3] * Tq[2] + Rbc[3, 3] * Tq[3]
-        b.e[6] ~ Rbc[1, 3] * F[1] + Rbc[2, 3] * F[2] + Rbc[3, 3] * F[3]
-        a.e[3] ~ Tbx[3]
-        a.e[6] ~ -F[3]
+        b.e[1] ~ -(Rbc[1, 1] * Tq[1] + Rbc[2, 1] * Tq[2] + Rbc[3, 1] * Tq[3])
+        b.e[4] ~ -(Rbc[1, 1] * F[1] + Rbc[2, 1] * F[2] + Rbc[3, 1] * F[3])
+        a.e[1] ~ -Tbx[1]
+        a.e[4] ~ F[1]
+        b.e[2] ~ -(Rbc[1, 2] * Tq[1] + Rbc[2, 2] * Tq[2] + Rbc[3, 2] * Tq[3])
+        b.e[5] ~ -(Rbc[1, 2] * F[1] + Rbc[2, 2] * F[2] + Rbc[3, 2] * F[3])
+        a.e[2] ~ -Tbx[2]
+        a.e[5] ~ F[2]
+        b.e[3] ~ -(Rbc[1, 3] * Tq[1] + Rbc[2, 3] * Tq[2] + Rbc[3, 3] * Tq[3])
+        b.e[6] ~ -(Rbc[1, 3] * F[1] + Rbc[2, 3] * F[2] + Rbc[3, 3] * F[3])
+        a.e[3] ~ -Tbx[3]
+        a.e[6] ~ F[3]
         Ec ~ 0.4 * Fk_xp * x_xp + 0.4 * Fk_xm * x_xm + 0.4 * Fk_yp * x_yp + 0.4 * Fk_ym * x_ym + 0.4 * Fk_zp * x_zp + 0.4 * Fk_zm * x_zm
         Fn ~ fn_xp + fn_xm + fn_yp + fn_ym + fn_zp + fn_zm
         Fmag ~ sqrt(F[1] * F[1] + F[2] * F[2] + F[3] * F[3])
@@ -298,5 +298,9 @@
     @causality begin
         a => :effort_out
         b => :effort_out
+    end
+    @orientation begin
+        a => :in
+        b => :in
     end
 end

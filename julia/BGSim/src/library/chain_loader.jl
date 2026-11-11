@@ -431,7 +431,9 @@ Per joint `J` (child link `C`, parent link `P`) the nodes are, with `prefix` pre
 | `C_bj`, `C` | 1-junction, `RigidBody3D` | the body junction and the body (mass, principal inertia, `g0`) |
 | `J_ln`, `J_ca`, `J_cb`, `J_lc`, `J_cc` | `LocalPose3D`/`ComposePose3D` | algebraic poses: `J_cb/g` is the post-joint frame of `J` in the world, `J_cc/g` the pose of body `C` (fixed base) |
 
-Every element bonds element -> junction. **Drive ports are exposed**: `fragment["drive_ports"][J]`
+Bond directions follow the port orientation (E114): the ground and each body junction bond into
+the joint-frame mount `J_t` (`b`), which bonds on into the joint's `parent`; the joint's `child`
+bonds into `J_l`, and `J_l` into the child's body junction. **Drive ports are exposed**: `fragment["drive_ports"][J]`
 is `(node = J, port = "drive")` (a `Power{Rotation}` / `Power{Translation}` port taking the joint
 effort). When `drives` is a `Dict(joint name => constant torque)` the loader attaches
 `J_drive` (`MSe`) fed by `J_tau` (`Constant`) to each listed joint; otherwise the port is left open
@@ -484,7 +486,7 @@ function load_chain(chain::JointChain; stiffness = 1.0e7, damping_ratio = 0.7, g
         if e.parent == 0
             bond!(pf("world"), "p", jn * "_t", "b")
         else
-            bond!(jn * "_t", "b", pf(eff[e.parent].link.name * "_bj"), nothing)
+            bond!(pf(eff[e.parent].link.name * "_bj"), nothing, jn * "_t", "b")
         end
         kk = stiffness
         kr = something(j.kr, kk)

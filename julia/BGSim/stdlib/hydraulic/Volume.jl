@@ -10,4 +10,5 @@
         ddt(p) ~ beta * a.f / V
         a.e ~ p
     end
+    @orientation a => :in
 end

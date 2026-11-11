@@ -4,9 +4,9 @@
 # Model: a Sine source u(t) = 2 + sin(3 t) modulates the flow source, which charges the
 # capacitor C through a 0-junction. Reference: the analytic solution of the flat model.
 #
-#   * MSf imposes its port flow, so `MSf1/p.f = gain*u` (the block's own equation);
-#   * a port flow is positive into its element, so the flow source that drives the junction
-#     carries `MSf1/p.f = gain*u` with `gain = -1` while the capacitor receives `+u`;
+#   * MSf delivers `gain*u` at the tail of its bond (O15), so its own port carries
+#     `MSf1/p.f = -gain*u` (a port flow is positive into its element) and, with `gain = 1`,
+#     the capacitor receives `+u`;
 #   * the 0-junction sums the port flows to zero, so `C1/p.f = u = 2 + sin(3 t)`;
 #   * the capacitor integrates it: `q(t) = ∫₀ᵗ u ds = 2 t + (1 - cos(3 t))/3`, and
 #     `C1/p.e = q/c = 2 q` with `c = 0.5`.
@@ -31,7 +31,7 @@ using .BondGraphGolden
                 params = Dict{String,Any}("amplitude" => "1.0", "frequency" => "3.0",
                     "offset" => "2.0")),
             bg_node("n2", "MSf1", bg_ref("stdlib:bondgraph/MSf");
-                params = Dict{String,Any}("gain" => "-1.0")),
+                params = Dict{String,Any}("gain" => "1.0")),
             bg_node("n3", "J0", bg_junction(0)),
             bg_node("n4", "C1", bg_ref("stdlib:bondgraph/C");
                 params = Dict{String,Any}("c" => "0.5")),
@@ -51,7 +51,7 @@ using .BondGraphGolden
     for t in (0.0, 0.25, 0.5, 0.75, 1.0)
         @test isapprox(bg_value(columns, "Sine1/y", t), u(t); rtol = 1e-6)
         @test isapprox(bg_value(columns, "MSf1/u", t), u(t); rtol = 1e-6)
-        # The block: p.f ~ gain*u, with gain = -1.
+        # The block: p.f ~ -gain*u, with gain = 1.
         @test isapprox(bg_value(columns, "MSf1/p.f", t), -u(t); rtol = 1e-6, atol = 1e-9)
         # The 0-junction: the capacitor sees the negated source flow.
         @test isapprox(bg_value(columns, "C1/p.f", t), u(t); rtol = 1e-6, atol = 1e-9)

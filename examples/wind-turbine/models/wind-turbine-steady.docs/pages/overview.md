@@ -2,7 +2,7 @@
 
 The NREL 5 MW turbine with its baseline controller on a slow wind ramp from 4 to 25 m/s (0.02 m/s per second). The turbine passes through its operating points almost in equilibrium, so the run traces the power curve. See [the turbine](project:turbine) for the model.
 
-![The model canvas|900](assets/0ba7dad8b2cd.png)
+![The model canvas|900](assets/cd3ca57c1728.png)
 
 ![The ramp|900](assets/a06b419f16c3.png)
 

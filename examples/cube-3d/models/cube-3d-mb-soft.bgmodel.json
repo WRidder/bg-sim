@@ -49,6 +49,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n03",
         "name": "Pivot",
         "block": {
@@ -105,6 +106,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n05",
         "name": "Body",
         "block": {
@@ -360,6 +362,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n16",
         "name": "WJoint1",
         "block": {
@@ -406,6 +409,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n18",
         "name": "Wheel1",
         "block": {
@@ -600,6 +604,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n26",
         "name": "WJoint2",
         "block": {
@@ -646,6 +651,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n28",
         "name": "Wheel2",
         "block": {
@@ -840,6 +846,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n36",
         "name": "WJoint3",
         "block": {
@@ -886,6 +893,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "n38",
         "name": "Wheel3",
         "block": {
@@ -1281,12 +1289,12 @@
         "id": "c17",
         "kind": "bond",
         "from": {
-          "node": "n15",
-          "port": "b"
-        },
-        "to": {
           "node": "n05",
           "port": "p"
+        },
+        "to": {
+          "node": "n15",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -1491,12 +1499,12 @@
         "id": "c32",
         "kind": "bond",
         "from": {
-          "node": "n25",
-          "port": "b"
-        },
-        "to": {
           "node": "n05",
           "port": "p"
+        },
+        "to": {
+          "node": "n25",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -1701,12 +1709,12 @@
         "id": "c47",
         "kind": "bond",
         "from": {
-          "node": "n35",
-          "port": "b"
-        },
-        "to": {
           "node": "n05",
           "port": "p"
+        },
+        "to": {
+          "node": "n35",
+          "port": "b"
         },
         "route": [],
         "label": null

@@ -16,9 +16,9 @@
 
 The global `u_scale` scales all three sticks ([BoomCmd](block:BoomCmd) and the others).
 
-![The bucket tip path: into the soil, drag, curl, up and out, back to the start|600](assets/8cee246bf1d7.png)
+![The bucket tip path: into the soil, drag, curl, up and out, back to the start|600](assets/27b8a7eb0d0e.png)
 
-![Joysticks, soil, pressures, LS margin and power|900](assets/9e701628f801.png)
+![Joysticks, soil, pressures, LS margin and power|900](assets/0a9867fe6cbc.png)
 
 **Expected outcome** (checked by `expected.json`):
 
@@ -35,9 +35,9 @@ The margin dips below its setting when a load pressure steps up and the LS line 
 largest dip (22.6 bar) is at 9.7 s, when the arm swings out with the full bucket and the boom cap pressure peaks at
 290 bar. The margin never runs out, so every section gets its flow.
 
-![The front at 9 s: lifting the full bucket|600](assets/6d2f1bf990c4.png)
+![The front at 9 s: lifting the full bucket|600](assets/420dbd817c80.png)
 
-![The model canvas|900](assets/f9174f3051eb.png)
+![The model canvas|900](assets/5be1a6926042.png)
 
 **Blocks.** [Soil](block:Soil) (`SoilCutting2D`) at the bucket body; the three sections with their
 compensators ([BoomComp](block:BoomComp), [ArmComp](block:ArmComp), [BucketComp](block:BucketComp)), spools

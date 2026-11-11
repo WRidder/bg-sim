@@ -44,4 +44,4 @@ The poses are composed, never integrated: `JointPose2D` turns a joint angle into
 
 ## Bond direction
 
-Every bond of the chain points from the port into the junction (`Joint.parent → BodyJ`, `Link.child → BodyJ`, `Body.p → BodyJ`, `Hit.p → BodyJ`). The direction is the power orientation of the bond; reversing one of them flips the sign convention of that junction and the pendulum no longer matches its equations of motion.
+The bonds follow the declared port orientations: the joint parent is `in` (`BodyJ → Joint.parent`), the link transform passes the child's power into the junction (`Link.child → BodyJ`), the body face is a junction (`Body.p → BodyJ`) and the disturbance is a source (`Hit.p → BodyJ`). The junction flow is then the link's true twist, as inside `RigidBody2D`.

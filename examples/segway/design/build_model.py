@@ -146,7 +146,7 @@ def vehicle(name, comment, theta0, plan, t_end, points, plots, dashboard, scene,
                 params={"m": "m_w", "J": "[J_wt, J_wt, J_wa]", "g0": "g0"})
         D_.node(f"Tyre{side}", "stdlib:contact/RollingDisk", 1420, 140 + y0,
                 params={"radius": "r", "k": num(K_C), "xref": num(XREF), "c": num(C_C), "mu": num(MU), "vs": num(VS)})
-        D_.bond(f"Mount{side}", "b", "Body", "p")
+        D_.bond("Body", "p", f"Mount{side}", "b")
         D_.bond(f"Mount{side}", "a", f"Axle{side}", "parent")
         D_.bond(f"Axle{side}", "child", f"Wheel{side}", "p")
         D_.bond(f"Wheel{side}", "p", f"Tyre{side}", "p")

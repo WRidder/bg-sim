@@ -7,12 +7,12 @@
     #
     # Mounting: the wheel carrier (hub, upright) is a `RigidBody3D` with its frame at the wheel
     # centre and the AXLE ALONG THE BODY z AXIS; the wheel's mass and transverse inertia are in
-    # that body, its spin inertia in a `Rotor3D` on the same port. Bond the carrier port DIRECTLY
-    # to `p` (bond from the body to this element: the port flow is the NEGATIVE carrier twist
-    # and the port effort the wrench on the carrier about the wheel centre, as for `RollingDisk`)
-    # and bond the spin 1-junction (the `Rotor3D` drive, with the brake and the drive shaft) to
-    # `spin` (bond from the junction to this element: `spin.f` is the wheel's spin relative to
-    # the carrier about +z, `spin.e` minus the torque of the tyre on the wheel about the axle).
+    # that body, its spin inertia in a `Rotor3D` on the same port. The carrier port attaches
+    # DIRECTLY to `p` (the port flow is the carrier twist and the port effort minus the wrench
+    # on the carrier about the wheel centre, as for `RollingDisk`), and the spin 1-junction
+    # (the `Rotor3D` drive, with the brake and the drive shaft) to `spin` (`spin.f` is the
+    # wheel's spin relative to the carrier about +z, `spin.e` minus the torque of the tyre on
+    # the wheel about the axle).
     # `g` is the carrier pose, `o`, `fr` the contact plane (a `ContactSurface`, or the tangent
     # plane of a `TerrainSurface` under the wheel), `mus` scales the friction (1 = nominal).
     #
@@ -221,13 +221,13 @@
         xc ~ g[5] + rpx
         yc ~ g[6] + rpy
         zc ~ g[7] + rpz
-        # Carrier twist in the world (the port flow is the NEGATIVE body twist), the spin.
-        wx ~ -(R[1, 1] * p.f[1] + R[1, 2] * p.f[2] + R[1, 3] * p.f[3])
-        wy ~ -(R[2, 1] * p.f[1] + R[2, 2] * p.f[2] + R[2, 3] * p.f[3])
-        wz ~ -(R[3, 1] * p.f[1] + R[3, 2] * p.f[2] + R[3, 3] * p.f[3])
-        vx ~ -(R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6])
-        vy ~ -(R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6])
-        vz ~ -(R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6])
+        # Carrier twist in the world (the port flow is the body twist), the spin.
+        wx ~ R[1, 1] * p.f[1] + R[1, 2] * p.f[2] + R[1, 3] * p.f[3]
+        wy ~ R[2, 1] * p.f[1] + R[2, 2] * p.f[2] + R[2, 3] * p.f[3]
+        wz ~ R[3, 1] * p.f[1] + R[3, 2] * p.f[2] + R[3, 3] * p.f[3]
+        vx ~ R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6]
+        vy ~ R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6]
+        vz ~ R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6]
         wr ~ spin.f
         omega ~ wx * R[1, 3] + wy * R[2, 3] + wz * R[3, 3] + wr
         # Normal force (envelope theorem: the penetration rate is -n . v of the rim material point;
@@ -286,13 +286,13 @@
         My ~ Fz * (r0z * fr[1] - r0x * fr[3]) + rpz * (Fx * lx + Fy * tx) - rpx * (Fx * lz + Fy * tz) + Mrr * R[2, 3]
         Mz ~ Fz * (r0x * fr[2] - r0y * fr[1]) + rpx * (Fx * ly + Fy * ty) - rpy * (Fx * lx + Fy * tx) + Mrr * R[3, 3]
         Tax ~ Mx * R[1, 3] + My * R[2, 3] + Mz * R[3, 3]
-        # Port efforts: the wrench on the carrier (body frame) and minus the axial moment.
-        p.e[1] ~ R[1, 1] * Mx + R[2, 1] * My + R[3, 1] * Mz
-        p.e[2] ~ R[1, 2] * Mx + R[2, 2] * My + R[3, 2] * Mz
-        p.e[3] ~ R[1, 3] * Mx + R[2, 3] * My + R[3, 3] * Mz
-        p.e[4] ~ R[1, 1] * Fwx + R[2, 1] * Fwy + R[3, 1] * Fwz
-        p.e[5] ~ R[1, 2] * Fwx + R[2, 2] * Fwy + R[3, 2] * Fwz
-        p.e[6] ~ R[1, 3] * Fwx + R[2, 3] * Fwy + R[3, 3] * Fwz
+        # Port efforts: minus the wrench on the carrier (body frame) and minus the axial moment.
+        p.e[1] ~ -(R[1, 1] * Mx + R[2, 1] * My + R[3, 1] * Mz)
+        p.e[2] ~ -(R[1, 2] * Mx + R[2, 2] * My + R[3, 2] * Mz)
+        p.e[3] ~ -(R[1, 3] * Mx + R[2, 3] * My + R[3, 3] * Mz)
+        p.e[4] ~ -(R[1, 1] * Fwx + R[2, 1] * Fwy + R[3, 1] * Fwz)
+        p.e[5] ~ -(R[1, 2] * Fwx + R[2, 2] * Fwy + R[3, 2] * Fwz)
+        p.e[6] ~ -(R[1, 3] * Fwx + R[2, 3] * Fwy + R[3, 3] * Fwz)
         spin.e ~ -Tax
         # Energy book.
         Ec ~ 0.5 * kz * x * x + 0.5 * cx * xe * xe + 0.5 * cy * ye * ye
@@ -302,5 +302,9 @@
     @causality begin
         p => (:effort_out, :fixed)
         spin => :effort_out
+    end
+    @orientation begin
+        p => :in
+        spin => :in
     end
 end

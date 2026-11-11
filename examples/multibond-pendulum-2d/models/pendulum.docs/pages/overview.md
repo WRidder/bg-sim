@@ -2,7 +2,7 @@
 
 The M3 vertical slice and the gate for the multibond plan (plan 9.3, row X-MB1): a rigid link hanging from a **compliant-pivot planar revolute joint**, built from the `Power{Planar}` primitives of `stdlib/multibond/`. A planar multibond is drawn as **two parallel strokes**; this model shows the 2-stroke convention end to end (editor, worker, run, plot). The pendulum is torque-free and the run is conservative.
 
-![The model canvas: two-stroke planar bonds|900](assets/de1b2886abd1.png)
+![The model canvas: two-stroke planar bonds|900](assets/9a3d7b4ac8bc.png)
 
 ## What to try
 
@@ -16,4 +16,4 @@ The M3 vertical slice and the gate for the multibond plan (plan 9.3, row X-MB1):
 
 `scenes/multibond-pendulum-2d.sdf` draws the pendulum in the vertical X-Z plane (the model's x-y plane, gravity along -z). The revolute joint `pivot` follows `Joint/qout`; the bob is the 0.5 m centre of mass, and `expected.json` checks the SDF kinematics against the composed CoM pose.
 
-![3D view at t = 0.35 s|500](assets/8e8f3562a427.png)
+![3D view at t = 0.35 s|500](assets/1363a8ecfda9.png)

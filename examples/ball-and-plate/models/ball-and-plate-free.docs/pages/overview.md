@@ -18,7 +18,7 @@ spring of the X lock starts preloaded with the ball's weight torque. The ball is
   constant to 2e-9 J.
 - **Hollow ball.** The check run with `k_ball` = 2/3 gives 3/5 g sin α and a time of 1.7089 s.
 
-![Free roll: position, kinetic energy and slip|900](assets/f5f421ea07a1.png)
+![Free roll: position, kinetic energy and slip|900](assets/f830852d6143.png)
 
 **What to try.** On the dashboard:
 

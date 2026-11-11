@@ -31,6 +31,7 @@
     # Linear Euler-Bernoulli: no shear deformation or rotary inertia (Timoshenko), small
     # deflections, no buckling or plasticity.
     @ports tip::Power{Translation}
+    @orientation tip => :in
     @outputs begin
         eta::Vec{3}, [unit = "m", description = "Modal coordinates eta_1..eta_3 (bind them to the beam visual)"]
         w::Real, [unit = "m", description = "Tip deflection, positive down"]

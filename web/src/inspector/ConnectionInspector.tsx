@@ -13,6 +13,7 @@ import type { Diagnostic } from "../contracts/diagnostic";
 import type { DomainName } from "../contracts/catalog";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { interfaceForNode } from "../editor/nodeInterface";
+import { checkReverse } from "../editor/reverseBond";
 import { multibondComponents, multibondStrokes } from "../editor/geometry";
 import type { CatalogIndex } from "../library/catalogIndex";
 import {
@@ -32,6 +33,8 @@ export interface ConnectionInspectorProps {
   domains: Record<string, DomainName>;
   /** The current `model.check` diagnostics (E007 is matched by connection id). */
   diagnostics?: readonly Diagnostic[];
+  /** The bonds of the open diagram, to tell whether the bond may be reversed (port orientation). */
+  connections?: readonly ModelConnection[];
   /** Instance names of the subsystem path to this diagram, root first. */
   path: readonly string[];
 }
@@ -102,8 +105,13 @@ export function ConnectionInspector({
   frames,
   domains,
   diagnostics = [],
+  connections,
   path,
 }: ConnectionInspectorProps) {
+  const reverse =
+    connection.kind === "bond"
+      ? checkReverse({ diagram: { nodes, connections: connections ?? [connection] } }, index, connection)
+      : null;
   const from = endpointFrame(connection.from, nodes, index, path);
   const to = endpointFrame(connection.to, nodes, index, path);
   const reported = frames[connection.id] ?? null;
@@ -182,6 +190,17 @@ export function ConnectionInspector({
                 e007: frameDiagnostic(diagnostics, connection.id),
               })}
             </p>
+            {reverse !== null ? (
+              <p
+                className="inspector-note"
+                data-testid={`inspector-connection-reverse-${connection.id}`}
+                data-reversible={reverse.ok ? "true" : "false"}
+              >
+                {reverse.ok
+                  ? (reverse.note ?? "This bond may be reversed from its context menu.")
+                  : `Cannot be reversed: ${reverse.reason}`}
+              </p>
+            ) : null}
             {domain !== undefined ? (
               <p
                 className="inspector-note"

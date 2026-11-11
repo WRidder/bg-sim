@@ -15,4 +15,8 @@
               ifelse(a.e * a.f > 0.0, eta, 1.0 / eta)
     end
     @causality (a, b) => :transformer
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

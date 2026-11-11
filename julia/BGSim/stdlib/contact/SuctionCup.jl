@@ -5,10 +5,10 @@
     # Mounting (as `ContactPoint`): side `a` is the cup mount frame on the gripper, side `b`
     # the attach point on the part surface, each through a `FixedTransform3DNeutral` with the
     # CUP on side `a` of the mount (mount pose = the gripper frame, resp. the part body frame,
-    # seen from the point). Both port flows are then the NEGATIVE frame twists, `Vp = -a.f`
-    # (cup frame, gripper side) and `Vc = -b.f` (part point frame), and the port efforts are
-    # the wrenches ON the gripper (`a.e`, about the cup origin, cup frame) and ON the part
-    # (`b.e`, about the attach point, point frame). The cup axis is the -z axis of the cup
+    # seen from the point). The port flows are the frame twists, `Vp = a.f` (cup frame,
+    # gripper side) and `Vc = b.f` (part point frame), and the port efforts are minus the
+    # wrenches on the gripper (`a.e`, about the cup origin, cup frame) and on the part (`b.e`,
+    # about the attach point, point frame). The cup axis is the -z axis of the cup
     # frame: the part hangs below the cup.
     #
     # Kinematics (no pose inputs): the relative pose of the part point in the cup frame is
@@ -178,19 +178,19 @@
         R[3, 1] ~ 2 * (qx * qz - qw * qy) / s
         R[3, 2] ~ 2 * (qy * qz + qw * qx) / s
         R[3, 3] ~ (qw * qw - qx * qx - qy * qy + qz * qz) / s
-        # Frame twists: the port flows are the negative twists (neutral mounts, cup on side a).
-        wpx ~ -a.f[1]
-        wpy ~ -a.f[2]
-        wpz ~ -a.f[3]
-        ux ~ -a.f[4] + (wpy * rz - wpz * ry)
-        uy ~ -a.f[5] + (wpz * rx - wpx * rz)
-        uz ~ -a.f[6] + (wpx * ry - wpy * rx)
-        rdx ~ -(R[1, 1] * b.f[4] + R[1, 2] * b.f[5] + R[1, 3] * b.f[6]) - ux
-        rdy ~ -(R[2, 1] * b.f[4] + R[2, 2] * b.f[5] + R[2, 3] * b.f[6]) - uy
-        rdz ~ -(R[3, 1] * b.f[4] + R[3, 2] * b.f[5] + R[3, 3] * b.f[6]) - uz
-        wrx ~ -b.f[1] - (R[1, 1] * wpx + R[2, 1] * wpy + R[3, 1] * wpz)
-        wry ~ -b.f[2] - (R[1, 2] * wpx + R[2, 2] * wpy + R[3, 2] * wpz)
-        wrz ~ -b.f[3] - (R[1, 3] * wpx + R[2, 3] * wpy + R[3, 3] * wpz)
+        # Frame twists: the port flows are the twists (neutral mounts, cup on side a).
+        wpx ~ a.f[1]
+        wpy ~ a.f[2]
+        wpz ~ a.f[3]
+        ux ~ a.f[4] + (wpy * rz - wpz * ry)
+        uy ~ a.f[5] + (wpz * rx - wpx * rz)
+        uz ~ a.f[6] + (wpx * ry - wpy * rx)
+        rdx ~ R[1, 1] * b.f[4] + R[1, 2] * b.f[5] + R[1, 3] * b.f[6] - ux
+        rdy ~ R[2, 1] * b.f[4] + R[2, 2] * b.f[5] + R[2, 3] * b.f[6] - uy
+        rdz ~ R[3, 1] * b.f[4] + R[3, 2] * b.f[5] + R[3, 3] * b.f[6] - uz
+        wrx ~ b.f[1] - (R[1, 1] * wpx + R[2, 1] * wpy + R[3, 1] * wpz)
+        wry ~ b.f[2] - (R[1, 2] * wpx + R[2, 2] * wpy + R[3, 2] * wpz)
+        wrz ~ b.f[3] - (R[1, 3] * wpx + R[2, 3] * wpy + R[3, 3] * wpz)
         ddt(rx) ~ rdx
         ddt(ry) ~ rdy
         ddt(rz) ~ rdz
@@ -239,18 +239,18 @@
         tcx ~ -chi * Mbx
         tcy ~ -chi * Mby
         tcz ~ -chi * Mbz
-        b.e[1] ~ tcx
-        b.e[2] ~ tcy
-        b.e[3] ~ tcz
-        b.e[4] ~ -R[1, 1] * Flx - R[2, 1] * Fly + R[3, 1] * Fpz
-        b.e[5] ~ -R[1, 2] * Flx - R[2, 2] * Fly + R[3, 2] * Fpz
-        b.e[6] ~ -R[1, 3] * Flx - R[2, 3] * Fly + R[3, 3] * Fpz
-        a.e[1] ~ -(R[1, 1] * tcx + R[1, 2] * tcy + R[1, 3] * tcz) - (ry * Fpz + rz * Fly)
-        a.e[2] ~ -(R[2, 1] * tcx + R[2, 2] * tcy + R[2, 3] * tcz) - (-rz * Flx - rx * Fpz)
-        a.e[3] ~ -(R[3, 1] * tcx + R[3, 2] * tcy + R[3, 3] * tcz) - (-rx * Fly + ry * Flx)
-        a.e[4] ~ Flx
-        a.e[5] ~ Fly
-        a.e[6] ~ -Fpz
+        b.e[1] ~ -tcx
+        b.e[2] ~ -tcy
+        b.e[3] ~ -tcz
+        b.e[4] ~ R[1, 1] * Flx + R[2, 1] * Fly - R[3, 1] * Fpz
+        b.e[5] ~ R[1, 2] * Flx + R[2, 2] * Fly - R[3, 2] * Fpz
+        b.e[6] ~ R[1, 3] * Flx + R[2, 3] * Fly - R[3, 3] * Fpz
+        a.e[1] ~ (R[1, 1] * tcx + R[1, 2] * tcy + R[1, 3] * tcz) + (ry * Fpz + rz * Fly)
+        a.e[2] ~ (R[2, 1] * tcx + R[2, 2] * tcy + R[2, 3] * tcz) + (-rz * Flx - rx * Fpz)
+        a.e[3] ~ (R[3, 1] * tcx + R[3, 2] * tcy + R[3, 3] * tcz) + (-rx * Fly + ry * Flx)
+        a.e[4] ~ -Flx
+        a.e[5] ~ -Fly
+        a.e[6] ~ Fpz
         # Vacuum chamber.
         A_lip ~ A_lip0 + 3.141592653589793 * D_lip * h
         Q_leak ~ Cd * A_lip * (-p) * sqrt(2 / (rho * sqrt(p * p + p_tr * p_tr)))
@@ -270,5 +270,10 @@
         a => :effort_out
         b => :effort_out
         vac => :effort_out
+    end
+    @orientation begin
+        a => :in
+        b => :in
+        vac => :in
     end
 end

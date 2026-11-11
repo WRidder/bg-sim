@@ -7,6 +7,12 @@
         shaft::Power{Rotation}
         housing::Power{Rotation}
     end
+    @orientation begin
+        p => :in
+        n => :in
+        shaft => :in
+        housing => :in
+    end
     @parameters begin
         R::Real = 2.0, [unit = "Ohm", min = 0, description = "Winding resistance"]
         L::Real = 5e-4, [unit = "H", min = 0, description = "Winding inductance"]

@@ -29,4 +29,5 @@
         I ~ -p.f
         P ~ -p.e * p.f
     end
+    @orientation p => :in
 end

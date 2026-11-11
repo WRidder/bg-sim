@@ -2,7 +2,7 @@
 
 A two-link planar arm with a payload, driven by a 1 ms PD controller with gravity feedforward, built from the J-MB6 composites (`RigidBody2D`, `Revolute2DCompliant`, `JointPose2D`, `LocalPose2D`) and the J-MB5 planar primitives (`ComposePose2D`, `GravityPlanar`, `CoriolisPlanar`). It is the planar-multibond arm of plan 9.10 / X-MB2 and, together with `reaction-wheel-2d`, Gate B's arm-and-balancer pair. The model `arm-free` removes the drives to test energy conservation.
 
-![The model canvas: two-stroke planar bonds|900](assets/66e41f78b33b.png)
+![The model canvas: two-stroke planar bonds|900](assets/9f6ae8b4a0ad.png)
 
 ```
 Ground -- Joint1 -- Link1 -- BodyJ1 -+- Body1 (1-junction: I + Coriolis + Gravity + Df)
@@ -25,6 +25,6 @@ At $t = 0.2$ s the references step to $q_1 = 0.6$ rad and $q_2 = -0.4$ rad; the 
 
 `scenes/robot-arm-2d.sdf` draws the two links in the vertical X-Z plane (the model's x-y plane). Joints `shoulder` and `elbow` follow `Joint1/qout` and `Joint2/qout`; the tip sphere sits at the end-effector pose `PoseTip`, which `expected.json` checks against the SDF kinematics along the whole run.
 
-![3D view at t = 0.5 s|500](assets/61e094557dcd.png)
+![3D view at t = 0.5 s|500](assets/210ec196b3fc.png)
 
 Continue with [the physics](page:physics), [the controller](page:controller) and [the results](page:results).

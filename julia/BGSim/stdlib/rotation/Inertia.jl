@@ -14,4 +14,8 @@
         a.e ~ J * ddt(w)
         b.e ~ -a.e
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

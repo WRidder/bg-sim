@@ -10,4 +10,8 @@
         n.f ~ 0.0
         y ~ p.e - n.e
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

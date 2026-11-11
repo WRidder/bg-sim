@@ -10,7 +10,7 @@ along the arm, so the links swing in the vertical plane tangent to the arm circl
   links with viscous bearing friction.
 - [Ctrl](block:Ctrl) (`QuadRotaryCtrl`), [Traj](block:Traj) and [Mon](block:Mon) follow the cart version.
 
-![The model canvas|900](assets/0936f66d238b.png)
+![The model canvas|900](assets/ab74a2a38a5e.png)
 
 ![3D view at t = 10 s: the chain balanced upright on the arm|500](assets/d0c87fb3a6b9.png)
 
@@ -20,7 +20,7 @@ saturates the torque at 3 N m for short moments. In the design closed loop the s
 masses, +1 % lengths, three times the joint friction and 1 ms delay, but **not** to a 2 ms delay or to
 quantised encoders; the balance alone is robust to both.
 
-![Link angles, stacked energy per link, arm and torque, phase|900](assets/784ef66d8c87.png)
+![Link angles, stacked energy per link, arm and torque, phase|900](assets/b152e112c513.png)
 
 ## Results
 

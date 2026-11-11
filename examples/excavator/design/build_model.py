@@ -125,7 +125,7 @@ def mechanism(d: Diagram, q0, bucket: dict, g0: str) -> None:
     d.node("Link2", "stdlib:planar/FixedJoint2D", X, 680, {"x": num(ba["c"][0]), "y": num(ba["c"][1]), "theta": "0.0"})
     d.junction("BodyJ2", "1", X, 800)
     d.node("Arm", "stdlib:planar/RigidBody2D", X + 160, 800, {"m": "m_arm", "J": "J_arm", "g0": g0})
-    d.bond("Joint2", "parent", "BodyJ1", None)
+    d.bond("BodyJ1", None, "Joint2", "parent")
     d.bond("Joint2", "child", "Link2", "parent")
     d.bond("Link2", "child", "BodyJ2", None)
     d.bond("Arm", "p", "BodyJ2", None)
@@ -136,7 +136,7 @@ def mechanism(d: Diagram, q0, bucket: dict, g0: str) -> None:
     d.node("Link3", "stdlib:planar/FixedJoint2D", X, 1060, {"x": "cx_bucket", "y": "cy_bucket", "theta": "0.0"})
     d.junction("BodyJ3", "1", X, 1180)
     d.node("Bucket", "stdlib:planar/RigidBody2D", X + 160, 1180, {"m": "m_bucket", "J": "J_bucket", "g0": g0})
-    d.bond("Joint3", "parent", "BodyJ2", None)
+    d.bond("BodyJ2", None, "Joint3", "parent")
     d.bond("Joint3", "child", "Link3", "parent")
     d.bond("Link3", "child", "BodyJ3", None)
     d.bond("Bucket", "p", "BodyJ3", None)
@@ -208,22 +208,26 @@ def mechanism(d: Diagram, q0, bucket: dict, g0: str) -> None:
 
 
 def drive_chain(d: Diagram, name: str, x: float, y: float) -> str:
-    """Rod 1-junction -> rack-and-pinion (a unit domain bridge) -> modulated transformer(s)
-    -> joint drive. Returns the rod junction."""
+    """Rod 1-junction -> rack-and-pinion (a unit domain bridge) -> pinion 1-junction ->
+    modulated transformer(s) -> joint drive. Both terminals of the rack-and-pinion are iconic
+    (`in`): the rod junction bonds into the rack, and the pinion shaft is a 1-junction that bonds
+    into the pinion and into the lever. Returns the rod junction."""
     C = CAP[name]
     rod = d.junction(f"{C}Rod", "1", x, y)
     d.node(f"{C}RP", "stdlib:converters/RackAndPinion", x + 120, y, {"r": "1.0"})
-    d.bond(f"{C}RP", "b", rod, None)
+    d.bond(rod, None, f"{C}RP", "b")
+    pinion = d.junction(f"{C}Pinion", "1", x + 180, y + 80)
+    d.bond(pinion, None, f"{C}RP", "a")
     joint = {"boom": "Joint1", "arm": "Joint2", "bucket": "Joint3"}[name]
     if name != "bucket":
         d.node(f"{C}Lever", "stdlib:bondgraph/MTF", x + 240, y)
-        d.bond(f"{C}RP", "a", f"{C}Lever", "p2")
+        d.bond(pinion, None, f"{C}Lever", "p2")
         d.bond(f"{C}Lever", "p1", joint, "drive")
         d.sig(f"{C}Mount", "r", f"{C}Lever", "u")
     else:
         d.node("BucketLever", "stdlib:bondgraph/MTF", x + 240, y)
         d.node("FourBar", "stdlib:bondgraph/MTF", x + 360, y)
-        d.bond("BucketRP", "a", "BucketLever", "p2")
+        d.bond(pinion, None, "BucketLever", "p2")
         d.bond("BucketLever", "p1", "FourBar", "p2")
         d.bond("FourBar", "p1", joint, "drive")
         d.sig("BucketMount", "r", "BucketLever", "u")
@@ -574,7 +578,7 @@ def soil(d: Diagram) -> None:
             "N_g": num(SOIL["N_gamma"]), "N_c": num(SOIL["N_c"]), "rho_s": num(SOIL["rho"]),
             "swell": num(SOIL["swell"]), "V_max": num(SOIL["V_max"]), "tau_dump": "0.6", "c_dump": "0.3",
             "g0": num(G0), "v_eps": "0.02", "d_eps": "0.01"}, {"V": "0.0"})
-    d.bond("Soil", "p", "BodyJ3", None)
+    d.bond("BodyJ3", None, "Soil", "p")
     d.sig("PoseB3", "g", "Soil", "g")
     del b
 

@@ -15,7 +15,7 @@ The editor's Run uses `t_end` = 4 s (4001 points, `reltol` 1e-9, `abstol` 1e-11)
 | KE/PE swing $m g L (1 - \cos q_0)$ | 2.4524796e-4 J |
 | drift divided by swing | 7.2431e-12 (target 1e-6) |
 | states | 6 (P 3, d 2, q 1), all differential |
-| adaptive steps | 4072 for 4 s, 10072 for 10 s |
+| run cost | no fast transient; the model pins the stiff solver `Rodas5P` |
 
 ## What `expected.json` checks
 

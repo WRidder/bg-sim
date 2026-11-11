@@ -1,8 +1,8 @@
 # Results
 
-![Longitudinal modes|900](assets/5ddef747f8c9.png)
+![Longitudinal modes|900](assets/c3bdc9d73419.png)
 
-![Lateral modes and the mode rates|900](assets/fd1ccbc21b3b.png)
+![Lateral modes and the mode rates|900](assets/7db3866ce2a4.png)
 
 | mode | scipy (linearised) | bg-sim (fitted on the nonlinear run) |
 | --- | --- | --- |

@@ -52,10 +52,10 @@ Continue with [the plant](page:plant), [the controller](page:controller) and [th
 # Plant: a PMSM as a bond graph
 
 ```
-Vd(MSe) -> DJ(1) -- Rd(R_s) -- Id(L_d) -- IdSens -- MGY(u = w_e L_q)
-Vq(MSe) -> QJ(1) -- Rq(R_s) -- Iq(L_q) -- IqSens -- Bemf(MSe, +k_e w_m)
+Vd(MSe) -> DJ(1) -- Rd(R_s) -- Id(L_d) -- IdSens -- MGY(u = -w_e L_q)
+Vq(MSe) -> QJ(1) -- Rq(R_s) -- Iq(L_q) -- IqSens -- Bemf(MSe, -k_e w_m)
                     |                                '-- GY(r = k_t) -> MJ(1)
-Iq(IqSens) -- IqSrc(MSf, -1) -- GY.p1
+Iq(IqSens) -- IqSrc(MSf, +1) -- GY.p1
 MJ(1) -- Jm(I) -- Bm(R) -- WmSens -- Theta(integrator)
 ```
 
@@ -68,9 +68,9 @@ $$T_e = \tfrac32\,p\,\psi_m\,i_q, \qquad J\,\frac{d\omega_m}{dt} = T_e - B\,\ome
 ## Elements and signs
 
 - [DJ](block:DJ) and [QJ](block:QJ) are the d and q 1-junctions; [Rd](block:Rd)/[Id](block:Id) and [Rq](block:Rq)/[Iq](block:Iq) are stator resistance and inductance; [IdSens](block:IdSens), [IqSens](block:IqSens) are flow sensors.
-- [MGY](block:MGY) (`p1` on `DJ`, `p2` on `QJ`) has the signal modulus $\omega_e L_q$ from the gain [WeL](block:WeL) ($p\,L = 0.024$) of the measured speed. It produces the cross terms $-\omega_e L_q i_q$ and $+\omega_e L_d i_d$ (the surface-mount assumption $L_d = L_q = L$ makes one gyrator exact).
-- [Bemf](block:Bemf) is an `MSe` on `QJ` with gain $k_e$ = 0.32 and input $\omega_m$; the junction sees $-k_e\omega_m$, i.e. the $+\omega_e\psi_m$ back-EMF of the q equation.
-- [GY](block:GY) has $r = k_t = 1.5\,p\,\psi_m = 0.48$ N·m/A; its p2 torque is $+k_t i_q$ into [MJ](block:MJ). The measured $i_q$ drives its p1 through [IqSrc](block:IqSrc), an `MSf` with gain -1. This `MSf` is the **dq 3/2 power-scale interface**: the per-axis dq electrical bond carries $v_d i_d + v_q i_q$ while the shaft carries $T_e\,\omega_m = 1.5\,k_e\,i_q\,\omega_m$; the gyrator supplies the torque and the `MSf` absorbs the difference.
+- [MGY](block:MGY) (`p1` on `DJ`, `p2` on `QJ`) has the signal modulus $-\omega_e L_q$ from the gain [WeL](block:WeL) ($-p\,L = -0.024$) of the measured speed; the negative sign is what the through pair needs ([MGY](block:MGY) to [DJ](block:DJ) leaves, [QJ](block:QJ) to [MGY](block:MGY) arrives). It produces the cross terms $-\omega_e L_q i_q$ and $+\omega_e L_d i_d$ (the surface-mount assumption $L_d = L_q = L$ makes one gyrator exact).
+- [Bemf](block:Bemf) is an `MSe` on `QJ` with gain $-k_e$ = -0.32 and input $\omega_m$, bonded from the source into the junction; the junction sees $-k_e\omega_m$, i.e. the $+\omega_e\psi_m$ back-EMF of the q equation.
+- [GY](block:GY) has $r = k_t = 1.5\,p\,\psi_m = 0.48$ N·m/A; its p2 torque is $+k_t i_q$ into [MJ](block:MJ). The measured $i_q$ drives its p1 through [IqSrc](block:IqSrc), an `MSf` with gain +1, bonded from the source into the gyrator. This `MSf` is the **dq 3/2 power-scale interface**: the per-axis dq electrical bond carries $v_d i_d + v_q i_q$ while the shaft carries $T_e\,\omega_m = 1.5\,k_e\,i_q\,\omega_m$; the gyrator supplies the torque and the `MSf` absorbs the difference.
 - `MJ` carries the rotor inertia [Jm](block:Jm), viscous [Bm](block:Bm), the speed sensor [WmSens](block:WmSens) and the load torque source [Load](block:Load) (driven by [LoadStep](block:LoadStep): 0 to -2 at 0.9 s, a 2 N·m resisting torque). [Theta](block:Theta) is a kinematic integrator of the measured speed (the D28 sensor exception) used by the controller.
 
 ## Parameters

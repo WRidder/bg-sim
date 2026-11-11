@@ -362,3 +362,246 @@ const _CT_CORNERS = [(0.2, 0.15, -0.05), (-0.2, 0.15, -0.05), (0.2, -0.15, -0.05
               1.0e-6 * abs(cols["C1/delta"][end]) + 1.0e-12
     end
 end
+
+# ---------------------------------------------------------------------------------------
+# WP-O3a: one bond-direction rule for every attachment to a body (port orientation, E114).
+#
+# A body is a 1-junction whose flow is the body twist V. The `in` blocks (inertia, Coriolis,
+# twist sensor, contact, joint parent) are reached by bonds that leave it; the `out` blocks
+# (gravity, external wrench, joint child) bond into it; a `through` mount passes the
+# direction on (one bond arrives at it, the other leaves). The same body built three ways
+# (the library `RigidBody3D`, a hand-built junction, and a hand-built junction behind
+# `FixedTransform3DNeutral` mounts) gives the same motion, and every reversed bond is E114.
+# ---------------------------------------------------------------------------------------
+
+"""Swap the two ends of connection `id` (reverse a bond)."""
+function _ct_o3a_reverse!(conns, id)
+    found = false
+    for c in conns
+        c["id"] == id || continue
+        c["from"], c["to"] = c["to"], c["from"]
+        found = true
+    end
+    found || error("no connection `$id`")
+    return conns
+end
+
+"""A body on a `Free3D` from the ground. `way` is `:library` (`RigidBody3D`), `:junction`
+(a 1-junction with `ISpatial`, `CoriolisSpatial`, `GravitySpatial`, `DfSpatial`) or
+`:mounted` (the junction, with the `Free3D` child, the contact and the thrust each behind a
+`FixedTransform3DNeutral`). `case` is `:fall`, `:drop` (one `ContactPoint` at the body
+origin over the plane z = 0) or `:thrust` (`ExternalWrenchSpatial`, 30 N up). `flip`
+reverses one connection by id."""
+function _ct_o3a_body(; way = :library, case = :fall, flip = nothing, z0 = 0.1, t_end = 1.0)
+    m = 2.0
+    nodes = Any[
+        bg_node("w", "World", bg_ref("stdlib:multibond/GroundSpatial")),
+        bg_node("f", "Free", bg_ref("stdlib:spatial/Free3D");
+            starts = Dict{String,Any}("pz" => string(z0))),
+    ]
+    conns = Any[bg_conn("cw", "bond", "w", "p", "f", "parent")]
+    for k in 1:6
+        push!(nodes, bg_node("d$k", "D$k", bg_ref("stdlib:bondgraph/Se");
+            params = Dict{String,Any}("e" => "0.0")))
+        push!(conns, bg_conn("cd$k", "bond", "d$k", "p", "f", "drive$k"))
+    end
+    if way === :library
+        push!(nodes, bg_node("b", "Body", bg_ref("stdlib:spatial/RigidBody3D");
+            params = Dict{String,Any}("m" => string(m), "J" => "[0.1, 0.1, 0.1]",
+                "g0" => string(_CT_G0))))
+        push!(conns, bg_conn("cg", "signal", "f", "pose", "b", "g"))
+        bp = "p"
+    else
+        bp = nothing
+        append!(nodes, Any[
+            bg_node("b", "Body", bg_junction(1)),
+            bg_node("i", "Inertia", bg_ref("stdlib:multibond/ISpatial");
+                params = Dict{String,Any}("m" => string(m), "J" => "[0.1, 0.1, 0.1]")),
+            bg_node("co", "Coriolis", bg_ref("stdlib:multibond/CoriolisSpatial")),
+            bg_node("gr", "Gravity", bg_ref("stdlib:multibond/GravitySpatial");
+                params = Dict{String,Any}("m" => string(m), "g0" => string(_CT_G0))),
+            bg_node("tw", "Twist", bg_ref("stdlib:multibond/DfSpatial")),
+        ])
+        append!(conns, Any[
+            bg_conn("ci", "bond", "b", bp, "i", "p"),
+            bg_conn("cco", "bond", "b", bp, "co", "p"),
+            bg_conn("cgr", "bond", "gr", "p", "b", bp),
+            bg_conn("ctw", "bond", "b", bp, "tw", "p"),
+            bg_conn("cP", "signal", "i", "Pm", "co", "P"),
+            bg_conn("cg", "signal", "f", "pose", "gr", "g"),
+        ])
+    end
+    if way === :mounted
+        push!(nodes, bg_node("fm", "FreeMount",
+            bg_ref("stdlib:multibond/FixedTransform3DNeutral")))
+        push!(conns, bg_conn("cfree", "bond", "f", "child", "fm", "a"))
+        push!(conns, bg_conn("cfm", "bond", "fm", "b", "b", bp))
+    else
+        push!(conns, bg_conn("cfree", "bond", "f", "child", "b", bp))
+    end
+    if case === :drop
+        append!(nodes, Any[
+            bg_node("s", "Surf", bg_ref("stdlib:contact/ContactSurface")),
+            bg_node("m", "Mount", bg_ref("stdlib:multibond/FixedTransform3DNeutral")),
+            bg_node("l", "Local", bg_ref("stdlib:spatial/LocalPose3D")),
+            bg_node("k", "Compose", bg_ref("stdlib:multibond/ComposePose3D")),
+            bg_node("p", "Pad", bg_ref("stdlib:contact/ContactPoint");
+                params = Dict{String,Any}("c" => "5.0")),
+        ])
+        append!(conns, Any[
+            bg_conn("cmount", "bond", "b", bp, "m", "b"),
+            bg_conn("cpad", "bond", "m", "a", "p", "p"),
+            bg_conn("ck1", "signal", "f", "pose", "k", "gp"),
+            bg_conn("ck2", "signal", "l", "g", "k", "gl"),
+            bg_conn("ck3", "signal", "k", "g", "p", "g"),
+            bg_conn("cso", "signal", "s", "o", "p", "o"),
+            bg_conn("csf", "signal", "s", "fr", "p", "fr"),
+        ])
+    elseif case === :thrust
+        push!(nodes, bg_node("tws", "Thrust", bg_ref("stdlib:multibond/ExternalWrenchSpatial")))
+        for (k, port) in enumerate(("tx", "ty", "tz", "fx", "fy", "fz"))
+            push!(nodes, bg_node("tc$k", "TC$k", bg_ref("stdlib:sources/Constant");
+                params = Dict{String,Any}("value" => port == "fz" ? "30.0" : "0.0")))
+            push!(conns, bg_conn("ctc$k", "signal", "tc$k", "y", "tws", port))
+        end
+        if way === :mounted
+            push!(nodes, bg_node("tm", "ThrustMount",
+                bg_ref("stdlib:multibond/FixedTransform3DNeutral")))
+            push!(conns, bg_conn("cthrust", "bond", "tws", "p", "tm", "a"))
+            push!(conns, bg_conn("ctm", "bond", "tm", "b", "b", bp))
+        else
+            push!(conns, bg_conn("cthrust", "bond", "tws", "p", "b", bp))
+        end
+    end
+    flip === nothing || _ct_o3a_reverse!(conns, flip)
+    return bg_model("O3aBody", nodes, conns; t_end = t_end, points = 101,
+        reltol = 1.0e-8, abstol = 1.0e-10)
+end
+
+_ct_o3a_e114(doc) =
+    [d for d in Compile.flatten(IR.parse_model(doc)).diagnostics if d.code == "E114"]
+
+"""Whether one of the E114 diagnostics names connection `id`."""
+_ct_o3a_names(ds, id) = any(d -> d.connection == id || occursin("`$id`", d.message), ds)
+
+"""The planar body three ways: `RigidBody2D` (`:library`), a hand-built 1-junction with
+`IPlanar`, `CoriolisPlanar`, `GravityPlanar` and `DfPlanar` (`:junction`), and the junction
+with the wrench behind a `FixedTransform2D` (`:mounted`). A `PoseIntegrator2D` integrates the
+body twist; an `ExternalWrenchPlanar` pushes up with `wy`."""
+function _ct_o3a_planar(; way = :library, wy = 0.0, flip = nothing, y0 = 0.1, t_end = 1.0)
+    m = 2.0
+    nodes = Any[
+        bg_node("pose", "Pose", bg_ref("stdlib:planar/PoseIntegrator2D");
+            params = Dict{String,Any}("y0" => string(y0))),
+        bg_node("e", "Thrust", bg_ref("stdlib:multibond/ExternalWrenchPlanar")),
+    ]
+    conns = Any[]
+    for (k, port) in enumerate(("wr", "wx", "wy"))
+        push!(nodes, bg_node("u$k", "U$k", bg_ref("stdlib:sources/Constant");
+            params = Dict{String,Any}("value" => port == "wy" ? string(wy) : "0.0")))
+        push!(conns, bg_conn("cu$k", "signal", "u$k", "y", "e", port))
+    end
+    if way === :library
+        push!(nodes, bg_node("b", "Body", bg_ref("stdlib:planar/RigidBody2D");
+            params = Dict{String,Any}("m" => string(m), "J" => "0.05",
+                "g0" => string(_CT_G0))))
+        append!(conns, Any[
+            bg_conn("cv", "signal", "b", "V", "pose", "tw"),
+            bg_conn("cg", "signal", "pose", "g", "b", "g"),
+        ])
+        bp = "p"
+    else
+        bp = nothing
+        append!(nodes, Any[
+            bg_node("b", "Body", bg_junction(1)),
+            bg_node("i", "Inertia", bg_ref("stdlib:multibond/IPlanar");
+                params = Dict{String,Any}("m" => string(m), "J" => "0.05")),
+            bg_node("co", "Coriolis", bg_ref("stdlib:multibond/CoriolisPlanar")),
+            bg_node("gr", "Gravity", bg_ref("stdlib:multibond/GravityPlanar");
+                params = Dict{String,Any}("m" => string(m), "g0" => string(_CT_G0))),
+            bg_node("tw", "Twist", bg_ref("stdlib:multibond/DfPlanar")),
+        ])
+        append!(conns, Any[
+            bg_conn("ci", "bond", "b", bp, "i", "p"),
+            bg_conn("cco", "bond", "b", bp, "co", "p"),
+            bg_conn("cgr", "bond", "gr", "p", "b", bp),
+            bg_conn("ctw", "bond", "b", bp, "tw", "p"),
+            bg_conn("cP", "signal", "i", "Pm", "co", "P"),
+            bg_conn("cv", "signal", "tw", "y", "pose", "tw"),
+            bg_conn("cg", "signal", "pose", "g", "gr", "g"),
+        ])
+    end
+    if way === :mounted
+        push!(nodes, bg_node("tm", "ThrustMount", bg_ref("stdlib:multibond/FixedTransform2D")))
+        push!(conns, bg_conn("cthrust", "bond", "e", "p", "tm", "a"))
+        push!(conns, bg_conn("ctm", "bond", "tm", "b", "b", bp))
+    else
+        push!(conns, bg_conn("cthrust", "bond", "e", "p", "b", bp))
+    end
+    flip === nothing || _ct_o3a_reverse!(conns, flip)
+    return bg_model("O3aPlanar", nodes, conns; t_end = t_end, points = 101,
+        reltol = 1.0e-8, abstol = 1.0e-10)
+end
+
+@testset "WP-O3a: one bond direction for every attachment to a body" begin
+    @testset "spatial: library, junction and mounted bodies agree" begin
+        z_end = Dict{Tuple{Symbol,Symbol},Float64}()
+        for case in (:fall, :drop, :thrust), way in (:library, :junction, :mounted)
+            doc = _ct_o3a_body(; way, case)
+            @test isempty(_ct_o3a_e114(doc))
+            cols, res, flat = bg_run(doc)
+            @test res.status == "done"
+            @test isempty([d for d in flat.diagnostics if d.severity == "error"])
+            z_end[(case, way)] = cols["Free/pose[7]"][end]
+        end
+        for way in (:library, :junction, :mounted)
+            # Free fall from 0.1 m for 1 s, and 30 N up on 2 kg: the analytic heights.
+            @test isapprox(z_end[(:fall, way)], 0.1 - 0.5 * _CT_G0; atol = 1.0e-6)
+            @test isapprox(z_end[(:thrust, way)], 0.1 + 0.5 * (30.0 / 2.0 - _CT_G0);
+                atol = 1.0e-6)
+            # The drop rests on the plane (a small penetration), it does not fall through.
+            @test -5.0e-3 < z_end[(:drop, way)] < 0.0
+            @test isapprox(z_end[(:drop, way)], z_end[(:drop, :library)]; atol = 1.0e-7)
+        end
+        println("WP-O3a body heights at 1 s: ", z_end)
+    end
+
+    @testset "spatial: every reversed attachment is E114" begin
+        for (kw, ids) in (
+            ((way = :junction, case = :drop), ("ci", "cco", "cgr", "ctw", "cfree", "cmount")),
+            ((way = :junction, case = :thrust), ("cthrust",)),
+            ((way = :mounted, case = :drop), ("cfm",)),
+            ((way = :mounted, case = :thrust), ("ctm",)),
+            ((way = :library, case = :drop), ("cfree", "cmount")),
+            ((way = :library, case = :thrust), ("cthrust",)),
+        )
+            for id in ids
+                ds = _ct_o3a_e114(_ct_o3a_body(; kw..., flip = id))
+                @test !isempty(ds)
+                @test _ct_o3a_names(ds, id)
+                @test all(d -> d.severity == "error", ds)
+            end
+        end
+    end
+
+    @testset "planar: library, junction and mounted bodies agree" begin
+        for (wy, expected) in ((0.0, 0.1 - 0.5 * _CT_G0),
+                (30.0, 0.1 + 0.5 * (30.0 / 2.0 - _CT_G0)))
+            for way in (:library, :junction, :mounted)
+                doc = _ct_o3a_planar(; way, wy)
+                @test isempty(_ct_o3a_e114(doc))
+                cols, res, _ = bg_run(doc)
+                @test res.status == "done"
+                @test isapprox(cols["Pose/g[3]"][end], expected; atol = 1.0e-6)
+            end
+        end
+        for (way, ids) in ((:junction, ("ci", "cco", "cgr", "ctw", "cthrust")),
+                (:mounted, ("ctm",)), (:library, ("cthrust",)))
+            for id in ids
+                ds = _ct_o3a_e114(_ct_o3a_planar(; way, wy = 30.0, flip = id))
+                @test !isempty(ds)
+                @test _ct_o3a_names(ds, id)
+            end
+        end
+    end
+end
