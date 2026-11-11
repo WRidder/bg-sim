@@ -95,7 +95,7 @@ def add_chain(d: Diagram, q0, k_joint: float, qdd0=None, y0: int = STAIR_Y,
             d.ref(f"t{k}", f"T{k}", "stdlib:multibond/FixedTransform3DNeutral", x0 - 40, y0,
                   params=pose_params(t_pose))  # fmt: skip
             d.connect("bond", (f"t{k}", "a"), (f"j{k}", "parent"))
-            d.connect("bond", (f"t{k}", "b"), (f"bj{k - 1}", None))
+            d.connect("bond", (f"bj{k - 1}", None), (f"t{k}", "b"))
         d.connect("bond", (f"j{k}", "child"), (f"link{k}", "a"))
         d.connect("bond", (f"link{k}", "b"), (f"bj{k}", None))
         d.connect("bond", (f"b{k}", "p"), (f"bj{k}", None))

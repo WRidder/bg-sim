@@ -685,12 +685,12 @@
         "id": "c5",
         "kind": "bond",
         "from": {
-          "node": "WeldB",
-          "port": "parent"
-        },
-        "to": {
           "node": "n5",
           "port": "B"
+        },
+        "to": {
+          "node": "WeldB",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -825,12 +825,12 @@
         "id": "c3",
         "kind": "bond",
         "from": {
-          "node": "WeldA",
-          "port": "parent"
-        },
-        "to": {
           "node": "n3",
           "port": "p"
+        },
+        "to": {
+          "node": "WeldA",
+          "port": "parent"
         },
         "route": [],
         "label": null

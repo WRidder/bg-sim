@@ -231,7 +231,7 @@ def add_arm(d: Diagram, p: str, s: int) -> None:
             t_pose = np.linalg.inv(f["LN"][i]) @ f["LC"][i - 1]
             d.ref(f"t{p}{k}", f"{p}T{k}", "stdlib:multibond/FixedTransform3DNeutral", x - 40, y0, params=pose_params(t_pose))
             d.connect("bond", (f"t{p}{k}", "a"), (f"j{p}{k}", "parent"))
-            d.connect("bond", (f"t{p}{k}", "b"), (f"bj{p}{k - 1}", None))
+            d.connect("bond", (f"bj{p}{k - 1}", None), (f"t{p}{k}", "b"))
         d.connect("bond", (f"j{p}{k}", "child"), (f"link{p}{k}", "a"))
         d.connect("bond", (f"link{p}{k}", "b"), (f"bj{p}{k}", None))
         d.connect("bond", (f"b{p}{k}", "p"), (f"bj{p}{k}", None))
@@ -299,11 +299,11 @@ def add_grasp(d: Diagram, p: str, s: int) -> None:
     d.junction(f"wj{p}", f"{p}WeldJ", "1", xw, yw + 120)
     d.ref(f"wc{p}", f"{p}WeldSpring", "stdlib:bondgraph/C", xw - 60, yw + 220, params={"c": fmt(1.0 / g["kq"])})
     d.ref(f"wr{p}", f"{p}WeldDamper", "stdlib:bondgraph/R", xw + 60, yw + 220, params={"r": fmt(br)})
-    d.connect("bond", (f"tip{p}", "b"), (f"bj{p}7", None))
+    d.connect("bond", (f"bj{p}7", None), (f"tip{p}", "b"))
     d.connect("bond", (f"tip{p}", "a"), (f"weld{p}", "parent"))
     d.connect("bond", (f"weld{p}", "child"), (f"grip{p}", "a"))
     d.connect("bond", (f"grip{p}", "b"), ("boxj", None))
-    d.connect("bond", (f"weld{p}", "drive"), (f"wj{p}", None))
+    d.connect("bond", (f"wj{p}", None), (f"weld{p}", "drive"))
     d.connect("bond", (f"wj{p}", None), (f"wc{p}", "p"))
     d.connect("bond", (f"wj{p}", None), (f"wr{p}", "p"))
     d.ref(f"gl{p}", f"{p}GraspLoad", "project:GraspLoad", xw + 300, yw + 120,

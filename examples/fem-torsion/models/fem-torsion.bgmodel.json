@@ -545,12 +545,12 @@
         "id": "c3",
         "kind": "bond",
         "from": {
-          "node": "n4",
-          "port": "parent"
-        },
-        "to": {
           "node": "n3",
           "port": "p"
+        },
+        "to": {
+          "node": "n4",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -587,12 +587,12 @@
         "id": "c6",
         "kind": "bond",
         "from": {
-          "node": "n7",
-          "port": "parent"
-        },
-        "to": {
           "node": "n6",
           "port": "B"
+        },
+        "to": {
+          "node": "n7",
+          "port": "parent"
         },
         "route": [],
         "label": null

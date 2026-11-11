@@ -1,9 +1,9 @@
 @block PneumaticCylinder begin
     # The pneumatic cylinder of one gripper zone, as the drive of its rod's prismatic joint
     # (bonded to `Prismatic3DLimit.drive` through a 1-junction; positive force and speed extend
-    # the rod). The port is power-in like every bgsim element (p.e p.f is the power INTO the
-    # cylinder), so the port flow is minus the rod speed: v = -p.f, and the cylinder delivers
-    # F v to the rod.
+    # the rod). It is an effort source: the port is `out` (the bond runs from the cylinder to
+    # the junction), and its variables count power INTO the cylinder, so the port flow is minus
+    # the rod speed: v = -p.f, and the cylinder delivers F v to the rod.
     #
     # A 5/2 valve `u` (+1 extend, -1 retract) puts the extend force `F_ext` (supply pressure on
     # the bore) or the retract force `F_ret` (on the annulus) on the piston, and the meter-out
@@ -35,4 +35,5 @@
         p.e ~ F
     end
     @causality p => :effort_out
+    @orientation p => :out
 end

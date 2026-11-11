@@ -864,11 +864,11 @@
         "id": "b004",
         "kind": "bond",
         "from": {
-          "node": "n005",
-          "port": "parent"
+          "node": "n003"
         },
         "to": {
-          "node": "n003"
+          "node": "n005",
+          "port": "parent"
         }
       },
       {
@@ -981,11 +981,11 @@
         "id": "b009",
         "kind": "bond",
         "from": {
-          "node": "n013",
-          "port": "parent"
+          "node": "n007"
         },
         "to": {
-          "node": "n007"
+          "node": "n013",
+          "port": "parent"
         }
       },
       {

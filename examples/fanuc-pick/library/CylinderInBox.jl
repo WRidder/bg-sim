@@ -4,8 +4,8 @@
     #
     # Mounting as `SuctionCup`: a `FixedTransform3DNeutral` (identity) on each side with this
     # element on side `a` of both mounts; `a` faces the carton body, `b` the content body. The
-    # port flows are the negative body twists, the efforts the wrenches ON the carton (`a.e`,
-    # about its body origin, body frame) and ON the content (`b.e`, about its centre, own frame).
+    # port flows are the body twists, the efforts minus the wrenches on the carton (`a.e`, about
+    # its body origin, body frame) and on the content (`b.e`, about its centre, own frame).
     # `gb`, `gc` are the two world poses (D-MB6 chart). The carton frame is the box body frame
     # shifted by `o`; the walls are the planes |x_i| = h_i of the carton frame.
     #
@@ -269,18 +269,18 @@
         rr[1] ~ Rb[1, 1] * (gc[5] - gb[5]) + Rb[2, 1] * (gc[6] - gb[6]) + Rb[3, 1] * (gc[7] - gb[7]) - ox
         rr[2] ~ Rb[1, 2] * (gc[5] - gb[5]) + Rb[2, 2] * (gc[6] - gb[6]) + Rb[3, 2] * (gc[7] - gb[7]) - oy
         rr[3] ~ Rb[1, 3] * (gc[5] - gb[5]) + Rb[2, 3] * (gc[6] - gb[6]) + Rb[3, 3] * (gc[7] - gb[7]) - oz
-        wb[1] ~ -a.f[1]
-        vb[1] ~ -a.f[4]
-        wcb[1] ~ -(Rbc[1, 1] * b.f[1] + Rbc[1, 2] * b.f[2] + Rbc[1, 3] * b.f[3])
-        vcb[1] ~ -(Rbc[1, 1] * b.f[4] + Rbc[1, 2] * b.f[5] + Rbc[1, 3] * b.f[6])
-        wb[2] ~ -a.f[2]
-        vb[2] ~ -a.f[5]
-        wcb[2] ~ -(Rbc[2, 1] * b.f[1] + Rbc[2, 2] * b.f[2] + Rbc[2, 3] * b.f[3])
-        vcb[2] ~ -(Rbc[2, 1] * b.f[4] + Rbc[2, 2] * b.f[5] + Rbc[2, 3] * b.f[6])
-        wb[3] ~ -a.f[3]
-        vb[3] ~ -a.f[6]
-        wcb[3] ~ -(Rbc[3, 1] * b.f[1] + Rbc[3, 2] * b.f[2] + Rbc[3, 3] * b.f[3])
-        vcb[3] ~ -(Rbc[3, 1] * b.f[4] + Rbc[3, 2] * b.f[5] + Rbc[3, 3] * b.f[6])
+        wb[1] ~ a.f[1]
+        vb[1] ~ a.f[4]
+        wcb[1] ~ Rbc[1, 1] * b.f[1] + Rbc[1, 2] * b.f[2] + Rbc[1, 3] * b.f[3]
+        vcb[1] ~ Rbc[1, 1] * b.f[4] + Rbc[1, 2] * b.f[5] + Rbc[1, 3] * b.f[6]
+        wb[2] ~ a.f[2]
+        vb[2] ~ a.f[5]
+        wcb[2] ~ Rbc[2, 1] * b.f[1] + Rbc[2, 2] * b.f[2] + Rbc[2, 3] * b.f[3]
+        vcb[2] ~ Rbc[2, 1] * b.f[4] + Rbc[2, 2] * b.f[5] + Rbc[2, 3] * b.f[6]
+        wb[3] ~ a.f[3]
+        vb[3] ~ a.f[6]
+        wcb[3] ~ Rbc[3, 1] * b.f[1] + Rbc[3, 2] * b.f[2] + Rbc[3, 3] * b.f[3]
+        vcb[3] ~ Rbc[3, 1] * b.f[4] + Rbc[3, 2] * b.f[5] + Rbc[3, 3] * b.f[6]
         ax[1] ~ Rbc[1, 3]
         ax[2] ~ Rbc[2, 3]
         ax[3] ~ Rbc[3, 3]
@@ -539,18 +539,18 @@
         F[3] ~ F_xpp[3] + F_xmp[3] + F_ypp[3] + F_ymp[3] + F_zpp[3] + F_zmp[3] + F_xpm[3] + F_xmm[3] + F_ypm[3] + F_ymm[3] + F_zpm[3] + F_zmm[3]
         Tq[3] ~ ((P_xpp[1] - rr[1]) * F_xpp[2] + -((P_xpp[2] - rr[2]) * F_xpp[1])) + ((P_xmp[1] - rr[1]) * F_xmp[2] + -((P_xmp[2] - rr[2]) * F_xmp[1])) + ((P_ypp[1] - rr[1]) * F_ypp[2] + -((P_ypp[2] - rr[2]) * F_ypp[1])) + ((P_ymp[1] - rr[1]) * F_ymp[2] + -((P_ymp[2] - rr[2]) * F_ymp[1])) + ((P_zpp[1] - rr[1]) * F_zpp[2] + -((P_zpp[2] - rr[2]) * F_zpp[1])) + ((P_zmp[1] - rr[1]) * F_zmp[2] + -((P_zmp[2] - rr[2]) * F_zmp[1])) + ((P_xpm[1] - rr[1]) * F_xpm[2] + -((P_xpm[2] - rr[2]) * F_xpm[1])) + ((P_xmm[1] - rr[1]) * F_xmm[2] + -((P_xmm[2] - rr[2]) * F_xmm[1])) + ((P_ypm[1] - rr[1]) * F_ypm[2] + -((P_ypm[2] - rr[2]) * F_ypm[1])) + ((P_ymm[1] - rr[1]) * F_ymm[2] + -((P_ymm[2] - rr[2]) * F_ymm[1])) + ((P_zpm[1] - rr[1]) * F_zpm[2] + -((P_zpm[2] - rr[2]) * F_zpm[1])) + ((P_zmm[1] - rr[1]) * F_zmm[2] + -((P_zmm[2] - rr[2]) * F_zmm[1]))
         Tbx[3] ~ -(((P_xpp[1] + ox) * F_xpp[2] - (P_xpp[2] + oy) * F_xpp[1]) + ((P_xmp[1] + ox) * F_xmp[2] - (P_xmp[2] + oy) * F_xmp[1]) + ((P_ypp[1] + ox) * F_ypp[2] - (P_ypp[2] + oy) * F_ypp[1]) + ((P_ymp[1] + ox) * F_ymp[2] - (P_ymp[2] + oy) * F_ymp[1]) + ((P_zpp[1] + ox) * F_zpp[2] - (P_zpp[2] + oy) * F_zpp[1]) + ((P_zmp[1] + ox) * F_zmp[2] - (P_zmp[2] + oy) * F_zmp[1]) + ((P_xpm[1] + ox) * F_xpm[2] - (P_xpm[2] + oy) * F_xpm[1]) + ((P_xmm[1] + ox) * F_xmm[2] - (P_xmm[2] + oy) * F_xmm[1]) + ((P_ypm[1] + ox) * F_ypm[2] - (P_ypm[2] + oy) * F_ypm[1]) + ((P_ymm[1] + ox) * F_ymm[2] - (P_ymm[2] + oy) * F_ymm[1]) + ((P_zpm[1] + ox) * F_zpm[2] - (P_zpm[2] + oy) * F_zpm[1]) + ((P_zmm[1] + ox) * F_zmm[2] - (P_zmm[2] + oy) * F_zmm[1]))
-        b.e[1] ~ Rbc[1, 1] * Tq[1] + Rbc[2, 1] * Tq[2] + Rbc[3, 1] * Tq[3]
-        b.e[4] ~ Rbc[1, 1] * F[1] + Rbc[2, 1] * F[2] + Rbc[3, 1] * F[3]
-        a.e[1] ~ Tbx[1]
-        a.e[4] ~ -F[1]
-        b.e[2] ~ Rbc[1, 2] * Tq[1] + Rbc[2, 2] * Tq[2] + Rbc[3, 2] * Tq[3]
-        b.e[5] ~ Rbc[1, 2] * F[1] + Rbc[2, 2] * F[2] + Rbc[3, 2] * F[3]
-        a.e[2] ~ Tbx[2]
-        a.e[5] ~ -F[2]
-        b.e[3] ~ Rbc[1, 3] * Tq[1] + Rbc[2, 3] * Tq[2] + Rbc[3, 3] * Tq[3]
-        b.e[6] ~ Rbc[1, 3] * F[1] + Rbc[2, 3] * F[2] + Rbc[3, 3] * F[3]
-        a.e[3] ~ Tbx[3]
-        a.e[6] ~ -F[3]
+        b.e[1] ~ -(Rbc[1, 1] * Tq[1] + Rbc[2, 1] * Tq[2] + Rbc[3, 1] * Tq[3])
+        b.e[4] ~ -(Rbc[1, 1] * F[1] + Rbc[2, 1] * F[2] + Rbc[3, 1] * F[3])
+        a.e[1] ~ -Tbx[1]
+        a.e[4] ~ F[1]
+        b.e[2] ~ -(Rbc[1, 2] * Tq[1] + Rbc[2, 2] * Tq[2] + Rbc[3, 2] * Tq[3])
+        b.e[5] ~ -(Rbc[1, 2] * F[1] + Rbc[2, 2] * F[2] + Rbc[3, 2] * F[3])
+        a.e[2] ~ -Tbx[2]
+        a.e[5] ~ F[2]
+        b.e[3] ~ -(Rbc[1, 3] * Tq[1] + Rbc[2, 3] * Tq[2] + Rbc[3, 3] * Tq[3])
+        b.e[6] ~ -(Rbc[1, 3] * F[1] + Rbc[2, 3] * F[2] + Rbc[3, 3] * F[3])
+        a.e[3] ~ -Tbx[3]
+        a.e[6] ~ F[3]
         Ec ~ 0.4 * Fk_xpp * x_xpp + 0.4 * Fk_xmp * x_xmp + 0.4 * Fk_ypp * x_ypp + 0.4 * Fk_ymp * x_ymp + 0.4 * Fk_zpp * x_zpp + 0.4 * Fk_zmp * x_zmp + 0.4 * Fk_xpm * x_xpm + 0.4 * Fk_xmm * x_xmm + 0.4 * Fk_ypm * x_ypm + 0.4 * Fk_ymm * x_ymm + 0.4 * Fk_zpm * x_zpm + 0.4 * Fk_zmm * x_zmm
         Fn ~ fn_xpp + fn_xmp + fn_ypp + fn_ymp + fn_zpp + fn_zmp + fn_xpm + fn_xmm + fn_ypm + fn_ymm + fn_zpm + fn_zmm
         Fmag ~ sqrt(F[1] * F[1] + F[2] * F[2] + F[3] * F[3])
@@ -564,5 +564,9 @@
     @causality begin
         a => :effort_out
         b => :effort_out
+    end
+    @orientation begin
+        a => :in
+        b => :in
     end
 end

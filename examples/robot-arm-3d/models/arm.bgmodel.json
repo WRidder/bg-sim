@@ -122,6 +122,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "j1",
         "name": "J1",
         "block": {
@@ -199,6 +200,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "b1",
         "name": "B1",
         "block": {
@@ -387,6 +389,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "j2",
         "name": "J2",
         "block": {
@@ -464,6 +467,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "b2",
         "name": "B2",
         "block": {
@@ -652,6 +656,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "j3",
         "name": "J3",
         "block": {
@@ -729,6 +734,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "b3",
         "name": "B3",
         "block": {
@@ -917,6 +923,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "j4",
         "name": "J4",
         "block": {
@@ -994,6 +1001,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "b4",
         "name": "B4",
         "block": {
@@ -1182,6 +1190,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "j5",
         "name": "J5",
         "block": {
@@ -1259,6 +1268,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "b5",
         "name": "B5",
         "block": {
@@ -1447,6 +1457,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "j6",
         "name": "J6",
         "block": {
@@ -1524,6 +1535,7 @@
         }
       },
       {
+        "$comment": "migrate_bond_orientation: O7",
         "id": "b6",
         "name": "B6",
         "block": {
@@ -2064,11 +2076,11 @@
         "id": "c19",
         "kind": "bond",
         "from": {
-          "node": "t2",
-          "port": "b"
+          "node": "bj1"
         },
         "to": {
-          "node": "bj1"
+          "node": "t2",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -2362,11 +2374,11 @@
         "id": "c35",
         "kind": "bond",
         "from": {
-          "node": "t3",
-          "port": "b"
+          "node": "bj2"
         },
         "to": {
-          "node": "bj2"
+          "node": "t3",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -2660,11 +2672,11 @@
         "id": "c51",
         "kind": "bond",
         "from": {
-          "node": "t4",
-          "port": "b"
+          "node": "bj3"
         },
         "to": {
-          "node": "bj3"
+          "node": "t4",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -2958,11 +2970,11 @@
         "id": "c67",
         "kind": "bond",
         "from": {
-          "node": "t5",
-          "port": "b"
+          "node": "bj4"
         },
         "to": {
-          "node": "bj4"
+          "node": "t5",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -3256,11 +3268,11 @@
         "id": "c83",
         "kind": "bond",
         "from": {
-          "node": "t6",
-          "port": "b"
+          "node": "bj5"
         },
         "to": {
-          "node": "bj5"
+          "node": "t6",
+          "port": "b"
         },
         "route": [],
         "label": null

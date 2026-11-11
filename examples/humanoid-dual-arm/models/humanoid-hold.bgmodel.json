@@ -7694,11 +7694,11 @@
         "id": "b0024",
         "kind": "bond",
         "from": {
-          "node": "tL2",
-          "port": "b"
+          "node": "bjL1"
         },
         "to": {
-          "node": "bjL1"
+          "node": "tL2",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -7986,11 +7986,11 @@
         "id": "b0046",
         "kind": "bond",
         "from": {
-          "node": "tL3",
-          "port": "b"
+          "node": "bjL2"
         },
         "to": {
-          "node": "bjL2"
+          "node": "tL3",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -8278,11 +8278,11 @@
         "id": "b0068",
         "kind": "bond",
         "from": {
-          "node": "tL4",
-          "port": "b"
+          "node": "bjL3"
         },
         "to": {
-          "node": "bjL3"
+          "node": "tL4",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -8570,11 +8570,11 @@
         "id": "b0090",
         "kind": "bond",
         "from": {
-          "node": "tL5",
-          "port": "b"
+          "node": "bjL4"
         },
         "to": {
-          "node": "bjL4"
+          "node": "tL5",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -8862,11 +8862,11 @@
         "id": "b0112",
         "kind": "bond",
         "from": {
-          "node": "tL6",
-          "port": "b"
+          "node": "bjL5"
         },
         "to": {
-          "node": "bjL5"
+          "node": "tL6",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -9154,11 +9154,11 @@
         "id": "b0134",
         "kind": "bond",
         "from": {
-          "node": "tL7",
-          "port": "b"
+          "node": "bjL6"
         },
         "to": {
-          "node": "bjL6"
+          "node": "tL7",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -9767,11 +9767,11 @@
         "id": "b0180",
         "kind": "bond",
         "from": {
-          "node": "tR2",
-          "port": "b"
+          "node": "bjR1"
         },
         "to": {
-          "node": "bjR1"
+          "node": "tR2",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -10059,11 +10059,11 @@
         "id": "b0202",
         "kind": "bond",
         "from": {
-          "node": "tR3",
-          "port": "b"
+          "node": "bjR2"
         },
         "to": {
-          "node": "bjR2"
+          "node": "tR3",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -10351,11 +10351,11 @@
         "id": "b0224",
         "kind": "bond",
         "from": {
-          "node": "tR4",
-          "port": "b"
+          "node": "bjR3"
         },
         "to": {
-          "node": "bjR3"
+          "node": "tR4",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -10643,11 +10643,11 @@
         "id": "b0246",
         "kind": "bond",
         "from": {
-          "node": "tR5",
-          "port": "b"
+          "node": "bjR4"
         },
         "to": {
-          "node": "bjR4"
+          "node": "tR5",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -10935,11 +10935,11 @@
         "id": "b0268",
         "kind": "bond",
         "from": {
-          "node": "tR6",
-          "port": "b"
+          "node": "bjR5"
         },
         "to": {
-          "node": "bjR5"
+          "node": "tR6",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -11227,11 +11227,11 @@
         "id": "b0290",
         "kind": "bond",
         "from": {
-          "node": "tR7",
-          "port": "b"
+          "node": "bjR6"
         },
         "to": {
-          "node": "bjR6"
+          "node": "tR7",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -11616,11 +11616,11 @@
         "id": "b0319",
         "kind": "bond",
         "from": {
-          "node": "tipL",
-          "port": "b"
+          "node": "bjL7"
         },
         "to": {
-          "node": "bjL7"
+          "node": "tipL",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -11670,11 +11670,11 @@
         "id": "b0323",
         "kind": "bond",
         "from": {
-          "node": "weldL",
-          "port": "drive"
+          "node": "wjL"
         },
         "to": {
-          "node": "wjL"
+          "node": "weldL",
+          "port": "drive"
         },
         "route": [],
         "label": null
@@ -11751,11 +11751,11 @@
         "id": "b0329",
         "kind": "bond",
         "from": {
-          "node": "tipR",
-          "port": "b"
+          "node": "bjR7"
         },
         "to": {
-          "node": "bjR7"
+          "node": "tipR",
+          "port": "b"
         },
         "route": [],
         "label": null
@@ -11805,11 +11805,11 @@
         "id": "b0333",
         "kind": "bond",
         "from": {
-          "node": "weldR",
-          "port": "drive"
+          "node": "wjR"
         },
         "to": {
-          "node": "wjR"
+          "node": "weldR",
+          "port": "drive"
         },
         "route": [],
         "label": null

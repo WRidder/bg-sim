@@ -1867,11 +1867,11 @@
         "id": "b007",
         "kind": "bond",
         "from": {
-          "node": "n017",
-          "port": "b"
+          "node": "n006"
         },
         "to": {
-          "node": "n006"
+          "node": "n017",
+          "port": "b"
         }
       },
       {
@@ -2008,11 +2008,11 @@
         "id": "b012",
         "kind": "bond",
         "from": {
-          "node": "n027",
-          "port": "b"
+          "node": "n015"
         },
         "to": {
-          "node": "n015"
+          "node": "n027",
+          "port": "b"
         }
       },
       {
@@ -2149,11 +2149,11 @@
         "id": "b017",
         "kind": "bond",
         "from": {
-          "node": "n037",
-          "port": "b"
+          "node": "n025"
         },
         "to": {
-          "node": "n025"
+          "node": "n037",
+          "port": "b"
         }
       },
       {
@@ -2290,11 +2290,11 @@
         "id": "b022",
         "kind": "bond",
         "from": {
-          "node": "n047",
-          "port": "b"
+          "node": "n035"
         },
         "to": {
-          "node": "n035"
+          "node": "n047",
+          "port": "b"
         }
       },
       {

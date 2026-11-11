@@ -4328,11 +4328,11 @@
                   "id": "b014",
                   "kind": "bond",
                   "from": {
-                    "node": "t2",
-                    "port": "b"
+                    "node": "bj1"
                   },
                   "to": {
-                    "node": "bj1"
+                    "node": "t2",
+                    "port": "b"
                   },
                   "route": [],
                   "label": null
@@ -4493,11 +4493,11 @@
                   "id": "b026",
                   "kind": "bond",
                   "from": {
-                    "node": "t3",
-                    "port": "b"
+                    "node": "bj2"
                   },
                   "to": {
-                    "node": "bj2"
+                    "node": "t3",
+                    "port": "b"
                   },
                   "route": [],
                   "label": null
@@ -4658,11 +4658,11 @@
                   "id": "b038",
                   "kind": "bond",
                   "from": {
-                    "node": "t4",
-                    "port": "b"
+                    "node": "bj3"
                   },
                   "to": {
-                    "node": "bj3"
+                    "node": "t4",
+                    "port": "b"
                   },
                   "route": [],
                   "label": null
@@ -4823,11 +4823,11 @@
                   "id": "b050",
                   "kind": "bond",
                   "from": {
-                    "node": "t5",
-                    "port": "b"
+                    "node": "bj4"
                   },
                   "to": {
-                    "node": "bj4"
+                    "node": "t5",
+                    "port": "b"
                   },
                   "route": [],
                   "label": null
@@ -4988,11 +4988,11 @@
                   "id": "b062",
                   "kind": "bond",
                   "from": {
-                    "node": "t6",
-                    "port": "b"
+                    "node": "bj5"
                   },
                   "to": {
-                    "node": "bj5"
+                    "node": "t6",
+                    "port": "b"
                   },
                   "route": [],
                   "label": null
@@ -5153,11 +5153,11 @@
                   "id": "b074",
                   "kind": "bond",
                   "from": {
-                    "node": "t7",
-                    "port": "b"
+                    "node": "bj6"
                   },
                   "to": {
-                    "node": "bj6"
+                    "node": "t7",
+                    "port": "b"
                   },
                   "route": [],
                   "label": null

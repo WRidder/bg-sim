@@ -35,8 +35,7 @@ Motor(ElectricDrive) -- Gear -- Pulley(RackAndPinion) -- Belt(SpringDamper) -- R
 Same elements and conventions as `pendulum-double-cart` (see its README): `RigidBody2D` bodies, a `Prismatic2D`
 cart, `Revolute2DCompliant` joints with `kt = 1e8 N/m` pivots and viscous friction `b`, composed poses, an
 `ExternalWrenchPlanar` disturbance fed by a `Pulse`, the drive train with the belt as a spring-damper so that no
-store is derivative-causal. Bond directions matter: every joint's `parent` port is bonded *towards* the junction
-of the body it hangs from.
+store is derivative-causal.
 
 ## Design (`design/design.py`, `uv run`, CasADi + IPOPT + SciPy)
 

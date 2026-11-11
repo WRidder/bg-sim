@@ -149,7 +149,7 @@ def build_cart(dz, *, name, mode, t_end, points, th0=None, x0=0.0, comment="", d
         bd = D.node(f"Body{j + 1}", "stdlib:planar/RigidBody2D", X(col) + 220, 500,
                     params={"m": mpar, "J": jpar, "g0": num(G0)})
         dr = D.node(f"Passive{j + 1}", "stdlib:bondgraph/Se", X(col), 220, params={"e": "0.0"})
-        D.bond(jn, "parent", prev_node)
+        D.bond(prev_node, None, jn, "parent")
         D.bond(jn, "child", ln, "parent")
         D.bond(ln, "child", nj)
         D.bond(bd, "p", nj)
@@ -407,7 +407,7 @@ def build_rotary(dz, *, name, mode, t_end, points, phi0=None, s0=0.0, comment=""
             t = D.node(f"T{k}", "stdlib:multibond/FixedTransform3DNeutral", x0, y0,
                        params=pose_params(pose_mul(pose_inv(ln[i]), lc[i - 1])))
             D.bond(t, "a", jn, "parent")
-            D.bond(t, "b", prev_bj)
+            D.bond(prev_bj, None, t, "b")
         D.bond(jn, "child", lk, "a")
         D.bond(lk, "b", bj)
         D.bond(body, "p", bj)
