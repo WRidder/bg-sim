@@ -63,7 +63,7 @@ def corner(v: dict, c: str, start: dict) -> Diagram:
                    "q0": num(-dz)})
     d.bond("Mount", "a", "Susp", "parent")
     d.junction("Travel", 1, x0 + 200, y0 + 160)
-    d.bond("Susp", "drive", "Travel", None)
+    d.bond("Travel", None, "Susp", "drive")
     d.node("Strut", "project:Strut", x0 + 200, y0 + 300,
            params={"k": num(k["k"]), "F0": num(k["spring"]), "cb": num(k["c_bump"]), "cr": num(k["c_reb"]),
                    "bump": num(k["bump"]), "droop": num(k["droop"]), "k_stop": num(v["k_stop"])},
@@ -92,7 +92,7 @@ def corner(v: dict, c: str, start: dict) -> Diagram:
         d.node("Steer", "stdlib:spatial/Revolute3D", x0 + 800, y0 - 160,
                params={"kr": num(jt["kr"]), "br": num(jt["br"]), "kt": num(jt["kt"]), "bt": num(jt["bt"]),
                        "q0": num(start.get("steer", {}).get(c, 0.0))})
-        d.bond("KingFT", "b", "Upright", "p")
+        d.bond("Upright", "p", "KingFT", "b")
         d.bond("KingFT", "a", "Steer", "parent")
         d.node("HubFT", "stdlib:multibond/FixedTransform3DNeutral", x0 + 1000, y0 - 160,
                params=pose_params(Q_CARRIER, (0, 0, 0)))
@@ -148,7 +148,7 @@ def corner(v: dict, c: str, start: dict) -> Diagram:
         d.bond("HalfShaft", "p2", "Spin", None)
         d.power_port("spin", "Rotation", "HalfShaft", "p1")
         d.node("LsdTF", "stdlib:bondgraph/TF", x0 + 1800, y0 + 300, params={"n": "1.0"})
-        d.bond("LsdTF", "p2", "Spin", None)
+        d.bond("Spin", None, "LsdTF", "p2")
         d.power_port("spin2", "Rotation", "LsdTF", "p1")
     d.port("gc", "input", "Pm", "gp", size=7)
     d.port("o", "input", "Tyre", "o", "m", size=3)
@@ -277,11 +277,10 @@ def axle_diff(d: Diagram, name: str, src, left, right, x, y) -> None:
 def lsd(d: Diagram, name: str, left: str, right: str, r: float, x, y) -> None:
     """Viscous limited slip: a rotational damper between the two wheel spins of an axle."""
     d.node(name, "stdlib:rotation/RotationalDamper", x, y, params={"d": num(r)})
-    # Into the corner's LsdTF (a `through` TF whose other bond leaves it for the spin
-    # junction), so the bond arrives there; between two element ports the direction is
-    # notation only.
-    d.bond(name, "a", left, "spin2")
-    d.bond(name, "b", right, "spin2")
+    # Out of the corner's LsdTF (a `through` TF whose other bond arrives from the spin junction)
+    # into the damper's terminals (iconic ports are `in`).
+    d.bond(left, "spin2", name, "a")
+    d.bond(right, "spin2", name, "b")
 
 
 def vehicle(d: Diagram, v: dict, start: dict, ground: str = "flat", terrain: dict | None = None,
@@ -295,7 +294,7 @@ def vehicle(d: Diagram, v: dict, start: dict, ground: str = "flat", terrain: dic
         cx = 400 + 300 * (i % 2)
         cy = -300 + 600 * (i // 2)
         cd.subsystem(d, c, cx, cy)
-        d.bond(c, "mount", "Chassis", "p")
+        d.bond("Chassis", "p", c, "mount")
         d.sig("Pose", "g", c, "gc")
         d.sig(_drv(drv, f"Mu{i + 1}"), "y", c, "mus")
     # anti-roll bars

@@ -27,4 +27,5 @@
         T ~ kT * a
     end
     @causality shaft => (:effort_out, :fixed)
+    @orientation shaft => :in
 end

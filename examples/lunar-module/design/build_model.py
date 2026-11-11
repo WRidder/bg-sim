@@ -11,7 +11,7 @@ All three models share one 3D bond graph: a `Free3D` joint from the ground to th
 1-junction `Body`, on which sit the modulated inertia `Inertia` (project `VariableInertia3D`), the
 gyroscopic `Coriolis`, the twist tap `Twist` and three wrench sources (engine, RCS torques,
 gravity). The propellant leaving the vehicle takes its momentum with it through six `MR` elements
-on the joint's drive ports, modulated by `Tank` (`PropellantTank`). The descent and hover models
+on the joint's drive axes (a 1-junction per drive port), modulated by `Tank` (`PropellantTank`). The descent and hover models
 add the landing gear: four `ContactPoint`s on the lunar sphere (`LunarSurface3D`), mounted at the
 footpads through `FixedTransform3DNeutral`s.
 """
@@ -123,15 +123,19 @@ def vehicle(dg: Diagram, *, q0, p0, P0, tank: dict, engine_T0, c_eng, gear: bool
     dg.node("RcsW", "stdlib:multibond/ExternalWrenchSpatial", 560, 560)
     dg.node("GravityW", "stdlib:multibond/ExternalWrenchSpatial", 700, 520)
     dg.bond("World", "p", "Free", "parent")
-    dg.bond("Body", None, "Free", "child")
-    for k in ("Inertia", "Coriolis", "Twist", "ThrustW", "RcsW", "GravityW"):
+    dg.bond("Free", "child", "Body", None)
+    for k in ("Inertia", "Coriolis", "Twist"):
         dg.bond("Body", None, k, "p")
+    for k in ("ThrustW", "RcsW", "GravityW"):
+        dg.bond(k, "p", "Body", None)
     dg.sig("Inertia", "Pm", "Coriolis", "P", "momentum")
     for k in range(1, 7):
+        dg.node(f"Axis{k}", "junction:1", 120, 420 + 60 * k)
         dg.node(f"Out{k}", "stdlib:bondgraph/MR", 240, 420 + 60 * k)
-        dg.bond("Free", f"drive{k}", f"Out{k}", "p")
-    dg.note("Body: 1-junction of the lunar module. Inertia = modulated spatial I (m(t), J(m)); Out1..6 = MR, "
-            "r = -dm/dt and -dJ/dt: the propellant that leaves takes its momentum with it.", 400, 60, 560, 60)
+        dg.bond(f"Axis{k}", None, "Free", f"drive{k}")
+        dg.bond(f"Axis{k}", None, f"Out{k}", "p")
+    dg.note("Body: 1-junction of the lunar module. Inertia = modulated spatial I (m(t), J(m)); Out1..6 = MR on the joint's "
+            "drive axes (1-junctions Axis1..6), r = -dm/dt and -dJ/dt: the propellant that leaves takes its momentum with it.", 400, 60, 560, 60)
     # ---------------------------------------------------------------- mass, engine, gravity
     dg.node("Tank", "project:PropellantTank", 40, 860, params=tank["params"], starts={"m_s": tank["m0"]})
     dg.sig("Tank", "m", "Inertia", "m")
@@ -186,7 +190,7 @@ def landing_gear(dg: Diagram) -> None:
         dg.sig(f"{name}Surf", "fr", name, "fr")
         dg.node(f"{name}Mount", "stdlib:multibond/FixedTransform3DNeutral", x0 + 720, y,
                 params={"x": -b[0], "y": -b[1], "z": -b[2]})
-        dg.bond(f"{name}Mount", "b", "Body", None)   # b at the from end: b.f = -twist (ContactPoint convention)
+        dg.bond("Body", None, f"{name}Mount", "b")
         dg.bond(f"{name}Mount", "a", name, "p")
     dg.note("Landing gear: four footpads (167.57 in from the X axis, TN D-6850), each a ContactPoint (Hunt-Crossley "
             "normal force for pad, strut and soil; Coulomb friction mu = 0.4) on the lunar sphere below it "

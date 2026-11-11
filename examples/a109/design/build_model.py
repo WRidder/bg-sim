@@ -279,8 +279,8 @@ def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=Fals
     d.node("MShaft", "stdlib:multibond/FixedTransform3DNeutral", x0, y0,
            params={"qw": num(q_bp[0]), "qx": num(q_bp[1]), "qy": num(q_bp[2]), "qz": num(q_bp[3])})
     d.node("Shaft", "project:ShaftAxis", x0, y0 + 120, params={"kx": "0.0", "ky": "0.0", "kz": "1.0"})
-    d.bond("Shaft", "p", "MShaft", "a")
-    d.bond("MShaft", "b", "Body", "p")
+    d.bond("Body", "p", "MShaft", "b")
+    d.bond("MShaft", "a", "Shaft", "p")
     d.node("Mast", "0", x0 + 200, y0 + 240)
     d.node("RotorJ", "1", x0 + 400, y0 + 240)
     d.node("Rotor", "stdlib:bondgraph/I", x0 + 600, y0 + 160, params={"i": num(dr["J"])},
@@ -297,7 +297,7 @@ def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=Fals
     d.node("OmTR", "stdlib:bondgraph/Df", x0 + 200, y0 + 760)
     d.bond("GearJ", None, "Mast", None)
     d.bond("Mast", None, "RotorJ", None)
-    d.bond("Mast", None, "Shaft", "s")
+    d.bond("Shaft", "s", "Mast", None)
     d.bond("RotorJ", None, "Rotor", "p")
     d.bond("AeroLoad", "p", "RotorJ", None)
     d.bond("RotorJ", None, "OmRotor", "p")
@@ -353,7 +353,7 @@ def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=Fals
             d.node(f"MTyre_{leg}", "stdlib:multibond/FixedTransform3DNeutral", x0 + 300, y,
                    params={"qw": num(q_bp[0]), "qx": num(q_bp[1]), "qy": num(q_bp[2]), "qz": num(q_bp[3]),
                            "x": num(-r[0]), "y": num(-r[1]), "z": num(-r[2])})
-            d.bond("Body", "p", f"MTyre_{leg}", "b")   # towards the contact (as stdlib ContactPoint expects)
+            d.bond("Body", "p", f"MTyre_{leg}", "b")
             d.bond(f"MTyre_{leg}", "a", f"Tyre_{leg}", "p")
             d.sig(f"Tyre_{leg}", "f_n", "GearMux", f"u{k + 1}")
         d.sig("GearMux", "y", "GearLoad", "u")

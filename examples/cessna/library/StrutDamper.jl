@@ -29,4 +29,5 @@
         j.e ~ F
     end
     @causality j => :effort_out
+    @orientation j => :in
 end

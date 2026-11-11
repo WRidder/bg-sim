@@ -21,4 +21,8 @@
         a.e ~ (Fc + (Fs - Fc) * exp(-(v / v_s)^2)) * tanh(v / v_eps) + Fv * v
         b.e ~ -a.e
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

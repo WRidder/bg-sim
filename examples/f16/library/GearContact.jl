@@ -11,12 +11,13 @@
     #   y   across the wheel: flow = the side-slip speed; the cornering force R (WheelSide)
     #
     # Mounting (as stdlib ContactPoint): FixedTransform3DNeutral with this element on side `a`
-    # and the RigidBody3D on side `b`, mount pose = translation -r (the body origin seen from the
-    # contact point; no rotation). The port flow is then the NEGATIVE point twist and the port
-    # effort the wrench on the body in the point frame (the body axes):
+    # and the RigidBody3D on side `b` (bonds body -> mount.b, mount.a -> p), mount pose =
+    # translation -r (the body origin seen from the contact point; no rotation). The port flow is
+    # the point twist and the port effort minus the wrench on the body, in the point frame (the
+    # body axes):
     #
-    #   v_world = -R p.f[4:6],     n.f = -v_world . z,   x.f = e_x . v_world,   y.f = e_y . v_world
-    #   F_world = -n.e z + x.e e_x + y.e e_y,    p.e = [0; R^T F_world]
+    #   v_world = R p.f[4:6],     n.f = -v_world . z,   x.f = e_x . v_world,   y.f = e_y . v_world
+    #   F_world = -n.e z + x.e e_x + y.e e_y,    p.e = -[0; R^T F_world]
     #
     # so p.e . p.f + n.e n.f + x.e x.f + y.e y.f = 0. With the elements' efforts (power into each
     # element) n.e = -(strut force), x.e = -(rolling force), y.e = -(side force): the runway pushes
@@ -70,9 +71,9 @@
         R[3, 1] ~ 2 * (g[2] * g[4] - g[1] * g[3]) / s
         R[3, 2] ~ 2 * (g[3] * g[4] + g[1] * g[2]) / s
         R[3, 3] ~ (g[1] * g[1] - g[2] * g[2] - g[3] * g[3] + g[4] * g[4]) / s
-        v1 ~ -(R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6])
-        v2 ~ -(R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6])
-        v3 ~ -(R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6])
+        v1 ~ R[1, 1] * p.f[4] + R[1, 2] * p.f[5] + R[1, 3] * p.f[6]
+        v2 ~ R[2, 1] * p.f[4] + R[2, 2] * p.f[5] + R[2, 3] * p.f[6]
+        v3 ~ R[3, 1] * p.f[4] + R[3, 2] * p.f[5] + R[3, 3] * p.f[6]
         # the wheel axes on the runway
         hn ~ sqrt(R[1, 1] * R[1, 1] + R[2, 1] * R[2, 1])
         hx ~ R[1, 1] / hn
@@ -88,9 +89,9 @@
         p.e[1] ~ 0.0
         p.e[2] ~ 0.0
         p.e[3] ~ 0.0
-        p.e[4] ~ R[1, 1] * F1 + R[2, 1] * F2 + R[3, 1] * F3
-        p.e[5] ~ R[1, 2] * F1 + R[2, 2] * F2 + R[3, 2] * F3
-        p.e[6] ~ R[1, 3] * F1 + R[2, 3] * F2 + R[3, 3] * F3
+        p.e[4] ~ -(R[1, 1] * F1 + R[2, 1] * F2 + R[3, 1] * F3)
+        p.e[5] ~ -(R[1, 2] * F1 + R[2, 2] * F2 + R[3, 2] * F3)
+        p.e[6] ~ -(R[1, 3] * F1 + R[2, 3] * F2 + R[3, 3] * F3)
         fn ~ -n.e
         vx ~ x.f
         vy ~ y.f
@@ -101,5 +102,11 @@
         n => :flow_out
         x => :flow_out
         y => :flow_out
+    end
+    @orientation begin
+        p => :in
+        n => :in
+        x => :in
+        y => :in
     end
 end

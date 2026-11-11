@@ -1,8 +1,8 @@
 @block Strut begin
-    # Suspension strut on the drive port of the corner's `Prismatic3D` (bond: the joint's drive
-    # -> a 1-junction -> this element): a coil spring that cannot pull, progressive bump and
-    # droop stops and a damper with separate bump and rebound rates. `x` is the wheel travel
-    # from the static ride position (bump positive), so the port flow is -dx/dt.
+    # Suspension strut on the drive port of the corner's `Prismatic3D` (a 1-junction bonded into
+    # the joint's drive and into this element): a coil spring that cannot pull, progressive bump
+    # and droop stops and a damper with separate bump and rebound rates. `x` is the wheel travel
+    # from the static ride position (bump positive) and the port flow is its rate, j.f = dx/dt.
     #
     #   spring   F_s = k sp(x + x0),        sp the smooth positive part, x0 = F0/k (static
     #                                        compression: the spring carries F0 at x = 0)
@@ -10,7 +10,7 @@
     #   damper   F_v = (cb + cr)/2 v + (cb - cr)/2 (sqrt(v^2 + ve^2) - ve),   v = dx/dt
     #   F = F_s sig_s + F_b sig_b + F_d sig_d + F_v      (sig: the derivative of the smooth part)
     #
-    # The force pushes the wheel down (away from the chassis), so the port effort is -F. Port
+    # The force pushes the wheel down (away from the chassis); the port effort is F. Port
     # power = dE/dt + Pd with E = k sp(x+x0)^2/2 + k_stop (sp(x-bump)^3 + sp(-x-droop)^3)/3 and
     # Pd = F_v v >= 0 (the rebound term is at most |v|).
     @ports j::Power{Translation}
@@ -46,7 +46,7 @@
         Pd::Real, [unit = "W", description = "Power dissipated in the damper"]
     end
     @equations begin
-        v ~ -j.f
+        v ~ j.f
         ddt(x) ~ v
         ys ~ x + F0 / k
         rs ~ sqrt(ys * ys + eps * eps)
@@ -59,10 +59,11 @@
         sd ~ 0.5 * (yd + rd)
         Fv ~ 0.5 * (cb + cr) * v + 0.5 * (cb - cr) * (sqrt(v * v + ve * ve) - ve)
         F ~ k * ss * ss / rs + k_stop * sb * sb * sb / rb - k_stop * sd * sd * sd / rd + Fv
-        j.e ~ -F
+        j.e ~ F
         travel ~ x
         E ~ 0.5 * k * ss * ss + k_stop * (sb * sb * sb + sd * sd * sd) / 3
         Pd ~ Fv * v
     end
     @causality j => :effort_out
+    @orientation j => :in
 end

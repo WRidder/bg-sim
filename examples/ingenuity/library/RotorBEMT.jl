@@ -131,4 +131,5 @@
         ty ~ kc * cy - ke * va[1] + k_q * wb[2]
     end
     @causality shaft => (:effort_out, :fixed)
+    @orientation shaft => :in
 end

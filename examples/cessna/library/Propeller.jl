@@ -80,4 +80,5 @@
         tz ~ -ry * thrust
     end
     @causality p => :effort_out
+    @orientation p => :in
 end
