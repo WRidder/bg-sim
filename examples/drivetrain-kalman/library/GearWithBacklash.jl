@@ -3,6 +3,10 @@
         a::Power{Rotation}
         b::Power{Rotation}
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
     @components begin
         gear = LossyGear(n = 10.0, eta = 1.0)
         play = GearBacklash(k = 1e4, d = 5.0, gap = 0.02)

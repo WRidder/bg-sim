@@ -74,6 +74,8 @@ function descriptorForPort(port: PortSpec, nodeId: string = CANDIDATE_NODE_ID): 
       type: null,
       size: port.size,
       unit: port.unit,
+      // The candidate's declared orientation, so a suggestion is one the bond rules accept (O8, O22).
+      ...(port.orientation === undefined ? {} : { orientation: port.orientation }),
     };
   }
   return {

@@ -134,6 +134,7 @@ function _mb2_ground(domain::AbstractString)
     return """
     @block Ground$(domain)Units begin
         @ports p::Power{$domain}, [frame = "world"]
+        @orientation p => :out
         @equations begin
             for k in 1:$n
                 p.f[k] ~ 0.0
@@ -149,6 +150,7 @@ function _mb2_sink(domain::AbstractString)
     return """
     @block Sink$(domain)Units begin
         @ports p::Power{$domain}, [frame = "world"]
+        @orientation p => :in
         @equations begin
             for k in 1:$n
                 p.f[k] ~ 0.0
@@ -205,6 +207,7 @@ function _mb2_source_block(domain::AbstractString)
     return """
     @block Drive$(domain)Units begin
         @ports p::Power{$domain}, [frame = "world"]
+        @orientation p => :out
         @parameters begin
             $(join(params, "\n        "))
         end
@@ -229,6 +232,7 @@ function _mb2_inertia_block(domain::AbstractString)
     return """
     @block Inertia$(domain)Units begin
         @ports p::Power{$domain}, [frame = "world"]
+        @orientation p => :in
         @parameters begin
             m::Real = 1.0, [unit = "kg"]
             J::Real = 1.0, [unit = "kg*m^2"]
@@ -818,6 +822,7 @@ end
                        """
                        @block RotSinkUnits begin
                            @ports p::Power{Rotation}
+                           @orientation p => :in
                            @equations p.f ~ 0.0
                        end
                        """
@@ -830,6 +835,7 @@ end
                      """
                      @block RotGroundUnits begin
                          @ports p::Power{Rotation}
+                         @orientation p => :out
                          @equations p.e ~ 0.0
                      end
                      """

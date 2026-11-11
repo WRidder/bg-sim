@@ -10,7 +10,7 @@
         "name": "World",
         "block": {
           "inline": {
-            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations begin\n        p.f[1] ~ 0.0\n        p.f[2] ~ 0.0\n        p.f[3] ~ 0.0\n    end\n    @causality p => (:flow_out, :fixed)\nend"
+            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @orientation p => :out\n    @equations begin\n        p.f[1] ~ 0.0\n        p.f[2] ~ 0.0\n        p.f[3] ~ 0.0\n    end\n    @causality p => (:flow_out, :fixed)\nend"
           }
         },
         "position": { "x": 60, "y": 200 },
@@ -68,7 +68,7 @@
                   "name": "Transform",
                   "block": {
                     "inline": {
-                      "source": "@block FixedTransform2D begin\n    @ports begin\n        a::Power{Planar}, [frame = \"world\"]\n        b::Power{Planar}, [frame = \"arm\"]\n    end\n    @parameters begin\n        x::Real = 0.4, [unit = \"m\"]\n        y::Real = 0.0, [unit = \"m\"]\n        theta::Real = 0.0, [unit = \"rad\"]\n    end\n    @equations begin\n        # g maps arm -> world; a.f = Ad(g) b.f and b.e = Ad(g)^T a.e (D-MB5).\n        a.f[1] ~ b.f[1]\n        a.f[2] ~ -y * b.f[1] + cos(theta) * b.f[2] - sin(theta) * b.f[3]\n        a.f[3] ~ x * b.f[1] + sin(theta) * b.f[2] + cos(theta) * b.f[3]\n        b.e[1] ~ a.e[1] - y * a.e[2] + x * a.e[3]\n        b.e[2] ~ cos(theta) * a.e[2] + sin(theta) * a.e[3]\n        b.e[3] ~ -sin(theta) * a.e[2] + cos(theta) * a.e[3]\n    end\nend"
+                      "source": "@block FixedTransform2D begin\n    @ports begin\n        a::Power{Planar}, [frame = \"world\"]\n        b::Power{Planar}, [frame = \"arm\"]\n    end\n    @orientation (a, b) => :through\n    @parameters begin\n        x::Real = 0.4, [unit = \"m\"]\n        y::Real = 0.0, [unit = \"m\"]\n        theta::Real = 0.0, [unit = \"rad\"]\n    end\n    @equations begin\n        # g maps arm -> world; a.f = -Ad(g) b.f and b.e = Ad(g)^T a.e (D-MB5).\n        a.f[1] ~ -b.f[1]\n        a.f[2] ~ -(-y * b.f[1] + cos(theta) * b.f[2] - sin(theta) * b.f[3])\n        a.f[3] ~ -(x * b.f[1] + sin(theta) * b.f[2] + cos(theta) * b.f[3])\n        b.e[1] ~ a.e[1] - y * a.e[2] + x * a.e[3]\n        b.e[2] ~ cos(theta) * a.e[2] + sin(theta) * a.e[3]\n        b.e[3] ~ -sin(theta) * a.e[2] + cos(theta) * a.e[3]\n    end\nend"
                     }
                   },
                   "position": { "x": 0, "y": 0 },
@@ -119,7 +119,7 @@
                   "name": "Body",
                   "block": {
                     "inline": {
-                      "source": "@block BodyPlanar begin\n    @ports p::Power{Planar}, [frame = \"arm\"]\n    @parameters begin\n        m::Real = 1.2, [unit = \"kg\", min = 0]\n        J::Real = 0.04, [unit = \"kg*m^2\", min = 0]\n    end\n    @variables P::Vec{3} = [0.0, 0.0, 0.0], [state = :prefer]\n    @equations begin\n        p.f[1] ~ P[1] / J\n        p.f[2] ~ P[2] / m\n        p.f[3] ~ P[3] / m\n        for k in 1:3\n            ddt(P[k]) ~ p.e[k]\n        end\n    end\n    @causality p => :flow_out\nend"
+                      "source": "@block BodyPlanar begin\n    @ports p::Power{Planar}, [frame = \"arm\"]\n    @orientation p => :in\n    @parameters begin\n        m::Real = 1.2, [unit = \"kg\", min = 0]\n        J::Real = 0.04, [unit = \"kg*m^2\", min = 0]\n    end\n    @variables P::Vec{3} = [0.0, 0.0, 0.0], [state = :prefer]\n    @equations begin\n        p.f[1] ~ P[1] / J\n        p.f[2] ~ P[2] / m\n        p.f[3] ~ P[3] / m\n        for k in 1:3\n            ddt(P[k]) ~ p.e[k]\n        end\n    end\n    @causality p => :flow_out\nend"
                     }
                   },
                   "position": { "x": 0, "y": 0 },

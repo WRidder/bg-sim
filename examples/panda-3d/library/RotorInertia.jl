@@ -4,6 +4,7 @@
     # 1-junction) holds no other concrete element, so its island would stay Generic and the TF
     # between it and the Rotation link side could not adopt one domain (E102). Same law as `I`.
     @ports p::Power{Rotation}
+    @orientation p => :in
     @parameters i::Real = 1.0e-4, [unit = "kg*m^2", min = 0, description = "Rotor inertia (motor side)"]
     @variables P::Real = 0.0, [unit = "N*m*s", state = :prefer, description = "Rotor angular momentum"]
     @equations begin

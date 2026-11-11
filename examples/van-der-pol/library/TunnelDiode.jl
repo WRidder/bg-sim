@@ -9,6 +9,7 @@
     # P = v i is the power the diode absorbs: negative (it supplies energy, taken from the bias
     # source) for |v| < sqrt(a/b), positive (it dissipates) beyond.
     @ports p::Power{Generic}
+    @orientation p => :in
     @parameters begin
         a::Real = 0.0212, [unit = "flow/effort", min = 0, description = "Negative differential conductance at the bias point (A/V)"]
         b::Real = 0.336, [min = 0, description = "Cubic coefficient of i = -a v + b v^3 (A/V^3)"]

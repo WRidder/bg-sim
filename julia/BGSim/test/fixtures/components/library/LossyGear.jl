@@ -3,6 +3,10 @@
         a::Power{Rotation}    # input shaft (fast)
         b::Power{Rotation}    # output shaft (slow)
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
     @parameters begin
         n::Real   = 10.0                    # a.f = n * b.f
         eta::Real = 0.9, [min = 0, max = 1] # efficiency

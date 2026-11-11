@@ -28,7 +28,7 @@
                   "name": "Body",
                   "block": {
                     "inline": {
-                      "source": "@block BodyPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\nend"
+                      "source": "@block BodyPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @orientation p => :in\nend"
                     }
                   },
                   "position": { "x": 0, "y": 0 }

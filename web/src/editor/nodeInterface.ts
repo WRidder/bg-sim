@@ -15,6 +15,7 @@ import type { PortDescriptor } from "./connectionRules";
 import {
   ANY_ORIENTATION,
   blockPortOrientation,
+  isCompositeSource,
   type BondArrival,
   type PortOrientation,
 } from "./portOrientation";
@@ -40,7 +41,8 @@ export interface PortSpec {
   effortUnits?: readonly string[];
   flowUnits?: readonly string[];
   /**
-   * The bond direction a power port declares (`@orientation`). Absent is `any`; a subsystem port
+   * The bond direction a power port declares (`@orientation`). Absent is `any` (a composite face);
+   * `undeclared` is a block port that no entry names and cannot be bonded (O22); a subsystem port
    * forwards the orientation of the internal port it exposes.
    */
   orientation?: PortOrientation;
@@ -71,8 +73,16 @@ export function interfaceForBlock(block: {
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
   orientation?: readonly OrientationDecl[];
+  /** The block source; a textual composite (`@components`) leaves its undeclared faces free. */
+  source?: string;
 }): NodeInterface {
-  const ports = portSpecs(block.ports, block.inputs, block.outputs, block.orientation);
+  const ports = portSpecs(
+    block.ports,
+    block.inputs,
+    block.outputs,
+    block.orientation,
+    isCompositeSource(block.source),
+  );
   return {
     title: block.name,
     icon: block.icon,
@@ -93,10 +103,11 @@ function portSpecs(
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
   orientation?: readonly OrientationDecl[],
+  composite = false,
 ): PortSpec[] {
   const ports: PortSpec[] = [];
   for (const port of power) {
-    const declared = blockPortOrientation(orientation, port.name);
+    const declared = blockPortOrientation(orientation, port.name, composite);
     ports.push({
       name: port.name,
       kind: "power",
@@ -137,11 +148,15 @@ function portSpecs(
  * The canvas view of a `block.check` interface (plan 7.7): an inline code node
  * gains and loses its ports as its source changes.
  */
-export function interfaceFromBlockCheck(block: BlockInterface, title: string): NodeInterface {
+export function interfaceFromBlockCheck(
+  block: BlockInterface,
+  title: string,
+  source: string | null = null,
+): NodeInterface {
   return {
     title,
     icon: INLINE_ICON,
-    ports: portSpecs(block.ports, block.inputs, block.outputs, block.orientation),
+    ports: portSpecs(block.ports, block.inputs, block.outputs, block.orientation, isCompositeSource(source)),
     isJunction: false,
     ref: null,
     junction: null,

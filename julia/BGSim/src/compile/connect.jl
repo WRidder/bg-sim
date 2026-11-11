@@ -563,7 +563,10 @@ E114, the bond-direction rule of the declared port orientations (O3, O4, O13):
 - a bond between two `in` or two `out` ports cannot be fixed by reversing it: the hint is to
   put a junction in between;
 - of the two bonds at a `(a, b) => :through` pair, one arrives and the other leaves. One bonded
-  port alone is never an error.
+  port alone is never an error;
+- O22: a bond end at a power port that no `@orientation` entry of its (leaf, inline or project)
+  block names is an E114 of its own, once per such end ("`X.p` declares no orientation"). A
+  junction end, including a composite face that is a junction inside, needs no declaration.
 
 Only valid bonds are checked; wires and signal connections have no direction. An end is
 checked against the port it finally reaches through subsystem and composite faces (and any
@@ -577,6 +580,13 @@ function check_orientations!(b::Builder, states::Vector{ConnState})
         (state.valid && state.conn.kind == :bond) || continue
         ends = ((state.from, :tail), (state.to, :head))
         anchors = [_orientation_anchors(b, ep) for (ep, _) in ends]
+        # O22: an end at a leaf power port that no `@orientation` entry names is its own E114.
+        # That end is then not checked further (one diagnostic per bond end); the other end is.
+        for (k, (ep, _)) in enumerate(ends)
+            _leaf_undeclared(b, ep) || continue
+            _undeclared_diag!(b, state, ep)
+            anchors[k] = OrientationAnchor[]
+        end
         violated = Tuple{OrientationAnchor,RawEndpoint}[]
         for (k, (ep, role)) in enumerate(ends)
             for a in anchors[k]
@@ -627,6 +637,34 @@ function check_orientations!(b::Builder, states::Vector{ConnState})
     for key in sort!(collect(pairs))
         _check_through_pair!(b, states, key, through_ends)
     end
+    return nothing
+end
+
+# O22: true when `ep` reaches a power port of a block (leaf, inline, or the leaf behind a
+# subsystem or composite face) that no `@orientation` entry of that block names. A junction
+# end, a composite face that is a junction inside, and an unresolved end are never undeclared.
+function _leaf_undeclared(b::Builder, ep::RawEndpoint)
+    (ep.kind == :power && ep.port !== nothing) || return false
+    st = get(b.state_by_path, ep.path, nothing)
+    st === nothing && return false
+    return !any(o -> ep.port in BGSim.orientation_ports(o), BGSim.orientation(st.pb))
+end
+
+function _undeclared_diag!(b::Builder, state::ConnState, ep::RawEndpoint)
+    st = b.state_by_path[ep.path]
+    leaf = "`$(_owner(ep.path)).$(ep.port)`"
+    shown = ep.face === nothing ? "" :
+            " (exposed as $(_orientation_end_label(ep)))"
+    _orientation_diag!(
+        b, state, ep;
+        message = "$(_bond_label(b, state)) reaches $leaf$shown, but $leaf declares no orientation: " *
+                  "add `@orientation $(ep.port) => :in`, `:out` or a `(a, b) => :through` " *
+                  "pair to the block `$(st.ref)`",
+        hint = "a bond needs a declared orientation at every end that is not a junction: `in` when the " *
+               "block's law assumes the bond arrives at the port (storage, dissipation, contacts, sensors), " *
+               "`out` when it assumes the bond leaves (sources), `through` for the two sides of a " *
+               "pass-through two-port",
+    )
     return nothing
 end
 

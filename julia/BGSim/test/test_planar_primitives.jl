@@ -1219,6 +1219,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
                 return """
                 @block $name begin
                     @ports p::Power{Planar}, [frame = "$frame"]
+                    @orientation p => :in
                     @parameters begin
                         f1::Real = 0.0, [unit = "rad/s", description = "Twist 1"]
                         f2::Real = 0.0, [unit = "m/s", description = "Twist 2"]
@@ -1236,6 +1237,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
             return """
             @block $name begin
                 @ports p::Power{Planar}, [frame = "$frame"]
+                @orientation p => :out
                 @parameters begin
                     e1::Real = 0.0, [unit = "N*m", description = "Wrench 1"]
                     e2::Real = 0.0, [unit = "N", description = "Wrench 2"]

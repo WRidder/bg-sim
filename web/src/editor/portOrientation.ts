@@ -8,7 +8,11 @@
  * * `out`: the bond starts here, so the port is at the bond's `from`;
  * * `through`: a pair; exactly one of the pair's two bonds arrives at the block and the other
  *   leaves, which one is free;
- * * `any`: no constraint (default, junctions, iconic ports).
+ * * `any`: no constraint: junctions, and a face of a textual composite that no entry names (the
+ *   compiler judges a bond there at the port inside, which is a junction or a declared port);
+ * * `undeclared`: a power port of a block that no `@orientation` entry names (O22). A bond needs a
+ *   declared orientation at every end that is not a junction, so such a port cannot be bonded; the
+ *   tooltip and the inspector say "orientation not declared".
  *
  * Everything here is pure. The compiler (E114) is the authority; this module only keeps the editor from
  * drawing a bond the compiler would reject, and says why it refuses. A subsystem port forwards the
@@ -25,7 +29,7 @@ export interface DiagramView {
   diagram: { nodes: readonly ModelNode[]; connections: readonly ModelConnection[] };
 }
 
-export type OrientationKind = "in" | "out" | "through" | "any";
+export type OrientationKind = "in" | "out" | "through" | "any" | "undeclared";
 
 /** Where a bond meets a block: it arrives at it (the port is the bond's `to`) or leaves it. */
 export type BondArrival = "arrives" | "leaves";
@@ -49,10 +53,23 @@ export interface PortOrientation {
 
 export const ANY_ORIENTATION: PortOrientation = { kind: "any" };
 
-/** The orientation a catalog block (or a `block.check` interface) declares for one port. */
+/** A power port that no `@orientation` entry names (O22): it cannot be bonded. */
+export const UNDECLARED_ORIENTATION: PortOrientation = { kind: "undeclared" };
+
+/** Whether a catalog block source is a textual composite (`@components`): its faces are judged inside. */
+export function isCompositeSource(source: string | null | undefined): boolean {
+  return source !== null && source !== undefined && /^\s*@components\b/m.test(source);
+}
+
+/**
+ * The orientation a catalog block (or a `block.check` interface) declares for one port. A port named
+ * in no entry is `undeclared` (O22), except a face of a textual composite (`composite`), which is
+ * `any`: the compiler checks the bond at the port inside the composite.
+ */
 export function blockPortOrientation(
   declarations: readonly OrientationDecl[] | undefined,
   port: string,
+  composite = false,
 ): PortOrientation {
   for (const entry of declarations ?? []) {
     if (!entry.ports.includes(port)) {
@@ -64,7 +81,7 @@ export function blockPortOrientation(
     }
     return { kind: entry.kind };
   }
-  return ANY_ORIENTATION;
+  return composite ? ANY_ORIENTATION : UNDECLARED_ORIENTATION;
 }
 
 /** The bond direction a fixed port needs, in words (`in`: "a bond must end there"). */
@@ -78,13 +95,21 @@ export function describeOrientation(orientation: PortOrientation): string {
       return orientation.partner === null || orientation.partner === undefined
         ? "through: one bond arrives, the other leaves"
         : `through with ${orientation.partner}: one of the two bonds arrives, the other leaves`;
+    case "undeclared":
+      return "not declared: add `@orientation` to the block before bonding this port";
     default:
       return "any";
   }
 }
 
-/** A short label for the port tooltip and the inspector list. */
+/**
+ * A short label for the port tooltip and the inspector list; shown after the word "orientation", so an
+ * undeclared port reads "orientation not declared".
+ */
 export function orientationLabel(orientation: PortOrientation): string {
+  if (orientation.kind === "undeclared") {
+    return "not declared";
+  }
   return orientation.kind === "through" && orientation.partner
     ? `through ${orientation.partner}`
     : orientation.kind;
@@ -163,6 +188,9 @@ export function allowedRoles(
           ? new Set<BondRole>(["to"])
           : new Set<BondRole>(["from", "to"]);
     }
+    case "undeclared":
+      // O22: no declared orientation, no bond.
+      return new Set<BondRole>();
     default:
       return new Set<BondRole>(["from", "to"]);
   }
@@ -174,6 +202,11 @@ function portName(doc: DiagramView, port: PortDescriptor): string {
   return port.portName === null ? name : `${name}.${port.portName}`;
 }
 
+/** The refusal for a bond to a port that declares no orientation (O22), as E114 words it. */
+export function undeclaredReason(name: string): string {
+  return `\`${name}\` declares no orientation: add \`@orientation\` to the block`;
+}
+
 /** Why `port` cannot take the role it was refused, in the sentence the canvas shows. */
 export function whyNotRole(
   doc: DiagramView,
@@ -182,6 +215,9 @@ export function whyNotRole(
 ): string {
   const orientation = orientationOf(port);
   const name = portName(doc, port);
+  if (orientation.kind === "undeclared") {
+    return undeclaredReason(name);
+  }
   if (orientation.kind === "in") {
     return `the port \`${name}\` is declared \`in\`: a bond must end there`;
   }
@@ -212,6 +248,11 @@ export function orientBond(
   b: PortDescriptor,
   ignoreId: string | null = null,
 ): OrientResult {
+  // O22: a port that declares no orientation refuses every bond, with its own reason.
+  const undeclared = [a, b].filter((port) => orientationOf(port).kind === "undeclared");
+  if (undeclared.length > 0) {
+    return { ok: false, reason: undeclared.map((port) => undeclaredReason(portName(doc, port))).join("; ") };
+  }
   const aRoles = allowedRoles(doc, a, ignoreId);
   const bRoles = allowedRoles(doc, b, ignoreId);
   if (aRoles.has("from") && bRoles.has("to")) {

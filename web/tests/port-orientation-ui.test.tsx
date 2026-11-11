@@ -8,7 +8,7 @@ import { ReactFlowProvider, type NodeProps } from "@xyflow/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
-import type { Catalog, OrientationDecl } from "../src/contracts/catalog";
+import type { Catalog } from "../src/contracts/catalog";
 import type { Model, ModelConnection, ModelNode } from "../src/contracts/model";
 import { buildDiagram } from "../src/editor/buildFlow";
 import { BlockNode, type BlockNodeType } from "../src/editor/nodes/BlockNode";
@@ -27,16 +27,21 @@ import {
   createNodeFromBlock,
 } from "../src/state/modelFactory";
 
-const DECLARATIONS: Record<string, OrientationDecl[]> = {
-  Se: [{ ports: ["p"], kind: "out" }],
-  C: [{ ports: ["p"], kind: "in" }],
-  TF: [{ ports: ["p1", "p2"], kind: "through" }],
-};
-
+// The contract catalog's orientations, except De, which declares nothing here (O22), and `Face`, a
+// textual composite whose undeclared face stays free.
 const base = catalogJson as unknown as Catalog;
+const deBlock = base.blocks.find((entry) => entry.name === "De");
+if (deBlock === undefined) {
+  throw new Error("catalog.min.json has no De");
+}
+const FACE_SOURCE =
+  "@block Face begin\n    @ports p::Power{Generic}\n    @components node = Junction(1)\n    @connections connect(p, node)\nend";
 const catalog: Catalog = {
   ...base,
-  blocks: base.blocks.map((entry) => ({ ...entry, orientation: DECLARATIONS[entry.name] ?? [] })),
+  blocks: [
+    ...base.blocks.map((entry) => (entry.name === "De" ? { ...entry, orientation: [] } : entry)),
+    { ...deBlock, ref: "stdlib:bondgraph/Face", name: "Face", outputs: [], orientation: [], source: FACE_SOURCE },
+  ],
 };
 const index = buildCatalogIndex(catalog);
 
@@ -76,8 +81,8 @@ function renderBlock(doc: Model, id: string) {
 }
 
 describe("the port tooltip", () => {
-  it("names the orientation of a fixed port and a through pair, and nothing for any", () => {
-    const doc = open([node("C", "c"), node("Se", "se"), node("TF", "tf"), node("De", "de")]);
+  it("names the orientation of a fixed port and a through pair, says an undeclared one, and nothing for any", () => {
+    const doc = open([node("C", "c"), node("Se", "se"), node("TF", "tf"), node("De", "de"), node("Face", "face")]);
     const c = renderBlock(doc, "c");
     expect(screen.getByTestId("port-c-p").getAttribute("title")).toBe(
       "p · power · Generic · orientation in",
@@ -93,15 +98,22 @@ describe("the port tooltip", () => {
     expect(screen.getByTestId("port-tf-p1").getAttribute("title")).toContain("orientation through p2");
     tf.unmount();
 
-    renderBlock(doc, "de");
-    expect(screen.getByTestId("port-de-p").getAttribute("title")).toBe("p · power · Generic");
-    expect(screen.getByTestId("port-de-p").getAttribute("data-orientation")).toBe("any");
+    const de = renderBlock(doc, "de");
+    expect(screen.getByTestId("port-de-p").getAttribute("title")).toBe(
+      "p · power · Generic · orientation not declared",
+    );
+    expect(screen.getByTestId("port-de-p").getAttribute("data-orientation")).toBe("undeclared");
+    de.unmount();
+
+    renderBlock(doc, "face");
+    expect(screen.getByTestId("port-face-p").getAttribute("title")).toBe("p · power · Generic");
+    expect(screen.getByTestId("port-face-p").getAttribute("data-orientation")).toBe("any");
   });
 });
 
 describe("the block inspector's port list", () => {
-  it("shows the orientation of a fixed port and leaves an any port alone", () => {
-    open([node("C", "c"), node("De", "de")]);
+  it("shows the orientation of a fixed port, says an undeclared one, and leaves an any port alone", () => {
+    open([node("C", "c"), node("De", "de"), node("Face", "face")]);
     useDocumentStore.getState().setSelection(["c"], []);
     const { unmount } = render(<Inspector />);
     const row = screen.getByTestId("inspector-port-p-orientation");
@@ -110,6 +122,13 @@ describe("the block inspector's port list", () => {
     unmount();
 
     useDocumentStore.getState().setSelection(["de"], []);
+    const second = render(<Inspector />);
+    const undeclared = screen.getByTestId("inspector-port-p-orientation");
+    expect(undeclared.getAttribute("data-orientation")).toBe("undeclared");
+    expect(undeclared.textContent).toContain("not declared: add `@orientation` to the block");
+    second.unmount();
+
+    useDocumentStore.getState().setSelection(["face"], []);
     render(<Inspector />);
     expect(screen.queryByTestId("inspector-port-p-orientation")).toBeNull();
   });

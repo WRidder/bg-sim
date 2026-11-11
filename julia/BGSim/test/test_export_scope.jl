@@ -119,7 +119,8 @@ _sc_codes(diags) = Set(d.code for d in diags)
         c = flipped["diagram"]["connections"][2]
         c["from"], c["to"] = c["to"], c["from"]
         # The stdlib R's port is `in` (port orientation), so a bond out of the subsystem is E114;
-        # an inline R with the same law and no declared orientation takes either direction.
+        # an inline R with the same port-variable law declared `out` takes the flipped bond (the
+        # adapter then takes the bond's head and declares `in`, O22).
         s_in, _ = _SC.scope_document(flipped, "Plant"; power_inputs = Dict("p" => "effort"),
             input_values = Dict("p" => 3.0))
         @test "E114" in _sc_codes(Compile.flatten(IR.parse_model(s_in)).diagnostics)
@@ -127,6 +128,7 @@ _sc_codes(diags) = Set(d.code for d in diags)
         load["block"] = Dict{String,Any}("inline" => Dict{String,Any}("source" => """
         @block R begin
             @ports p::Power{Generic}
+            @orientation p => :out
             @parameters r::Real = 1.0
             @equations p.e ~ r * p.f
         end

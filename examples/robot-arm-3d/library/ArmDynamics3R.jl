@@ -29,6 +29,11 @@
         j2::Power{Rotation}
         j3::Power{Rotation}
     end
+    @orientation begin
+        j1 => :in
+        j2 => :in
+        j3 => :in
+    end
     @parameters begin
         l2::Real = 0.4, [unit = "m", min = 0, description = "Upper arm length (shoulder to elbow)"]
         l3::Real = 0.3, [unit = "m", min = 0, description = "Forearm length (elbow to tip)"]

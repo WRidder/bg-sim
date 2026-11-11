@@ -190,7 +190,7 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
         @test isempty(gwb.interface.parameters)
         @test isempty(gwb.interface.variables)
         pb = gwb.ast
-        @test scopes(pb) == [:ports, :components, :connections]
+        @test scopes(pb) == [:ports, :orientation, :components, :connections]
 
         comps = components(pb)
         @test [component_name(c) for c in comps] == [:gear, :play]

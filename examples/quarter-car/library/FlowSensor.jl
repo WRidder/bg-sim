@@ -1,5 +1,6 @@
 @block FlowSensor begin
     @ports p::Power{Generic}
+    @orientation p => :in
     @outputs y::Real = 0.0, [description = "Velocity at the port"]
     @equations begin
         p.e ~ 0.0

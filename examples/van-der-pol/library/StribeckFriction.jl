@@ -6,6 +6,7 @@
     # tanh(w/v_eps) is a smooth sign of the slip; it only matters if the block sticks, which this
     # example's oscillation never does (the slip stays well above v_eps).
     @ports p::Power{Generic}
+    @orientation p => :in
     @parameters begin
         F_n::Real = 40.0, [min = 0, description = "Normal force (N)"]
         mu_c::Real = 0.3, [min = 0, description = "Coulomb (kinetic) friction coefficient"]

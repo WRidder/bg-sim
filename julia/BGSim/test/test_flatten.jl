@@ -1047,6 +1047,58 @@ end
                 @orientation p => :out
             end
             """,
+            # O22: blocks that declare no orientation. A detector, an electrical resistor (wired
+            # only), a composite that exposes the detector's port, and a composite with the
+            # detector bonded inside.
+            "OrDe" => """
+            @block OrDe begin
+                @ports p::Power{Generic}
+                @outputs y::Real
+                @equations begin
+                    p.f ~ 0.0
+                    y ~ p.e
+                end
+            end
+            """,
+            "OrResAny" => """
+            @block OrResAny begin
+                @ports begin
+                    p::Power{Electrical}
+                    n::Power{Electrical}
+                end
+                @parameters R::Real = 5.0, [unit = "Ohm", description = "Resistance"]
+                @equations begin
+                    p.f + n.f ~ 0.0
+                    p.e - n.e ~ R * p.f
+                end
+            end
+            """,
+            "OrWrapDe" => """
+            @block OrWrapDe begin
+                @ports p::Power{Generic}
+                @components begin
+                    de = OrDe()
+                end
+                @connections begin
+                    connect(p, de.p)
+                end
+            end
+            """,
+            "OrStackDe" => """
+            @block OrStackDe begin
+                @ports p::Power{Generic}
+                @components begin
+                    node = Junction(1)
+                    se = OrSe()
+                    de = OrDe()
+                end
+                @connections begin
+                    connect(p, node)
+                    connect(se.p, node)
+                    connect(node, de.p)
+                end
+            end
+            """,
             # A composite whose port exposes an `in` component port directly.
             "OrWrapC" => """
             @block OrWrapC begin
@@ -1272,6 +1324,80 @@ end
         @test only(e114(declared)).block == "project:OrStackOut"
         @test occursin("`p` of `S` is declared `out`", only(e114(declared)).message)
         @test length(e114(stack("OrStackOut", _conn("c1", "bond", "n2", "p", "n1", "p")))) == 1
+
+        # O22: a bond end at a power port that no `@orientation` entry names is E114, in either
+        # direction, on its own (one per end), and it does not cascade into other errors.
+        undeclared(d) = occursin("declares no orientation", d.message)
+        for (f, fp, t, tp) in (("j1", nothing, "n2", "p"), ("n2", "p", "j1", nothing))
+            de = run(Any[
+                node("n1", "Se1", "OrSe"),
+                _node("j1", "J1", _junction(1)),
+                node("n2", "De1", "OrDe"),
+            ], Any[_conn("c1", "bond", "n1", "p", "j1"), _conn("c2", "bond", f, fp, t, tp)])
+            @test length(e114(de)) == 1
+            d = only(e114(de))
+            @test d.node == "n2" && d.path == "De1" && d.block == "project:OrDe" && d.connection == "c2"
+            @test d.message == "bond `c2` reaches `De1.p`, but `De1.p` declares no orientation: add " *
+                               "`@orientation p => :in`, `:out` or a `(a, b) => :through` pair to the " *
+                               "block `project:OrDe`"
+            @test occursin("a bond needs a declared orientation at every end that is not a junction",
+                d.hint)
+            @test length(_errors(de)) == 1
+        end
+        # Two undeclared ends: one E114 per end.
+        two = pair("n1", "p", "n2", "p", "OrDe", "OrDe")
+        @test length(e114(two)) == 2 && all(undeclared, e114(two))
+        @test Set(d.node for d in e114(two)) == Set(["n1", "n2"])
+        # An undeclared end and a violated declared end: one E114 each, never two for one end.
+        mixed = pair("n2", "p", "n1", "p", "OrDe", "OrC")
+        @test length(e114(mixed)) == 2
+        @test count(undeclared, e114(mixed)) == 1
+        @test any(d -> occursin("`p` of `B2` is declared `in`", d.message), e114(mixed))
+        # A declared end that conforms, with an undeclared other end: only the undeclared one.
+        @test length(e114(pair("n1", "p", "n2", "p", "OrDe", "OrC"))) == 1
+        # Wires are never checked: an undeclared port on a wire node is fine.
+        wired_any = run(Any[
+            node("n2", "Ra", "OrResAny"),
+            node("n3", "Rb", "OrResAny"),
+            _node("n4", "G", _ref("stdlib:electrical/Ground")),
+        ], Any[
+            _conn("c1", "wire", "n2", "p", "n3", "p"),
+            _conn("c2", "wire", "n2", "n", "n4", "p"),
+            _conn("c3", "wire", "n3", "n", "n4", "p"),
+        ])
+        @test isempty(e114(wired_any))
+        # Through a subsystem port and a composite face: judged at the leaf port it reaches,
+        # reported on the node the user sees.
+        sub_de = Dict{String,Any}(
+            "ports" => Any[Dict{String,Any}("name" => "q", "kind" => "power",
+                "domain" => "Generic", "size" => Any[], "node" => "s1", "port" => "p")],
+            "diagram" => Dict{String,Any}("nodes" => Any[node("s1", "De1", "OrDe")],
+                "connections" => Any[]),
+        )
+        via_sub = run(Any[
+            node("n1", "Se1", "OrSe"),
+            _node("j1", "J1", _junction(1)),
+            _node("n2", "Probe", Dict{String,Any}("subsystem" => sub_de)),
+        ], Any[_conn("c1", "bond", "n1", "p", "j1"), _conn("c2", "bond", "j1", nothing, "n2", "q")])
+        @test length(e114(via_sub)) == 1
+        d = only(e114(via_sub))
+        @test d.node == "n2" && d.path == "Probe"
+        @test occursin("reaches `De1.p` (exposed as `q` of `Probe`), but `De1.p` declares no orientation",
+            d.message)
+        via_face = run(Any[
+            node("n1", "Se1", "OrSe"),
+            _node("j1", "J1", _junction(1)),
+            node("n2", "W", "OrWrapDe"),
+        ], Any[_conn("c1", "bond", "n1", "p", "j1"), _conn("c2", "bond", "j1", nothing, "n2", "p")])
+        @test length(e114(via_face)) == 1 && only(e114(via_face)).node == "n2"
+        # A composite-internal bond to an undeclared port: at the `connect` line.
+        inside = stack("OrStackDe", _conn("c1", "bond", "j1", nothing, "n1", "p"))
+        @test length(e114(inside)) == 1
+        d = only(e114(inside))
+        @test d.scope == "@connections" && d.block == "project:OrStackDe" && d.node == "n1"
+        @test occursin("bond `connect(node, de.p)` of `S` reaches `de.p`", d.message)
+        # A composite face that is a junction inside needs no declaration (unchanged).
+        @test isempty(e114(stack("OrStack", _conn("c1", "bond", "j1", nothing, "n1", "p"))))
     end
 
     @testset "project library" begin

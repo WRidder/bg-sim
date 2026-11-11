@@ -17,6 +17,7 @@
     # further bodies behind its pivot is not supported (the momentum projection only sees this
     # body's `P`); model such a mechanism with compliant joints instead.
     @ports p::Power{Spatial}, [frame = "body"]
+    @orientation p => :in
     @inputs begin
         g::Vec{7}
         sw::Real

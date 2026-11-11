@@ -1,8 +1,10 @@
 /**
  * Port orientation in the editor (plan/PORT_ORIENTATION_PLAN.md WP-O4, decisions O2, O4, O8, O13, O14).
  *
- * The local catalog declares no orientation yet, so the tests give some blocks an orientation themselves:
- * Se and Sf are `out`, C, I and R are `in`, TF and GY are a `through` pair; De and Df stay `any`.
+ * The blocks keep the orientations of the contract catalog (Se and Sf `out`, C, I, R and Df `in`, TF and GY a
+ * `through` pair). Two blocks are changed for the tests: De declares nothing (an undeclared leaf port, which
+ * cannot be bonded, O22), and `Face` is a textual composite whose undeclared face stays free (`any`): the
+ * compiler judges a bond there at the port inside.
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
@@ -28,23 +30,26 @@ import {
   createNodeFromBlock,
 } from "../src/state/modelFactory";
 
-const DECLARATIONS: Record<string, OrientationDecl[]> = {
-  Se: [{ ports: ["p"], kind: "out" }],
-  Sf: [{ ports: ["p"], kind: "out" }],
-  C: [{ ports: ["p"], kind: "in" }],
-  I: [{ ports: ["p"], kind: "in" }],
-  R: [{ ports: ["p"], kind: "in" }],
-  TF: [{ ports: ["p1", "p2"], kind: "through" }],
-  GY: [{ ports: ["p1", "p2"], kind: "through" }],
-};
-
 const base = catalogJson as unknown as Catalog;
+const deBlock = base.blocks.find((block) => block.name === "De");
+if (deBlock === undefined) {
+  throw new Error("catalog.min.json has no De");
+}
+const FACE_SOURCE = [
+  "@block Face begin",
+  "    @ports p::Power{Generic}",
+  "    @components begin",
+  "        node = Junction(1)",
+  "    end",
+  "    @connections connect(p, node)",
+  "end",
+].join("\n");
 const catalog: Catalog = {
   ...base,
-  blocks: base.blocks.map((block) => ({
-    ...block,
-    orientation: DECLARATIONS[block.name] ?? [],
-  })),
+  blocks: [
+    ...base.blocks.map((block) => (block.name === "De" ? { ...block, orientation: [] } : block)),
+    { ...deBlock, ref: "stdlib:bondgraph/Face", name: "Face", outputs: [], orientation: [], source: FACE_SOURCE },
+  ],
 };
 const index: CatalogIndex = buildCatalogIndex(catalog);
 
@@ -108,7 +113,7 @@ function refusal(doc: Model, a: PortDescriptor, b: PortDescriptor): string {
 }
 
 describe("the orientation of a catalog port", () => {
-  it("reads in, out, through and the default any", () => {
+  it("reads in, out, through, and undeclared for a port in no entry (any on a composite face)", () => {
     const decls: OrientationDecl[] = [
       { ports: ["a"], kind: "in" },
       { ports: ["b"], kind: "out" },
@@ -118,8 +123,10 @@ describe("the orientation of a catalog port", () => {
     expect(blockPortOrientation(decls, "b")).toEqual({ kind: "out" });
     expect(blockPortOrientation(decls, "c")).toEqual({ kind: "through", partner: "d", partnerFixed: null });
     expect(blockPortOrientation(decls, "d")).toEqual({ kind: "through", partner: "c", partnerFixed: null });
-    expect(blockPortOrientation(decls, "e")).toEqual({ kind: "any" });
-    expect(blockPortOrientation(undefined, "a")).toEqual({ kind: "any" });
+    expect(blockPortOrientation(decls, "e")).toEqual({ kind: "undeclared" });
+    expect(blockPortOrientation(undefined, "a")).toEqual({ kind: "undeclared" });
+    expect(blockPortOrientation(decls, "e", true)).toEqual({ kind: "any" });
+    expect(blockPortOrientation(decls, "a", true)).toEqual({ kind: "in" });
   });
 
   it("puts the orientation on the node interface and on the port descriptor", () => {
@@ -127,7 +134,9 @@ describe("the orientation of a catalog port", () => {
     expect(interfaceForNode(c, index).ports[0]?.orientation).toEqual({ kind: "in" });
     expect(portDescriptor(c, interfaceForNode(c, index), "p")?.orientation).toEqual({ kind: "in" });
     const de = block("De");
-    expect(interfaceForNode(de, index).ports[0]?.orientation).toBeUndefined();
+    expect(interfaceForNode(de, index).ports[0]?.orientation).toEqual({ kind: "undeclared" });
+    const face = block("Face");
+    expect(interfaceForNode(face, index).ports[0]?.orientation).toBeUndefined();
   });
 });
 
@@ -151,25 +160,40 @@ describe("a new bond is oriented by the ports", () => {
     expect(runs(doc, port(doc, se, "p"), port(doc, j, null))).toEqual({ from: se.id, to: j.id });
   });
 
-  it("treats an any port like a junction", () => {
+  it("treats a composite face that declares nothing (any) like a junction", () => {
     const se = block("Se");
     const c = block("C");
-    const de = block("De");
-    const doc = model([se, c, de]);
-    expect(runs(doc, port(doc, de, "p"), port(doc, c, "p"))).toEqual({ from: de.id, to: c.id });
-    expect(runs(doc, port(doc, c, "p"), port(doc, de, "p"))).toEqual({ from: de.id, to: c.id });
-    expect(runs(doc, port(doc, de, "p"), port(doc, se, "p"))).toEqual({ from: se.id, to: de.id });
+    const face = block("Face");
+    const doc = model([se, c, face]);
+    expect(runs(doc, port(doc, face, "p"), port(doc, c, "p"))).toEqual({ from: face.id, to: c.id });
+    expect(runs(doc, port(doc, c, "p"), port(doc, face, "p"))).toEqual({ from: face.id, to: c.id });
+    expect(runs(doc, port(doc, face, "p"), port(doc, se, "p"))).toEqual({ from: se.id, to: face.id });
   });
 
   it("leaves junction-junction and any-any bonds free, in the drag order", () => {
     const j1 = junction("1");
     const j0 = junction("0");
-    const de = block("De");
-    const df = block("Df");
-    const doc = model([j1, j0, de, df]);
+    const f1 = block("Face", "F1");
+    const f2 = block("Face", "F2");
+    const doc = model([j1, j0, f1, f2]);
     expect(runs(doc, port(doc, j1, null), port(doc, j0, null))).toEqual({ from: j1.id, to: j0.id });
     expect(runs(doc, port(doc, j0, null), port(doc, j1, null))).toEqual({ from: j0.id, to: j1.id });
-    expect(runs(doc, port(doc, de, "p"), port(doc, df, "p"))).toEqual({ from: de.id, to: df.id });
+    expect(runs(doc, port(doc, f1, "p"), port(doc, f2, "p"))).toEqual({ from: f1.id, to: f2.id });
+  });
+
+  it("refuses a bond to a port that declares no orientation, from either end, with the reason (O22)", () => {
+    const de = block("De", "De1");
+    const j = junction("1");
+    const se = block("Se");
+    const face = block("Face");
+    const doc = model([de, j, se, face]);
+    const reason = "`De1.p` declares no orientation: add `@orientation` to the block";
+    for (const other of [j, se, face]) {
+      const name = other.id === j.id ? null : "p";
+      expect(refusal(doc, port(doc, de, "p"), port(doc, other, name))).toBe(reason);
+      expect(refusal(doc, port(doc, other, name), port(doc, de, "p"))).toBe(reason);
+    }
+    expect(allowedRoles(doc, port(doc, de, "p")).size).toBe(0);
   });
 
   it("refuses in-in and out-out with the junction hint, from either end", () => {
@@ -418,15 +442,23 @@ describe("reversing a bond", () => {
   });
 
   it("is allowed between two any ends and between junctions of the same kind, without a warning", () => {
-    const de = block("De");
-    const df = block("Df");
+    const f1 = block("Face", "F1");
+    const f2 = block("Face", "F2");
     const j1 = junction("1", "Ja");
     const j2 = junction("1", "Jb");
-    const anyBond = bond(de, "p", df, "p");
+    const anyBond = bond(f1, "p", f2, "p");
     const jjBond = bond(j1, null, j2, null);
-    const doc = model([de, df, j1, j2], [anyBond, jjBond]);
+    const doc = model([f1, f2, j1, j2], [anyBond, jjBond]);
     expect(checkReverse(doc, index, anyBond)).toEqual({ ok: true, note: null });
     expect(checkReverse(doc, index, jjBond)).toEqual({ ok: true, note: null });
+  });
+
+  it("is refused at a port that declares no orientation", () => {
+    const de = block("De", "De1");
+    const j = junction("1");
+    const b = bond(j, null, de, "p");
+    const check = checkReverse(model([de, j], [b]), index, b);
+    expect(check).toEqual({ ok: false, reason: "`De1.p` declares no orientation: add `@orientation` to the block" });
   });
 
   it("stays allowed for a 0-1 bond and says what it does", () => {

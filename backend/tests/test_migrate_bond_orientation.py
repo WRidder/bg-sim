@@ -464,8 +464,8 @@ def _hand_body(inner_out: bool):
     """A hand-built body junction with inertia, Coriolis, twist sensor and gravity, on a `Free3D`,
     a contact through a mount and a wrench through a mount. `inner_out`: the lunar-module way
     (every element bonded from the junction, the contact mount into it and the thrust mount from
-    it); else the `RigidBody3D` way (the other way round). These are the consistent pairs of the
-    W218 check."""
+    it); else the `RigidBody3D` way before WP-O3a (the other way round). Each is a self-consistent
+    pairing of the inertia and attachment directions, as the old body conventions drew them."""
     def att(cid, end):
         return bond(cid, "j", end) if inner_out else bond(cid, end, "j")
 

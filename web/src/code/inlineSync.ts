@@ -73,7 +73,7 @@ export function useInlineInterfaceSync(): void {
             const iface =
               result.interface === null || result.interface === undefined
                 ? null
-                : interfaceFromBlockCheck(result.interface, blockNameOf(source) ?? node.name);
+                : interfaceFromBlockCheck(result.interface, blockNameOf(source) ?? node.name, source);
             publishInlineInterface(node.id, source, iface);
           },
           () => {

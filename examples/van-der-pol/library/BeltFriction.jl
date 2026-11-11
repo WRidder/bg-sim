@@ -8,6 +8,7 @@
     # curvature that limits it. With w = v_b - x' this is the negative damper of Rayleigh's
     # equation.
     @ports p::Power{Generic}
+    @orientation p => :in
     @parameters begin
         F0::Real = 13.4, [unit = "effort", description = "Friction force at the belt speed (N)"]
         alpha::Real = 5.0, [min = 0, description = "Falling slope -dF/dw at v_b (N*s/m)"]

@@ -3,6 +3,10 @@
         a::Power{Translation}
         b::Power{Translation}
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
     @parameters begin
         kt::Real = 200000.0, [unit = "N/m", min = 0, description = "Contact stiffness"]
     end

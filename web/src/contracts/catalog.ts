@@ -78,7 +78,7 @@ export interface CatalogBlock {
   variables: VariableDecl[];
   causality: CausalityDecl[];
   /**
-   * The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry is `any`; empty for a block that declares none.
+   * The bond direction the block expects at its power ports (@orientation, plan/PORT_ORIENTATION_PLAN.md O2 and O13). A power port named in no entry has no declared orientation and cannot be bonded (O22: E114), except a face of a textual composite, which the compiler judges at the port inside; empty for a block that declares none.
    */
   orientation: OrientationDecl[];
   /**

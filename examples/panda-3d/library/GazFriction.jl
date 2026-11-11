@@ -10,6 +10,7 @@
     # stdlib `R` is linear and `MR` would need the secant tau_f/qd (singular at rest), hence a
     # project element.
     @ports p::Power{Rotation}
+    @orientation p => :in
     @parameters begin
         phi1::Real = 0.5, [unit = "N*m", min = 0, description = "Friction level (Gaz phi1)"]
         phi2::Real = 5.0, [unit = "s/rad", min = 0, description = "Sigmoid steepness (Gaz phi2)"]
