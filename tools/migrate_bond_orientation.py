@@ -39,12 +39,19 @@ What the tool does, per model:
    element whose port sign flips:
 
    * **neutral**: nothing to do (the chain does not flip), or an odd element (linear ``C``, ``I``,
-     ``R``, ``MR``, a detector or a one-terminal sensor whose output feeds nothing) whose start
-     values are negated;
-   * **source**: a source (``Se``, ``Sf``, ``MSe``, ``MSf``) whose value expression is negated;
-   * **review**: anything else (an asymmetric law, a multi-port block on two chains, a detector
-     whose output drives a controller, an inline block, ...). The tool never guesses: every edit
-     of that group is withheld and reported.
+     ``R``, ``MR``, a detector or a one-terminal sensor whose output feeds nothing, an iconic
+     ground, or a linear iconic two-terminal element such as a ``Spring``, ``Mass``, ``Inertia`` or
+     ``Resistor`` whose terminals *all* flip, ``ODD_MULTI``) whose start values are negated;
+   * **source**: a source (``Se``, ``Sf``, ``MSe``, ``MSf``, an iconic ``SpeedSource``,
+     ``VelocitySource`` or ``PressureSource``, or a two-terminal iconic source whose terminals all
+     flip, ``SOURCES_MULTI``) whose value expression is negated;
+   * **review**: anything else (an asymmetric law, a multi-port block on two chains, an iconic
+     two-terminal element with only one terminal flipped, a detector whose output drives a
+     controller, an inline block, ...). The tool never guesses: every edit of that group is
+     withheld and reported.
+
+   Iconic (wire-domain) power ports are ``in`` (O20): a bond to one ends at the port, which then
+   behaves exactly as if it were wired to that junction.
 3. **Signal references.** A port variable ``<path>/<port>.e|.f`` on a flipped chain, and an odd
    variable of a flipped element, change sign in recorded results (O18). The tool negates a
    binding's ``gain``, and in ``expected.json`` the ``value`` of ``final_value`` /
@@ -171,6 +178,10 @@ SOURCES: dict[str, str] = {
     "stdlib:bondgraph/Sf": "f",
     "stdlib:bondgraph/MSe": "gain",
     "stdlib:bondgraph/MSf": "gain",
+    # O20: the one-terminal iconic sources (their value factor; the input `u` multiplies it).
+    "stdlib:rotation/SpeedSource": "w",
+    "stdlib:translation/VelocitySource": "v",
+    "stdlib:hydraulic/PressureSource": "p",
 }
 
 # Odd one-ports: (e, f) -> (-e, -f) maps the law onto itself when these variables are negated too.
@@ -199,10 +210,55 @@ ODD: dict[str, tuple[str, ...]] = {
     "stdlib:multibond/DeSpatial": ("y",),
     "stdlib:multibond/DfPlanar": ("y",),
     "stdlib:multibond/DfSpatial": ("y",),
+    # O20: the one-terminal iconic grounds (a.f = 0 or p.e = 0 is sign-symmetric).
+    "stdlib:translation/Fixed": (),
+    "stdlib:rotation/FixedShaft": (),
+    "stdlib:electrical/Ground": (),
 }
 ODD_OUTPUTS = {"y"}
+
+# O20: iconic (wire-domain) blocks with several power ports, all `in`. A linear two-terminal
+# element is odd-symmetric only as a whole: negating (e, f) of *every* power port together with
+# these variables maps the law onto itself, so reversing the bonds of all its terminals on their
+# 1-junctions is neutral, while reversing one terminal is not (review). A port that is wired or
+# not bonded keeps its sign.
+ODD_MULTI: dict[str, tuple[str, ...]] = {
+    "stdlib:translation/Spring": ("x",),
+    "stdlib:translation/Damper": (),
+    "stdlib:translation/SpringDamper": ("x",),
+    "stdlib:translation/Mass": ("x", "v"),
+    "stdlib:rotation/TorsionSpring": ("phi",),
+    "stdlib:rotation/RotationalDamper": (),
+    "stdlib:rotation/ElasticShaft": ("phi",),
+    "stdlib:rotation/Inertia": ("phi", "w"),
+    "stdlib:rotation/IdealGear": (),
+    "stdlib:electrical/Resistor": (),
+    "stdlib:electrical/Capacitor": ("v",),
+    "stdlib:electrical/Inductor": ("i",),
+    "stdlib:thermal/ThermalConductor": ("dT", "Q"),
+    "stdlib:converters/EMConverter": (),
+    "stdlib:converters/RackAndPinion": (),
+    "stdlib:converters/Wheel": (),
+    "stdlib:converters/ForceSensor": ("y",),
+    "stdlib:converters/TorqueSensor": ("y",),
+    "stdlib:converters/CurrentSensor": ("y",),
+    "stdlib:converters/VoltageSensor": ("y",),
+    "stdlib:converters/FlowSensor": ("y",),
+    "stdlib:thermal/HeatFlowSensor": ("y",),
+}
+# O20: the two-terminal iconic sources: with every terminal reversed, negating the value restores
+# the model.
+SOURCES_MULTI: dict[str, str] = {
+    "stdlib:translation/ForceSource": "F",
+    "stdlib:rotation/TorqueSource": "T",
+    "stdlib:electrical/VoltageSource": "V",
+    "stdlib:electrical/CurrentSource": "I",
+    "stdlib:hydraulic/FlowSource": "Q",
+}
 # A spring with a rest deflection is odd only when the rest is zero (else review).
 ODD_REST: dict[str, tuple[str, ...]] = {
+    "stdlib:translation/Spring": ("x_free",),
+    "stdlib:rotation/TorsionSpring": ("phi_free",),
     "stdlib:multibond/CPlanar": ("qr0", "qx0", "qy0"),
     "stdlib:multibond/CSpatial": ("qrx0", "qry0", "qrz0", "qx0", "qy0", "qz0"),
 }
@@ -210,6 +266,10 @@ ODD_REST: dict[str, tuple[str, ...]] = {
 # The cost of a sign choice. A review case is the last resort; negating a source value keeps every
 # other signal of the model, so it is preferred to flipping an odd element, whose variables (a
 # state, a sensed value) change sign in the results (O18 keeps states and physical outputs).
+# One lookup for the start/variable and value edits of single- and multi-port blocks.
+ODD_ALL: dict[str, tuple[str, ...]] = {**ODD, **ODD_MULTI}
+SOURCE_PARAM: dict[str, str] = {**SOURCES, **SOURCES_MULTI}
+
 COST_REVIEW = 1000.0
 COST_SOURCE = 1.0
 COST_ODD = 20.0
@@ -837,6 +897,27 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
             if len(set(signs.values())) == 1 and not lp:
                 return ("neutral", "")
             return ("review", f"`{inst.path}`: the two sides of the through pair get opposite signs")
+        if inst.ref in ODD_MULTI or inst.ref in SOURCES_MULTI:
+            # every power port of the block counts; an unbonded (wired) port keeps its sign
+            allp = info.ports if info is not None else ports
+            every = {p: signs.get(p, 1) for p in allp}
+            if all(v == 1 for v in every.values()):
+                return ("neutral", "")
+            if any(v == 1 for v in every.values()):
+                return ("review", (f"`{inst.path}` ({inst.ref}): only some of its terminals flip "
+                                   "sign; reversing one terminal of a two-terminal element is not "
+                                   "neutral"))
+            if inst.ref in SOURCES_MULTI:
+                return ("source", "")
+            if inst.ref in ODD_REST and any(_nonzero(inst.node.get("params", {}).get(r))
+                                            for r in ODD_REST[inst.ref]):
+                return ("review", f"`{inst.path}` ({inst.ref}) flips sign and has a rest deflection")
+            used = [o for o in inst.consumed_outputs if o in ODD_MULTI[inst.ref] or o in ODD_OUTPUTS]
+            if used:
+                return ("review", (f"`{inst.path}` ({inst.ref}) flips sign and its output "
+                                   f"`{used[0]}` drives other blocks"))
+            starts = [v for v in ODD_MULTI[inst.ref] if v in inst.node.get("starts", {})]
+            return ("neutral_start" if starts else "neutral", "")
         if len(ports) != 1:
             return ("review", f"`{inst.path}` ({inst.ref}): multi-port block with a flipped port")
         s_elem = signs[ports[0]]
@@ -877,8 +958,8 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
                 total += COST_REVIEW
             elif cls == "source":
                 total += COST_SOURCE
-            elif flipped and inst.ref in ODD:
-                total += COST_ODD + COST_ODD_VAR * len(ODD[inst.ref])
+            elif flipped and inst.ref in ODD_ALL:
+                total += COST_ODD + COST_ODD_VAR * len(ODD_ALL[inst.ref])
             elif flipped and len(iports(inst)) == 2:
                 total += COST_THROUGH
             for p in flipped:
@@ -968,7 +1049,7 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
             for sig in COMPOSITE_FLIPS.get(base, ()):
                 res.flipped.update({f"{owner}/{sig}.e", f"{owner}/{sig}.f"})
         if cls == "source":
-            pname = SOURCES[inst.ref]
+            pname = SOURCE_PARAM[inst.ref]
             old = inst.node.get("params", {}).get(pname)
             if old is None:
                 old = cat[inst.ref].defaults.get(pname) or "1.0"
@@ -978,15 +1059,15 @@ def analyse(m: Model, cat: dict[str, BlockInfo], label: str, law_changes: bool) 
                    list(port_signs.values()) == [1] else "its port flips")
             res.changes.append(Change("source", f"negate `{inst.path}`.{pname}: {old} -> {new} ({why})"))
         elif cls == "neutral_start":
-            for v in ODD[inst.ref]:
+            for v in ODD_ALL[inst.ref]:
                 if v in inst.node.get("starts", {}):
                     old = inst.node["starts"][v]
                     new = _negate_expr(str(old))
                     plan["starts"].append((inst, v, new))
                     res.changes.append(Change("neutral", f"negate start `{inst.path}/{v}`: {old} -> {new}"))
-        if cls in ("neutral_start",) or (cls == "neutral" and inst.ref in ODD and
+        if cls in ("neutral_start",) or (cls == "neutral" and inst.ref in ODD_ALL and
                                          any(s == -1 for s in port_signs.values())):
-            res.flipped.update(f"{inst.path}/{v}" for v in ODD[inst.ref])
+            res.flipped.update(f"{inst.path}/{v}" for v in ODD_ALL[inst.ref])
         if law_flip(inst):
             plan["markers"].append(inst)
             if cls == "neutral":

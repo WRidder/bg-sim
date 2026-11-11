@@ -52,4 +52,10 @@
         A.f ~ Q_AT - Q_PA
         B.f ~ Q_BT - Q_PB
     end
+    @orientation begin
+        P => :in
+        T => :in
+        A => :in
+        B => :in
+    end
 end

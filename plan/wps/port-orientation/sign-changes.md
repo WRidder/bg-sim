@@ -103,3 +103,21 @@ it changes no expectation unless a signal is named.
 | `golden/contact/fixtures/library/SuctionCupLinear.jl` | the frozen linear cup re-based on the contact law (flows and efforts negated, `@orientation` added), so the comparison with the stdlib cup is like for like | none |
 | `golden/spatial/jmb10_arm.jl`, `test_floating_base.jl` | rig: the parent junction bonds into the joint mount `T.b` | none |
 | `src/library/chain_loader.jl` (`load_chain`, used by `test_loader.jl`) | the parent body junction bonds into the joint mount `J_t.b` | none |
+
+## WP-O3a2: iconic ports `in` (O20) and explicit planar transforms (O21)
+
+### Blocks
+
+| block | change | what changes sign in a model |
+| --- | --- | --- |
+| the iconic blocks of `electrical/`, `rotation/`, `translation/`, `hydraulic/`, `thermal/`, `drives/`, `motion/`, `converters/` and `contact/VacuumGenerator` (89 blocks, 196 ports, composites' faces included) | every power port declared `in`; no law changed | Nothing on a bond that already ended at the port (it behaves as the wired node did). A bond that left an iconic port is now E114; reversed on a 0-junction nothing changes sign, reversed on a 1-junction the element's port variables and odd states change sign (the tool decides per sign group). |
+| `multibond/FixedTransform2D`, `JointTransform2D` | the effort law written explicitly as `b.e = Ad^T a.e` (was the implicit `a.e = Ad^-T b.e`) | nothing: the same law, solved the other way round. |
+
+### Julia tests and fixtures
+
+| file | change | signals that change sign (expectation negated) |
+| --- | --- | --- |
+| `test_flatten.jl` (adoption, thermal C, RS adoption) | rig: `J1 -> G1.p`, `J0 -> Heat.a`; the `Supply.p -> Load.p` bond becomes a 0-junction with a bond into each port | none (flatten-only checks) |
+| `golden/thermal/test_RS.jl` | rig: `Supply.p`/`Load.p` through a 0-junction; `Rotor.a`/`Drag.p` through a 1-junction | none |
+| `golden/converters/test_LoadSensingPump.jl` (`LSPumpLoop`) | rig: `JP -> P1.b` (a 0-junction) | none |
+| `test_multibond_slice.jl`, `fixtures/multibond/pendulum.json` | solver pinned to `Rodas5P` (the pure ODE made `auto` pick a non-stiff method that stops at MaxIters); new mounting-angle testset (O21) | none |

@@ -25,10 +25,12 @@
         a.f[1] ~ -b.f[1]
         a.f[2] ~ -(g[3] * b.f[1] + cos(g[1]) * b.f[2] - sin(g[1]) * b.f[3])
         a.f[3] ~ g[2] * b.f[1] - sin(g[1]) * b.f[2] - cos(g[1]) * b.f[3]
-        a.e[1] ~ b.e[1] + (sin(g[1]) * g[2] - cos(g[1]) * g[3]) * b.e[2] +
-                 (cos(g[1]) * g[2] + sin(g[1]) * g[3]) * b.e[3]
-        a.e[2] ~ cos(g[1]) * b.e[2] - sin(g[1]) * b.e[3]
-        a.e[3] ~ sin(g[1]) * b.e[2] + cos(g[1]) * b.e[3]
+        # O21: the effort relation in the explicit form b.e = Ad(g)^T a.e (the same causal
+        # direction as the flow relation, as TFAd): the implicit a.e = Ad^-T b.e left MTK a
+        # division by cos(g[1]) or sin(g[1]).
+        b.e[1] ~ a.e[1] + g[3] * a.e[2] - g[2] * a.e[3]
+        b.e[2] ~ cos(g[1]) * a.e[2] + sin(g[1]) * a.e[3]
+        b.e[3] ~ -sin(g[1]) * a.e[2] + cos(g[1]) * a.e[3]
     end
     @causality (a, b) => :transformer
     @orientation (a, b) => :through

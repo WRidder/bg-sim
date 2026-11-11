@@ -42,7 +42,7 @@ and its regression tests are reused.
 | O3 | Enforcement in the compiler: a bond whose end at an `in` port is not its head, or whose end at an `out` port is not its tail, is an **error** (new code, the next free `E1xx`; the message names the bond, the port, the declared orientation and says "reverse this bond"). Composite `@connections` are checked the same way (`connect(a, b)` runs from `a` to `b`). Wires (`kind: "wire"`) and signals have no direction and are not checked. | An error cannot be ignored and needs no lookup table. It covers scalar, planar and spatial blocks alike. |
 | O4 | Two fixed ports can only be bonded `out -> in`. `in`-`in` and `out`-`out` bonds are the same error, with the hint "put a junction in between". | Two passive one-ports head to head have no consistent direction. |
 | O5 | Catalog contract: `portDecl` gets `orientation: "in" \| "out" \| "any"` (required, so every language has it). TypeScript, Python and Julia shapes change together; fixtures are updated. | `contracts/` is the single source of truth. |
-| O6 | Stdlib convention, every domain: **storage, dissipation, fields, contacts, detectors and sensors are `in`; sources are `out`; two-ports (`TF`, `GY`, `MTF`, `MGY`, the fixed and moving transforms, joints, converters between domains) are `a => :in`, `b => :out`**, power flowing through from `a` to `b`. Multiport fields between two bodies (`RollingSphere`, `SuctionCup`, `MovingPlaneContact`, two-sided spring-dampers used with bonds) have all ports `in`. A composite port that *is* a junction stays `any`. Iconic components that are meant for wires only stay `any`. WP-O0 produces the full table, block by block, before any block is changed. | One rule a user can remember, equal to the textbook drawing: sources point at the junction, elements are pointed at. |
+| O6 | Stdlib convention, every domain: **storage, dissipation, fields, contacts, detectors and sensors are `in`; sources are `out`; two-ports (`TF`, `GY`, `MTF`, `MGY`, the fixed and moving transforms, joints, converters between domains) are `a => :in`, `b => :out`**, power flowing through from `a` to `b`. Multiport fields between two bodies (`RollingSphere`, `SuctionCup`, `MovingPlaneContact`, two-sided spring-dampers used with bonds) have all ports `in`. A composite port that *is* a junction stays `any`. Iconic components that are meant for wires only stay `any` (overridden by O20). WP-O0 produces the full table, block by block, before any block is changed. | One rule a user can remember, equal to the textbook drawing: sources point at the junction, elements are pointed at. |
 | O7 | Mechanics sign rule: with the declared orientations, **every block attached to a body sees the body's true twist `V` at its port, and applies the wrench its header documents**. The contact blocks lose their negated-twist convention. `RigidBody2D`/`RigidBody3D` are rebuilt with textbook internals (`node -> inertia.p`, `node -> coriolis.p`, `gravity.p -> node`, `node -> flow.p`), so the junction flow is `V` and a hand-built body behaves exactly like the library body. Mounts pass the sign straight through. | This is the unification. With O3 a wrong direction cannot be drawn, and with O7 the right direction is the same for every block. |
 | O8 | Editor: a new bond is oriented from the ports' orientations whichever end the user starts at; a bond between two fixed ports of the same kind is refused with the O4 hint; "reverse bond" is disabled when an end is fixed, with a tooltip that says why; the port tooltip and the block inspector show the orientation. Junction-to-junction bonds keep a free direction (reversing one negates only that bond's own variables, never the model). | The error of O3 should be hard to reach from the editor. |
 | O9 | Migration, once: `tools/migrate_bond_orientation.py` reads the catalog and a model, reverses every bond that violates O3 and reports each reversal with its class: **neutral** (an odd-symmetric one-port: linear `I`, `C`, `R`; reversing changes nothing), **source** (the value must be negated to keep the model: the tool negates the parameter expression and says so) or **review** (an asymmetric law or a block whose law changed under O7: a person decides). Examples with a `design/build_model.py` are fixed in the script and regenerated, not migrated. | No stop gap in the models either: after migration no model relies on a reversed bond. |
@@ -56,7 +56,7 @@ Amendments after the WP-O0 inventory (findings F1 to F7 at the end). They overri
 | --- | --- | --- |
 | O13 | A fourth orientation, a **relation**: `@orientation (a, b) => :through`. Exactly one of the two bonds arrives and the other leaves; which one is free. It applies to the pass-through two-ports: `TF`, `GY`, `MTF`, `MGY`, `TFAd`, `TFAdNeutral`, `FixedTransform2D/3D/3DNeutral`, `JointTransform2D/3D`, `FixedJoint2D`, `PowerSensor`. Their laws are symmetric in the into-block form, so they work either way round. This replaces "`a => :in`, `b => :out`" of O6 for these blocks. Joints and `Free3D` are not pass-through: `parent => :in`, `child => :out`, `drive => :in` (open point 2). Catalog (replaces O5's per-port field): the block gets `orientation: [{ ports: [...], kind: "in" \| "out" \| "through" }]`, shaped like `causality`; a port in no entry is `any`. | F1: a mount's `a` side carries a contact, sensor or joint parent, all `in`; a fixed `a in` gives 959 in-in errors in the examples that no reversal can fix. The check stays local: the two bonds of a `through` pair must have opposite directions. |
 | O14 | Bonds between two junctions are never checked. A 1-1 or 0-0 bond is neutral. A **0-1 bond is semantic and stays free**: it sets the reference direction of everything behind it (the sign of a relative velocity, of a spring's displacement), which is the modeller's choice in any bond graph. The editor allows reversing it and says what it does ("reverses the reference direction of the sub-graph behind this bond"); it never calls it harmless. O8's last sentence is withdrawn. | F3. Fixing 0-1 bonds to one direction would take away a legitimate choice and protect nothing: no block's equations assume it. |
-| O15 | "Sources are `out`" means the bond-graph sources (`Se`, `Sf`, `MSe`, `MSf` and their planar and spatial forms, gravity, external wrench). **Flow sources are corrected** so that at the tail they impose `+f` on the junction (today `Sf` at the tail injects `-f`). Iconic sources (`Fixed`, `Ground`, `SpeedSource`, `Tank`, `PressureSource`, the thermal sources) are wire components and stay `any`, like all iconic ports. | F4. |
+| O15 | "Sources are `out`" means the bond-graph sources (`Se`, `Sf`, `MSe`, `MSf` and their planar and spatial forms, gravity, external wrench). **Flow sources are corrected** so that at the tail they impose `+f` on the junction (today `Sf` at the tail injects `-f`). Iconic sources (`Fixed`, `Ground`, `SpeedSource`, `Tank`, `PressureSource`, the thermal sources) are wire components and stay `any`, like all iconic ports (overridden by O20: they are `in`). | F4. |
 | O16 | Joint drive ports are `in`. A dissipator on a drive goes through a 1-junction (`drive <- 1 -> R`), as any element-to-element connection does under O4. lunar-module and rocket get that junction. | F5: orthodox, and it is where a motor and the friction of the same axis meet anyway. |
 | O17 | Project library blocks follow O6, O7 and O13 like the stdlib. `cars`' `Strut` exposes the true suspension rate on its junction port (today it documents `j.f = -dx/dt`). The silent odd chains of flex-torsion and flex-rotary-pendulum are checked against an independent reference in WP-O3c; a real sign error found there is fixed, not preserved. | F6. |
 | O18 | What may change in recorded results: **only the sign of port variables (`p.e`, `p.f`, and signals defined as a port variable) of blocks whose convention changes**, listed per block in `plan/wps/port-orientation/sign-changes.md` by the package that changes them. Golden files and `expected.json` entries are updated only for signals on that list, by negation, never by re-recording. Positions, twists `V`, states and every physical output stay bit-comparable within the existing tolerances (O10). | 53 Julia test files name a block whose law changes. Without a closed list, "update the goldens" would hide real regressions. |
@@ -161,11 +161,46 @@ Choices WP-O3a made:
 - **A tearing artefact, not a library error.** `test_multibond_slice.jl:825` (the `la + lb` power identity at
   1e-9) now fails: MTK keeps a different algebraic residual and computes an observed `Link/b.e[3]` by dividing by
   `cos(pi/2)`. States, period and energy drift match the baseline; the failure is reported, the tolerance is
-  unchanged.
+  unchanged. (Resolved by O21 in WP-O3a2: it was the block's implicit law, not the test.)
+
+Choices WP-O3a2 made (O20, O21):
+
+- **O20, declarations.** Every power port of the iconic blocks is `in`: `electrical/` (18 blocks, 48 ports),
+  `rotation/` (17, 33), `translation/` (9, 16), `hydraulic/` (10, 20), `thermal/` (12, 24), `drives/` (4, 5),
+  `motion/` (2, 6), `converters/` (16, 43) and `contact/VacuumGenerator` (1); 196 ports in 89 blocks, plus those WP-O2
+  had already declared. No law changed and no iconic block is left `any`. The textual composites (`DCMotor`,
+  `DCMotorThermal`, `CurrentControlledDrive`, `ElectricDrive`, `Gearbox`, `ReactionWheel`, `GearWithBacklash`)
+  declare their faces `in` too, so the catalog and the editor show the same orientation as the leaf ports behind
+  them (the compiler checks the leaf ports anyway). `RS` keeps `p in`, `heat out` (a bond-graph block).
+- **O20, the evidence.** For every iconic block, a rig with all ports wired and the same rig with each port bonded
+  from a junction (0-junction for an electrical, hydraulic or thermal node, 1-junction for a mechanical one) give
+  identical signals (max relative difference 0.0 over 522 signals). Before the declaration, a bond leaving the port
+  on a 1-junction compiled and negated the motion; on a 0-junction it changed nothing.
+- **O20, the rule for a model.** A bond to an iconic port always ends at the port (junction -> port); the port
+  then behaves exactly as the wired node. Two iconic ports are joined by a wire, or by a junction with a bond into
+  each, never by one bond. A composite face that fans out to several leaf ports (`DCMotor` shaft/housing,
+  `Gearbox` `a`/`b`) is wired, not bonded (E102, unchanged).
+- **O20, the tool.** `tools/migrate_bond_orientation.py` knows the odd iconic elements (springs, dampers, masses,
+  inertias, `R`/`C`/`L`, the thermal conductor, the ideal gear and the converters, the series sensors) and the
+  iconic sources (`ForceSource`, `TorqueSource`, `VoltageSource`, `CurrentSource`, `FlowSource`, `SpeedSource`,
+  `VelocitySource`, `PressureSource`; `Fixed`, `FixedShaft`, `Ground` carry nothing). A multi-terminal iconic block
+  whose bonded terminals all flip (an unbonded terminal counts as unflipped) is neutral (or a source negation);
+  when only some flip it is review, because reversing one terminal of a two-terminal element is not neutral.
+- **O21, the law.** `FixedTransform2D` and `JointTransform2D` state the effort law as `b.e = Ad^T a.e`
+  componentwise, so `b.e` is never observed through a division by `cos(theta)` or `sin(theta)`. The pendulum
+  fixture then compiles to a pure ODE, so `auto` picks a non-stiff solver that stops at MaxIters on the stiff
+  joint; the fixture and `_mb4_settings` pin `Rodas5P` (examples/multibond-pendulum-2d needs the same in its
+  migration).
+- **O21, what is left.** `planar/FixedJoint2D` used with reverse causality (the FIX-MB-4 lever) still fails at
+  theta = +-pi/2 (MaxIters), and a spatial mount used with `a` toward the body fails at axis-aligned rotations
+  (the initialization divides by a zero rotation entry). Both are older than WP-O3a. A mount keeps its `b` on the
+  inertia side; the migration tool only reverses bonds and never changes which side of a `through` block faces
+  the body, so it cannot create either case.
 
 Open points, decided in the work package that meets them and recorded here:
 
-- **Two-terminal iconic sensors** (decided in WP-O0): they **stay `any`**.
+- **Two-terminal iconic sensors** (decided in WP-O0): they **stay `any`** (overridden by O20: both terminals are
+  `in`; the planar-links `TorqueSensor` bonds that leave `b` are E114 and go to the migration).
   - Only two of them are ever bonded, and in both cases the direction is irrelevant:
     - the hydraulic `FlowSensor.b` goes to a 0-junction (4 bonds);
     - `TorqueSensor` in planar-links sits as a through element between an `Sf` and a 1-junction (9 bonds). Its `a`

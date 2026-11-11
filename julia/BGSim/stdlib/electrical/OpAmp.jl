@@ -28,4 +28,9 @@
             (clamp(A * (in_p.e - in_n.e), V_neg, V_pos) - v_o) / T_o,
         )
     end
+    @orientation begin
+        in_p => :in
+        in_n => :in
+        out => :in
+    end
 end

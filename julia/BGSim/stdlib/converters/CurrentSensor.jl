@@ -10,4 +10,8 @@
         p.f ~ y
         p.f + n.f ~ 0.0
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

@@ -38,4 +38,10 @@
         i_dc ~ d * i
         out_p.e - out_n.e ~ d * (dc_p.e - dc_n.e) - R_on * i - R_limit * deadzone(i, I_max)
     end
+    @orientation begin
+        dc_p => :in
+        dc_n => :in
+        out_p => :in
+        out_n => :in
+    end
 end

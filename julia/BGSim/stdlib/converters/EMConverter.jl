@@ -13,4 +13,9 @@
         p.e - n.e ~ -k * shaft.f
         shaft.e ~ k * p.f
     end
+    @orientation begin
+        p => :in
+        n => :in
+        shaft => :in
+    end
 end

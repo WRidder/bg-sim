@@ -14,4 +14,10 @@
         p1.e - n1.e ~ n * (p2.e - n2.e)
         p2.f ~ -n * p1.f
     end
+    @orientation begin
+        p1 => :in
+        n1 => :in
+        p2 => :in
+        n2 => :in
+    end
 end

@@ -8,4 +8,8 @@
         a.e ~ d * (a.f - b.f)
         b.e ~ -a.e
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

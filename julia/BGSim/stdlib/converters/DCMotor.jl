@@ -50,4 +50,10 @@
         housing.e = rotor.b.e
         housing.f = rotor.b.f
     end
+    @orientation begin
+        p => :in
+        n => :in
+        shaft => :in
+        housing => :in
+    end
 end

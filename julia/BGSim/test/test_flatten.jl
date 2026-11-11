@@ -788,7 +788,7 @@ end
             _node("n2", "J1", _junction(1)),
             _node("n3", "R1", _ref("stdlib:bondgraph/R"); params = Dict("r" => "10.0")),
         ], Any[
-            _conn("c1", "bond", "n1", "p", "n2"),
+            _conn("c1", "bond", "n2", nothing, "n1", "p"),
             _conn("c2", "bond", "n2", nothing, "n3", "p"),
         ])
         fm = flat(adopt_model)
@@ -1364,7 +1364,7 @@ end
             _node("n5", "Ambient", _ref("stdlib:thermal/FixedTemperature")),
         ], Any[
             _conn("c1", "bond", "n3", nothing, "n2", "p"),
-            _conn("c2", "bond", "n1", "a", "n3", nothing),
+            _conn("c2", "bond", "n3", nothing, "n1", "a"),
             _conn("c3", "bond", "n3", nothing, "n4", "a"),
             _conn("c4", "wire", "n4", "b", "n5", "a"),
         ]))
@@ -1381,10 +1381,13 @@ end
             _node("n3", "Gnd", _ref("stdlib:electrical/Ground")),
             _node("n4", "Load", _ref("stdlib:bondgraph/RS")),
             _node("n5", "Mass", _ref("stdlib:thermal/HeatCapacitor")),
+            _node("n6", "J0", _junction(0)),
         ], Any[
             _conn("c1", "signal", "n1", "y", "n2", "u"),
             _conn("c2", "wire", "n2", "n", "n3", "p"),
-            _conn("c3", "bond", "n2", "p", "n4", "p"),
+            # Both `p` ports are `in` (O20): a junction joins them, with a bond into each.
+            _conn("c3", "bond", "n6", nothing, "n2", "p"),
+            _conn("c5", "bond", "n6", nothing, "n4", "p"),
             _conn("c4", "wire", "n4", "heat", "n5", "a"),
         ]))
         @test isempty(_errors(rs))

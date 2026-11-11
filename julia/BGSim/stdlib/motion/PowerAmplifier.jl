@@ -33,4 +33,8 @@
         v_cmd ~ clamp(gain * u, -V_max, V_max)
         v ~ v_cmd - R_out * i - R_limit * deadzone(i, I_max)
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

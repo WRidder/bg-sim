@@ -18,4 +18,8 @@
             G_off * (p.e - n.e),
         )
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

@@ -4,4 +4,5 @@
     @parameters p::Real = 1.0e5, [unit = "Pa", description = "Pressure gain on the control input"]
     @equations a.e ~ p * u
     @causality a => (:effort_out, :fixed)
+    @orientation a => :in
 end

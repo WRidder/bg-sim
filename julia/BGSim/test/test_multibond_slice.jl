@@ -49,9 +49,13 @@ const _MB4_SWING = _MB4_M * _MB4_G * _MB4_L * (1 - cos(0.01))
 
 _mb4_load() = JSON3.read(read(_MB4_FIXTURE, String), Dict{String,Any})
 
+# The pendulum is stiff (the compliant pivot's translational mode is sqrt(kt/m) = 1e4 rad/s)
+# and, since O21 wrote FixedTransform2D's effort law explicitly, it compiles to a pure ODE, for
+# which "auto" would pick the explicit Tsit5. The runs name Rodas5P, the solver "auto" chose
+# while the implicit law still left an algebraic tearing variable.
 function _mb4_settings(; t_end = 4.0, points = 4001, reltol = 1.0e-9, abstol = 1.0e-11)
     return BGSim.RunSettings(
-        t_start = 0.0, t_end = t_end, solver = "auto", reltol = reltol, abstol = abstol,
+        t_start = 0.0, t_end = t_end, solver = "Rodas5P", reltol = reltol, abstol = abstol,
         output = Dict{String,Any}("mode" => "points", "points" => points),
     )
 end
@@ -826,6 +830,39 @@ end
             ce = sum(data["Coriolis/p.e[$k]"][i] * data["Coriolis/p.f[$k]"][i]
                      for k in 1:3)
             @test abs(ce) <= 1.0e-9 * max(1.0, abs(jp), abs(jc))
+        end
+    end
+
+    # O21: the body frame may be mounted at any angle. The mounting angle only rotates the
+    # body frame about the CoM (isotropic in the plane for the swing), so the joint angle is
+    # the same for every theta, and FixedTransform2D's power identity holds at each sample.
+    # Its implicit effort law used to leave MTK an observed `Link/b.e[3]` divided by
+    # cos(theta), which missed this identity at theta = pi/2 (and would at -pi/2).
+    @testset "the transform's power identity at every mounting angle (O21)" begin
+        runs = Dict{Float64,Dict{String,Vector{Float64}}}()
+        for theta in (0.0, 0.3, pi / 2, Float64(pi), -pi / 2)
+            BGSim.clear_compile_cache!()
+            doc = _mb4_load()
+            doc["diagram"]["nodes"][3]["params"]["theta"] = repr(theta)   # Link
+            doc["diagram"]["nodes"][7]["params"]["theta"] = repr(theta)   # Local
+            result, dir = _mb4_run(doc; t_end = 1.0, points = 1001)
+            @test result.status == "done"
+            data = _mb4_columns(dir)
+            worst = 0.0
+            for i in eachindex(data["time"])
+                la = sum(data["Link/a.e[$k]"][i] * data["Link/a.f[$k]"][i] for k in 1:3)
+                lb = sum(data["Link/b.e[$k]"][i] * data["Link/b.f[$k]"][i] for k in 1:3)
+                worst = max(worst, abs(la + lb) / max(1.0, abs(la), abs(lb)))
+            end
+            @test worst <= 1.0e-9
+            println("J-MB4 mounting angle ", theta, ": transform power identity ", worst)
+            runs[theta] = data
+        end
+        q_ref = runs[pi / 2]["Joint/qout"]
+        for theta in keys(runs)
+            dq = maximum(abs.(runs[theta]["Joint/qout"] .- q_ref))
+            @test dq <= 1.0e-9
+            println("J-MB4 mounting angle ", theta, ": max|q - q(pi/2)| = ", dq)
         end
     end
 

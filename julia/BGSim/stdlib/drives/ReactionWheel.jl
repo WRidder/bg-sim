@@ -96,4 +96,5 @@
     @observables begin
         phi_rel = relative.phi
     end
+    @orientation housing => :in
 end

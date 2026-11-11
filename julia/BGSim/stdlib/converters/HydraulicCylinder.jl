@@ -29,4 +29,9 @@
         # into the cylinder.
         rod.e ~ pB * Ar - pA * Ap
     end
+    @orientation begin
+        A => :in
+        B => :in
+        rod => :in
+    end
 end

@@ -14,4 +14,9 @@
         ring.e ~ ratio * sun.e
         carrier.e ~ -(1.0 + ratio) * sun.e
     end
+    @orientation begin
+        sun => :in
+        ring => :in
+        carrier => :in
+    end
 end

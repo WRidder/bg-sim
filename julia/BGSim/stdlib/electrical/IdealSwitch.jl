@@ -15,4 +15,8 @@
         # comparison also gives the event collector a real switching condition (`ctrl - 1`).
         p.f ~ ifelse(ctrl == true, (p.e - n.e) / R_on, G_off * (p.e - n.e))
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

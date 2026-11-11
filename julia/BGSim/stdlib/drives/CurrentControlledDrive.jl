@@ -57,4 +57,5 @@
         connect(wsense.y, pmech.u2)
         connect(pmech.y, P_mech)
     end
+    @orientation shaft => :in
 end

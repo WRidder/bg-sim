@@ -9,4 +9,8 @@
         a.e ~ T * u
         b.e ~ -a.e
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

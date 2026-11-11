@@ -3,4 +3,5 @@
     @inputs T::Real, [unit = "K"]
     @equations a.e ~ T
     @causality a => (:effort_out, :fixed)
+    @orientation a => :in
 end

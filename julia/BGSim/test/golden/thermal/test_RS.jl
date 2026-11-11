@@ -1,8 +1,8 @@
 # Golden test for `stdlib:bondgraph/RS`, the resistive source: an R whose dissipated power
 # leaves through a Thermal heat port as heat flow.
 #
-# 1. Electrical adoption. A constant 6 V source is bonded straight to the Generic port of an
-#    RS (r = 3); the island adopts Electrical, so r is in Ohm and the bond power is V*A. The
+# 1. Electrical adoption. A constant 6 V source is bonded through a 0-junction to the Generic
+#    port of an RS (r = 3); the island adopts Electrical, so r is in Ohm and the bond power is V*A. The
 #    heat port charges a heat capacity from T0, which has no other path, so its temperature
 #    rises linearly with exactly the dissipated power:
 #        p.f = V/r,  heat flow = V^2/r = 12 W,  T(t) = T0 + V^2/(r*C) * t.
@@ -31,11 +31,15 @@ using .BondGraphGolden
                 bg_node("n5", "Mass", bg_ref("stdlib:thermal/HeatCapacitor");
                     params = Dict{String,Any}("C" => string(C)),
                     starts = Dict{String,Any}("T" => string(T0))),
+                bg_node("n6", "J0", bg_junction("0")),
             ],
             [
                 bg_conn("c1", "signal", "n1", "y", "n2", "u"),
                 bg_conn("c2", "wire", "n2", "n", "n3", "p"),
-                bg_conn("c3", "bond", "n2", "p", "n4", "p"),
+                # Both `p` ports are `in` (O20): the electrical node is a 0-junction with a
+                # bond into each port.
+                bg_conn("c3", "bond", "n6", nothing, "n2", "p"),
+                bg_conn("c5", "bond", "n6", nothing, "n4", "p"),
                 bg_conn("c4", "wire", "n4", "heat", "n5", "a"),
             ];
             t_end = 10.0, points = 11,
@@ -73,10 +77,14 @@ using .BondGraphGolden
                 bg_node("n4", "Mass", bg_ref("stdlib:thermal/HeatCapacitor");
                     params = Dict{String,Any}("C" => string(C)),
                     starts = Dict{String,Any}("T" => string(T0))),
+                bg_node("n5", "J1", bg_junction("1")),
             ],
             [
                 bg_conn("c1", "wire", "n1", "b", "n2", "a"),
-                bg_conn("c2", "bond", "n1", "a", "n3", "p"),
+                # Both ports are `in` (O20): the shaft node is a 1-junction with a bond into
+                # each port.
+                bg_conn("c2", "bond", "n5", nothing, "n1", "a"),
+                bg_conn("c4", "bond", "n5", nothing, "n3", "p"),
                 bg_conn("c3", "wire", "n3", "heat", "n4", "a"),
             ];
             t_end = 6.0, points = 61,

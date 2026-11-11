@@ -17,4 +17,8 @@
         solid.f ~ Q
         fluid.f ~ -Q
     end
+    @orientation begin
+        solid => :in
+        fluid => :in
+    end
 end

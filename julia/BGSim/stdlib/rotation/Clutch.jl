@@ -29,4 +29,8 @@
         a.e ~ T
         b.e ~ -T
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

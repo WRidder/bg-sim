@@ -9,4 +9,8 @@
         p.e - n.e ~ V * u
         p.f + n.f ~ 0.0
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

@@ -119,7 +119,7 @@ end
             bg_conn("c1", "signal", "n1", "y", "n2", "u"),
             bg_conn("c2", "wire", "n2", "a", "n3", "shaft"),
             bg_conn("c3", "wire", "n4", "a", "n3", "a"),
-            bg_conn("c4", "bond", "n3", "b", "n10", nothing),
+            bg_conn("c4", "bond", "n10", nothing, "n3", "b"),
             bg_conn("c5", "bond", "n10", nothing, "n5", "a"),
             bg_conn("c6", "bond", "n10", nothing, "n12", nothing),
             bg_conn("c7", "bond", "n12", nothing, "n6", "p"),

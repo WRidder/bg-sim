@@ -12,4 +12,8 @@
         connect(gear.b, play.a)
         connect(play.b, b)
     end
+    @orientation begin
+        a => :in
+        b => :in
+    end
 end

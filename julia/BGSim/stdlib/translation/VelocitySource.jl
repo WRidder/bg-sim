@@ -4,4 +4,5 @@
     @parameters v::Real = 1.0, [unit = "m/s", description = "Velocity gain on the control input"]
     @equations a.f ~ v * u
     @causality a => (:flow_out, :fixed)
+    @orientation a => :in
 end

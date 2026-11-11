@@ -8,4 +8,8 @@
         p.f + n.f ~ 0.0
         p.e - n.e ~ R * p.f
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end

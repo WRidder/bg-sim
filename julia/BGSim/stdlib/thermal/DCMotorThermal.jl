@@ -55,4 +55,11 @@
         winding.e = resistor.heat.e
         winding.f = resistor.heat.f
     end
+    @orientation begin
+        p => :in
+        n => :in
+        shaft => :in
+        housing => :in
+        winding => :in
+    end
 end

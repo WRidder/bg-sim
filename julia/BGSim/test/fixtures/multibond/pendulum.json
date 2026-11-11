@@ -334,7 +334,7 @@
     "settings": {
         "reltol": 1.0e-9,
         "abstol": 1.0e-11,
-        "solver": "auto",
+        "solver": "Rodas5P",
         "t_end": 4,
         "t_start": 0,
         "max_step": null,

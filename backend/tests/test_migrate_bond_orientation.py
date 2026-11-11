@@ -564,3 +564,127 @@ def test_mech_revolute2drigid_is_review(mig, tmp_path):
     status, report = _run_mech(mig, proj)
     assert status == 2
     assert "`Joint` (stdlib:planar/Revolute2DRigid)" in report
+
+
+# ---------------------------------------------------------------------------------------------
+# O20: iconic (wire-domain) power ports are `in`
+# ---------------------------------------------------------------------------------------------
+
+ICONIC_CATALOG = {
+    "blocks": CATALOG["blocks"] + [
+        _block("stdlib:translation/Fixed", ["a"], [(("a",), "in")]),
+        _block("stdlib:translation/Spring", ["a", "b"], [(("a",), "in"), (("b",), "in")],
+               [("k", "1000.0"), ("x_free", "0.0")]),
+        _block("stdlib:translation/Damper", ["a", "b"], [(("a",), "in"), (("b",), "in")], [("d", "10.0")]),
+        _block("stdlib:translation/ForceSource", ["a", "b"], [(("a",), "in"), (("b",), "in")], [("F", "1.0")]),
+        _block("stdlib:translation/VelocitySource", ["a"], [(("a",), "in")], [("v", "1.0")]),
+    ]
+}
+
+
+def _run_iconic(mig, proj, check=False):
+    out = io.StringIO()
+    cat = mig.catalog_from_json(ICONIC_CATALOG)
+    status = mig.run([str(proj)], check=check, catalog=cat, law_changes=True, out=out)
+    return status, out.getvalue()
+
+
+def wire(cid, a, b):
+    return {"id": cid, "kind": "wire", "from": {"node": a[0], "port": a[1]},
+            "to": {"node": b[0], "port": b[1]}, "route": [], "label": None}
+
+
+def test_iconic_two_terminal_both_reversed_is_neutral(mig, tmp_path):
+    """A translation `Spring` with both terminals at the tail of their 1-junctions (the ground
+    junction with an iconic `Fixed`, the body junction with an `I` and an `Se`): reversing both
+    bonds negates every port variable of the spring at once, which a linear two-terminal element
+    absorbs with its state (neutral, the start `x` negated); the junctions keep their sign."""
+    doc = model("m", [
+        _node("n1", "Gnd", ref("stdlib:translation/Fixed")),
+        _node("n2", "J0", junction(1)),
+        _node("n3", "K", ref("stdlib:translation/Spring"), {"k": "50.0"}, {"x": "0.1"}),
+        _node("n4", "J1", junction(1)),
+        _node("n5", "Mass", ref("stdlib:bondgraph/I"), {"i": "2.0"}, {"P": "0.3"}),
+        _node("n6", "Push", ref("stdlib:bondgraph/Se"), {"e": "4.0"}),
+    ], [
+        bond("b1", "n2", ("n1", "a")),
+        bond("b2", ("n3", "a"), "n2"),       # iconic port at the tail: violates `in`
+        bond("b3", ("n3", "b"), "n4"),       # iconic port at the tail: violates `in`
+        bond("b4", "n4", ("n5", "p")),
+        bond("b5", ("n6", "p"), "n4"),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    status, report = _run_iconic(mig, proj)
+    assert status == 0, report
+    assert "[neutral] reverse bond `b2`" in report and "[neutral] reverse bond `b3`" in report
+    assert "negate start `K/x`: 0.1 -> -0.1" in report
+    assert "[source]" not in report and "[review]" not in report
+    after = _read(proj, "m")
+    assert _conn(after, "b2")["from"] == {"node": "n2"}
+    assert _conn(after, "b3")["from"] == {"node": "n4"}
+    assert after["diagram"]["nodes"][4]["starts"] == {"P": "0.3"}
+    assert after["diagram"]["nodes"][5]["params"] == {"e": "4.0"}
+    status, report = _run_iconic(mig, proj)
+    assert status == 0 and "nothing to do" in report
+
+
+def test_iconic_one_terminal_reversed_is_review(mig, tmp_path):
+    """A `Spring` whose `b` is bonded at the tail of a 1-junction and whose `a` is wired, next to a
+    `Damper` bonded the right way with its other terminal wired too: reversing one terminal of a
+    two-terminal element is not neutral, and renaming the junction would flip the damper's one
+    bonded terminal instead. Review, nothing written."""
+    doc = model("m", [
+        _node("n1", "Gnd", ref("stdlib:translation/Fixed")),
+        _node("n2", "K", ref("stdlib:translation/Spring")),
+        _node("n3", "D", ref("stdlib:translation/Damper")),
+        _node("n4", "J1", junction(1)),
+    ], [
+        wire("w1", ("n1", "a"), ("n2", "a")),
+        wire("w2", ("n1", "a"), ("n3", "a")),
+        bond("b1", ("n2", "b"), "n4"),
+        bond("b2", "n4", ("n3", "b")),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    before = (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8")
+    status, report = _run_iconic(mig, proj)
+    assert status == 2
+    assert "only some of its terminals flip sign" in report
+    assert (proj / "models" / "m.bgmodel.json").read_text(encoding="utf-8") == before
+
+
+def test_iconic_sources_negated(mig, tmp_path):
+    """A two-terminal `ForceSource` with both terminals at the tail of their junctions, and a
+    `VelocitySource` at the tail of another junction with an `I`: both bonds of the force source
+    and the velocity source's bond are reversed and their values negated (the junctions keep their
+    sign, so the inertias are untouched)."""
+    doc = model("m", [
+        _node("n1", "Gnd", ref("stdlib:translation/Fixed")),
+        _node("n2", "J0", junction(1)),
+        _node("n3", "F", ref("stdlib:translation/ForceSource"), {"F": "4.0"}),
+        _node("n4", "J1", junction(1)),
+        _node("n5", "Mass", ref("stdlib:bondgraph/I"), {"i": "2.0"}, {"P": "0.3"}),
+        _node("n6", "V", ref("stdlib:translation/VelocitySource"), {"v": "0.5"}),
+        _node("n7", "J2", junction(1)),
+        _node("n8", "Mass2", ref("stdlib:bondgraph/I"), {"i": "1.0"}, {"P": "0.1"}),
+        _node("n9", "One", ref("stdlib:sources/Constant")),
+    ], [
+        bond("b1", "n2", ("n1", "a")),
+        bond("b2", ("n3", "a"), "n2"),
+        bond("b3", ("n3", "b"), "n4"),
+        bond("b4", "n4", ("n5", "p")),
+        bond("b5", ("n6", "a"), "n7"),
+        bond("b6", "n7", ("n8", "p")),
+        signal("s1", ("n9", "y"), ("n3", "u")),
+        signal("s2", ("n9", "y"), ("n6", "u")),
+    ])
+    proj = _project(tmp_path, {"m": doc})
+    status, report = _run_iconic(mig, proj)
+    assert status == 0, report
+    assert "[source] negate `F`.F: 4.0 -> -4.0" in report
+    assert "[source] negate `V`.v: 0.5 -> -0.5" in report
+    assert "[review]" not in report
+    after = _read(proj, "m")
+    assert after["diagram"]["nodes"][2]["params"] == {"F": "-4.0"}
+    assert after["diagram"]["nodes"][5]["params"] == {"v": "-0.5"}
+    assert after["diagram"]["nodes"][4]["starts"] == {"P": "0.3"}
+    assert after["diagram"]["nodes"][7]["starts"] == {"P": "0.1"}

@@ -25,4 +25,10 @@
         ddt(i1) ~ (L2 * (p1.e - n1.e) - k * sqrt(L1 * L2) * (p2.e - n2.e)) / (L1 * L2 * (1.0 - k^2))
         ddt(i2) ~ (L1 * (p2.e - n2.e) - k * sqrt(L1 * L2) * (p1.e - n1.e)) / (L1 * L2 * (1.0 - k^2))
     end
+    @orientation begin
+        p1 => :in
+        n1 => :in
+        p2 => :in
+        n2 => :in
+    end
 end

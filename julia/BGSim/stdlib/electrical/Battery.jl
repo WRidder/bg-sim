@@ -29,4 +29,8 @@
         ddt(v1) ~ (p.f - v1 / R1) / C1
         p.e - n.e ~ ocv + R0 * p.f + v1
     end
+    @orientation begin
+        p => :in
+        n => :in
+    end
 end
