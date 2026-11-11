@@ -25,7 +25,7 @@ angles in degrees, voltage and current; the fourth plot shows the phase, the lin
 Sliders: the knock-down push and its time. **3D view:** the links fall, the cart brakes and swings them down,
 they come to rest and swing up again.
 
-![Link angles, cart, voltage, phase and energy over the run|900](assets/45142db108dc.png)
+![Link angles, cart, voltage, phase and energy over the run|900](assets/5f090f16c073.png)
 
 **Expected outcome:** one drop and one recovery (`Ctrl/drops` = 1), upright within 0.2° over the last 2 s, a
 peak travel of **0.767 m** after the knock-down, inside the robustness test's 0.95 m, and |V| ≤ 24 V. The

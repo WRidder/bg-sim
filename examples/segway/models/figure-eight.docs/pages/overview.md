@@ -2,7 +2,7 @@
 
 **Scenario.** The transporter accelerates to **1.5 m/s** and, from 4 s, the heading set-point turns **+2π** in 11 s and then back by 2π in the next 11 s: two circles of opposite sense (radius $v\,T/2\pi = 2.6$ m) that join into an eight. Differential wheel torque steers: the wheel on the outside torques more than the one on the inside; the pitch loop is the same as in [the balance model](model:balance).
 
-![The model canvas|1000](assets/c0683a16f958.png)
+![The model canvas|1000](assets/8fc9af7b7f20.png)
 
 ![Path of the axle|620](assets/c528ee6b0b10.png)
 

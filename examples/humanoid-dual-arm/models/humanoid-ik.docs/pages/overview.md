@@ -6,7 +6,7 @@ A humanoid torso with two stacked 7-DOF SRS arms: shoulder pitch, roll and yaw, 
 - [IKL](block:IKL) and [IKR](block:IKR) (`ArmIK`) are the stacked robot arms. Each runs the page's damped least squares with a null-space pull toward home, one iteration per tick.
 - [IdealL](block:IdealL) and [IdealR](block:IdealR) are an ideal SRS pair (no shoulder or wrist offsets, the same link lengths). They are drawn 1 m to the robot's right for comparison.
 
-![The model canvas|900](assets/b55298af838c.png)
+![The model canvas|900](assets/3dd7c9af67c2.png)
 
 The run: 6.5 s, `Tsit5` (there are no continuous states), 1301 output points. It takes about 3.4 s of solve time and 11 s in total.
 
@@ -22,6 +22,6 @@ The dashboard repeats the page:
 
 The robot stands at the origin: left arm blue, right arm orange, the box purple with a translucent box at the commanded pose. The ideal pair (green) stands 1 m to its right.
 
-![3D view at t = 6.5 s: elbow bias 30 deg, both elbows swung to the robot's right|500](assets/9005640083e9.png)
+![3D view at t = 6.5 s: elbow bias 30 deg, both elbows swung to the robot's right|500](assets/2cf61d497449.png)
 
 Continue with [the IK and the redundancy](page:ik), [the 6-DOF failure](page:dof6) and [the results](page:results).

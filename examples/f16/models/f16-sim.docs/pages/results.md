@@ -37,9 +37,9 @@ These are the linearised modes of the closed loop at the trim. bg-sim's runs rep
 
 At 260 ft/s, 10 000 ft (alpha 15.7 deg), full stick for 1.5 s:
 
-![about the velocity vector|900](assets/fb4631aab672.png)
+![about the velocity vector|900](assets/4a95d1a414f3.png)
 
-![about the body axis, no ARI|900](assets/66090fd13c30.png)
+![about the body axis, no ARI|900](assets/6087e1ae79de.png)
 
 Rolling about the body x axis at high alpha swaps alpha into sideslip: |beta| reaches 7.1 deg. Rolling about the velocity vector, with the ARI, keeps it at 3.1 deg. At this speed the rudder saturates in both cases.
 

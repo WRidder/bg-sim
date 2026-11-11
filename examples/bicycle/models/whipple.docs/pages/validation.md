@@ -29,7 +29,7 @@ After a 0.05 rad/s push at 5 m/s, the lean and steer angles of this model and of
 
 The Whipple bicycle has no friction, so its energy is constant. [Energy](block:Energy) adds the kinetic energy $\tfrac12 V\cdot P$ and the potential energy of the four bodies, the tyre and joint springs and the energy dissipated in the tyres (`loss`). With the joint dampers off, `Ebal` stays constant to 0.07 mJ out of 1837 J:
 
-![Energy book with the joint dampers off|900](assets/1e705a3a6341.png)
+![Energy book with the joint dampers off|900](assets/1d514354c27c.png)
 
 Without their dampers the stiff joints keep a high-frequency vibration alive, and the tyres dissipate 2.8 J of it in 5 s. This is why the models keep the dampers on; they take 0.24 J in this run, which the book does not count.
 

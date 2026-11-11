@@ -2,7 +2,7 @@
 
 A planar double pendulum hangs from a fixed pivot. A DC gearmotor drives the **first joint only** (the pendubot arrangement); the other 1 joint is passive. The chain starts hanging straight down at rest with 0 V on the motor, swings up along an optimised trajectory, is caught by an LQR near the upright, balances, and recovers from a force pulse at the tip link.
 
-![The model canvas|900](assets/26d50de9f4ee.png)
+![The model canvas|900](assets/a5749f1b68ec.png)
 
 ## Scenario
 
@@ -16,9 +16,9 @@ A planar double pendulum hangs from a fixed pivot. A DC gearmotor drives the **f
 
 The chain is built as a **multibond bond graph**: [Body1](block:Body1), [Body2](block:Body2) are `RigidBody2D` composites with a mass and an inertia about the centre of mass, joined by `Revolute2DCompliant` joints ([Joint1](block:Joint1), [Joint2](block:Joint2)). The motor ([Motor](block:Motor)), the shaft ([Shaft](block:Shaft)) and the gearbox ([Gear](block:Gear)) are stdlib drive blocks; the controller [Ctrl](block:Ctrl) is project firmware sampled at 1 kHz.
 
-![Mid swing-up|600](assets/5fc10ec16eaa.png)
+![Mid swing-up|600](assets/df413129ccf4.png)
 
-![Balanced before the disturbance|600](assets/670d6c38b8c9.png)
+![Balanced before the disturbance|600](assets/061cf413b26e.png)
 
 ## Pages
 

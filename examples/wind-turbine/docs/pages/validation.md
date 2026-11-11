@@ -1,6 +1,6 @@
 # Validation
 
-![The quasi-steady power curve of wind-turbine-steady|900](assets/a5e96f90c236.png)
+![The quasi-steady power curve of wind-turbine-steady|900](assets/dceb00ccacfb.png)
 
 **Steady states.** The checks run `wind-turbine-steady` with a constant wind at 5, 8, 10, 11, 12, 14, 18 and 25 m/s. Each run checks:
 - the rotor speed, the generator torque, the power, the thrust and the tower deflection against `design/design.py`, which runs the same controller law and tables in numpy;

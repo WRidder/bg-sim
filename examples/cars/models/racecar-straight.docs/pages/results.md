@@ -1,6 +1,6 @@
 # Results
 
-![Speed, motor torque and battery current|900](assets/bfc96841a6cb.png)
+![Speed, motor torque and battery current|900](assets/f3cfe8e299bb.png)
 
 The reference is the 1-D longitudinal model of `racecar-launch` with the same brake blend, started at its top speed (motor at 260 kW, 16 012 rpm, 155.1 N m). The model's pedal ramp is a step at the middle of the ramp (10.0275 s) in the reference.
 

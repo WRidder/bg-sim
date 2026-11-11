@@ -1,6 +1,6 @@
 # Results and checks
 
-![Joint angles, joint-torque sensors and the flange against its target|900](assets/1acda3908986.png)
+![Joint angles, joint-torque sensors and the flange against its target|900](assets/10d4721649d2.png)
 
 | quantity | value |
 | --- | --- |

@@ -5,7 +5,7 @@ same soil, on a **constant-pressure supply**: the pump's LS port sees the tank a
 so [Pump](block:Pump) holds about 281 bar in the pump line whatever the load. There is no LS line and no shuttle
 network; the compensators and spools throttle the difference between 281 bar and the load pressure.
 
-![Pressures, power and energy|900](assets/95af4e6ce52c.png)
+![Pressures, power and energy|900](assets/3b2a9c60895f.png)
 
 **Expected outcome:**
 

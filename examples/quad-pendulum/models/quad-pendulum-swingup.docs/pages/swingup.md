@@ -13,7 +13,7 @@ z'Pz is below 1000, and latches. Here it catches at 5.50 s.
 The stacked energy plot shows each link's kinetic plus potential energy (from the hanging rest), stacked:
 the top curve is the total, which ends at the UPRIGHT level Σ m g 2h = 4.316 J.
 
-![Link angles, stacked energy per link, cart and force, phase|900](assets/4db3d3bf3370.png)
+![Link angles, stacked energy per link, cart and force, phase|900](assets/47e78d989fb0.png)
 
 The energy ledger: the actuator work W_in minus the friction losses W_loss equals the change of the
 mechanical energy E_tot, so E_tot − W_in + W_loss stays constant.

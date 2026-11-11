@@ -2,7 +2,7 @@
 
 The benchmark bicycle as a nonlinear **3D bond graph**: rear frame with rider, fork, two wheels, three hinges and two rolling tyres. Nobody holds the handlebar. The run starts like the paper's figure 4: rolling straight at **4.6 m/s** when a sideways push gives it a lean rate of **0.5 rad/s**.
 
-![The 3D view at 2 s, in the second weave swing: the bicycle leans 0.06 rad to the right and has steered 0.06 rad into the lean|800](assets/81f34743d5bc.png)
+![The 3D view at 2 s, in the second weave swing: the bicycle leans 0.06 rad to the right and has steered 0.06 rad into the lean|800](assets/d8651e8230ca.png)
 
 The bicycle leans to the right, the handlebar turns to the right on its own, the wheels run back under the rider and the bicycle comes upright after one and a half swings of the **weave** oscillation. At 4.6 m/s it is inside the self-stable band (4.29 to 6.02 m/s, see [the benchmark bicycle](project:benchmark)).
 

@@ -1,10 +1,10 @@
 # Results and checks
 
-![Member forces, utilisations, deflections and the lorry, 40 t at 15 m/s|900](assets/58f90425b9d5.png)
+![Member forces, utilisations, deflections and the lorry, 40 t at 15 m/s|900](assets/8f51981aba36.png)
 
 The 40 t lorry crosses the left span. Bar 27 reaches its Euler load of 153.95 kN at t = 1.6347 s, when the lorry is 14.5 m onto the bridge, and buckles; `Elost` books 263.1 J (its strain energy $P_{cr}^2 L_0 / (2 E A)$ = 263.6 J, less a small damping part). The shear of its panel moves to bar 26: 115 kN when bar 27 fails, then up to 326 kN (51 % of its strength; the quasi-static envelope without bar 27 gives 297 kN). Nothing else fails: the pier column peaks at 63 % of its buckling load, the roller stays on its seat, and the lorry leaves the bridge. `Ebal` changes by 5e-5 J.
 
-![The same lorry at half strength: the bridge collapses|900](assets/2dfa6b6f3a5e.png)
+![The same lorry at half strength: the bridge collapses|900](assets/4c3085c29029.png)
 
 At `strength` 0.5 bar 27 buckles earlier (t = 0.887 s). The load it sheds is now too much: post 19 fails at t = 1.204 s, the bottom chords 3, 6 and 4 follow, the pier column buckles at t = 1.415 s, and the run stops at t = 1.950 s with the left span 3 m down.
 

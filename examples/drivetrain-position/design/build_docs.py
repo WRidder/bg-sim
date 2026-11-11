@@ -38,9 +38,9 @@ original_cached_run = build.cached_run
 original_plot = build.plot_png
 
 
-def cached_run(backend, example, model, settings):
+def cached_run(backend, example, model, settings, overrides=None):
     state["backend"] = backend
-    return original_cached_run(backend, example, model, settings)
+    return original_cached_run(backend, example, model, settings, overrides)
 
 
 def plot_png(spec, time_column, signals, out):

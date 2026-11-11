@@ -8,7 +8,7 @@ with the benchmark's matrices (the paper's eq. 6.1 to 6.4)
 
 $$M = \begin{bmatrix} 80.817 & 2.319 \\ 2.319 & 0.298 \end{bmatrix},\quad C_1 = \begin{bmatrix} 0 & 33.866 \\ -0.850 & 1.685 \end{bmatrix},\quad K_0 = \begin{bmatrix} -80.95 & -2.600 \\ -2.600 & -0.803 \end{bmatrix},\quad K_2 = \begin{bmatrix} 0 & 76.597 \\ 0 & 2.654 \end{bmatrix}.$$
 
-![The signal diagram|1000](assets/26851390f6be.png)
+![The signal diagram|1000](assets/2c99715e9115.png)
 
 The diagram solves for the two accelerations, $\ddot q = M^{-1}(f - v C_1 \dot q - (g K_0 + v^2 K_2) q)$, and integrates twice ([LeanRate](block:LeanRate), [Lean](block:Lean), [SteerRate](block:SteerRate), [Steer](block:Steer)). Each gain is one entry of the matrices, written as an expression of the global `v`: for example [K_phi_delta](block:K_phi_delta) is the $\phi\delta$ entry of $-M^{-1}(g K_0 + v^2 K_2)$. The steer torque enters through [B_phi](block:B_phi) and [B_delta](block:B_delta) (the second column of $M^{-1}$); here it is zero ([SteerTorque](block:SteerTorque)). The heading follows from the rolling kinematics, $\dot\psi = (v\delta + c\dot\delta)\cos\lambda / w$ ([Heading](block:Heading)).
 

@@ -2,7 +2,7 @@
 
 The classic cart-pole stabiliser (plan 9.6c). A cart on a rail balances a rod with a point mass at its tip. The run starts with the rod tilted by 0.1 rad, the controller catches it, and at $t = 1.5$ s the cart is asked to move 0.2 m. The continuous plant is a **pure bond graph** (D28); the controller is a linear-quadratic state feedback sampled at 1 ms, whose gains come from `design/design.py`.
 
-![The model canvas|900](assets/8cac58967cad.png)
+![The model canvas|900](assets/976ae4e7dda4.png)
 
 ## Run it
 
@@ -14,6 +14,6 @@ The classic cart-pole stabiliser (plan 9.6c). A cart on a rail balances a rod wi
 
 `scenes/inverted-pendulum-cart.sdf` shows the cart on its rail and the rod with the tip mass. Joint `rail` follows [XInt/y](signal:XInt/y) and joint `hinge` follows [ThetaInt/y](signal:ThetaInt/y) (positive towards +X). The picture is taken at 1.7 s, just after the cart reference step.
 
-![3D view at t = 1.7 s|500](assets/200810c96d06.png)
+![3D view at t = 1.7 s|500](assets/d6511f329bbc.png)
 
 Continue with [the plant](page:plant), [the controller](page:controller) and [the results](page:results).

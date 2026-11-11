@@ -20,7 +20,7 @@ masses, event times and engine performance of the *Saturn V Flight Evaluation Re
 
 The vehicle is the variable-mass bond graph of [variable mass on a bond graph](project:variable-mass). A pitch program (`Lookup1D` over time) commands the attitude, and a PD loop turns the engines through ±6°.
 
-![The model canvas|900](assets/bf592446a458.png)
+![The model canvas|900](assets/6702ec39c8a7.png)
 
 | block | role |
 | --- | --- |

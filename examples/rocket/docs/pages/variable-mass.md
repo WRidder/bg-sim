@@ -7,7 +7,7 @@ Two launch vehicles share one 3D (multibond) bond graph of a body that loses mas
 | [V-2](model:rocket-v2) | V-2 (A4), one stage, 12.5 t | vertical shot: 65 s burn, apogee 142 km, back down at 400 s |
 | [Saturn V](model:rocket-saturn-v) | Saturn V AS-506 (Apollo 11), 2,900 t | lift-off to parking orbit: S-IC, S-II, first S-IVB burn, four jettisons, pitch program flown by the gimballed engines |
 
-![The V-2 model: the bond graph on top, the mass budget, engine, atmosphere, gravity and drag below|900](assets/8f7bf3ef746f.png)
+![The V-2 model: the bond graph on top, the mass budget, engine, atmosphere, gravity and drag below|900](assets/bc32af38ccf4.png)
 
 ## The bond graph
 

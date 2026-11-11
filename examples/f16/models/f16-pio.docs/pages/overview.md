@@ -2,7 +2,7 @@
 
 A category II PIO: an aggressive pilot captures a 7 deg pitch-attitude change at 500 ft/s, 15 000 ft. The pilot is a gain of 3 (deg/s of pitch-rate command per deg of attitude error) acting on what he saw 0.25 s ago. Small corrections stay linear and well damped. A large one drives the stabilator into its 60 deg/s rate limit, and the rate limit adds phase lag that the pilot loop cannot afford.
 
-![The model canvas|900](assets/92a461141015.png)
+![The model canvas|900](assets/6b5708007f9d.png)
 
 | block | role |
 | --- | --- |

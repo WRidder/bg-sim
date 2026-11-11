@@ -13,7 +13,7 @@ percent of the limit.
 (Q = diag(100, 400×4, 10, 20×4), R = 0.3): with the full-travel weights the swing-up inside ±0.4 m saturated
 the force and fell with three times the joint friction or with quantised encoders.
 
-![Short-travel swing-up: link angles, stacked energy, cart position against ±0.5 m, force|900](assets/20d768e922ab.png)
+![Short-travel swing-up: link angles, stacked energy, cart position against ±0.5 m, force|900](assets/08bc5e0b80e6.png)
 
 | | full travel | short travel |
 | --- | --- | --- |

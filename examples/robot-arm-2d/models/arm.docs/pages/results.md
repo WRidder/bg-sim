@@ -1,6 +1,6 @@
 # Results and checks
 
-![Joint angles, torques and end effector position|900](assets/e7f7f369d9c5.png)
+![Joint angles, torques and end effector position|900](assets/c90536e1b5ee.png)
 
 ## Measured (README, real worker)
 

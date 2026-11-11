@@ -17,7 +17,7 @@ rounding, the camera noise and the rolling resistance. The resistance lets the b
 of up to 0.002 rad, so the ball stops within about 1 mm and the integral removes the rest. The push
 moves the ball by 61 mm, and it is back within 4 mm 5 s later.
 
-![Steps and push: position, plate angles and servo voltages|900](assets/b54ca5e15317.png)
+![Steps and push: position, plate angles and servo voltages|900](assets/37f69f71b185.png)
 
 **What to try.** Lower Kp on the dashboard. Switch the task to the circle or the figure-8: without
 feed-forward the PID lags about 40 mm behind. Set the push to 1.2 N. Set the ball inertia to 0.667,

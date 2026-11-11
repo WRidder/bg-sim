@@ -12,7 +12,7 @@ This example rebuilds the robot after
 
 as a physical bond graph from library blocks, checks it against an independent equation-based model, and closes the paper's balance loops plus speed and heading loops around it. In the showcase run the robot starts at rest, speeds up to 1.2 m/s and drives a rounded square of four 90-degree turns on the 10 m floor.
 
-![The 3D view at 9 s, in the first turn: the wheel leans into the turn, the gimbal is tilted|900](assets/9416e29e80d4.png)
+![The 3D view at 9 s, in the first turn: the wheel leans into the turn, the gimbal is tilted|900](assets/ad96c9d84c11.png)
 
 ![Path of the wheel centre|500](assets/01e12b5e2765.png)
 

@@ -1,6 +1,6 @@
 # Results and checks
 
-![Joint angles, tracking errors and motor voltages of the RRR arm|900](assets/51e8ebbf68be.png)
+![Joint angles, tracking errors and motor voltages of the RRR arm|900](assets/89582fc6bf66.png)
 
 | check | measured (README) |
 | --- | --- |

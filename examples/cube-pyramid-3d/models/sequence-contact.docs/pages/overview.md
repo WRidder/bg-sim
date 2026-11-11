@@ -2,7 +2,7 @@
 
 A free cube ($a = 0.2$ m) with **four reaction wheels in a pyramid** lies on a ground plane. A scripted torque profile spins the wheels so that the cube leaves its **face**, balances on an **edge** (tilt 45 deg) and then on a **corner** (tilt $\arctan\sqrt2 = 54.74$ deg, the body diagonal vertical). The ground is a compliant `ContactSurface`; every contact is a `ContactPoint` (Hunt-Crossley normal force, regularised Coulomb friction), so the phases are *emergent*: which vertices carry load follows from the contact forces, nothing is switched by hand. It is X-MB5 of plan 6, the cube/pyramid example of plans 3.3 and 9. The model `edge-contact` repeats the edge phase alone and `edge-switched` replaces the contacts by a `SwitchedPivot3D`; their pages compare the two.
 
-![The model canvas|900](assets/d67112e0b920.png)
+![The model canvas|900](assets/7bcc6840349c.png)
 
 ```
 Cube (RigidBody3D) <-- Pose (PoseIntegrator3D, floating base)
@@ -23,10 +23,10 @@ Press **Run**. The model compiles to a 25-state system with 2512 recorded signal
 
 `scenes/cube-pyramid-3d.sdf` shows the cube (translucent) on the ground plane with its four pyramid wheels. The cube and each wheel are bound by their world pose (quaternion first).
 
-![Face: t = 0.2 s|420](assets/67fad8bdba29.png)
+![Face: t = 0.2 s|420](assets/2d68f41e0f32.png)
 
-![Edge balance: t = 1.8 s|420](assets/dae7e6feaeab.png)
+![Edge balance: t = 1.8 s|420](assets/7a3f33ebb8cc.png)
 
-![Corner balance: t = 4.0 s|420](assets/7b245ce91563.png)
+![Corner balance: t = 4.0 s|420](assets/19178b672901.png)
 
 Continue with [the construction](page:construction), [the firmware](page:firmware) and [the results](page:results).

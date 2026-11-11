@@ -5,7 +5,7 @@ rotary servos tilt it through cranks and push rods, one per axis. An overhead ca
 at **30 frames/s, one frame late**. The layout is that of the Quanser 2 DOF Ball Balancer: two SRV02
 servos beside a plate on a 2 DOF gimbal, with an overhead camera.
 
-![The rig in the 3D view: base, servos with cranks and push rods, the plate with its grid and the two reference paths, the steel ball with its painted bands and the red target ring|700](assets/636a45c6869a.png)
+![The rig in the 3D view: base, servos with cranks and push rods, the plate with its grid and the two reference paths, the steel ball with its painted bands and the red target ring|700](assets/27ac9a50eba8.png)
 
 | part | value | source |
 | --- | --- | --- |

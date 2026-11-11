@@ -2,7 +2,7 @@
 
 A rigid body hangs on a compliant **spherical pivot** and carries **four reaction wheels** in a pyramid. Every wheel is a real `RigidBody3D` on a `Revolute3D`, driven by a `CurrentControlledDrive`, so the gyroscopic coupling between the tumbling body and the spinning wheels is physical, not assumed. It is the 3D twin of `reaction-wheel-2d` (X-MB2) and the actuator half of plan 9.10 / X-MB4. With gravity off (this model) the **total angular momentum about the pivot**, body plus four wheels in the world frame, is constant. The model `gravity-on` releases the body 0.5 rad off the vertical; there the derivative of the angular momentum equals the gravity torque.
 
-![The model canvas (flat graph)|900](assets/840e1c830b61.png)
+![The model canvas (flat graph)|900](assets/339971806eff.png)
 
 ```
 World -- Pivot -- Link ------+-- Body            (RigidBody3D: m 2, J 0.06/0.05/0.04)

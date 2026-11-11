@@ -16,7 +16,7 @@ $$I_{grip} = \frac{F_{set}}{\eta\, k_t\, G} = \frac{46}{0.7\cdot 0.012\cdot 6283
 
 [Grip](block:Grip) evaluates the rule over time: [Grip/need](signal:Grip/need) is $m|a - g|$, [Grip/F_req](signal:Grip/F_req) the force for $S = 1$, [Grip/demand](signal:Grip/demand) the friction the jaws actually deliver and [Grip/S_act](signal:Grip/S_act) the safety in effect:
 
-![Grip force vs requirement, friction delivered vs needed, carriage acceleration|900](assets/da3b67ce88e7.png)
+![Grip force vs requirement, friction delivered vs needed, carriage acceleration|900](assets/cc8cee8b7533.png)
 
 ## Does the gripper deliver it?
 
@@ -31,4 +31,4 @@ The setting is the **lower bound** of the friction band. The closing decides whe
 
 So the sized ball is held at 56.8 N (safety in effect 2.48), but **the extra force depends on the closing and must not be counted on**: size the setting.
 
-![Closing at 20 mm/s: the peak exceeds the back-driving force, the drive gives way and the force falls back into the band|900](assets/c36731695447.png)
+![Closing at 20 mm/s: the peak exceeds the back-driving force, the drive gives way and the force falls back into the band|900](assets/61838c53516b.png)

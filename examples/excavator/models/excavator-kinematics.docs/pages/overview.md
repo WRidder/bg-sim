@@ -6,7 +6,7 @@ spring-damper pulls the rod towards a set length ([BoomSetL](block:BoomSetL), th
 hold until 13 s. Gravity is off in this model (g0 = 0), so the servos only carry the inertia of the front and the
 holds are exact.
 
-![The model canvas|900](assets/27a482a3edcd.png)
+![The model canvas|900](assets/d660ec862658.png)
 
 **What it checks.** At the holds (6.5 s and 12.5 s) the bucket tip, the joint angles, the pin-to-pin lengths,
 the moment arm of the bucket cylinder and the four-bar ratio [Linkage/k](signal:Linkage/k) are compared with
@@ -14,9 +14,9 @@ the moment arm of the bucket cylinder and the four-bar ratio [Linkage/k](signal:
 (scipy `brentq`, the bucket through the four-bar). The tip agrees to better than 4·10⁻⁷ m: (7.3834, 2.7797) m at
 6.5 s and (2.9781, −1.8771) m at 12.5 s.
 
-![Cylinder lengths and set lengths, joint angles, moment arms and four-bar ratio|900](assets/ae3c1d87d919.png)
+![Cylinder lengths and set lengths, joint angles, moment arms and four-bar ratio|900](assets/1ef57c2ecfa9.png)
 
-![Bucket tip path|600](assets/7d9d673479f2.png)
+![Bucket tip path|600](assets/9672207a8407.png)
 
 **Blocks.** [BoomMount](block:BoomMount), [ArmMount](block:ArmMount) and [BucketMount](block:BucketMount)
 (`CylinderMount2D`) compute each cylinder length L, the moment arm r = dL/dq and the rod extension from the pin

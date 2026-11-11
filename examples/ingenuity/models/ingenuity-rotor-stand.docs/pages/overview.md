@@ -2,7 +2,7 @@
 
 The coaxial rotor on a fixed stand in the JPL 25-ft Space Simulator: CO2 at 0.0175 kg/m³, 2600 rpm (Koning et al. 2019). [Stand](block:Stand) steps the thrust coefficient through the measured range with a PI law on the symmetric collective and trims the pair torque-free with the differential collective. From 16 s it applies 5 deg cyclic steps on the lower rotor (pitch, then roll), the system-identification sequence of Grip et al. (2017).
 
-![The model canvas|900](assets/39967395766c.png)
+![The model canvas|900](assets/be5a6c654104.png)
 
 ![Thrust sweep and cyclic steps|900](assets/1c3cac1f78f6.png)
 

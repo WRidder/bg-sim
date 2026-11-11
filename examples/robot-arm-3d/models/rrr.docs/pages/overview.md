@@ -2,7 +2,7 @@
 
 A three-joint arm: a hand-derived Hamiltonian equation block ([Arm](block:Arm), `ArmDynamics3R`) behind three DC motors and 50:1 gears, a 1 ms discrete PD controller with gravity compensation ([Ctrl](block:Ctrl), `ArmCtrl3R`) and minimum-jerk `TimeTable` references ([Ref1](block:Ref1), [Ref2](block:Ref2), [Ref3](block:Ref3)). The same geometry is rebuilt from the spatial multibond stdlib in `rrr-multibond` and compared joint by joint (DEC-M5-2). The six-axis arm is the model `arm`.
 
-![The model canvas|900](assets/a228ea2039d0.png)
+![The model canvas|900](assets/5ab90d55154a.png)
 
 ```
 Ref1..3 (TimeTable) -> Ctrl (ArmCtrl3R, 1 ms) -u_i-> Amp - Motor - Gear (n = 50) -> Arm (ArmDynamics3R: j1 j2 j3)
@@ -24,6 +24,6 @@ The family of models of this example:
 
 `scenes/rrr.sdf` (Z-up, metres) has a base cylinder, a turret link (the joint-1 rotation carrier with a small counterweight so the yaw is visible), an upper-arm box and a forearm box with small spheres marking the point masses. `joint1` has axis $(0, 0, 1)$; `joint2` and `joint3` have axis $(0, -1, 0)$ (rotating $+x$ towards $+z$ is a rotation about $-y$). The models bind `joint:joint1..3` to `Arm/q1..q3`. The picture is taken at 1.2 s, at the end of the first move.
 
-![3D view at t = 1.2 s|500](assets/52197b298cb0.png)
+![3D view at t = 1.2 s|500](assets/ef3e6e25f65a.png)
 
 Continue with [the equation block](page:block), [the drives and controller](page:controller) and [the results](page:results).

@@ -8,7 +8,7 @@ Eagle's descent engine lit at 102:33:05 GET, 15 km up at 1,695 m/s. Twelve and a
 
 Both P63 and P64 use Apollo's quadratic guidance, $a = a_T + 12 (r_T - r)/t_{go}^2 - 6 (v + v_T)/t_{go}$. The engine stops when a footpad touches the surface.
 
-![The model canvas|900](assets/0851e77e8cff.png)
+![The model canvas|900](assets/6fbe89803b25.png)
 
 | block | role |
 | --- | --- |
@@ -27,6 +27,6 @@ Both P63 and P64 use Apollo's quadratic guidance, $a = a_T + 12 (r_T - r)/t_{go}
 2. Scale the P66 descent rates with `rate_scale`. A slower landing phase burns more of the last propellant: watch the usable propellant and the hover time left at touchdown.
 3. Lower the attitude loop's `att_wn` and watch the tilt lag behind the guidance.
 
-![3D view 1.5 s before touchdown|600](assets/c896857c3f68.png)
+![3D view 1.5 s before touchdown|600](assets/0757dc825899.png)
 
 Continue with [the results](page:results).

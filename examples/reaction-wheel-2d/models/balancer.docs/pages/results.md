@@ -1,6 +1,6 @@
 # Results and checks
 
-![Body angle, wheel speed and motor torque|900](assets/148bda074df7.png)
+![Body angle, wheel speed and motor torque|900](assets/7b1aad250c43.png)
 
 ## Measured (README)
 

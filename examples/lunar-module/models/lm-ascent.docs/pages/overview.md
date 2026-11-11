@@ -6,7 +6,7 @@ At 124:22:00 GET the ascent engine fired and the ascent stage left the descent s
 * the **insertion phase** on Apollo's linear guidance: a radial acceleration that meets 60,000 ft and 32.2 ft/s radial rate when the downrange velocity reaches 5,534.9 ft/s; the ascent engine is not throttleable, so whatever thrust is left goes downrange;
 * engine cutoff on the target velocity, anticipating the 0.2 s thrust tail-off.
 
-![The model canvas|900](assets/231f94cfb264.png)
+![The model canvas|900](assets/ebe7d482b072.png)
 
 | block | role |
 | --- | --- |

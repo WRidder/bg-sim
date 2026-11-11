@@ -2,7 +2,7 @@
 
 One EMS magnet module carries a quarter of a car section: a **levitation chassis** of 1.5 t under the rail and a **body share** of 11.75 t hanging from it on the secondary suspension (spring and damper, 1 Hz). Everything starts at rest on the **skids**, with the gap at 16.7 mm. The coil is energised from zero at the start. At 0.1 s the gap reference drops to 10 mm (through a 0.15 s lag), the magnet lifts the module off the skids at about 0.45 s and the controller holds 10 mm. At 2 s the guideway sinks by 1 mm (smoothed over about 10 ms), and at 4 s a payload of 2 t is added to the body share.
 
-![The model canvas|900](assets/8f3da18a48de.png)
+![The model canvas|900](assets/aca26edbdc76.png)
 
 ## What to try
 

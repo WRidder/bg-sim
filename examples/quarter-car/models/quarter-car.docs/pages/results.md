@@ -1,6 +1,6 @@
 # Results and checks
 
-![Positions, suspension travel and tire force|900](assets/71a0fe4dc9c2.png)
+![Positions, suspension travel and tire force|900](assets/a4cf04c58580.png)
 
 `design/design.py` integrates the same equations independently with RK4 at 1e-5 s. Values from the README:
 

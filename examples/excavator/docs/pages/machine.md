@@ -8,7 +8,7 @@ hydraulic system**: a variable pump at constant engine speed with an LS regulato
 limiter, three pre-compensated proportional valve sections, a shuttle network, a main relief and the tank. The
 bucket teeth cut **soil** with the fundamental earthmoving equation and fill the bucket.
 
-![The dig cycle in 3D at 5.5 s: the bucket curls out of the cut, full|700](assets/3593c539b611.png)
+![The dig cycle in 3D at 5.5 s: the bucket curls out of the cut, full|700](assets/a55d56f40cba.png)
 
 | model | what it shows |
 | --- | --- |
@@ -25,6 +25,6 @@ the models, the 3D scene and `expected.json`. The details: [mechanics](page:mech
 **Energy.** The LS system costs **0.57 MJ** at the engine shaft for the dig cycle; the same cycle on a
 constant-pressure supply (281 bar) costs **1.52 MJ**, 2.7 times as much.
 
-![Engine energy and pump pressure in the dig cycle (load sensing)|900](assets/00c82efbc848.png)
+![Engine energy and pump pressure in the dig cycle (load sensing)|900](assets/6b350eb7f0f3.png)
 
-![The same cycle on a constant-pressure supply|900](assets/4aaa5fda30d5.png)
+![The same cycle on a constant-pressure supply|900](assets/1025643e7e89.png)

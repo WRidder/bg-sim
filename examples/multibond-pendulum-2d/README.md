@@ -122,7 +122,7 @@ document has no visual field.
 | static deflection `d0` (released from rest) | (-3.9223657e-13, -9.8095095e-8) m |
 | states | 6 (P 3, d 2, q 1), all differential |
 | diagnostics | none (`W201`, `E101`, `E102`, `E103`, `E106`, `W206` absent) |
-| run cost | **4 072 adaptive steps for the 4 s run, 10 072 for the 10 s run** (no fast transient) |
+| run cost | no fast transient; the model pins the stiff solver `Rodas5P` |
 
 The model document runs `t_end = 4 s` (what the editor's **Run** does); the checks
 re-run the same model with a 10 s settings override for the energy budget, so one

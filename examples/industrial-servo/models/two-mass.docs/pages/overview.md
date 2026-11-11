@@ -2,7 +2,7 @@
 
 The `baseline` drive with a flexible motor-to-load coupling and a notch in the speed feedback path. Everything else (plant equations, three loops, averaged inverter, ideal sensors) is unchanged; see the `baseline` model for the PMSM and the controller.
 
-![The two-mass model canvas|900](assets/8c92a64665d8.png)
+![The two-mass model canvas|900](assets/e001a8522db8.png)
 
 ## What differs
 

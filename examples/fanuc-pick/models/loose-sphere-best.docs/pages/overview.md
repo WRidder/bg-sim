@@ -4,4 +4,4 @@ The fastest trajectory for the carton with the loose ball: Cartesian blended mot
 
 ![The ball in the see-through carton at the optimum|700](assets/946cb43a2824.png)
 
-![Ball position, wall force and holding margin|900](assets/5dbc9585ad36.png)
+![Ball position, wall force and holding margin|900](assets/d190e0376af6.png)

@@ -14,7 +14,7 @@ The scenario of this model (8 s):
 3. Catch: the 1 kHz firmware latches the balance LQR.
 4. Balance until the end.
 
-![The model canvas|900](assets/47e58866ac8d.png)
+![The model canvas|900](assets/87e79b3c3166.png)
 
 Every block is either datasheet hardware or an explicit estimate. [Hardware and size](page:hardware) lists the numbers and explains why the JD10 was chosen over the JD08 and the JD12.
 
@@ -46,6 +46,6 @@ The other models of the project are:
 
 The actuator is a Ø106 × 86 mm cylinder on a column, with an orange output flange. On top sit the clamp hub, the 30 × 30 mm arm tube and the joint-1 bearing block with its AS5048 board. The two link tubes and the joint-2 housing follow; link 2 runs 40 mm beside link 1.
 
-![3D view at t = 7.5 s, balancing|500](assets/e67bd1355cd4.png)
+![3D view at t = 7.5 s, balancing|500](assets/5ab1c0df6b87.png)
 
 Continue with [Hardware and size](page:hardware), [Model](page:model), [Control](page:control), [System identification](page:sysid) and [Results](page:results).

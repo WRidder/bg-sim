@@ -2,7 +2,7 @@
 
 Plan 9.5's multi-domain control sample. A **pure bond graph plant** (D28), made of a DC motor, a 10:1 gearbox, two wheel inertias and a flexible three-segment rod, is driven by a **1 ms discrete LQG firmware**: an LQR with integral action and a steady-state Kalman filter that reconstructs the load speed from the motor encoder alone. A 10 rad/s reference steps at 0.1 s and a -0.5 N·m load torque steps at 1 s. The model `drivetrain-backlash` swaps the ideal gear for a backlash composite.
 
-![The model canvas|900](assets/15ebb8a52987.png)
+![The model canvas|900](assets/6245078007a3.png)
 
 Parts: the electrical 1-junction [Elec](block:Elec) with [R](block:R) and [IL](block:IL), the gyrator [GY](block:GY), the motor junction [MotorJ](block:MotorJ) with [IJm](block:IJm) and [Rd](block:Rd), the gear transformers [TFa](block:TFa) and [TFb](block:TFb), [WheelJ1](block:WheelJ1), the three rod segments ([Rod1](block:Rod1), [Rod2](block:Rod2), [Rod3](block:Rod3)), [WheelJ2](block:WheelJ2) with the load source [Load](block:Load), the sensors [MotorSpeed](block:MotorSpeed), [Theta](block:Theta), [Encoder](block:Encoder), [Current](block:Current) and the firmware [LQG](block:LQG).
 
@@ -15,8 +15,8 @@ Parts: the electrical 1-junction [Elec](block:Elec) with [R](block:R) and [IL](b
 
 ## 3D view
 
-`scenes/drivetrain-kalman.sdf` has the motor rotor, the gearbox output, wheel 1, the two intermediate inertias of the rod and wheel 2. Only the motor angle [Theta/y](signal:Theta/y) is measured, so the gearbox output is $0.1\times$ `Theta/y` and each disc after it turns by the twist of the segment before it, `C1/q`, `C2/q`, `C3/q` (downstream minus upstream angle); wheel 2 lags wheel 1 by their sum. The rod is three segments between the discs; each belongs to the disc at its upstream end and twists towards the next one through a torsion deformation binding with the **linear** basis, $\theta(s) = (s/L)\,$`C_k/q`, the lumped model's twist (linear in every segment). A segment twists by 3.3 mrad under the 0.5 N·m load and by up to 21 mrad in the transients, so this model opens the 3D view with the deformation drawn **×1000** (`scene.exaggeration`): 3.3 rad per segment under load, so the stripes of the rod wind by about half a turn per segment (a few turns in the brief transients). The discs and their markers always turn by their true angles.
+`scenes/drivetrain-kalman.sdf` has the motor rotor, the gearbox output, wheel 1, the two intermediate inertias of the rod and wheel 2. Only the motor angle [Theta/y](signal:Theta/y) is measured, so the gearbox output is $0.1\times$ `Theta/y` and each rod segment is a joint bound to its twist `C1/q`, `C2/q`, `C3/q`; wheel 2 lags wheel 1 by their sum.
 
-![3D view at t = 0.5 s|500](assets/7fbf26bf205f.png)
+![3D view at t = 0.5 s|500](assets/004356c1c192.png)
 
 Continue with [the plant](page:plant), [the LQG design](page:controller) and [the results](page:results). The variant with a backlash gear is documented in the model `drivetrain-backlash`.

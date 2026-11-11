@@ -2,7 +2,7 @@
 
 Three 2 m steel cantilevers of the **same mass per metre** (7.774 kg/m) are clamped to one wall: a solid round bar, a solid square bar and an **IPE 100** I-beam on its strong axis. One downward tip force loads all three. The shape alone decides how far each bends, how hard it is stressed and how fast it vibrates.
 
-![The three beams at the first peak after the 250 N step (deflection drawn x10, colour: bending stress, grey 0, dark red at yield)|900](assets/d53c0cb458a7.png)
+![The three beams at the first peak after the 250 N step (deflection drawn x10, colour: bending stress, grey 0, dark red at yield)|900](assets/50786295e586.png)
 
 ![Diagram: the load, three effort sources and the three beams|900](assets/f1215ac08b97.png)
 

@@ -2,7 +2,7 @@
 
 The same plant as the `arm` model with both drives removed ([Drive1](block:Drive1), [Drive2](block:Drive2) are `Se` with $e = 0$), no pivot damping ($b_t = 0$) and no controller. The start pose is $q_1 = 0.6$ rad, $q_2 = -0.4$ rad (the `q0` of the joints) at rest with relaxed pivot springs ($d = 0$). The arm falls under gravity and swings; the plant is conservative.
 
-![The model canvas|900](assets/2ff166f43812.png)
+![The model canvas|900](assets/97cdbff6e790.png)
 
 ![Joint angles and end effector of the falling arm|900](assets/627c7b72f1e2.png)
 

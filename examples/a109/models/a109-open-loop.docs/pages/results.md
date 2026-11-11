@@ -10,7 +10,7 @@ The thrust rises, the helicopter climbs (13 m after 10 s) and the torque reactio
 
 The hover phugoid after the cyclic pulse:
 
-![Hover phugoid|900](assets/074d7f817031.png)
+![Hover phugoid|900](assets/3b32eefdc3c3.png)
 
 The report publishes no eigenvalues. The scipy linearisation gives $+0.211 \pm 0.598j$ (longitudinal) and $+0.051 \pm 0.620j$ (lateral) in hover. The check fits a damped oscillation to the pitch attitude of Lon and reads $\zeta = -0.28$, $\omega_n$ = 0.66 rad/s, against −0.33 and 0.63 rad/s.
 

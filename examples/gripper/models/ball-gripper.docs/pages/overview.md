@@ -4,9 +4,9 @@ An electric parallel-jaw gripper on a pick-and-place carriage picks a **50 mm st
 
 The ball is a free 3D rigid body ([Ball](block:Ball), [BallPose](block:BallPose)) held only by compliant contacts with regularised Coulomb friction ([JawA](block:JawA), [JawB](block:JawB), [Table](block:Table)), so holding, creeping, slipping and dropping all come out of the contact physics. The drive train is a bond graph from the motor current to the jaw node; the monitor [Grip](block:Grip) compares what the ball needs with what the jaws deliver.
 
-![The model|900](assets/ca0883f0e2b0.png)
+![The model|900](assets/cb96e1ef8e9e.png)
 
-![The 3D view in the transfer (1.1 s): pads coloured by the friction utilisation|600](assets/089b93071f48.png)
+![The 3D view in the transfer (1.1 s): pads coloured by the friction utilisation|600](assets/9e6f0af9fbd6.png)
 
 ## What to try
 

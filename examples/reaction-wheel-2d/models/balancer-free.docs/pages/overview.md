@@ -6,11 +6,11 @@ $$H = 0.257\,\dot\theta + 0.002\,\dot q_w$$
 
 must then stay constant at 0.06 kg·m²/s: the motor only exchanges momentum between body and wheel. See the `balancer` model for the physics, the controller (without the gravity term) and the parameters.
 
-![The model canvas|900](assets/434b4a799915.png)
+![The model canvas|900](assets/e92284418ba0.png)
 
 ## Results
 
-![Body angle, wheel speed and motor torque without gravity|900](assets/ea8a2370ada2.png)
+![Body angle, wheel speed and motor torque without gravity|900](assets/ea187c994480.png)
 
 The same 0.012 rad pulse leans the body; the wheel **spins down to 26.00 rad/s** as the body leans and **back up to 32.70 rad/s** as it returns, ending at 30.0007 rad/s. $H$ stays at 0.06 kg·m²/s: $\max\lvert H - H_0\rvert = 6.68\cdot10^{-9}$, that is $1.11\cdot10^{-7}$ of $H$ (tolerance 1e-6, the `invariant` check on `Pivot/qdout` with coefficient 0.257 and `WheelJ/qdout` with 0.002). $\lvert\theta\rvert$ stays below 0.011967 rad (band 0.02).
 

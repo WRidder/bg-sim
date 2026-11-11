@@ -9,7 +9,7 @@ hold, phase 1 the swing-up (feed-forward plus time-varying LQR from the tables o
 `library/DoubleCartLabTraj.jl`), phase 2 the discrete LQR. It sees the ideal joint and cart states, with no
 delay. The design is on the project page [design and margins](project:design).
 
-![The model canvas: the bond graph, the firmware and the dashboard monitor|900](assets/d2aedbfd724a.png)
+![The model canvas: the bond graph, the firmware and the dashboard monitor|900](assets/1f27c86e276a.png)
 
 **Dashboard.** The phase, the peak cart travel, both link angles from upright in degrees (green within 2°),
 voltage and current; plots of the angles, the cart with the end stops (±1.0 m) and the test limit (±0.95 m),
@@ -17,7 +17,7 @@ voltage and current, and the phase with the tip push. The sliders set the push, 
 for the next run. [Mon](block:Mon) (`DoubleCartLabMonitor`) computes the degrees and the peak travel. **3D
 view:** the cart on the 2 m rail between the red rubber stops; the green posts mark the ±0.8 m plan.
 
-![Link angles, cart, voltage, current and phase over the run|900](assets/898680f54145.png)
+![Link angles, cart, voltage, current and phase over the run|900](assets/78e79d820565.png)
 
 **Expected outcome** (checked by `expected.json`):
 

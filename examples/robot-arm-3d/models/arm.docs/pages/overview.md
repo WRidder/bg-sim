@@ -4,7 +4,7 @@ A UR5-like six-axis serial arm moves from a home pose to a target pose under a 1
 
 This example folder also holds the X5.3 RRR arm models (`rrr`, `rrr-free`, `rrr-torque`, `rrr-multibond`, `rrr-multibond-soft`, `rrr-multibond-stiff`) which are documented in their own models.
 
-![The model canvas (three-stroke spatial bonds)|900](assets/6ec29dfc2e79.png)
+![The model canvas (three-stroke spatial bonds)|900](assets/00ef6a43d924.png)
 
 ```
 World - Mount - J1 - Link1 - BJ1 -+- B1 (RigidBody3D)
@@ -25,6 +25,6 @@ The run: 2 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 201 output points; th
 
 `scenes/arm.sdf` draws the six-axis arm: every link is bound by its world pose to the model's composed body pose `P<i>/g[1..7]` (quaternion first), so the viewer needs no joint axes or kinematics of its own. A hub cylinder marks each joint axis and the bars run to the next joint; the red sphere is the tool centre point.
 
-![3D view at t = 0.6 s|500](assets/464ee1a21de6.png)
+![3D view at t = 0.6 s|500](assets/19edad137d3b.png)
 
 Continue with [the construction](page:construction), [the controller](page:controller), [the results](page:results) and [the notes](page:notes).

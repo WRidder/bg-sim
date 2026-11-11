@@ -1,6 +1,6 @@
 # Results and checks
 
-![Member forces, failed bars, roller travel, deflections and axle loads|900](assets/674fb3861ac1.png)
+![Member forces, failed bars, roller travel, deflections and axle loads|900](assets/52cfb2c9d9e8.png)
 
 The overloaded lorry rolls onto the bridge over the 6 cm ramp and starts to bounce. Bar 13 reaches $F_t$ = 240.64 kN at t = 2.0098 s, when the lorry's centre is 5.2 m onto the bridge, and fails. `Elost` jumps by 959.1 J, its strain energy (959.4 J from $F_t^2 L_0 / (2 E A)$; the force at failure also has a small damping part). The second panel shears and the truss folds about it, pulling the roller towards the river. At t = 2.4491 s its travel reaches the seat edge, -0.3 m, and it rolls off; the right end is 0.5 m down at t = 2.641 s. No other bar fails. The run stops at t = 2.818 s with the midspan 3 m down. The `Ebal` of the truss changes by less than 0.001 J over the run, and so does the seat's.
 

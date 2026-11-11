@@ -2,7 +2,7 @@
 
 A Cessna 172P built from the data of JSBSim's c172p, released on each of its five rigid-body modes. Five copies of the aircraft are trimmed in level flight at 100 KTAS and 5000 ft. Each starts displaced along the eigenvector of one mode of the linearised aircraft: the short period (1 deg of alpha), the phugoid (2 m/s of speed), the dutch roll (1 deg of sideslip), the roll mode (2 deg of bank) and the spiral (5 deg of bank).
 
-![The model canvas|900](assets/f7a227178f53.png)
+![The model canvas|900](assets/0be5e93d16c1.png)
 
 | block | role |
 | --- | --- |
@@ -19,6 +19,6 @@ A Cessna 172P built from the data of JSBSim's c172p, released on each of its fiv
 
 The five aircraft fly side by side over a striped reference floor. The ailerons, elevator, rudder and flaps are separate meshes on their hinge lines, and the propeller turns at the engine's speed. Picture at 4 s:
 
-![3D view at t = 4 s|600](assets/d5417139ad83.png)
+![3D view at t = 4 s|600](assets/eb38053ca3dc.png)
 
 Continue with [the aircraft](page:aircraft) and [the results](page:results).

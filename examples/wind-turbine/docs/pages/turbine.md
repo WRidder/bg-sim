@@ -13,7 +13,7 @@ This example models the NREL 5 MW reference wind turbine of Jonkman, Butterfield
 | generator | 94.4 % efficient: 5.29661 MW mechanical for 5 MW electrical | chapter 5 |
 | tower | first fore-aft mode 0.324 Hz (FAST), 1 % damping | Table 9-1, chapter 6 |
 
-![The model canvas|900](assets/f491926f0f5f.png)
+![The model canvas|900](assets/64a577bb4357.png)
 
 ![The 3D scene: the tower, the nacelle and the rotor; the wind arrow scales with the wind speed and the blade tip colours with the pitch|600](assets/6552a0233cf3.png)
 

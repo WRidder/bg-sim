@@ -19,7 +19,7 @@ leaves the plate for about 20 ms: [Contact/f_n](signal:Contact/f_n) reads zero, 
 briefly on landing. Set the **set-point filter** on the dashboard to 1 s and the hop goes away. With
 the feed-forward riding on the filtered reference, the steps then settle in 0.9 s.
 
-![Steps, the Kalman estimate and the normal force|900](assets/d607bfa6f1f6.png)
+![Steps, the Kalman estimate and the normal force|900](assets/88a569bfa7b1.png)
 
 ![Between 1 and 2 s: the camera lags one frame, the estimate does not|900](assets/c25a79b9d1ae.png)
 

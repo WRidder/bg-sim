@@ -1,6 +1,6 @@
 # Results
 
-![Yaw rate, tyre loads and body slip|900](assets/0492a19a27f9.png)
+![Yaw rate, tyre loads and body slip|900](assets/8cabe4db86ce.png)
 
 The reference is a nonlinear four-wheel steady state (`design/reference.py`): combined-slip tyres with the same formulas, lateral and longitudinal load transfer from a static solve of the suspension, aero, the open differential with its viscous coupling, the free-rolling front wheels with rolling resistance, the unsprung masses' centripetal forces and the wheels' gyroscopic moment.
 

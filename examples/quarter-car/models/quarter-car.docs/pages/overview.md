@@ -2,7 +2,7 @@
 
 The plan 9.4 quarter car: a 300 kg sprung mass on a 20 kN/m and 1500 N·s/m suspension, a 40 kg unsprung mass on a 200 kN/m **one-sided tire**, a $\pm 0.08$ m hard stop between the masses, and a road that climbs a 5 cm plateau bump (0.1 s at +0.5 m/s from $t = 0.5$ s, flat, then 0.1 s at -0.5 m/s from $t = 1.5$ s). The continuous plant is a **bond graph** (D28); the only non-bond-graph pieces are the signal sources, three flow sensors with integrators that reconstruct the positions for plots and checks (the D28 sensor exception) and a `Min` monitor used by one check. The run lasts 4 s on a 1 ms grid (4001 points).
 
-![The model canvas|900](assets/677842c3979e.png)
+![The model canvas|900](assets/e1919b836525.png)
 
 ## What to try
 
@@ -15,6 +15,6 @@ The plan 9.4 quarter car: a 300 kg sprung mass on a 20 kN/m and 1500 N·s/m susp
 
 `scenes/quarter-car.sdf` is a side view: the road block, the wheel and the car body, each on a vertical prismatic joint bound to [RoadInt/y](signal:RoadInt/y), [UInt/y](signal:UInt/y) and [SInt/y](signal:SInt/y) (metres from static equilibrium). The picture is taken at 0.9 s, near the peak of the body.
 
-![3D view at t = 0.9 s|500](assets/2c708825cdb0.png)
+![3D view at t = 0.9 s|500](assets/e918e35a722c.png)
 
 Continue with [the plant](page:plant) and [the results](page:results).

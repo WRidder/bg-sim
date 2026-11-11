@@ -2,7 +2,7 @@
 
 The realistic drive model: all three forks of the `baseline` together.
 
-![The full model canvas|900](assets/7d78494e106e.png)
+![The full model canvas|900](assets/88180a883b65.png)
 
 | fork | what |
 | --- | --- |
@@ -12,7 +12,7 @@ The realistic drive model: all three forks of the `baseline` together.
 
 The solver uses `reltol` 1e-4 and `abstol` 1e-7 with a 10 µs output interval.
 
-![Speed of motor and load, and position|900](assets/4e2301307175.png)
+![Speed of motor and load, and position|900](assets/5ce108d7aad6.png)
 
 ## Results (README, `expected.json`)
 
@@ -34,4 +34,4 @@ The check set has 19 model checks, the most of any variant. See the `baseline` m
 
 The joints `rotor_joint` ([Theta/y](signal:Theta/y)) and `coupling_joint` (`Kc/q`) are bound: the load marker lags and rings against the rotor marker.
 
-![3D view at t = 0.1 s|500](assets/4eb5475f0293.png)
+![3D view at t = 0.1 s|500](assets/b7ecf5961f8b.png)

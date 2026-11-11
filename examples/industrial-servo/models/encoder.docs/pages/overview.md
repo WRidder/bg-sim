@@ -2,7 +2,7 @@
 
 The `baseline` drive, but the loops no longer see the ideal angle and speed: the angle goes through a 24-bit absolute encoder and the speed is estimated by differencing it. The plant, inverter (averaged) and mechanics are unchanged (see `baseline`).
 
-![The encoder model canvas|900](assets/e5b72d08ee2f.png)
+![The encoder model canvas|900](assets/2ffae99651d2.png)
 
 - [Enc](block:Enc): a `Quantizer` at 8 kHz with resolution $2\pi/2^{24} = 3.745\cdot10^{-7}$ rad on the angle [Theta](block:Theta);
 - [SpeedEst](block:SpeedEst): a 1 kHz backward difference of the quantised angle plus a first-order low-pass with $\alpha = 0.8$; its output `SpeedEst/w` replaces the measured speed in the speed loop and in the current loop's decoupling; `Enc/y` replaces the angle in the position loop;

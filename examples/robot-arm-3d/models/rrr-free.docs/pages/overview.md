@@ -2,7 +2,7 @@
 
 The energy test of plan 9.8: [Arm](block:Arm) (`ArmDynamics3R`) with the motors removed (zero-torque `Se` on every joint: [Free1](block:Free1), [Free2](block:Free2), [Free3](block:Free3)) and $g = 0$, released with the joint rates $(2, -1.5, 2.5)$ rad/s (the start momenta of the block). The total energy $E = T + V$ is the block output [Arm/E](signal:Arm/E) and must stay constant. The block and the full model are described in the `rrr` model.
 
-![The model canvas|900](assets/69a452bc7187.png)
+![The model canvas|900](assets/fd595b9b17fc.png)
 
 ![Free motion: joint rates and total energy|900](assets/06021147a077.png)
 

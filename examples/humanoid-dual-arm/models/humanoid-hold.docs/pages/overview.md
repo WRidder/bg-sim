@@ -7,10 +7,10 @@ The firmware of `humanoid-ik` on the **dynamic** robot. Two multibody arms carry
 - **Grasp**: per hand, a `Revolute3D` weld ([LWeld](block:LWeld)) with all six directions sprung at $10^5$ N/m and $10^3$ N·m/rad, between the hand and the box ([Box](block:Box)).
 - **Firmware** at 1 kHz: [Traj](block:Traj) → [IKL](block:IKL)/[IKR](block:IKR) → [ServoL](block:ServoL)/[ServoR](block:ServoR) (PID with integral and the holding-torque feedforward, torque limits 80 / 20 N·m).
 
-![The model canvas|900](assets/5711585e80e5.png)
+![The model canvas|900](assets/7164e8b1a67e.png)
 
 The run: 6.5 s, `FBDF` with `reltol` 1e-4 and `abstol` 1e-6, 1301 output points. The system has 46 states and 6416 equations. It takes about 31 s of solve time and 66 s in total.
 
-![3D view at t = 4 s: the box at the commanded pose|500](assets/532e62540058.png)
+![3D view at t = 4 s: the box at the commanded pose|500](assets/55a0023ba60f.png)
 
 Continue with [the results](page:hold-results).

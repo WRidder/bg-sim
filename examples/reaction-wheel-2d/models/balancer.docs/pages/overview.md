@@ -2,7 +2,7 @@
 
 An inverted planar body on a compliant pivot with a reaction wheel on its axis. A 1 ms PD controller on the body angle commands the wheel torque, and the wheel's reaction holds the body upright while the wheel spins up. This is the planar-balancer half of X-MB2 (plan 9.10) and Gate B's arm-and-balancer pair with `robot-arm-2d`. The body starts 0.01 rad off upright, the controller recovers it in about 0.5 s, then a 0.012 rad reference pulse (0.5 s to 1.5 s) tilts it and it returns. The sibling model `balancer-free` has gravity off.
 
-![The model canvas|900](assets/434b4a799915.png)
+![The model canvas|900](assets/1a0869b24e81.png)
 
 ```
 Ground -- Pivot -- LinkB -- BodyJ -+- Body  (RigidBody2D, m 1.5, J 0.02, CoM 0.3 m)
@@ -22,6 +22,6 @@ Ground -- Pivot -- LinkB -- BodyJ -+- Body  (RigidBody2D, m 1.5, J 0.02, CoM 0.3
 
 `scenes/reaction-wheel-2d.sdf` draws the body bar on its pivot with the wheel at its top in the vertical X-Z plane. Joint `pivot` follows [Pivot/qout](signal:Pivot/qout) and `wheel_axis` follows [WheelJ/qout](signal:WheelJ/qout); the spoke makes the wheel spin visible.
 
-![3D view at t = 1.0 s|500](assets/6be58514f045.png)
+![3D view at t = 1.0 s|500](assets/64035804997b.png)
 
 Continue with [the physics](page:physics), [the controller](page:controller) and [the results](page:results).

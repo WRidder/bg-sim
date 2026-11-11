@@ -2,7 +2,7 @@
 
 A block on a spring rides a belt that runs at a constant speed $v_b$. Friction drags the block along until the spring holds it at $x_s = F_0/k$. With a friction force that **falls** as the slip velocity rises (the Stribeck effect), this equilibrium is unstable. When the block moves with the belt the slip drops and the friction rises, so the belt pushes harder. When it moves back, the friction falls. The contact acts as a negative damper and the block starts to oscillate. Squealing brakes, chattering machine slides and the bowed violin string work the same way.
 
-![The model canvas|900](assets/b1f1266d4bdc.png)
+![The model canvas|900](assets/fec38e630d85.png)
 
 The model has the same rig twice:
 
@@ -25,4 +25,4 @@ Continue with [the physics and the scaling](page:physics) and [the results](page
 
 `scenes/vdp-belt.sdf` is the rig: a belt over two pulleys, a wall, the spring as eight rings and the block. The prismatic joint `block` follows [Pos/y](signal:Pos/y). The rings follow the same signal with gains $k/9$, and the belt's stripes move with the belt phase [BeltPhase/y](signal:BeltPhase/y), a sawtooth over one stripe pitch. The stripes tile the belt, so when the phase wraps only the end stripes change, under the guard hoods over the pulleys. Picture at 30 s:
 
-![3D view at t = 30 s|500](assets/be5a8a1d4ffd.png)
+![3D view at t = 30 s|500](assets/94f739f9cd7a.png)

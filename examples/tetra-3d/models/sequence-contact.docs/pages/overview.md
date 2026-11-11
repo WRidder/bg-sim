@@ -2,7 +2,7 @@
 
 A free **regular tetrahedron** (edge $L = 0.25$ m) lies on its base face on a ground plane. A **reaction wheel is tied to each of its four faces**: the spin axis is the outward normal of the face and the wheel sits inside the body 35 mm from the centre of mass towards the face centroid. A scripted torque profile spins the wheels so that the body leaves its **face**, balances on an **edge** (two contacts) and then on a single **vertex** (one contact). The ground is a compliant `ContactSurface` and every vertex is a `ContactPoint` (Hunt-Crossley normal force, regularised Coulomb friction), so the phases are *emergent*: which vertices carry load follows from the contact forces; nothing is switched by hand. It is work package X5.6 of the M5 plan; the cube version of the same idea is `cube-pyramid-3d` (X-MB5).
 
-![The model canvas|900](assets/6d126552ae4b.png)
+![The model canvas|900](assets/c0422e97f8f2.png)
 
 ```
 Tetra (RigidBody3D) <-- Pose (PoseIntegrator3D, floating base)
@@ -25,10 +25,10 @@ Press **Run**: 3.8 s with 761 output points and the contact system; about 40 s o
 
 `scenes/tetra-3d.sdf` shows the ground plate, the tetrahedron (the GLB mesh `meshes/tetra.glb`, translucent, vertex 3 marked red and vertex 2 dark) and the four wheel discs on the face centroids. The body link is bound by its world pose (`Pose/qw .. Pose/pz`); each wheel joint `wheel_k` (axis z of the wheel frame, the face normal) is bound to the integrated wheel angle `WJoint<k>/q`. The three pictures show the start on the face, the edge balance and the vertex balance.
 
-![Face: t = 0 s|420](assets/1dc816f5f8f7.png)
+![Face: t = 0 s|420](assets/83685e5b4f7e.png)
 
-![Edge balance: t = 1.6 s|420](assets/585f7cb9936c.png)
+![Edge balance: t = 1.6 s|420](assets/fbebb1fe5f13.png)
 
-![Vertex balance: t = 3.4 s|420](assets/bcb8b7d76ae8.png)
+![Vertex balance: t = 3.4 s|420](assets/61eb8d22eecd.png)
 
 Continue with [the geometry](page:geometry), [the firmware](page:firmware) and [the results](page:results).

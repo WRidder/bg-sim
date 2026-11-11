@@ -4,7 +4,7 @@ MG2 alone pulls the Prius away from rest. A step of the tractive force demand at
 150 N·m at the ring. The energy manager is replaced by constants (engine off, speed reference 0),
 so MG1 holds the engine at rest through the sun gear while the sun turns backwards.
 
-![Diagram of the plant: engine and damper, planetary subsystem, MG1 and MG2 with their inverters, driveline, vehicle and battery|1000](assets/088ba1d68bae.png)
+![Diagram of the plant: engine and damper, planetary subsystem, MG1 and MG2 with their inverters, driveline, vehicle and battery|1000](assets/2128a77e6503.png)
 
 Plant blocks: [EngineTorque](block:EngineTorque) and [EngineDrag](block:EngineDrag) on the
 engine inertia; [Damper](block:Damper) onto the carrier; [Planetary](block:Planetary); MG1

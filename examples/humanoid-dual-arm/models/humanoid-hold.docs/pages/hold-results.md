@@ -2,13 +2,13 @@
 
 ## 7-DOF
 
-![Left joints, box and hand error, left elbow, grasp loads|900](assets/61baa4724614.png)
+![Left joints, box and hand error, left elbow, grasp loads|900](assets/a76c707ec4ea.png)
 
 The arms track the IK through the move and the bias sweep. The box stays within 1.35 mm and 0.18° of its commanded pose over the whole run, and the hands within 1.29 mm and 0.19° of the grasp. Under the elbow bias the simulated left elbow moves like the IK elbow (within 0.23 mm). Each grasp carries about half the box weight (8.5 N against 7.36 N), and no servo uses more than 13 N·m.
 
 ## 6-DOF (J5 locked)
 
-![6-DOF: hand error, grasp load and the left servo torques|900](assets/46373807e87b.png)
+![6-DOF: hand error, grasp load and the left servo torques|900](assets/b8cd546e067f.png)
 
 With J5 locked, the IK leaves each hand 3.5 mm and 3.3° away from its grasp, mirrored on the two arms. The box cannot follow both hands, so the two arms **fight through it**. The grasp force rises to 109 N and the moment to 31 N·m. The J6 wrist servo saturates at its 20 N·m limit from t = 5.09 s, and the grasp pushes the wrist 1.6° past its −60° limit (the dynamic joints have no hard stops). The hands stay at least 4.4 mm and 1.1° off the grasp.
 

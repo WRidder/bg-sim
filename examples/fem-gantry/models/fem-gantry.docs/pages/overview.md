@@ -4,7 +4,7 @@ Two parallel X linear motors carry the ends of a 1.4 m aluminium box crossbeam; 
 
 ![The gantry accelerating at 10 m/s² (deflection drawn x100, colour: von Mises 0 to 2 MPa)|900](assets/e1b27521511a.png)
 
-![Diagram|900](assets/0bda437725c1.png)
+![Diagram|900](assets/d60658bbbe31.png)
 
 - [X1](block:X1) and [X2](block:X2) are the X axes (Prismatic3D), driven by [X1Motor](block:X1Motor) and [X2Motor](block:X2Motor) under [X1Servo](block:X1Servo) and [X2Servo](block:X2Servo): a P position loop of 15 Hz, a PI velocity loop of 60 Hz with acceleration feedforward and a 1 kHz current loop.
 - [WeldA](block:WeldA) holds the beam's yaw to X1 (a stiff revolute spring); [PivotB](block:PivotB) lets it turn freely on X2. This is the usual fixed/floating pair.

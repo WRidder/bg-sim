@@ -4,4 +4,4 @@ The best motion of `design/optimize_free.py` (stage A4: free timing, tilt, yaw w
 
 ![The free optimum at mid transfer|700](assets/f3d853bed309.png)
 
-![Tilt, cup utilisation, margin and robot limits|900](assets/5c63035ee2a7.png)
+![Tilt, cup utilisation, margin and robot limits|900](assets/2890e8ed1997.png)

@@ -2,7 +2,7 @@
 
 The pyramid of `gravity-off` with $g_0 = 9.81$ m/s² in all five bodies. The body hangs 0.2 m below the pivot, starts tilted 0.5 rad about the world axis $(1, 1, 0)$ (the start quaternion of [Pivot](block:Pivot) is (0.96891, 0.17494, 0.17494, 0)) and swings while the wheels are driven by the same scripted torques. See the `gravity-off` model for the construction, the allocation and the checks.
 
-![The model canvas|900](assets/840e1c830b61.png)
+![The model canvas|900](assets/86e397cc8426.png)
 
 ## Momentum balance with gravity
 
@@ -29,4 +29,4 @@ Further checks: initial tilt; the pendulum really swings and the gravity impulse
 
 `scenes/reaction-wheel-3d.sdf` shows the translucent body hanging from the spherical pivot with the four pyramid wheels inside. The body and each wheel are bound by their world pose (`PoseBody`, `PoseW1..4`, quaternion first); a marker on each disc rim shows the wheel spin.
 
-![3D view at t = 1.0 s|500](assets/7c72d94a59c0.png)
+![3D view at t = 1.0 s|500](assets/4e84436e9091.png)

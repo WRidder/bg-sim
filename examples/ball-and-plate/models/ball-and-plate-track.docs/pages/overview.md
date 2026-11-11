@@ -13,9 +13,9 @@ circle it is 1.8 and 1.9 mm. Most of that comes from the rolling resistance, whi
 does not know about. A check run without it reaches **0.2 mm**, the value of the linear design. The
 PID without feed-forward lags about 40 mm on both paths.
 
-![The figure-8 on the plate (XY)|600](assets/476325d5be75.png)
+![The figure-8 on the plate (XY)|600](assets/9f01f5e29027.png)
 
-![Tracking error and plate angles|900](assets/72f97c7394fe.png)
+![Tracking error and plate angles|900](assets/c451bbdc81e7.png)
 
 **What to try.** Switch the task to the circle. Set the ball inertia to 0.667: the feed-forward
 assumes a solid ball, so the plate tilts too little and the error grows. Use the **3D view** to

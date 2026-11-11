@@ -12,7 +12,7 @@ Plan 9.6b's industrial servo sample. One Delta-ASDA-A3-style permanent-magnet sy
 
 The run is one combined scenario of 1.2 s: a **100 rad/s speed step at 0.05 s**, **position mode at 0.15 s** (the shaft returns from about 9.4 to 9.7 rad to 0) and a **resisting 2 N·m load step at 0.9 s**. The acceptance checks each variant's step response, current and torque limit, steady-state error, switching ripple, encoder quantisation and, for the flexible variants, the resonance and notch attenuation, plus baseline-versus-variant comparisons.
 
-![The baseline model canvas|900](assets/ef2818e01102.png)
+![The baseline model canvas|900](assets/9de84d84e01e.png)
 
 ## What to try
 
@@ -24,6 +24,6 @@ The run is one combined scenario of 1.2 s: a **100 rad/s speed step at 0.05 s**,
 
 `scenes/industrial-servo.sdf` shows the motor with its rotor disc and a load disc behind a coupling. The joint `rotor_joint` follows the motor angle [Theta/y](signal:Theta/y) in all five variants; in `two-mass` and `full` the joint `coupling_joint` follows the coupling twist `Kc/q`. The rigid variants have no coupling state, so the load disc moves with the rotor.
 
-![3D view at t = 0.3 s|500](assets/1ab0c01e7dbc.png)
+![3D view at t = 0.3 s|500](assets/147d48ccf43f.png)
 
 Continue with [the plant](page:plant), [the controller](page:controller) and [the results](page:results).
