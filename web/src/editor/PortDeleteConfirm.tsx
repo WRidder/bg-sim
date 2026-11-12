@@ -14,6 +14,11 @@ import { useDialogFocus } from "../app/useDialogFocus";
 import { subsystemPortDeleteImpact, useDocumentStore } from "../state/documentStore";
 import { terminalPortName } from "./subsystemBoundary";
 import { endpointLabel, exposedOneLevelUp, subsystemAtPath } from "./subsystemPorts";
+import {
+  enclosingInstance,
+  instanceCount,
+  instancePortConnections,
+} from "../library/linkedSubsystems";
 
 export interface PortDeleteRequest {
   names: string[];
@@ -21,6 +26,11 @@ export interface PortDeleteRequest {
   connections: string[];
   /** `selection`: Delete on the canvas (the rest of the selection goes too); `ports`: just these ports. */
   action: "selection" | "ports";
+  /**
+   * Set when the ports belong to a library subsystem: every instance loses them,
+   * so this is always confirmed, connected or not.
+   */
+  shared?: { definition: string; instances: number; own: boolean };
 }
 
 interface PortDeleteState {
@@ -66,12 +76,31 @@ export function requestSubsystemPortDelete(
       return `${name} is exposed again by ${up.owner} as ${up.port.name}; delete that port first.`;
     }
   }
+  // The ports of a library subsystem belong to every instance of it.
+  const enclosing = enclosingInstance(doc, path);
   const impact = subsystemPortDeleteImpact(doc, path, names);
+  const parent = subsystemAtPath(doc, path)?.parent;
+  const nodes = parent?.nodes ?? [];
+  if (enclosing !== null) {
+    // The open diagram is the library subsystem itself (its ports are every instance's),
+    // or a subsystem inside it (the change is still made in every instance).
+    const own = enclosing.path.length === path.length;
+    usePortDeleteStore.getState().open({
+      names: [...names],
+      connections: own
+        ? instancePortConnections(doc, enclosing.name, names)
+        : impact.map(
+            (connection) =>
+              `${endpointLabel(nodes, connection.from.node, connection.from.port)} → ${endpointLabel(nodes, connection.to.node, connection.to.port)}`,
+          ),
+      action,
+      shared: { definition: enclosing.name, instances: instanceCount(doc, enclosing.name), own },
+    });
+    return null;
+  }
   if (impact.length === 0) {
     return run(action, names);
   }
-  const parent = subsystemAtPath(doc, path)?.parent;
-  const nodes = parent?.nodes ?? [];
   usePortDeleteStore.getState().open({
     names: [...names],
     connections: impact.map(
@@ -116,11 +145,31 @@ export function PortDeleteConfirm({ onRefused }: { onRefused?: (message: string)
         <h2 id="port-delete-title" className="docs-dialog__title">
           Delete subsystem {plural ? "ports" : "port"} {request.names.join(", ")}?
         </h2>
-        <p className="docs-dialog__text">
-          {plural ? "These ports are" : "This port is"} connected outside the subsystem. Deleting{" "}
-          {plural ? "them" : "it"} also removes {count === 1 ? "this connection" : `these ${count} connections`}{" "}
-          from the parent diagram (Ctrl+Z restores everything):
-        </p>
+        {request.shared !== undefined ? (
+          <p className="docs-dialog__text" data-testid="port-delete-shared">
+            {request.shared.own
+              ? plural
+                ? "These ports belong to"
+                : "This port belongs to"
+              : plural
+                ? "These ports are inside"
+                : "This port is inside"}{" "}
+            the library subsystem <strong>{request.shared.definition}</strong>, which has{" "}
+            {request.shared.instances} {request.shared.instances === 1 ? "instance" : "instances"}{" "}
+            in this model. Every instance loses {plural ? "them" : "it"}, and so does every other
+            model of the project that uses {request.shared.definition}, the next time it is
+            opened.
+            {count > 0
+              ? ` Deleting ${plural ? "them" : "it"} also removes ${count === 1 ? "this connection" : `these ${count} connections`} (Ctrl+Z restores everything):`
+              : " Ctrl+Z restores it."}
+          </p>
+        ) : (
+          <p className="docs-dialog__text">
+            {plural ? "These ports are" : "This port is"} connected outside the subsystem. Deleting{" "}
+            {plural ? "them" : "it"} also removes {count === 1 ? "this connection" : `these ${count} connections`}{" "}
+            from the parent diagram (Ctrl+Z restores everything):
+          </p>
+        )}
         <ul className="port-delete-dialog__list">
           {request.connections.map((line) => (
             <li key={line}>
@@ -144,7 +193,9 @@ export function PortDeleteConfirm({ onRefused }: { onRefused?: (message: string)
               }
             }}
           >
-            Delete {plural ? "ports" : "port"} and {count === 1 ? "connection" : "connections"}
+            {count === 0
+              ? `Delete ${plural ? "ports" : "port"} in every instance`
+              : `Delete ${plural ? "ports" : "port"} and ${count === 1 ? "connection" : "connections"}`}
           </button>
         </div>
       </div>

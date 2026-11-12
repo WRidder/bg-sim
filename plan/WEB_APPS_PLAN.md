@@ -19,6 +19,9 @@ The FMU-based desktop apps (`apps/f16-sim`, `cessna-sim`, `a109-sim`, `car-sim`)
 | W11 | The airfield is shared, in `src/island/` | The F-16 and the Cessna land on one runway. The code for it (`airfield.ts`, `field.ts`, `landing.ts`) moved out of the Cessna, because importing it from there would pull the Cessna's model into the F-16's bundle. `markLanding` takes the aeroplane's own `Marks`. |
 | W12 | The F-16's `Frame` turns the FMU's north down the runway, and `lift` lays its plane on the runway | The FMU has no heading parameter and starts north at z = 0, and that plane has to be the sea at sea and the runway at the runway. `lift` is the height of the runway on the airfield and eases to 0 over 3 km, so the sea stays exact wherever the aircraft can reach it. |
 | W13 | The FMU flies, the game judges | The FMU gives wheels and a flat plane. Whether a surface is there, whether a wing touched and whether the gear folded (320 kN a main leg, about 6 m/s of sink) is decided in `flight.ts` from the height of the airframe's points, as in the Cessna. |
+| W14 | The microduck's policy runs on ONNX Runtime Web: the plain Wasm backend, one thread, imported by its page alone and only when it starts | No COOP/COEP needed (W3), and no other game's bundle grows. The runtime is 75 kB of script and a 14.8 MB Wasm (3.9 MB gzipped); a 61 → 14 MLP takes about 1.5 ms a tick in a headless browser. |
+| W15 | The microduck drives a `Plant`: the bg-sim FMU when `model.gen.ts` exists, otherwise a stand-in that says on screen that it is one | The FMU (`microduck-policy`, `examples/export_microduck.jl`) is generated and gitignored, so a fresh checkout has none. Its variable names sit in one table (`FMU_INTERFACE`), so wiring it is that table and `build_wasm.py`. The stand-in has no physics: joints lag their targets, the trunk is carried and kept level. A stopped FMU keeps its last good state on screen. |
+| W16 | The policy loop is the robot's, re-implemented from its Rust sources and tested against their cases, not approximated | A wrong observation offset or a scaled previous action does not fail loudly; it gives a robot that walks badly (`duck-control/src/obs.rs`). |
 
 ## Layout
 
@@ -27,7 +30,8 @@ apps/web/
   build_wasm.py        FMU to src/<game>/model.gen.ts (gitignored, regenerate after an FMU changes)
   shim/                the C glue between the FMU and JavaScript
   index.html           landing page
-  f16/ cessna/ a109/ cars/   one folder per game, each an index.html
+  f16/ cessna/ a109/ cars/ microduck/   one folder per page, each an index.html
+  src/microduck/policies/    the robot's ONNX policies at a pinned revision (Apache-2.0, README beside them)
   src/engine/          shared by all: Stage, Sim, gates, camera, overlay, sound, input, effects,
                        side (the side windows), telemetry, tuning
   src/<game>/telemetry.ts   what the game's panel shows, and the labels of its setup
@@ -71,6 +75,12 @@ What the race car's parameters do, floored out of a steady turn (`peak body slip
 
 At stock the motor gives 6.4 kN at the road below 147 km/h against about 6.7 kN of rear grip at rest, so full throttle leaves the rear tyres almost nothing to corner with. Half throttle does not spin. Traction control slip is the setting to reach for: it costs almost no acceleration, where 200 N m takes 0-100 km/h from 3.6 s to 5.4 s. Exposing these parameters changed nothing at stock: the old and new FMUs agree to 4e-8 on 14 s of driving, 1e-3 N on wheel load, and neither the method nor the step moved.
 
+## Microduck
+
+A robot demo rather than a game: Pollen Robotics' microduck (https://github.com/pollen-robotics/microduck) driven with a gamepad, its own learned policy run in the page. Pad → command (the robot's `padd` mapping, `robotd`'s per-tick EMA) → 61-wide observation → ONNX → home + 0.9 × action → the trained low-pass (0.7 legs, 0.5 head) → plant, at 50 Hz on plant time. The control tick awaits the inference, so plant and policy stay in lockstep; a slow frame drops time rather than ticks. It breaks two rules the games keep, knowingly: it carries binary assets under a licence (the policies, W5), and it has no single-file build (the runtime's Wasm alone is 14.8 MB).
+
+What velstand does on the stand-in, measured: with a 25 ms joint lag it flails even at zero command, from about 40 ms it stands calmly (joints within 0.15 rad of home) and steps under any command, so the stand-in uses 60 ms. Carried round the stance foot, those steps do not take the trunk where the stick asks at any lag tried (40 to 120 ms); the default carries the trunk at the asked speed and says so. On the bg-sim FMU (`microduck-policy`: 340 states, 41 differential, ROS34PW2 at 1 ms, 1.12 MB of Wasm) the tick costs 2.2 to 2.7 ms standing and 5.0 to 5.7 ms walking in Node, and 4.2 to 5.0 ms in headless Chromium (machine loaded), so the plant runs 3.5 to 9 times faster than real time and the page holds 50 ticks a second. One 10 s run per command: velstand stands on it at zero command (tilt at most 2.24 deg, no drift), shifts its weight and stands at half forward (0.2 m/s asked), and walks at full forward (0.4 m/s asked): 1.82 m in 10 s, 0.24 m/s along the path, curving right to a heading of -56 deg, no fall. The FMU used to stop 0.7 s after a forward command. The cause was not the export's static LU and not a lift-off: index reduction had kept 20 body-momentum components instead of the 14 joint rates (every `ISpatial` momentum preferred itself at the joint rate's priority, and MTK broke the tie by name), and recovering the rates from those momenta became singular; bg-sim's own solver failed at the same instant (E901). bg-sim now passes no `state = :prefer` on from a storage element in derivative causality (W201), so the tree keeps its joint angles and rates (41 states, minimal coordinates), and W219 reports a preferred variable index reduction drops. The page shows a stopped plant in red with the step and the FMU's status, stops running the policy and says "stopped" in the HUD. `apps/web/README.md` has the FMU interface and the numbers; nothing is checked against a real robot.
+
 ## Running
 
 ```
@@ -94,6 +104,8 @@ Port 8831 is the dev server the scripts expect (`GAMES_PORT` overrides it). Neve
 
 - On the F-16: no flaps, ground effect or anti-skid in the model, gear limits and steering assumed (`examples/f16/README.md`), and no gamepad button for the brakes.
 - Touch controls.
+- The microduck on the bg-sim model walks only at full forward command and then at about half the asked speed, curving right; at half command it stands. The model differs from the training simulator (no backlash, fixed 20 ms latency, ideal supply, action scale 0.9 against 1.0, no one-step joint-velocity lag, flat floor, contact law, friction smoothing; `examples/microduck/README.md`), and nothing is compared with a real robot.
+- The microduck's emotions (yes, no, excited), sounds, the idle head and the pad's IMU head control: the robot's, not ported. Its fall detection is meaningless on the stand-in.
 - Device mapping beyond the standard gamepad layout: the desktop apps' per-device configuration did not carry over.
 - Setup for the Cessna and the A109: their exports have start values only. Mass and the like need new tunables, and the start states are trimmed for one mass.
 - More of the cars' setup: springs and dampers are four parameters a corner (one slider per axle needs a way to tie them), and wheelbase, weight distribution and the tyres are in the model's structure or tables. Tyre grip per axle could use the `mu_*` inputs.

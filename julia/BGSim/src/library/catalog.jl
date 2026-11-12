@@ -1507,6 +1507,53 @@ function project_library_dir(dir::AbstractString)
     return isdir(nested) ? nested : String(dir)
 end
 
+# The catalog entries of the drawn subsystem definitions in `dir`: the definition's ports as
+# the interface, nothing else (the pinned parameters are read from the definition itself).
+function _definition_entries(dir::AbstractString)
+    ir = parentmodule(@__MODULE__).IR      # defined after this module is loaded
+    definitions, _ = ir.load_project_definitions(dir)
+    entries = Any[]
+    for name in sort!(collect(keys(definitions)))
+        definition = definitions[name]
+        ports = Any[]
+        inputs = Any[]
+        outputs = Any[]
+        for p in definition.ports
+            if p.kind === :power
+                domain = something(p.domain, :Generic)
+                components = domain_components(domain)
+                width = components === nothing ? 1 : length(components.effort)
+                size = isempty(p.size) ? Int[width] : p.size
+                push!(ports, (name = String(p.name), domain = String(domain), size = size,
+                    frame = p.frame))
+            else
+                decl = (name = String(p.name), type = String(p.type), size = p.size, unit = p.unit)
+                push!(p.direction === :output ? outputs : inputs, decl)
+            end
+        end
+        push!(entries, (
+            ref = "project:" * name,
+            name = name,
+            group = PROJECT_GROUP,
+            release = "",
+            description = definition.description,
+            icon = "",
+            constants = Any[],
+            parameters = Any[],
+            inputs = inputs,
+            outputs = outputs,
+            ports = ports,
+            variables = Any[],
+            causality = Any[],
+            orientation = Any[],
+            source = "",
+            path = "library/" * name * ir.DEFINITION_SUFFIX,
+            subsystem = true,
+        ))
+    end
+    return entries
+end
+
 """
     catalog(project_dir = nothing) -> NamedTuple
 
@@ -1530,9 +1577,20 @@ function catalog(project_dir::Union{Nothing,AbstractString} = nothing)
         append!(blocks, load_project_library(project_library_dir(project_dir)))
     end
     sort!(blocks; by = b -> b.ref)
+    entries = Any[to_namedtuple(b) for b in blocks]
+    if project_dir !== nothing
+        # Drawn subsystem definitions (`library/<Name>.bgsub.json`) are listed with their
+        # ports. A name that a `.jl` block of the project also has is left to the block: the
+        # backend refuses to write such a pair, and one reference cannot mean two things.
+        taken = Set(b.ref for b in blocks)
+        for entry in _definition_entries(project_library_dir(project_dir))
+            entry.ref in taken || push!(entries, entry)
+        end
+        sort!(entries; by = e -> e.ref)
+    end
     return (
         language = LANGUAGE_VERSION,
-        blocks = [to_namedtuple(b) for b in blocks],
+        blocks = entries,
         junctions = copy(JUNCTIONS),
         domains = [_catalog_domain(d) for d in DOMAINS],
     )

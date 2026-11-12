@@ -313,7 +313,11 @@ coordinates:
    armature term `Ja * qdd` (`Ja = 0` by default). Without that term MTK alias-eliminates
    `qdot` before it reads the priorities. The structural dummy-derivative selection then
    keeps a body twist component that is identically zero for the geometry (`Body/flow/p.f[6]`
-   of the pendulum), and the initialization is singular.
+   of the pendulum), and the initialization is singular. The derivative-causal body's own
+   `ISpatial/P` `:prefer` is **not** passed on as a priority: at equal priority MTK breaks the
+   tie by variable name, and the floating-base microduck (14 joints) then kept 20 child-body
+   momentum components and no joint rate, which became singular 0.71 s into a walk (E901).
+   W219 reports a preferred variable that index reduction still drops.
 2. **Conservative tearing.** Every bg-sim parameter stays symbolic (D4), so a structurally
    non-zero divisor can be numerically zero: `Ja = 0`, or a zero entry of a mount rotation.
    A W201 model that contains a `Revolute3DRigid` is therefore compiled with

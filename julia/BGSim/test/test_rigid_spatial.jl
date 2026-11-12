@@ -12,7 +12,10 @@
 #   * the compliant `Revolute3D` at k = 1e8 converges to the rigid joint, with and without a
 #     drive torque (the drive sign convention is the compliant joint's);
 #   * the conservative compile (W201 => `allow_parameter = false`, priorities) survives a cache
-#     hit (the rebuilt initialization).
+#     hit (the rebuilt initialization);
+#   * a storage element in derivative causality passes no `:prefer` priority on, so the
+#     floating-base tree of examples/microduck keeps its 14 joint angles and rates, the trunk
+#     pose and the trunk momentum (41 states), and W219 reports a preferred variable not kept.
 using Test
 using BGSim
 import BGSim.IR
@@ -34,6 +37,10 @@ if !isdefined(@__MODULE__, :_msp_double)
 end
 
 const _RSP_JOINT = "stdlib:spatial/Revolute3DRigid"
+
+_rsp_todict(x::AbstractDict) = Dict{String,Any}(String(k) => _rsp_todict(v) for (k, v) in pairs(x))
+_rsp_todict(x::AbstractVector) = Any[_rsp_todict(v) for v in x]
+_rsp_todict(x) = x
 
 """Swap every compliant `Revolute3D` of a document for the rigid joint (drop the held-direction
 parameters and the deflection starts)."""
@@ -108,6 +115,58 @@ end
         ke = _msp_ke(columns, "B1", p.J1, p.m1) .+ _msp_ke(columns, "B2", p.J2, p.m2)
         E = ke .+ _MSP_G .* (p.m1 .* columns["C2/g[7]"] .+ p.m2 .* columns["C5/g[7]"])
         @test maximum(abs.(E .- E[1])) < 1.0e-8 * maximum(ke)
+    end
+
+    # The `state = :prefer` of a storage element in derivative causality (W201) is not a state
+    # priority: every body momentum `ISpatial/P` prefers itself, and at equal priority MTK
+    # breaks the tie by name, not by the physics.
+    @testset "state priorities: a derivative-causal element's preference is dropped" begin
+        doc = _rsp_rigidify!(_msp_double(1.0e7; q1 = 0.4, q2 = 0.6, t_end = 0.1, points = 11))
+        flat = Compile.flatten(IR.parse_model(doc))
+        @test BGSim._needs_index_reduction(flat)
+        dependent = BGSim._derivative_causal(flat)
+        @test !isempty(dependent)
+        lowered = BGSim.lower_flat(flat)
+        vars = BGSim.Num[lowered.vars[v.id] for v in flat.variables]
+        BGSim._state_priorities!(vars, flat)
+        priority(i) = ModelingToolkit.state_priority(vars[i])     # 0 when none is set
+        preferred = [i for (i, v) in enumerate(flat.variables) if get(v.attrs, :state, nothing) === :prefer]
+        dropped = [i for i in preferred if flat.variables[i].origin.path in dependent]
+        kept = setdiff(preferred, dropped)
+        @test !isempty(dropped) && all(i -> priority(i) == 0, dropped)
+        @test all(i -> priority(i) == 10, kept)
+        @test any(i -> endswith(flat.variables[i].id, "/qdot"), kept)
+        @test BGSim._preferred_states(flat) == Set(flat.variables[i].id for i in kept)
+    end
+
+    # A floating-base tree: the 14 rigid joints of examples/microduck on a free trunk. With the
+    # body momenta preferred too, MTK kept 20 child-body momentum components and no joint rate;
+    # recovering the rates from them went singular after 0.71 s of walking (E901).
+    @testset "floating-base tree keeps q, qdot and the trunk (minimal coordinates), W219" begin
+        project = normpath(joinpath(@__DIR__, "..", "..", "..", "examples", "microduck"))
+        doc = _rsp_todict(BGSim.JSON3.read(read(joinpath(project, "models",
+            "microduck-policy.bgmodel.json"), String)))
+        flat = Compile.flatten(IR.parse_model(doc); project_dir = project)
+        csys = BGSim._compile_lowered(flat, BGSim.compile_key(flat), Set{String}()).csys
+        states = Set(BGSim._var_name(x) for x in ModelingToolkit.collect_differential_variables(csys))
+        joints = [v.id for v in flat.variables if endswith(v.id, "_joint/qdot")]
+        @test length(joints) == 14
+        @test length(states) == 41                                 # 14 q + 14 qdot + 7 pose + 6 P
+        @test all(in(states), joints)
+        @test count(s -> startswith(s, "__bgint/"), states) == 14
+        @test count(s -> startswith(s, "Free/"), states) == 7
+        @test sort([s for s in states if occursin("/inertia/P", s)]) == ["trunk_link/inertia/P[$k]" for k in 1:6]
+        warnings = Compile.post_compile_warnings(flat, csys)
+        @test !any(d -> d.code == "W219", warnings)
+        # W219 names a preferred variable that index reduction did not keep
+        qd = only(v for v in flat.variables if v.id == "left_knee_joint/qdot")
+        w = Compile._w219(flat, csys, [qd])
+        @test length(w) == 1 && only(w).code == "W219" && only(w).severity == "warning"
+        @test occursin("`left_knee_joint/qdot` is declared `state = :prefer`", only(w).message)
+        @test only(w).path == "left_knee_joint"
+        # ... but not a derivative-causal element's momentum, whose preference is not passed on
+        pk = only(v for v in flat.variables if v.id == "left_knee_link/inertia/P[1]")
+        @test isempty(Compile._w219(flat, csys, [pk]))
     end
 
     # D-EX13: the index-reduced DAE keeps every body twist and reaction algebraic, and MTK's

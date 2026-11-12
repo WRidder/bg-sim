@@ -147,7 +147,7 @@ export interface ModelNode {
   rotation?: number;
   flipX?: boolean;
   /**
-   * Parameter values as constant expression strings, keyed by parameter name.
+   * Parameter values as constant expression strings, keyed by parameter name. On an instance of a drawn subsystem definition the key is a pinned path inside the definition (rotor/J).
    */
   params?: {
     [k: string]: string;
@@ -159,7 +159,7 @@ export interface ModelNode {
     [k: string]: ModelConstantValue;
   };
   /**
-   * Start-value overrides as expression strings, keyed by variable name.
+   * Start-value overrides as expression strings, keyed by variable name. On an instance of a textual composite or of a drawn subsystem definition the key is <component>/<variable>.
    */
   starts?: {
     [k: string]: string;
@@ -186,6 +186,10 @@ export interface ModelBlockSubsystem {
   subsystem: {
     ports: ModelSubsystemPort[];
     diagram: ModelDiagram;
+    /**
+     * Set while a model is open in the editor: this subsystem is the editor's working copy of the library subsystem of that name, kept equal to the definition except for the pinned values. The compiler treats it as an ordinary subsystem. A saved model stores the node as an instance instead (block.ref project:<name>, with its pinned values in params and starts).
+     */
+    definition?: string;
     $comment?: string;
   };
   $comment?: string;

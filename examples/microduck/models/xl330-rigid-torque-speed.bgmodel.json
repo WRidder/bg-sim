@@ -1,0 +1,358 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "xl330-rigid-torque-speed",
+  "$comment": "One XL330Rigid instance on a speed dynamometer (no backlash).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Goal",
+        "name": "Goal",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Supply",
+        "name": "Supply",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 0,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "v_bat"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Servo",
+        "name": "Servo",
+        "block": {
+          "ref": "project:XL330Rigid"
+        },
+        "position": {
+          "x": 200,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Kp",
+        "name": "Kp",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 0,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "kp_fw"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Angle",
+        "name": "Angle",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 0,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "SpeedRamp",
+        "name": "SpeedRamp",
+        "block": {
+          "ref": "stdlib:sources/Ramp"
+        },
+        "position": {
+          "x": 420,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_start": "0.5",
+          "slope": "4.0",
+          "initial": "-8.0",
+          "duration": "7.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Dyno",
+        "name": "Dyno",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": 420,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s0001",
+        "kind": "signal",
+        "from": {
+          "node": "Kp",
+          "port": "y"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "kp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0002",
+        "kind": "signal",
+        "from": {
+          "node": "Angle",
+          "port": "y"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0003",
+        "kind": "signal",
+        "from": {
+          "node": "Goal",
+          "port": "y"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0004",
+        "kind": "bond",
+        "from": {
+          "node": "Supply",
+          "port": "p"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0005",
+        "kind": "signal",
+        "from": {
+          "node": "SpeedRamp",
+          "port": "y"
+        },
+        "to": {
+          "node": "Dyno",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0006",
+        "kind": "bond",
+        "from": {
+          "node": "Dyno",
+          "port": "p"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "horn"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**Torque-speed curve.** A dynamometer (MSf) turns the horn from -8 to 20 rad/s while the goal is far ahead, so the firmware asks for full PWM. Servo/tau_l is the torque at the horn: the current-limited stall line (i_limit) then the back-EMF line to the free speed v_bat/kt, minus the friction and the armature torque.",
+        "x": 0,
+        "y": -200,
+        "w": 700,
+        "h": 120,
+        "color": "blue"
+      },
+      {
+        "id": "a002",
+        "kind": "text",
+        "text": "XL330Rigid has no armature of its own (the joint carries it), so Servo/Transmit/y here is kt i minus the friction, without the armature torque of the ramp. The encoder input is held at 0: the goal is 1000 rad ahead either way.",
+        "x": 0,
+        "y": -320,
+        "w": 700,
+        "h": 100,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 8.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1601
+    },
+    "event_limit": 100000
+  },
+  "parameters": [
+    {
+      "name": "kp_fw",
+      "value": "200.0",
+      "unit": "1",
+      "description": "XL330 Position P Gain register (robotd gain 200; standing 0.8x, limp 50)"
+    },
+    {
+      "name": "i_limit",
+      "value": "1.75",
+      "unit": "A",
+      "description": "Firmware current limit (BAM/training 1.75 A; impact-guard firmware on the robot 1.0 A)"
+    },
+    {
+      "name": "t_latency",
+      "value": "0.02",
+      "unit": "s",
+      "description": "Command latency, goal written to goal applied (a multiple of 5 ms)"
+    },
+    {
+      "name": "v_bat",
+      "value": "7.4",
+      "unit": "V",
+      "description": "Supply voltage (2S Li-ion: 8.2 V full, 7.4 V nominal, 6.6 V empty under load)"
+    },
+    {
+      "name": "k_motor",
+      "value": "0.36601349688984386",
+      "unit": "N*m/A",
+      "description": "Torque constant at the horn, also the back-EMF constant (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "r_motor",
+      "value": "2.8113923539223227",
+      "unit": "Ohm",
+      "description": "Winding plus driver resistance (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "armature",
+      "value": "0.0018077432831600838",
+      "unit": "kg*m^2",
+      "description": "Rotor and gears reflected to the horn (BAM XL330 M6 fit); the rotor inertia of XL330 is armature/288.4^2, the joint of XL330Rigid carries it as Ja"
+    }
+  ],
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Horn speed",
+      "signals": [
+        "SpeedRamp/y",
+        "Servo/HornSpeed/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Torques",
+      "signals": [
+        "Servo/MotorTorque/y",
+        "Servo/Transmit/y",
+        "Servo/Friction/tau_f"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Current and duty",
+      "signals": [
+        "Servo/Current/y",
+        "Servo/PwmLimit/y"
+      ]
+    }
+  ]
+}

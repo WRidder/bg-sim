@@ -621,7 +621,8 @@ Whether the model is a higher-index DAE built for index reduction. That means tw
 * the model contains a block of `_INDEX_REDUCED_BLOCKS`.
 
 Such a model is compiled **conservatively**. The `state = :prefer` / `:avoid` hints become
-MTK state priorities, so the dummy-derivative selection keeps the joint rates. Neither the
+MTK state priorities, except the `:prefer` of a storage element in derivative causality (see
+`_state_priorities!`), so the dummy-derivative selection keeps the joint rates. Neither the
 tearing of the system nor that of its initialization system may divide by a parameter
 expression (`allow_parameter = false`). Every bg-sim parameter stays a symbolic runtime
 parameter (D4). An expression that is structurally non-zero can then be numerically zero,
@@ -645,15 +646,43 @@ end
 # variable as the state of its constraint group (a rigid joint's rate) instead of an arbitrary
 # body twist component. Applied to index-reduced models only: elsewhere MTK's tearing would
 # also read the priorities, and those models are left exactly as they were.
+#
+# The `:prefer` of a storage element that SCAP put in **derivative causality** (W201) is not
+# passed on. Every storage element prefers its own state (`ISpatial/P` included), so without
+# this a body hanging on a rigid joint competes with the joint rate at the same priority, and
+# MTK breaks such a tie by the variable's canonical rank (its name), not by the physics. In a
+# floating-base tree (examples/microduck, 14 rigid joints) it then kept 20 child-body momentum
+# components and none of the 14 joint rates; recovering the rates from those momenta is
+# pose-dependent and became singular after 0.71 s of walking (E901). SCAP's derivative
+# causality is exactly the statement that the element's state is not independent, so its
+# hint is dropped (priority 0, MTK's default) and the joint rates win. A storage element in
+# integral causality (the floating trunk's momentum, a rotor, a spring) keeps its `:prefer`.
+# W219 (`Compile._w219`) reports a preferred variable index reduction still did not keep.
 const _STATE_PRIORITY = Dict(:prefer => 10, :avoid => -10)
 
 function _state_priorities!(vars::Vector{Num}, flat::Flat.FlatModel)
+    dependent = _derivative_causal(flat)
     for (i, v) in enumerate(flat.variables)
-        p = get(_STATE_PRIORITY, get(v.attrs, :state, nothing), nothing)
+        hint = get(v.attrs, :state, nothing)
+        hint === :prefer && v.origin.path in dependent && continue
+        p = get(_STATE_PRIORITY, hint, nothing)
         p === nothing && continue
         vars[i] = Symbolics.setmetadata(vars[i], ModelingToolkit.VariableStatePriority, p)
     end
     return vars
+end
+
+# The instance paths of the storage elements the causality analysis put in derivative
+# causality (SCAP's W201 names the element by its instance path).
+_derivative_causal(flat::Flat.FlatModel) =
+    Set{String}(d.path for d in flat.diagnostics if d.code == "W201" && d.path !== nothing)
+
+# The ids of the variables whose `state = :prefer` becomes a state priority (W219 checks that
+# the compiled differential states include them).
+function _preferred_states(flat::Flat.FlatModel)
+    dependent = _derivative_causal(flat)
+    return Set{String}(v.id for v in flat.variables
+                       if get(v.attrs, :state, nothing) === :prefer && !(v.origin.path in dependent))
 end
 
 # The names of the variables that `mtkcompile` integrated analytically in `csys` (their

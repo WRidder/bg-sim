@@ -38,6 +38,7 @@ Errors and warnings also mark the canvas.
 | W206 | the event limit was reached; the message names the condition that fired most when one did |
 | W216 | two random sources share a `seed`, so they draw the same sequence |
 | W217 | a [StopSimulation](page:control-blocks) block ended the run; the message names the block and the time |
+| W219 | in a model reduced by index reduction (rigid joints, `Revolute3DRigid`), a variable declared `state = :prefer` (a joint rate `qdot`) was not kept as a differential state; the message names the states kept instead. Its value is then recovered from the constraints, which can become singular in some poses and stop the run (E901). The preference of a storage element in derivative causality (W201) is ignored on purpose, so a body hanging on a rigid joint does not compete with the joint rate |
 | W203, W207–W215 | export warnings |
 
 The message of each item explains the specific problem; this table is only a guide to the number ranges.

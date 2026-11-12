@@ -17,7 +17,8 @@ import type { Model } from "../contracts/model";
 import { fetchCatalog } from "../library/catalogClient";
 import { useCatalogStore } from "../library/catalogStore";
 import { useDocumentStore, type DocumentStatus } from "./documentStore";
-import { ensureProject, getModel } from "./modelApi";
+import { openWithDefinitions } from "./definitionFiles";
+import { ensureProject, getModel, listSubsystems } from "./modelApi";
 import { createEmptyModel } from "./modelFactory";
 
 export const DEFAULT_PROJECT = "demo";
@@ -77,7 +78,17 @@ export function startSession(force = false): Promise<void> {
       if (attempt !== generation) {
         return;
       }
-      const document: Model = model ?? createEmptyModel(route.model, catalog.language);
+      // The library subsystems of the project: the model's instances of them are opened as
+      // working copies (library/linkedSubsystems.ts), and saving writes them back.
+      const definitions = await listSubsystems(route.project);
+      if (attempt !== generation) {
+        return;
+      }
+      const document: Model = openWithDefinitions(
+        route.project,
+        model ?? createEmptyModel(route.model, catalog.language),
+        definitions,
+      );
       useDocumentStore
         .getState()
         .openDocument(route.project, route.model, document, { persisted: model !== null });

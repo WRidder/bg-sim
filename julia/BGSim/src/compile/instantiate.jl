@@ -2231,9 +2231,11 @@ _repr_value(v::Bool) = v ? "true" : "false"
 _repr_value(v::AbstractFloat) = repr(Float64(v))
 _repr_value(v::Real) = string(v)
 _repr_value(v::AbstractVector) = "[" * join((_repr_value(x) for x in v), ", ") * "]"
+# A matrix is written as the block language's matrix literal (`[a b; c d]`): this text is a
+# component's parameter value and is parsed again like a node's `params` entry.
 _repr_value(v::AbstractMatrix) =
-    "[" * join(("[" * join((_repr_value(v[i, j]) for j in 1:size(v, 2)), ", ") * "]"
-                for i in 1:size(v, 1)), ", ") * "]"
+    "[" * join((join((_repr_value(v[i, j]) for j in 1:size(v, 2)), " ")
+                for i in 1:size(v, 1)), "; ") * "]"
 _repr_value(v) = string(v)
 
 """Report a composite-expansion problem with the component's instance path (plan 3.4)."""
@@ -2897,7 +2899,8 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
         (from_instance === nothing) && continue
         (to_instance === nothing) && continue
         kind = _text_connection_kind!(
-            b, node, path, named, BGSim.connect_from(c), BGSim.connect_to(c), junction_names,
+            b, node, path, named, BGSim.connect_from(c), BGSim.connect_to(c), junction_names;
+            forced = BGSim.connect_kind(c),
         )
         kind === nothing && continue
         f = IR.ModelEndpoint(get(ids, from_instance, ""), _conn_port(from, junction_names))
@@ -2967,11 +2970,14 @@ end
 """
 The plan D7 kind of one textual `connect`: a signal when either side is a signal port (from
 output to input), a bond when either power port is `Generic` **or one side is a junction
-node**, a wire for two concrete power ports. Missing ports are E102 on the component, which
-is the same code and shape the model-JSON flattener reports.
+node**, a wire for two concrete power ports. `bond(a, b)` (`forced = :bond`) is a bond between
+two power ports of any domain, the directed bond a diagram draws between two concrete ports.
+Missing ports are E102 on the component, which is the same code and shape the model-JSON
+flattener reports.
 """
 function _text_connection_kind!(
-    b, node, path, named, from, to, junctions = Set{Symbol}(),
+    b, node, path, named, from, to, junctions = Set{Symbol}();
+    forced::Symbol = :auto,
 )
     fi = _conn_instance(from, junctions)
     ti = _conn_instance(to, junctions)
@@ -3015,8 +3021,20 @@ function _text_connection_kind!(
         return nothing
     end
     if kf in (:input, :output) || kt in (:input, :output)
+        if forced === :bond
+            # `bond(a, b)` states a power bond; a signal port cannot carry one.
+            instance, component, port = kf in (:input, :output) ? (fi, fb, fp) : (ti, tb, tp)
+            _report_component!(
+                b, node, _join(path, String(instance)), component.ref;
+                code = "E003",
+                message = "`bond` of `$(node.name)` names the signal port `$port` of `$(component.name)`",
+                hint = "a bond joins two power ports; connect a signal with `connect`",
+            )
+            return nothing
+        end
         return :signal
     end
+    forced === :bond && return :bond
     df = _declared_port_domain(fb, fp)
     dt = _declared_port_domain(tb, tp)
     return (df === :Generic || dt === :Generic) ? :bond : :wire

@@ -40,6 +40,44 @@ export interface BlockNodeData extends Record<string, unknown> {
   image: ModelNodeImage | null;
   /** Inside a subsystem: internal port name -> the subsystem port(s) exposing it. */
   exposed: Readonly<Record<string, string>>;
+  /**
+   * An instance of a library subsystem: the definition's name and how many of its
+   * pinned values this instance sets itself. Null for every other node.
+   */
+  linked: { definition: string; changed: number } | null;
+}
+
+/** The mark of an instance of a library subsystem: a link, the definition, its own values. */
+function LinkBadge({ nodeId, linked }: { nodeId: string; linked: NonNullable<BlockNodeData["linked"]> }) {
+  const own =
+    linked.changed === 0
+      ? "all values as in the library"
+      : `${linked.changed} ${linked.changed === 1 ? "value" : "values"} set on this instance`;
+  return (
+    <span
+      className="block-node__link"
+      data-testid={`node-link-${nodeId}`}
+      data-definition={linked.definition}
+      data-changed={linked.changed}
+      title={`Instance of the library subsystem ${linked.definition}: ${own}`}
+    >
+      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
+        <path
+          d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="block-node__link-name">{linked.definition}</span>
+      {linked.changed > 0 ? (
+        <span className="block-node__link-changed" data-testid={`node-link-changed-${nodeId}`}>
+          {linked.changed}
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export type BlockNodeType = Node<BlockNodeData, "block" | "subsystem">;
@@ -235,6 +273,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
           <BlockIcon icon={iface.icon} name={iface.title} size={38} />
         </div>
       )}
+      {data.linked !== null ? <LinkBadge nodeId={data.nodeId} linked={data.linked} /> : null}
       {portHandles}
     </div>
   );

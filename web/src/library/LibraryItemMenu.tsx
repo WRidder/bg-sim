@@ -1,13 +1,17 @@
 /**
  * The right-click menu of a library entry (list row or grid tile): **Show source** opens
  * the block in the Code tab, **Info** opens the block help. Junctions have no source, so
- * they get Info only. Keyboard: the first item takes focus, arrows move, Esc closes.
+ * they get Info only. A library subsystem (a drawn definition) has no source either; it
+ * gets **Remove from library**, which asks first. Keyboard: the first item takes focus,
+ * arrows move, Esc closes.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useHelpStore } from "../app/helpStore";
 import { requestSource } from "../code/codeSession";
+import { useDocumentStore } from "../state/documentStore";
+import { definitionsUsing, instanceCount } from "./linkedSubsystems";
 
 export interface LibraryMenuState {
   x: number;
@@ -21,6 +25,13 @@ export interface LibraryMenuState {
 
 export function LibraryItemMenu({ menu, onClose }: { menu: LibraryMenuState; onClose: () => void }) {
   const root = useRef<HTMLDivElement>(null);
+  const [removing, setRemoving] = useState(false);
+  const doc = useDocumentStore((state) => state.doc);
+  // A library subsystem: `project:<Name>` with a definition in the open document.
+  const definition = menu.ref.startsWith("project:") ? menu.ref.slice("project:".length) : null;
+  const isDefinition = definition !== null && doc?.definitions?.[definition] !== undefined;
+  const instances = isDefinition && doc !== null ? instanceCount(doc, definition) : 0;
+  const users = isDefinition ? definitionsUsing(doc?.definitions, definition) : [];
 
   useEffect(() => {
     root.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
@@ -60,7 +71,7 @@ export function LibraryItemMenu({ menu, onClose }: { menu: LibraryMenuState; onC
         }
       }}
     >
-      {menu.hasSource ? (
+      {menu.hasSource && !isDefinition ? (
         <button
           type="button"
           role="menuitem"
@@ -87,6 +98,44 @@ export function LibraryItemMenu({ menu, onClose }: { menu: LibraryMenuState; onC
       >
         Info
       </button>
+      {isDefinition && !removing ? (
+        <button
+          type="button"
+          role="menuitem"
+          data-testid="library-menu-remove"
+          title="Remove this subsystem from the project library"
+          onClick={() => setRemoving(true)}
+        >
+          Remove from library…
+        </button>
+      ) : null}
+      {isDefinition && removing ? (
+        <div className="library-menu__confirm" data-testid="library-menu-remove-confirm">
+          <p>
+            Remove <strong>{definition}</strong> from the library?{" "}
+            {instances === 0
+              ? "This model has no instance of it."
+              : `Its ${instances} ${instances === 1 ? "instance" : "instances"} in this model ${instances === 1 ? "becomes an ordinary subsystem" : "become ordinary subsystems"}.`}
+            {users.length > 0 ? ` The copies inside ${users.join(", ")} too.` : ""} Another model of
+            the project that uses it shows an unknown block. Ctrl+Z brings it back.
+          </p>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="library-menu-remove-yes"
+            onClick={() =>
+              run(() => {
+                useDocumentStore.getState().removeDefinition(definition ?? "");
+              })
+            }
+          >
+            Remove {definition}
+          </button>
+          <button type="button" role="menuitem" data-testid="library-menu-remove-no" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

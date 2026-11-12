@@ -1,0 +1,1313 @@
+{
+  "format": "bgsim.subsystem",
+  "name": "XL330Rigid",
+  "description": "Dynamixel XL330-M288-T for a robot model that runs in real time: the firmware P law with BAM's current limiter, the winding and the BAM M6 friction of XL330, with a rigid gear (the joint carries the armature), the joint angle as the encoder, the gain as an input and the friction's load torque sampled every 5 ms (no algebraic loop). Reads the globals k_motor, r_motor, i_limit and t_latency.",
+  "ports": [
+    {
+      "name": "q_goal",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "rad",
+      "node": "Latency",
+      "port": "u"
+    },
+    {
+      "name": "kp",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "1",
+      "node": "PGain",
+      "port": "u1"
+    },
+    {
+      "name": "q",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "rad",
+      "node": "GoalMux",
+      "port": "u2"
+    },
+    {
+      "name": "vbus",
+      "kind": "power",
+      "domain": "Electrical",
+      "size": [
+        1
+      ],
+      "node": "Supply",
+      "port": "junction"
+    },
+    {
+      "name": "horn",
+      "kind": "power",
+      "domain": "Rotation",
+      "size": [
+        1
+      ],
+      "node": "Horn",
+      "port": "junction"
+    },
+    {
+      "name": "dq",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "rad/s",
+      "node": "HornSpeed",
+      "port": "y"
+    },
+    {
+      "name": "i",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "A",
+      "node": "Current",
+      "port": "y"
+    },
+    {
+      "name": "tau_m",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "N*m",
+      "node": "MotorTorque",
+      "port": "y"
+    },
+    {
+      "name": "tau_l",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "N*m",
+      "node": "Transmit",
+      "port": "y"
+    },
+    {
+      "name": "duty",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "1",
+      "node": "PwmLimit",
+      "port": "y"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Latency",
+        "name": "Latency",
+        "block": {
+          "ref": "stdlib:continuous/TransportDelay"
+        },
+        "position": {
+          "x": 80,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "initial": "0.0"
+        },
+        "constants": {
+          "delay_time": "t_latency",
+          "sample_period": "0.005"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "GoalMux",
+        "name": "GoalMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 220,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Error",
+        "name": "Error",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 340,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, -1.0]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PGain",
+        "name": "PGain",
+        "block": {
+          "ref": "stdlib:continuous/Product"
+        },
+        "position": {
+          "x": 460,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ErrorGain",
+        "name": "ErrorGain",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 560,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "4096/(2*pi)/(256*885)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Floor",
+        "name": "Floor",
+        "block": {
+          "ref": "stdlib:continuous/Max"
+        },
+        "position": {
+          "x": 680,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Ceil",
+        "name": "Ceil",
+        "block": {
+          "ref": "stdlib:continuous/Min"
+        },
+        "position": {
+          "x": 800,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PwmLimit",
+        "name": "PwmLimit",
+        "block": {
+          "ref": "stdlib:continuous/Saturation"
+        },
+        "position": {
+          "x": 920,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "lower": "-1.0",
+          "upper": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Emf",
+        "name": "Emf",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 340,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "k_motor"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "EmfDuty",
+        "name": "EmfDuty",
+        "block": {
+          "ref": "stdlib:continuous/Divide"
+        },
+        "position": {
+          "x": 460,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "RIlim",
+        "name": "RIlim",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 340,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "r_motor*i_limit"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Span",
+        "name": "Span",
+        "block": {
+          "ref": "stdlib:continuous/Divide"
+        },
+        "position": {
+          "x": 460,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "HiMux",
+        "name": "HiMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 560,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Hi",
+        "name": "Hi",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 660,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, 1.0]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "LoMux",
+        "name": "LoMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 560,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Lo",
+        "name": "Lo",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 660,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, -1.0]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Supply",
+        "name": "Supply",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 80,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "VbusSense",
+        "name": "VbusSense",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": 80,
+          "y": 590
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "HBridge",
+        "name": "HBridge",
+        "block": {
+          "ref": "stdlib:bondgraph/MTF"
+        },
+        "position": {
+          "x": 200,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Winding",
+        "name": "Winding",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 320,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Rw",
+        "name": "Rw",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 280,
+          "y": 590
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "r_motor"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Current",
+        "name": "Current",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 360,
+          "y": 590
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Motor",
+        "name": "Motor",
+        "block": {
+          "ref": "project:MotorGY"
+        },
+        "position": {
+          "x": 440,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "k_motor"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Horn",
+        "name": "Horn",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 600,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Friction",
+        "name": "Friction",
+        "block": {
+          "ref": "project:BamFriction"
+        },
+        "position": {
+          "x": 560,
+          "y": 610
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "fb": "0.004771183165566",
+          "fs": "0.004676345799486616",
+          "lfm": "0.2667860954283698",
+          "lfe": "8.515871897059342e-06",
+          "lfms": "1.0722918395099123e-05",
+          "lfes": "0.08077928978935671",
+          "lfmq": "0.009972471242139415",
+          "lfeq": "0.004902565732332559",
+          "dtheta_s": "2.890372094130307",
+          "alpha": "8.683259907618984",
+          "fv": "0.005359668274599504",
+          "scale": "1.0",
+          "ws": "0.002"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "HornSpeed",
+        "name": "HornSpeed",
+        "block": {
+          "ref": "stdlib:converters/SpeedSensor"
+        },
+        "position": {
+          "x": 660,
+          "y": 610
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "MotorTorque",
+        "name": "MotorTorque",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 440,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "k_motor"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Transmit",
+        "name": "Transmit",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 600,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "signs": "[1.0, -1.0]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "TransmitMux",
+        "name": "TransmitMux",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 500,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "LoadSample",
+        "name": "LoadSample",
+        "block": {
+          "ref": "stdlib:discrete/ZOH"
+        },
+        "position": {
+          "x": 720,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_period": "0.005"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s0001",
+        "kind": "signal",
+        "from": {
+          "node": "Latency",
+          "port": "y"
+        },
+        "to": {
+          "node": "GoalMux",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0002",
+        "kind": "signal",
+        "from": {
+          "node": "GoalMux",
+          "port": "y"
+        },
+        "to": {
+          "node": "Error",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0003",
+        "kind": "signal",
+        "from": {
+          "node": "Error",
+          "port": "y"
+        },
+        "to": {
+          "node": "PGain",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0004",
+        "kind": "signal",
+        "from": {
+          "node": "PGain",
+          "port": "y"
+        },
+        "to": {
+          "node": "ErrorGain",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0005",
+        "kind": "signal",
+        "from": {
+          "node": "ErrorGain",
+          "port": "y"
+        },
+        "to": {
+          "node": "Floor",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0006",
+        "kind": "signal",
+        "from": {
+          "node": "Lo",
+          "port": "y"
+        },
+        "to": {
+          "node": "Floor",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0007",
+        "kind": "signal",
+        "from": {
+          "node": "Floor",
+          "port": "y"
+        },
+        "to": {
+          "node": "Ceil",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0008",
+        "kind": "signal",
+        "from": {
+          "node": "Hi",
+          "port": "y"
+        },
+        "to": {
+          "node": "Ceil",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0009",
+        "kind": "signal",
+        "from": {
+          "node": "Ceil",
+          "port": "y"
+        },
+        "to": {
+          "node": "PwmLimit",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0010",
+        "kind": "signal",
+        "from": {
+          "node": "Emf",
+          "port": "y"
+        },
+        "to": {
+          "node": "EmfDuty",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0011",
+        "kind": "signal",
+        "from": {
+          "node": "RIlim",
+          "port": "y"
+        },
+        "to": {
+          "node": "Span",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0012",
+        "kind": "signal",
+        "from": {
+          "node": "EmfDuty",
+          "port": "y"
+        },
+        "to": {
+          "node": "HiMux",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0013",
+        "kind": "signal",
+        "from": {
+          "node": "Span",
+          "port": "y"
+        },
+        "to": {
+          "node": "HiMux",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0014",
+        "kind": "signal",
+        "from": {
+          "node": "HiMux",
+          "port": "y"
+        },
+        "to": {
+          "node": "Hi",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0015",
+        "kind": "signal",
+        "from": {
+          "node": "EmfDuty",
+          "port": "y"
+        },
+        "to": {
+          "node": "LoMux",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0016",
+        "kind": "signal",
+        "from": {
+          "node": "Span",
+          "port": "y"
+        },
+        "to": {
+          "node": "LoMux",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0017",
+        "kind": "signal",
+        "from": {
+          "node": "LoMux",
+          "port": "y"
+        },
+        "to": {
+          "node": "Lo",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0018",
+        "kind": "bond",
+        "from": {
+          "node": "Supply"
+        },
+        "to": {
+          "node": "VbusSense",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0019",
+        "kind": "bond",
+        "from": {
+          "node": "Supply"
+        },
+        "to": {
+          "node": "HBridge",
+          "port": "p2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0020",
+        "kind": "bond",
+        "from": {
+          "node": "HBridge",
+          "port": "p1"
+        },
+        "to": {
+          "node": "Winding"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0021",
+        "kind": "bond",
+        "from": {
+          "node": "Winding"
+        },
+        "to": {
+          "node": "Rw",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0022",
+        "kind": "bond",
+        "from": {
+          "node": "Winding"
+        },
+        "to": {
+          "node": "Current",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0023",
+        "kind": "bond",
+        "from": {
+          "node": "Winding"
+        },
+        "to": {
+          "node": "Motor",
+          "port": "e"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0024",
+        "kind": "bond",
+        "from": {
+          "node": "Motor",
+          "port": "m"
+        },
+        "to": {
+          "node": "Horn"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0025",
+        "kind": "bond",
+        "from": {
+          "node": "Horn"
+        },
+        "to": {
+          "node": "Friction",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0026",
+        "kind": "bond",
+        "from": {
+          "node": "Horn"
+        },
+        "to": {
+          "node": "HornSpeed",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0027",
+        "kind": "signal",
+        "from": {
+          "node": "PwmLimit",
+          "port": "y"
+        },
+        "to": {
+          "node": "HBridge",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0028",
+        "kind": "signal",
+        "from": {
+          "node": "HornSpeed",
+          "port": "y"
+        },
+        "to": {
+          "node": "Emf",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0029",
+        "kind": "signal",
+        "from": {
+          "node": "VbusSense",
+          "port": "y"
+        },
+        "to": {
+          "node": "EmfDuty",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0030",
+        "kind": "signal",
+        "from": {
+          "node": "VbusSense",
+          "port": "y"
+        },
+        "to": {
+          "node": "Span",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0031",
+        "kind": "signal",
+        "from": {
+          "node": "Current",
+          "port": "y"
+        },
+        "to": {
+          "node": "MotorTorque",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0032",
+        "kind": "signal",
+        "from": {
+          "node": "MotorTorque",
+          "port": "y"
+        },
+        "to": {
+          "node": "Friction",
+          "port": "tau_m"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0033",
+        "kind": "signal",
+        "from": {
+          "node": "MotorTorque",
+          "port": "y"
+        },
+        "to": {
+          "node": "TransmitMux",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0034",
+        "kind": "signal",
+        "from": {
+          "node": "Friction",
+          "port": "tau_f"
+        },
+        "to": {
+          "node": "TransmitMux",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0035",
+        "kind": "signal",
+        "from": {
+          "node": "TransmitMux",
+          "port": "y"
+        },
+        "to": {
+          "node": "Transmit",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0036",
+        "kind": "signal",
+        "from": {
+          "node": "Transmit",
+          "port": "y"
+        },
+        "to": {
+          "node": "LoadSample",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0037",
+        "kind": "signal",
+        "from": {
+          "node": "LoadSample",
+          "port": "y"
+        },
+        "to": {
+          "node": "Friction",
+          "port": "tau_l"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**Firmware (Position Control Mode).** duty = kp 4096/(2 pi)/(256 885) (goal - q), kp the Position P Gain register (an input: the robot changes it every tick); clamped to the current-limit window (kt w +- R i_limit)/V_bus [BAM] and to +-100 % PWM. The goal arrives t_latency late. q is the joint angle (the encoder).",
+        "x": 0,
+        "y": -170,
+        "w": 950,
+        "h": 110,
+        "color": "blue"
+      },
+      {
+        "id": "a002",
+        "kind": "text",
+        "text": "**Motor at the output, rigid gear (BAM in mjlab).** H-bridge MTF (duty) -> winding R -> GY kt (output side) -> horn, with the BAM M6 friction. The armature is the joint's (Revolute3DRigid Ja). The friction reads the torque delivered to the joint sampled every 5 ms (LoadSample), as BAM reads the previous physics step. No backlash.",
+        "x": 0,
+        "y": 860,
+        "w": 1100,
+        "h": 110,
+        "color": "blue"
+      }
+    ]
+  },
+  "pins": {
+    "params": [
+      "Friction/scale",
+      "Friction/ws",
+      "Latency/initial"
+    ],
+    "starts": []
+  }
+}

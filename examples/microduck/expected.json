@@ -1,0 +1,678 @@
+{
+  "project": "microduck",
+  "description": "The XL330 actuator on its bench against the BAM simulator and the analytic torque-speed curve; the robot held by the trunk against the quasi-static gravity sag; the robot on the floor against the tipping time reported by the microduck design notes.",
+  "models": {
+    "xl330-step": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 0.15,
+          "value": 0.053517597368433645,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 0.2,
+          "value": 0.2898058259906302,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 0.3,
+          "value": 0.7691046159215453,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 0.5,
+          "value": 0.9084113896782584,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 0.85,
+          "value": 0.9084113896782584,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 0.95,
+          "value": 0.8504894289910064,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 1.0,
+          "value": 0.5913179335944072,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 1.1,
+          "value": 0.0869289947629653,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Encoder/y",
+          "t": 1.5,
+          "value": -0.0173574952495717,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Servo/Encoder/y",
+          "t": 1.6,
+          "value": -0.0173574952495717,
+          "abs": 0.002,
+          "note": "rest angle after the return: P gain against gravity inside the friction budget (BAM simulator)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/MotorTorque/y",
+          "t": 0.5,
+          "value": 0.05077800915998381,
+          "abs": 0.005,
+          "note": "holding torque of the arm at the 1 rad goal (BAM simulator)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E106"
+          ],
+          "note": "no causality conflicts. W202 (algebraic loops through Backlash/Transmit and Motor/Rw in every XL330) is expected: the friction reads the transmitted torque and the motor current"
+        }
+      ]
+    },
+    "xl330-torque-speed": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 1.0,
+          "value": 0.8411117975293874,
+          "abs": 0.0005,
+          "note": "horn torque at -6 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 1.75,
+          "value": 0.8443686466087911,
+          "abs": 0.0005,
+          "note": "horn torque at -3 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 2.25,
+          "value": 0.8954111588977783,
+          "abs": 0.0005,
+          "note": "horn torque at -1 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 2.75,
+          "value": 0.41336693360301074,
+          "abs": 0.0005,
+          "note": "horn torque at 1 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 3.25,
+          "value": 0.4313976522942832,
+          "abs": 0.0005,
+          "note": "horn torque at 3 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 3.75,
+          "value": 0.4308366574449204,
+          "abs": 0.0005,
+          "note": "horn torque at 5 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 4.125,
+          "value": 0.4227972234958107,
+          "abs": 0.0005,
+          "note": "horn torque at 6.5 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 4.5,
+          "value": 0.3719893034958379,
+          "abs": 0.0005,
+          "note": "horn torque at 8 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 5.0,
+          "value": 0.29139378551589634,
+          "abs": 0.0005,
+          "note": "horn torque at 10 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 6.0,
+          "value": 0.13020274955601308,
+          "abs": 0.0005,
+          "note": "horn torque at 14 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 7.0,
+          "value": -0.030988286403870167,
+          "abs": 0.0005,
+          "note": "horn torque at 18 rad/s: min(1, (kt w + R i_limit)/V) duty, kt i minus the M6 friction and the armature torque (design/torque_speed.py); 0.5 mN m for the smoothed kinks"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Current/y",
+          "t": 3.25,
+          "value": 1.7500000000000002,
+          "rtol": 0.0001,
+          "note": "the current-limit window holds the winding current at i_limit = 1.75 A (BAM XL330Actuator)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Servo/Current/y",
+          "value": 1.750001,
+          "note": "BAM's limiter: the duty never lets the current exceed i_limit"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E106"
+          ],
+          "note": "no causality conflicts. W202 (algebraic loops through Backlash/Transmit and Motor/Rw in every XL330) is expected: the friction reads the transmitted torque and the motor current"
+        }
+      ]
+    },
+    "microduck-hang": {
+      "checks": [
+        {
+          "kind": "zero_crossing",
+          "signal": "left_knee/Latency/y",
+          "level": 0.28809556933373975,
+          "direction": "up",
+          "n": 1,
+          "value": 0.2175,
+          "abs": 0.0001,
+          "note": "the knee goal steps at 0.2 s and reaches the firmware t_latency = 20 ms later, ramped over the 5 ms tick of the delay line (half-way at 0.2 + 0.02 - 0.0025 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_knee/Current/y",
+          "value": 1.750001,
+          "note": "BAM's current-limit window bounds the winding current by i_limit = 1.75 A"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_hip_roll/Encoder/y",
+          "t": 0.19,
+          "value": -0.13774234321838477,
+          "abs": 0.0396,
+          "note": "before the step: quasi-static encoder angle, goal -0.0873 plus gravity torque -0.0280 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_hip_pitch/Encoder/y",
+          "t": 0.19,
+          "value": -0.47410079824950957,
+          "abs": 0.0277,
+          "note": "before the step: quasi-static encoder angle, goal -0.4579 plus gravity torque -0.0090 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_knee/Encoder/y",
+          "t": 0.19,
+          "value": -0.022998818836968783,
+          "abs": 0.0283,
+          "note": "before the step: quasi-static encoder angle, goal -0.0049 plus gravity torque -0.0100 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_ankle/Encoder/y",
+          "t": 0.19,
+          "value": 0.4562032954650616,
+          "abs": 0.0232,
+          "note": "before the step: quasi-static encoder angle, goal 0.4530 plus gravity torque 0.0018 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_hip_pitch/Encoder/y",
+          "t": 0.19,
+          "value": 0.47410172576493254,
+          "abs": 0.0277,
+          "note": "before the step: quasi-static encoder angle, goal 0.4579 plus gravity torque 0.0090 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_knee/Encoder/y",
+          "t": 0.19,
+          "value": 0.02299803415101105,
+          "abs": 0.0283,
+          "note": "before the step: quasi-static encoder angle, goal 0.0049 plus gravity torque 0.0100 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_ankle/Encoder/y",
+          "t": 0.19,
+          "value": -0.4562022999892465,
+          "abs": 0.0232,
+          "note": "before the step: quasi-static encoder angle, goal -0.4530 plus gravity torque -0.0018 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "neck_pitch/Encoder/y",
+          "t": 0.19,
+          "value": 0.38511212004607814,
+          "abs": 0.0346,
+          "note": "before the step: quasi-static encoder angle, goal 0.3491 plus gravity torque 0.0200 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "head_pitch/Encoder/y",
+          "t": 0.19,
+          "value": 0.4000011536886418,
+          "abs": 0.0397,
+          "note": "before the step: quasi-static encoder angle, goal 0.3491 plus gravity torque 0.0282 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_hip_roll/Encoder/y",
+          "t": 1.2,
+          "value": -0.14000140838327768,
+          "abs": 0.0404,
+          "note": "at the end: quasi-static encoder angle, goal -0.0873 plus gravity torque -0.0292 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_hip_pitch/Encoder/y",
+          "t": 1.2,
+          "value": -0.17171129483038938,
+          "abs": 0.0292,
+          "note": "at the end: quasi-static encoder angle, goal -0.1510 plus gravity torque -0.0115 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_knee/Encoder/y",
+          "t": 1.2,
+          "value": 0.5552131118573688,
+          "abs": 0.031,
+          "note": "at the end: quasi-static encoder angle, goal 0.5811 plus gravity torque -0.0143 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_ankle/Encoder/y",
+          "t": 1.2,
+          "value": 0.7353144306009972,
+          "abs": 0.0231,
+          "note": "at the end: quasi-static encoder angle, goal 0.7321 plus gravity torque 0.0018 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_hip_pitch/Encoder/y",
+          "t": 1.2,
+          "value": 0.17171224354053477,
+          "abs": 0.0292,
+          "note": "at the end: quasi-static encoder angle, goal 0.1510 plus gravity torque 0.0115 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_knee/Encoder/y",
+          "t": 1.2,
+          "value": -0.5552138243071878,
+          "abs": 0.031,
+          "note": "at the end: quasi-static encoder angle, goal -0.5811 plus gravity torque 0.0143 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_ankle/Encoder/y",
+          "t": 1.2,
+          "value": -0.735313434872582,
+          "abs": 0.0231,
+          "note": "at the end: quasi-static encoder angle, goal -0.7321 plus gravity torque -0.0018 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "neck_pitch/Encoder/y",
+          "t": 1.2,
+          "value": 0.3851121200210467,
+          "abs": 0.0346,
+          "note": "at the end: quasi-static encoder angle, goal 0.3491 plus gravity torque 0.0200 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "head_pitch/Encoder/y",
+          "t": 1.2,
+          "value": 0.4000011537136733,
+          "abs": 0.0397,
+          "note": "at the end: quasi-static encoder angle, goal 0.3491 plus gravity torque 0.0282 N m over the P stiffness 0.5544 N m/rad (design/robot.py hang_reference); the tolerance is the BAM friction band at rest plus 5 mrad"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E106"
+          ],
+          "note": "no causality conflicts. W202 (algebraic loops through Backlash/Transmit and Motor/Rw in every XL330) is expected: the friction reads the transmitted torque and the motor current"
+        }
+      ]
+    },
+    "microduck-stand": {
+      "checks": [
+        {
+          "kind": "zero_crossing",
+          "signal": "Free/pose[1]",
+          "level": 0.9396926207859084,
+          "direction": "down",
+          "n": 1,
+          "value": 1.5,
+          "abs": 0.5,
+          "note": "the trunk quaternion w falls below cos(20 deg): the robot has tipped 40 deg. microduck docs/design/robotd-design.md 2.4.2: HOME held at walking gain on the floor 'tips past 40 deg within a second or two' in simulation (measured here 1.14 s)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E106"
+          ],
+          "note": "no causality conflicts. W202 (algebraic loops through Backlash/Transmit and Motor/Rw in every XL330) is expected: the friction reads the transmitted torque and the motor current"
+        }
+      ]
+    },
+    "xl330-rigid-step": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.15,
+          "value": 0.053517597368433645,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.2,
+          "value": 0.2898058259906302,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.3,
+          "value": 0.7691046159215453,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.5,
+          "value": 0.9084113896782584,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.85,
+          "value": 0.9084113896782584,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.95,
+          "value": 0.8504894289910064,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.0,
+          "value": 0.5913179335944072,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.1,
+          "value": 0.0869289947629653,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.5,
+          "value": -0.0173574952495717,
+          "abs": 0.02,
+          "note": "BAM identification simulator (design/xl330.py simulate_pendulum, the M6 XL330 fit microduck_rl trains with). 0.02 rad: the delay line ramps a goal step over its 5 ms tick, centred 2.5 ms early (TransportDelay), which moves the fast swings by up to 16 mrad"
+        },
+        {
+          "kind": "final_value",
+          "signal": "J/qout",
+          "t": 1.6,
+          "value": -0.0173574952495717,
+          "abs": 0.002,
+          "note": "rest angle after the return: P gain against gravity inside the friction budget (BAM simulator)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/MotorTorque/y",
+          "t": 0.5,
+          "value": 0.05077800915998381,
+          "abs": 0.005,
+          "note": "holding torque of the arm at the 1 rad goal (BAM simulator)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W202",
+            "E106"
+          ],
+          "note": "no algebraic loop and no causality conflict: XL330Rigid reads the friction's load torque sampled every 5 ms. W201 is expected: the rigid joint's hard constraints put the link inertia in derivative causality (Revolute3DRigid)"
+        }
+      ]
+    },
+    "xl330-rigid-torque-speed": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 1.0,
+          "value": 0.8483427706620277,
+          "abs": 0.0005,
+          "note": "torque delivered at -6 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 1.75,
+          "value": 0.8515996197414314,
+          "abs": 0.0005,
+          "note": "torque delivered at -3 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 2.25,
+          "value": 0.9026421320304187,
+          "abs": 0.0005,
+          "note": "torque delivered at -1 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 2.75,
+          "value": 0.42059790673565106,
+          "abs": 0.0005,
+          "note": "torque delivered at 1 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 3.25,
+          "value": 0.4386286254269235,
+          "abs": 0.0005,
+          "note": "torque delivered at 3 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 3.75,
+          "value": 0.4380676305775607,
+          "abs": 0.0005,
+          "note": "torque delivered at 5 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 4.125,
+          "value": 0.43002819662845104,
+          "abs": 0.0005,
+          "note": "torque delivered at 6.5 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 4.5,
+          "value": 0.37922027662847824,
+          "abs": 0.0005,
+          "note": "torque delivered at 8 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 5.0,
+          "value": 0.29862475864853666,
+          "abs": 0.0005,
+          "note": "torque delivered at 10 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 6.0,
+          "value": 0.13743372268865342,
+          "abs": 0.0005,
+          "note": "torque delivered at 14 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Transmit/y",
+          "t": 7.0,
+          "value": -0.023757313271229832,
+          "abs": 0.0005,
+          "note": "torque delivered at 18 rad/s: as xl330-torque-speed plus the armature torque (armature x 4 rad/s^2, which XL330Rigid leaves to the joint); 0.5 mN m as there"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Current/y",
+          "t": 3.25,
+          "value": 1.7500000000000002,
+          "rtol": 0.0001,
+          "note": "the current-limit window holds the winding current at i_limit = 1.75 A (BAM XL330Actuator)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Servo/Current/y",
+          "value": 1.750001,
+          "note": "BAM's limiter: the duty never lets the current exceed i_limit"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W202",
+            "E106"
+          ],
+          "note": "no algebraic loop and no causality conflict: XL330Rigid reads the friction's load torque sampled every 5 ms. W201 is expected: the rigid joint's hard constraints put the link inertia in derivative causality (Revolute3DRigid)"
+        }
+      ]
+    },
+    "microduck-policy": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "left_foot_contact/u",
+          "t": 0.25,
+          "value": 3.6161777979000003,
+          "rtol": 0.01,
+          "note": "standing still at HOME, each sole carries half the weight m g = 7.2324 N (the robot is symmetric; the slow forward tip changes this by well under 1 %)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_foot_contact/u",
+          "t": 0.25,
+          "value": 3.6161777979000003,
+          "rtol": 0.01,
+          "note": "standing still at HOME, each sole carries half the weight m g = 7.2324 N (the robot is symmetric; the slow forward tip changes this by well under 1 %)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "gravity_y/u",
+          "value": 0.001,
+          "note": "left-right symmetry: the projected gravity has no sideways part while both legs do the same"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "left_knee/Latency/y",
+          "level": 0.28809556933373975,
+          "direction": "up",
+          "n": 1,
+          "value": 0.3175,
+          "abs": 0.0001,
+          "note": "the knee target steps at 0.3 s and reaches the firmware t_latency = 20 ms later, ramped over the 5 ms tick of the delay line"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_knee/Current/y",
+          "value": 1.750001,
+          "note": "BAM's current-limit window bounds the winding current by i_limit = 1.75 A"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W202",
+            "E106"
+          ],
+          "note": "no algebraic loop and no causality conflict: XL330Rigid reads the friction's load torque sampled every 5 ms. W201 is expected: the rigid joint's hard constraints put the link inertia in derivative causality (Revolute3DRigid)"
+        }
+      ]
+    }
+  }
+}

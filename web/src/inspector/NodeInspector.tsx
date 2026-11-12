@@ -33,7 +33,10 @@ import { equationFieldProps, useGlobalEvaluation } from "../globals/equationFiel
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
 import { saveInlineMessage } from "../code/inlineToLibrary";
 import { ProjectBlockDialog, type ProjectBlockResult } from "../code/ProjectBlockDialog";
+import { saveSubsystemMessage, type SaveSubsystemOutcome } from "../library/saveSubsystem";
+import { SubsystemBlockDialog } from "../library/SubsystemBlockDialog";
 import { stripEquationPrefix } from "./expression";
+import { LinkedInstanceSection, MakeReusable, PinToggle } from "./LinkedSubsystemSection";
 import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
 import { ModalBodySection } from "./ModalBodySection";
@@ -129,6 +132,7 @@ function ParameterField({
     <>
       {decl.type === "Real" ? null : <span className="inspector-tag">{decl.type}</span>}
       <DashboardOverrideBadge target={liveParameterName(path, node.name, decl.name)} />
+      <PinToggle node={node} kind="params" name={decl.name} />
     </>
   );
   const resetLabel = `Reset ${decl.name} to its default (${decl.default})`;
@@ -360,6 +364,7 @@ function StartField({ node, variable }: { node: ModelNode; variable: VariableDec
         <>
           {equation.sigma}
           {variable.state !== null ? <span className="inspector-tag">{variable.state}</span> : null}
+          <PinToggle node={node} kind="starts" name={variable.name} />
         </>
       }
       completions={equation.completions}
@@ -624,6 +629,7 @@ export function NodeInspector({
   const [copy, setCopy] = useState<CopyState>({ status: "idle", message: null });
   const [saveDialog, setSaveDialog] = useState(false);
   const isInline = "inline" in node.block;
+  const isSubsystem = "subsystem" in node.block;
 
   const displayRef =
     ref ??
@@ -714,7 +720,14 @@ export function NodeInspector({
   const saveHint =
     project === null
       ? "Open a project before saving a block to its library."
-      : "Make this code a reusable block in library/<Name>.jl; this node then uses it.";
+      : isSubsystem
+        ? "Write this subsystem as a code block in library/<Name>.jl and replace this node by an instance of that block. The drawing is not kept; use Make reusable to keep editing it as a diagram."
+        : "Make this code a reusable block in library/<Name>.jl; this node then uses it.";
+
+  const onSubsystemSaved = (outcome: SaveSubsystemOutcome): void => {
+    setSaveDialog(false);
+    setCopy({ status: "done", message: saveSubsystemMessage(outcome, node.name) });
+  };
 
   const onSaveDone = (result: ProjectBlockResult): void => {
     setSaveDialog(false);
@@ -790,6 +803,8 @@ export function NodeInspector({
           }
         />
       </section>
+
+      <LinkedInstanceSection node={node} />
 
       {"subsystem" in node.block ? <NodeImageSection node={node} /> : null}
 
@@ -939,7 +954,8 @@ export function NodeInspector({
           >
             Open source
           </button>
-          {isInline ? (
+          {isSubsystem ? <MakeReusable node={node} /> : null}
+          {isInline || isSubsystem ? (
             <button
               type="button"
               className="button inspector-button"
@@ -948,7 +964,7 @@ export function NodeInspector({
               title={saveHint}
               onClick={() => setSaveDialog(true)}
             >
-              Save to project library
+              {isSubsystem ? "Export as code block…" : "Save to project library"}
             </button>
           ) : (
             <button
@@ -963,7 +979,16 @@ export function NodeInspector({
             </button>
           )}
         </div>
-        {saveDialog && project !== null ? (
+        {saveDialog && project !== null && isSubsystem ? (
+          <SubsystemBlockDialog
+            project={project}
+            node={node}
+            path={[...path, node.name].join("/")}
+            onClose={() => setSaveDialog(false)}
+            onDone={onSubsystemSaved}
+          />
+        ) : null}
+        {saveDialog && project !== null && !isSubsystem ? (
           <ProjectBlockDialog
             project={project}
             request={{ mode: "save-inline", nodeId: node.id }}

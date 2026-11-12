@@ -2218,7 +2218,7 @@ const INTERFACE_FIELDS = [
         for block in cat.blocks
             # `dimension` is optional and non-nullable (`2 | 3`): allowed when present, and
             # its value must match the block's multibond ports.
-            _check_object_keys(block, defs["catalogBlock"]; optional = ["dimension"])
+            _check_object_keys(block, defs["catalogBlock"]; optional = ["dimension", "subsystem"])
             if haskey(block, :dimension)
                 @test block.dimension in (2, 3)
                 expected = any(p -> p.domain == "Planar", block.ports) ? 2 :

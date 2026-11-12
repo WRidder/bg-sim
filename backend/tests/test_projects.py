@@ -809,3 +809,113 @@ def test_create_from_example_with_an_invalid_project_file_cleans_up(
     assert "not valid JSON" in response.json()["detail"]
     assert not (store.projects_root / "nope").exists()
     assert not list(store.projects_root.glob(".nope.creating-*"))
+
+
+# --------------------------------------------------------------------------- subsystems
+
+
+def _branch_definition(name: str = "Branch") -> dict:
+    return {
+        "format": "bgsim.subsystem",
+        "name": name,
+        "ports": [
+            {
+                "name": "p",
+                "kind": "power",
+                "domain": "Generic",
+                "size": [1],
+                "node": "j",
+                "port": "junction",
+            }
+        ],
+        "diagram": {
+            "nodes": [
+                {"id": "j", "name": "J", "block": {"junction": "1"}, "position": {"x": 0, "y": 0}},
+                {
+                    "id": "r",
+                    "name": "R1",
+                    "block": {"ref": "stdlib:bondgraph/R"},
+                    "position": {"x": 100, "y": 0},
+                    "params": {"r": "10.0"},
+                },
+            ],
+            "connections": [
+                {"id": "b1", "kind": "bond", "from": {"node": "j"}, "to": {"node": "r", "port": "p"}}
+            ],
+        },
+        "pins": {"params": ["R1/r"]},
+    }
+
+
+def test_subsystem_definitions_crud_and_catalog_invalidation(
+    client: TestClient, store: ProjectStore, app
+) -> None:
+    assert _create(client).status_code == 201
+    assert client.get("/api/projects/demo/subsystems").json() == {
+        "definitions": {},
+        "problems": {},
+    }
+
+    # The name in the URL is the name: it is the file name and what a model refers to.
+    response = client.put("/api/projects/demo/subsystems/Branch", json=_branch_definition("Other"))
+    assert response.status_code == 200
+    assert response.json() == {"project": "demo", "name": "Branch", "file": "Branch.bgsub.json"}
+    path = store.projects_root / "demo" / "library" / "Branch.bgsub.json"
+    assert json.loads(path.read_text(encoding="utf-8"))["name"] == "Branch"
+
+    listing = client.get("/api/projects/demo/subsystems").json()
+    assert list(listing["definitions"]) == ["Branch"]
+    assert listing["definitions"]["Branch"]["pins"] == {"params": ["R1/r"]}
+    # A definition is not a code block of the library listing.
+    assert client.get("/api/projects/demo").json()["library"] == []
+
+    invalid = _branch_definition()
+    del invalid["diagram"]
+    assert client.put("/api/projects/demo/subsystems/Branch", json=invalid).status_code == 422
+    assert client.put("/api/projects/demo/subsystems/1bad", json=_branch_definition()).status_code == 400
+
+    # A block and a subsystem cannot share a name, either way round.
+    clash = client.put(
+        "/api/projects/demo/library/Branch",
+        content="@block Branch begin\nend\n",
+        headers={"content-type": "text/plain"},
+    )
+    assert clash.status_code == 409
+    assert (
+        client.put(
+            "/api/projects/demo/library/Gear",
+            content="@block Gear begin\nend\n",
+            headers={"content-type": "text/plain"},
+        ).status_code
+        == 200
+    )
+    assert client.put("/api/projects/demo/subsystems/Gear", json=_branch_definition()).status_code == 409
+
+    # A broken file is reported, not served.
+    (path.parent / "Broken.bgsub.json").write_text("{\"format\": 3}", encoding="utf-8")
+    listing = client.get("/api/projects/demo/subsystems").json()
+    assert list(listing["definitions"]) == ["Branch"]
+    assert list(listing["problems"]) == ["Broken"]
+
+    library_dir = store.projects_root / "demo" / "library"
+    cache = app.state.catalog_cache
+    cache.store("demo", library_dir, {"catalog": 1})
+    assert client.put("/api/projects/demo/subsystems/Branch", json=_branch_definition()).status_code == 200
+    assert len(cache) == 0, "a definition write must invalidate the project's catalog"
+    cache.store("demo", library_dir, {"catalog": 2})
+    assert client.delete("/api/projects/demo/subsystems/Branch").status_code == 204
+    assert len(cache) == 0, "a definition delete must invalidate the project's catalog"
+    assert not path.exists()
+    assert client.delete("/api/projects/demo/subsystems/Branch").status_code == 404
+
+
+def test_a_saved_model_never_carries_definitions(client: TestClient, store: ProjectStore) -> None:
+    assert _create(client).status_code == 201
+    document = _model()
+    document["definitions"] = {"Branch": _branch_definition()}
+    response = client.put("/api/projects/demo/models/rlc", json=document)
+    assert response.status_code == 200
+    saved = json.loads(
+        (store.projects_root / "demo" / "models" / "rlc.bgmodel.json").read_text(encoding="utf-8")
+    )
+    assert "definitions" not in saved

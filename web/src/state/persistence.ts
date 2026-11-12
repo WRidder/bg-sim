@@ -9,6 +9,9 @@
 
 import { useEffect } from "react";
 
+import { fetchCatalog } from "../library/catalogClient";
+import { useCatalogStore } from "../library/catalogStore";
+import { saveDefinitions } from "./definitionFiles";
 import { useDocumentStore } from "./documentStore";
 import { putModel } from "./modelApi";
 
@@ -26,8 +29,22 @@ export async function saveCurrentModel(): Promise<boolean> {
   }
   state.setSaving();
   try {
-    await putModel(project, modelName, doc);
+    // Library subsystems first: the model refers to them (state/definitionFiles.ts).
+    const { model, libraryChanged, finish } = await saveDefinitions(project, doc);
+    await putModel(project, modelName, model);
     useDocumentStore.getState().setSaved(revision);
+    // Only now, with the model stored, the files of removed library subsystems go.
+    const deleted = await finish();
+    if (libraryChanged || deleted) {
+      // The catalog lists the library subsystems; a failure here only delays the listing.
+      void fetchCatalog(project)
+        .then((catalog) => {
+          if (useDocumentStore.getState().project === project) {
+            useCatalogStore.getState().setCatalog(catalog);
+          }
+        })
+        .catch(() => undefined);
+    }
     return true;
   } catch (error) {
     const message =

@@ -13,7 +13,7 @@
  */
 
 import { API_BASE } from "../api/client";
-import type { Model } from "../contracts/model";
+import type { Model, SubsystemDefinition } from "../contracts/model";
 import { modelImageIssues } from "../editor/nodeImage";
 
 export class ProjectApiError extends Error {
@@ -183,6 +183,86 @@ export async function getModel(
     );
   }
   return answer.body;
+}
+
+/**
+ * The drawn subsystem definitions of the project library
+ * (`library/<Name>.bgsub.json`), by name. A project without any, a backend that
+ * does not know the call and a file that is not a definition all give nothing:
+ * a model then opens with its instances as unknown blocks, which the compiler
+ * reports.
+ */
+export async function listSubsystems(
+  project: string,
+  signal?: AbortSignal,
+): Promise<Record<string, SubsystemDefinition>> {
+  let answer: ApiAnswer;
+  try {
+    answer = await call(`${projectPath(project)}/subsystems`, {
+      method: "GET",
+      signal,
+    });
+  } catch (cause) {
+    if (signal?.aborted) {
+      throw cause;
+    }
+    return {};
+  }
+  const body = answer.body as { definitions?: unknown } | null;
+  if (answer.status !== 200 || typeof body !== "object" || body === null) {
+    return {};
+  }
+  const definitions = body.definitions;
+  if (typeof definitions !== "object" || definitions === null) {
+    return {};
+  }
+  const result: Record<string, SubsystemDefinition> = {};
+  for (const [name, value] of Object.entries(definitions as Record<string, unknown>)) {
+    const entry = value as Partial<SubsystemDefinition> | null;
+    if (
+      typeof entry === "object" &&
+      entry !== null &&
+      Array.isArray(entry.ports) &&
+      typeof entry.diagram === "object" &&
+      entry.diagram !== null &&
+      Array.isArray(entry.diagram.nodes) &&
+      Array.isArray(entry.diagram.connections)
+    ) {
+      result[name] = { ...(entry as SubsystemDefinition), format: "bgsim.subsystem", name };
+    }
+  }
+  return result;
+}
+
+/** Validate and write one subsystem definition of the project library. */
+export async function putSubsystem(
+  project: string,
+  name: string,
+  definition: SubsystemDefinition,
+  signal?: AbortSignal,
+): Promise<void> {
+  const answer = await call(
+    `${projectPath(project)}/subsystems/${encodeURIComponent(name)}`,
+    { method: "PUT", body: definition, signal },
+  );
+  if (answer.status < 200 || answer.status >= 300) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
+}
+
+/** Remove one subsystem definition of the project library; a missing one is fine. */
+export async function deleteSubsystem(
+  project: string,
+  name: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const answer = await call(
+    `${projectPath(project)}/subsystems/${encodeURIComponent(name)}`,
+    { method: "DELETE", signal },
+  );
+  if (answer.status !== 404 && (answer.status < 200 || answer.status >= 300)) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
 }
 
 /** Validate, store and return the document (the backend normalises defaults). */

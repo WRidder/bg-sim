@@ -1,0 +1,268 @@
+{
+  "$comment": "model.linked-subsystem.json drawn without the library: two subsystems with the same diagram.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "LinkedBranches",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "se",
+        "name": "Se1",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "params": {
+          "e": "1.0"
+        }
+      },
+      {
+        "id": "z",
+        "name": "Z",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 120,
+          "y": 0
+        }
+      },
+      {
+        "id": "i1",
+        "name": "A",
+        "position": {
+          "x": 240,
+          "y": -80
+        },
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "p",
+                "kind": "power",
+                "domain": "Generic",
+                "size": [
+                  1
+                ],
+                "node": "j",
+                "port": "junction"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "j",
+                  "name": "J",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 80,
+                    "y": 0
+                  }
+                },
+                {
+                  "id": "r",
+                  "name": "R1",
+                  "block": {
+                    "ref": "stdlib:bondgraph/R"
+                  },
+                  "position": {
+                    "x": 160,
+                    "y": -80
+                  },
+                  "params": {
+                    "r": "10.0"
+                  }
+                },
+                {
+                  "id": "c",
+                  "name": "C1",
+                  "block": {
+                    "ref": "stdlib:bondgraph/C"
+                  },
+                  "position": {
+                    "x": 160,
+                    "y": 80
+                  },
+                  "params": {
+                    "c": "1e-3"
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "b1",
+                  "kind": "bond",
+                  "from": {
+                    "node": "j"
+                  },
+                  "to": {
+                    "node": "r",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "b2",
+                  "kind": "bond",
+                  "from": {
+                    "node": "j"
+                  },
+                  "to": {
+                    "node": "c",
+                    "port": "p"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "i2",
+        "name": "B",
+        "position": {
+          "x": 240,
+          "y": 80
+        },
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "p",
+                "kind": "power",
+                "domain": "Generic",
+                "size": [
+                  1
+                ],
+                "node": "j",
+                "port": "junction"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "j",
+                  "name": "J",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 80,
+                    "y": 0
+                  }
+                },
+                {
+                  "id": "r",
+                  "name": "R1",
+                  "block": {
+                    "ref": "stdlib:bondgraph/R"
+                  },
+                  "position": {
+                    "x": 160,
+                    "y": -80
+                  },
+                  "params": {
+                    "r": "47.0"
+                  }
+                },
+                {
+                  "id": "c",
+                  "name": "C1",
+                  "block": {
+                    "ref": "stdlib:bondgraph/C"
+                  },
+                  "position": {
+                    "x": 160,
+                    "y": 80
+                  },
+                  "params": {
+                    "c": "1e-3"
+                  },
+                  "starts": {
+                    "q": "2e-3"
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "b1",
+                  "kind": "bond",
+                  "from": {
+                    "node": "j"
+                  },
+                  "to": {
+                    "node": "r",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "b2",
+                  "kind": "bond",
+                  "from": {
+                    "node": "j"
+                  },
+                  "to": {
+                    "node": "c",
+                    "port": "p"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s",
+        "kind": "bond",
+        "from": {
+          "node": "se",
+          "port": "p"
+        },
+        "to": {
+          "node": "z"
+        }
+      },
+      {
+        "id": "k1",
+        "kind": "bond",
+        "from": {
+          "node": "z"
+        },
+        "to": {
+          "node": "i1",
+          "port": "p"
+        }
+      },
+      {
+        "id": "k2",
+        "kind": "bond",
+        "from": {
+          "node": "z"
+        },
+        "to": {
+          "node": "i2",
+          "port": "p"
+        }
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 2000
+    },
+    "event_limit": 10000
+  }
+}

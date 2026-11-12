@@ -6,7 +6,7 @@
  * port was exposed, and the "maps to" line names that internal port.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { ModelNode, ModelSubsystemPort } from "../contracts/model";
 import { domainLetter, formatSize } from "../editor/connectionRules";
@@ -14,6 +14,7 @@ import { domainColor, signalColor } from "../editor/geometry";
 import { requestSubsystemPortDelete } from "../editor/PortDeleteConfirm";
 import type { OutsideLink } from "../editor/subsystemBoundary";
 import { endpointLabel, subsystemPortNameIssue, terminalKindOf } from "../editor/subsystemPorts";
+import { enclosingInstance, instanceCount } from "../library/linkedSubsystems";
 import { useDocumentStore } from "../state/documentStore";
 import { TextField } from "./fields";
 import "../editor/nodes/portTerminal.css";
@@ -37,6 +38,8 @@ const KIND_TEXT = {
 
 export function PortInspector({ port, ports, subsystemName, nodes, outside, onReveal }: PortInspectorProps) {
   const [problem, setProblem] = useState<string | null>(null);
+  // The new name the user was asked to confirm (a port of a library subsystem).
+  const pendingRename = useRef<string | null>(null);
   const kind = terminalKindOf(port);
   const colour = port.kind === "power" ? domainColor(port.domain) : signalColor(port.type);
   const mapsTo = endpointLabel(nodes, port.node, port.port);
@@ -70,7 +73,18 @@ export function PortInspector({ port, ports, subsystemName, nodes, outside, onRe
           value={port.name}
           issue={(text) => subsystemPortNameIssue(ports, port.name, text.trim())}
           onCommit={(text) => {
-            const result = useDocumentStore.getState().renameSubsystemPort(port.name, text);
+            const state = useDocumentStore.getState();
+            const next = text.trim();
+            // A port of a library subsystem is the port of every instance: ask once.
+            const shared =
+              state.doc === null ? null : enclosingInstance(state.doc, state.activePath);
+            if (shared !== null && state.doc !== null && next !== port.name && pendingRename.current !== next) {
+              pendingRename.current = next;
+              const count = instanceCount(state.doc, shared.name);
+              return `This renames the port in all ${count} ${count === 1 ? "instance" : "instances"} of ${shared.name}. Connections in this model follow; another model of the project that uses ${shared.name} loses its connection to ${port.name}. Press Enter again to rename.`;
+            }
+            pendingRename.current = null;
+            const result = state.renameSubsystemPort(port.name, text);
             return result.ok ? null : (result.error ?? "The name was refused.");
           }}
           description={`Outside ${subsystemName} connections name this port; they follow a rename.`}

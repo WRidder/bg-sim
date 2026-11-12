@@ -58,6 +58,7 @@ import ..BGSim.LinearAlgebra
 
 include("globals.jl")
 include("instantiate.jl")
+include("link.jl")
 include("linsolve.jl")
 include("connect.jl")
 include("domains.jl")
@@ -171,7 +172,10 @@ The one flattening run. It returns the flat model, the causal strokes, and the t
 metadata maps of the frame pass, because they are editor metadata that `FlatModel`
 deliberately does not carry (J2.4 keeps the plan 5.1 shape)."""
 function _flatten(md::IR.ModelDoc; project_dir = nothing)
+    # Instances of a drawn library subsystem become ordinary subsystems first (link.jl).
+    md, link_diagnostics = link_definitions(md; project_dir = project_dir)
     b = Builder(md, project_dir === nothing ? nothing : String(project_dir))
+    append!(b.diagnostics, link_diagnostics)
     instantiate!(b)
     events = collect_events!(b)
     discrete = collect_discrete!(b)
@@ -287,6 +291,7 @@ function check_block_source(text::AbstractString; ref::AbstractString = "inline:
     return (diagnostics = block.diagnostics, interface = bad ? nothing : block.interface)
 end
 
+export link_definitions, project_definitions
 export flatten, model_check, check_block_source, evaluate_globals, evaluate_globals_values, GlobalEnv
 
 end # module Compile

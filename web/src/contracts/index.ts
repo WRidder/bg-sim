@@ -195,6 +195,7 @@ export type { ModelSubsystemPortUi } from "./model";
 export type { ModelSubsystemPowerPort } from "./model";
 export type { ModelSubsystemSignalPort } from "./model";
 export type { ShapeColor } from "./model";
+export type { SubsystemDefinition } from "./model";
 export type { UnitArray3 } from "./model";
 export type { UnitArray6 } from "./model";
 export type { Project } from "./project";

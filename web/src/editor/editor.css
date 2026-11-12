@@ -1103,3 +1103,72 @@
   letter-spacing: 0;
 }
 
+
+/* An instance of a library subsystem: a link badge on the card's top edge. */
+.block-node__link {
+  position: absolute;
+  top: -9px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(100% - 12px);
+  height: 16px;
+  padding: 0 5px;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  border-radius: 8px;
+  pointer-events: auto;
+}
+
+.block-node__link-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How many pinned values this instance sets itself. */
+.block-node__link-changed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 12px;
+  height: 12px;
+  margin-right: -3px;
+  padding: 0 3px;
+  font-size: 8px;
+  color: var(--color-surface);
+  background: var(--color-accent);
+  border-radius: 6px;
+}
+
+/* Inside an instance of a library subsystem: what an edit here reaches. */
+.subsystem-breadcrumbs__definition {
+  color: var(--color-text-muted);
+}
+
+.subsystem-breadcrumbs__shared {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.subsystem-breadcrumbs__notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  font-size: 11px;
+  color: var(--color-danger, #d9534f);
+}

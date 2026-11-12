@@ -99,7 +99,7 @@ export causality_ports, causality_kind, causality_value
 export orientation_ports, orientation_kind
 export component_name, component_block, component_kwargs
 export observation_name, observation_field, observation_target
-export portref_instance, portref_port, connect_from, connect_to
+export portref_instance, portref_port, connect_from, connect_to, connect_kind
 export ParsedBlock, Decl, TypeSpec, CausalityDecl, OrientationDecl, ComponentDecl, PortRef,
     ConnectDecl, ObservationDecl
 
