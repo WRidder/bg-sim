@@ -544,31 +544,31 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "Pad1/f_n",
+          "signal": "Pad1/Contact/f_n",
           "value": 42258.10534497475,
           "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Pad2/f_n",
+          "signal": "Pad2/Contact/f_n",
           "value": 42258.10534497475,
           "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Pad3/f_n",
+          "signal": "Pad3/Contact/f_n",
           "value": 42258.10534497475,
           "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Pad4/f_n",
+          "signal": "Pad4/Contact/f_n",
           "value": 42258.10534497475,
           "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 (TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the 9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force is shared in reality by the primary and two secondary struts, so the check is against the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg tilt) is about 10 % above 4,500 lb"
         },
         {
           "kind": "cursor_value",
-          "signal": "Pad1/delta",
+          "signal": "Pad1/Contact/delta",
           "t": 774.0,
           "value": 0.07619999999999999,
           "note": "PUBLISHED (FITTED): the footpads penetrated the surface 2.5 to 3.5 in (MR 5.4); the contact stiffness is chosen so that a pad settles 3 in under a quarter of the landing weight. Tolerance 0.75 in.",
@@ -576,7 +576,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Pad3/delta",
+          "signal": "Pad3/Contact/delta",
           "t": 774.0,
           "value": 0.07619999999999999,
           "note": "PUBLISHED (FITTED): the footpads penetrated the surface 2.5 to 3.5 in (MR 5.4); the contact stiffness is chosen so that a pad settles 3 in under a quarter of the landing weight. Tolerance 0.75 in.",
@@ -584,8 +584,8 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "Pad1/f_n",
-          "signal_b": "Pad2/f_n",
+          "signal": "Pad1/Contact/f_n",
+          "signal_b": "Pad2/Contact/f_n",
           "from_t": 770.0,
           "to_t": 775.0,
           "max_abs": 150.7756648991468,
@@ -593,7 +593,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Pad3/f_n",
+          "signal": "Pad3/Contact/f_n",
           "t": 774.0,
           "value": 3015.5132979829355,
           "note": "at rest on level ground each pad carries a quarter of the lunar weight m g(R + h) / 4 (statics; m from the scipy reference at touchdown)",

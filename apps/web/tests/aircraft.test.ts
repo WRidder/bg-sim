@@ -4,6 +4,7 @@ import { buildBuggy } from "../src/cars/buggy";
 import { buildRacecar } from "../src/cars/racecar";
 import { buildAeroplane } from "../src/cessna/aircraft";
 import { buildFighter } from "../src/f16/aircraft";
+import { buildDrone, buildMissile } from "../src/f16/weapons";
 
 /** Positive for a closed mesh whose triangles face outwards: the sum of signed tetrahedra. */
 function signedVolume(geometry: THREE.BufferGeometry): number {
@@ -30,6 +31,8 @@ vi.stubGlobal("document", { createElement: () => ({ getContext: () => painter })
 
 it.each([
   ["fighter", buildFighter],
+  ["AIM-9X", () => ({ root: buildMissile().root })],
+  ["target drone", () => ({ root: buildDrone().root })],
   ["aeroplane", buildAeroplane],
   ["race car", () => ({ root: buildRacecar().body })],
   ["buggy", () => ({ root: buildBuggy().body })],

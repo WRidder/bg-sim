@@ -51,7 +51,7 @@ def measure(dz: dict, t, sig) -> dict:
         "peak_v": float(np.max(np.abs(sig["Ctrl/u"]))),
         "max_arm": float(np.max(np.abs(sig["J1/qout"]))),
         "rest_rate": float(np.max(np.abs(sig["J1/qdout"][rest]))),
-        "rest_motion": float(max(np.ptp(sig[f"J{k + 2}/qout"][rest]) for k in range(n))),
+        "rest_motion": float(max(np.ptp(sig[f"L{k + 2}/J/qout"][rest]) for k in range(n))),
     }
 
 
@@ -82,7 +82,7 @@ def expected(dz: dict, m: dict, free: dict, name: str) -> dict:
         {"kind": "max_abs_le", "signal": "J1/qdout", "from_t": 0.05, "to_t": t_on - 0.01,
          "value": max(2e-3, 5 * m["rest_rate"]),
          "note": "at rest before t_on: the arm does not move (motor voltage 0). Bound: 5x the measured start-up residual of the released joint compliance"},
-        {"kind": "cursor_value", "signal": "J2/qout", "t": t_on - 0.05, "value": math.pi, "abs": 2e-3,
+        {"kind": "cursor_value", "signal": "L2/J/qout", "t": t_on - 0.05, "value": math.pi, "abs": 2e-3,
          "note": "hanging straight down before t_on (link 1 at pi); 2 mrad is larger than the measured joint sag"},
         {"kind": "cursor_value", "signal": "Ctrl/phase", "t": t_on - 0.05, "value": 0.0, "abs": 1e-9,
          "note": "controller idle before t_on"},

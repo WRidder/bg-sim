@@ -1,0 +1,117 @@
+{
+  "description": "Averaged buck converter with a PID voltage-mode compensator and duty feed-forward.",
+  "plant": {
+    "Vin": 12.0,
+    "Vin_step": 15.0,
+    "L": 0.00047,
+    "C": 0.00047,
+    "R_L": 0.1,
+    "R_load": 5.0,
+    "I_load_step": 1.0,
+    "f_sw": 20000.0,
+    "Vref": 5.0,
+    "t_load": 0.02,
+    "t_line": 0.03,
+    "t_end": 0.05
+  },
+  "lc": {
+    "f0_hz": 338.62753849339435,
+    "q_without_rl": 5.0,
+    "q_with_rl": 3.3665016461206925
+  },
+  "controller": {
+    "Kp": 0.2,
+    "Ki": 100.0,
+    "Ti": 0.044721359549995794,
+    "Td": 0.0002,
+    "N": 5.0,
+    "tau_filter": 0.001,
+    "derivative_filter_hz": 3978.8735772973837,
+    "high_frequency_gain": 5.2,
+    "crossover_hz": 1716.294529741553,
+    "phase_margin_deg": 64.97596803137256,
+    "sensitivity": {
+      "nominal": {
+        "crossover_hz": 1716.294529741553,
+        "phase_margin_deg": 64.97596803137256
+      },
+      "Kp 0.4": {
+        "crossover_hz": 1779.2461859314653,
+        "phase_margin_deg": 59.639481375204326
+      },
+      "Kp 0.05": {
+        "crossover_hz": 1674.9328550600865,
+        "phase_margin_deg": 69.4166556982922
+      },
+      "Td 0.1 ms": {
+        "crossover_hz": 1020.8213966328914,
+        "phase_margin_deg": 71.85896370947174
+      },
+      "Td 0.4 ms": {
+        "crossover_hz": 2362.673213566305,
+        "phase_margin_deg": 40.681815887248945
+      },
+      "N 2.5": {
+        "crossover_hz": 1546.5478699104015,
+        "phase_margin_deg": 50.40291460993825
+      },
+      "N 10": {
+        "crossover_hz": 1783.6322645997259,
+        "phase_margin_deg": 75.6815921658379
+      }
+    }
+  },
+  "reference": {
+    "final_v": 4.999999878914649,
+    "final_i": 2.0000000180510034,
+    "final_duty": 0.3466666584198858,
+    "final_iin": 0.6933333230974527,
+    "final_pin": 10.39999984646179,
+    "final_pout": 9.99999963674395,
+    "final_efficiency": 0.9615384408054655,
+    "mean_v_40_50": 5.000003389812513,
+    "mean_i_40_50": 1.9999981210453521,
+    "mean_pin_40_50": 10.399998033308258,
+    "mean_pout_40_50": 10.000010169464195,
+    "peak_v": 5.0124100791954,
+    "pre_load_v": 4.999963994152463,
+    "pre_load_error": 3.600584753726821e-05,
+    "load_min_v": 4.822609690064021,
+    "load_max_v": 5.0124100791954,
+    "load_max_i": 2.093233421790182,
+    "load_max_i_t": 0.0202795,
+    "line_min_v": 5.000054281406265,
+    "line_max_v": 5.009339150253224,
+    "post_line_error": 5.428140626495548e-05,
+    "rise_time": 0.004318,
+    "settle_after_load": 0.0005809999999999982,
+    "max_i": 2.3510861397531317,
+    "max_i_t": 0.000244,
+    "max_duty": 0.7221937577062683,
+    "max_duty_t": 0.020066,
+    "startup_max_duty": 0.7068939276049032,
+    "min_duty": 0.0
+  },
+  "steady_state_15V_2A": {
+    "averaged": {
+      "duty": 0.3466666666666667,
+      "ripple_i_pp": 0.36141843971631205,
+      "ripple_v_pp": 0.004806096272823298,
+      "i_in": 0.6933333333333334,
+      "p_in": 10.4,
+      "p_out": 10.0,
+      "p_rl": 0.4,
+      "efficiency": 0.9615384615384615
+    },
+    "switched": {
+      "duty": 0.3466666666666667,
+      "ripple_i_pp": 0.36141843971631205,
+      "ripple_v_pp": 0.004806096272823298,
+      "i_in": 0.6934059018269816,
+      "p_in": 10.401088527404724,
+      "p_out": 10.0,
+      "p_rl": 0.40108852740472484,
+      "efficiency": 0.9614378315934973
+    }
+  }
+}

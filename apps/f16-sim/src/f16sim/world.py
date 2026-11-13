@@ -9,9 +9,22 @@ import math
 
 import numpy as np
 from panda3d.core import (
-    AmbientLight, BillboardEffect, CompassEffect, DirectionalLight, Fog, Geom, GeomNode,
-    GeomTriangles, GeomVertexArrayFormat, GeomVertexData, GeomVertexFormat, NodePath, SamplerState,
-    Texture, TransparencyAttrib, Vec4,
+    AmbientLight,
+    BillboardEffect,
+    CompassEffect,
+    DirectionalLight,
+    Fog,
+    Geom,
+    GeomNode,
+    GeomTriangles,
+    GeomVertexArrayFormat,
+    GeomVertexData,
+    GeomVertexFormat,
+    NodePath,
+    SamplerState,
+    Texture,
+    TransparencyAttrib,
+    Vec4,
 )
 
 from . import terrain
@@ -99,6 +112,17 @@ def torus(name, R, r, color, seg=48, side=10) -> NodePath:
     nrm = np.stack([nx, ny, nz], -1).reshape(-1, 3)
     col = np.tile(color, (len(v), 1))
     return mesh(name, v, nrm, col, grid_tris(seg, side))
+
+
+def sphere(name, r, color, seg=20, rings=10) -> NodePath:
+    """A UV sphere centred on the origin (a flash or a round marker)."""
+    lat = np.linspace(-math.pi / 2, math.pi / 2, rings + 1)
+    lon = np.linspace(0, 2 * math.pi, seg + 1)
+    L, O = np.meshgrid(lat, lon, indexing="ij")
+    v = np.stack([r * np.cos(L) * np.cos(O), r * np.cos(L) * np.sin(O), r * np.sin(L)], -1).reshape(-1, 3)
+    nrm = v / max(r, 1e-9)
+    col = np.tile(color, (len(v), 1))
+    return mesh(name, v, nrm, col, grid_tris(rings + 1, seg + 1))
 
 
 def _noise_texture(size: int, seed: int, base, var, scale: float = 1.0) -> Texture:

@@ -1,0 +1,273 @@
+/* Microduck on top of the shared game styles: a workbench, not a cockpit. */
+
+:root {
+  --accent: #ffb347;
+  --glass: rgba(14, 20, 24, 0.66);
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+body {
+  background: #20262b;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  font-size: 13px;
+}
+
+.card {
+  position: absolute;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.banner {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: max-content;
+  max-width: min(600px, calc(100vw - 580px));
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(120, 70, 10, 0.82);
+  border: 1px solid rgba(255, 179, 71, 0.6);
+  color: #fff3e0;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.banner.fmu {
+  background: rgba(14, 60, 40, 0.82);
+  border-color: rgba(120, 220, 160, 0.6);
+}
+
+.banner.fmu.stopped {
+  background: rgba(110, 20, 20, 0.88);
+  border-color: rgba(255, 120, 120, 0.7);
+}
+
+#paused {
+  top: 50%;
+  bottom: auto;
+}
+
+#status {
+  top: 10px;
+  left: 10px;
+  width: 260px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.row span {
+  color: var(--muted);
+}
+
+.row b {
+  font-weight: 600;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#twist {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+#twist th,
+#twist td {
+  padding: 2px 4px;
+  text-align: right;
+  font-weight: 400;
+}
+
+#twist thead th {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+#twist tbody th {
+  text-align: left;
+  color: var(--muted);
+}
+
+#twist td:last-child {
+  width: 70px;
+}
+
+.meter {
+  position: relative;
+  display: block;
+  height: 8px;
+  background: rgba(242, 244, 239, 0.1);
+  border-radius: 2px;
+}
+
+.meter b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.meter u {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: #6cc4ff;
+}
+
+.units {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+#pad {
+  left: 10px;
+  bottom: 10px;
+  width: 260px;
+}
+
+#pad-name {
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+
+#pad-name.on {
+  color: var(--accent);
+}
+
+.pad-live canvas {
+  position: static;
+  width: 236px;
+  height: 110px;
+}
+
+#buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+#buttons span {
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+#buttons span.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1206;
+}
+
+#help {
+  top: 10px;
+  right: 10px;
+  width: 400px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+}
+
+#help h2 {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#help h2 small {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.map {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.map th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.map td {
+  padding: 2px 6px 2px 0;
+  vertical-align: top;
+}
+
+.map td:nth-child(1),
+.map td:nth-child(2) {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+#toast {
+  position: absolute;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+#toast.on {
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  #help {
+    display: none;
+  }
+  .banner {
+    max-width: calc(100vw - 32px);
+    bottom: auto;
+    top: 10px;
+  }
+  #status {
+    top: auto;
+    bottom: 150px;
+  }
+}

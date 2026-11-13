@@ -47,9 +47,9 @@ sources `design/docs_pages.md`.
  Nav (NavFilter) <- Imu (250 Hz) <- SpecF (accelerometer tap) ...               Mix (Mixer N = 6) <-- F, tau2 (Con), sel_lqr
  Gps (50 Hz fix)                                                                  | w_cmd[6]
                                                                                   v
- Esc1..6 (250 Hz) -> Drv1..6 (stdlib ElectricDrive) -> Prop1..6 (Propeller) -> RW (RotorWrench) -> Wrench -> Body
+ Rotor1..6 (library subsystem Rotor: Esc (250 Hz) -> Drive (stdlib ElectricDrive) -> Prop (Propeller)) -> RW (RotorWrench) -> Wrench -> Body
  World (GroundSpatial) -- Free (Free3D) -- Body (RigidBody3D, 2.1 kg) -- MountS -- Servo (Revolute3D) -- LinkA -- Arm (RigidBody3D)
- Arm -- TipM -- Rub (Spherical3D) -- LinkE -- EE (RigidBody3D) -- MountW1..3 -- Wheel1..3 (OmniContact) ... Wall (ContactSurface)
+ Arm -- TipM -- Rub (Spherical3D) -- LinkE -- EE (RigidBody3D) -- Wheel1..3 (library subsystem OmniWheel: Mount -- Contact (OmniContact)) ... Wall (ContactSurface)
  ServoCtl (ArmServo: PD + tanh limit) -> Servo.drive ;  RubK (RubberMount) -> Rub.drive1..3 ;  Omni (OmniDrive) -> Wheel.u
 ```
 
@@ -57,7 +57,9 @@ sources `design/docs_pages.md`.
   `Esc -> ElectricDrive -> Propeller` (950 Kv: k_t = 0.01005, R = 0.11 Ohm, 10x4.5 in: kT = 1.42e-5, kQ = 2.03e-7), 16 V
   constant supply (the tether replaces the battery), `RotorWrench` for the thrust, motor reaction, gyroscopic and drag
   wrench of the six rotors, `Mixer` with the 6 x 4 pseudo-inverse of the allocation matrix (13 N per rotor, 78 N in
-  total). The run starts in hover with the rotors at 534 rad/s.
+  total). The run starts in hover with the rotors at 534 rad/s. The six rotors `Rotor1..6` are instances of the
+  library subsystem `Rotor` (`library/Rotor.bgsub.json`: `Esc`, `Drive`, `Prop`, all six with the same values), so a
+  rotor speed is `Rotor<k>/Drive/rotor/w`.
 * **Manipulator.** A `Revolute3D` servo joint about y_b (frame j rotated -90 deg about x, so q = -mu, mu = arm
   elevation above the body x axis), a rigid tube (0.23 kg, L_m = 0.6 m) driven by `ArmServo` (PD with a smooth tanh
   torque limit, 8.4 N m, 40 rad/s). In free flight mu_sp = theta_b (arm level in the world), in contact mu_sp = theta_sp.
@@ -69,7 +71,10 @@ sources `design/docs_pages.md`.
   penetration into the wall plane (`ContactSurface` at x = 1.6 m, normal -x) and anisotropic traction: regularised Coulomb
   along the wheel's drive direction against the slip relative to the commanded surface speed (`OmniDrive`: u_k =
   -v_max d_k . v_cmd, v_max = 0.4 m/s at command 1), 0.04 friction along the free rollers; both forces act against their
-  slip, so the contact is energy-consistent. The 6 N brush spring is not modelled.
+  slip, so the contact is energy-consistent. The 6 N brush spring is not modelled. The wheels `Wheel1..3` are
+  instances of the library subsystem `OmniWheel` (`library/OmniWheel.bgsub.json`: wheel pose `Local` + `Compose`, the
+  end-effector-to-wheel `Mount` and the `OmniContact` named `Contact`; each instance pins its wheel position and drive
+  direction), so a wheel's normal force is `Wheel<k>/Contact/f_n`.
 * **Sensors.** `ImuSensor` (gyro + accelerometer, bias, noise, 2nd-order Butterworth), `SpecForce` (the accelerometer
   tap: the specific force from the true body acceleration, so the arm's reaction in contact is felt), `GpsSensor`,
   `NavFilter` (fixed-gain observer; the tilt is observed through the velocity innovation, so it does not depend on the
@@ -167,7 +172,7 @@ position controller (and the PI vertical loop of the engage controller).
 * `library/`: `Esc`, `Propeller`, `RotorWrench`, `Mixer`, `Pack6`, `Unpack6` (the propulsion; copied and adapted from the
   quadcopter example), `ImuSensor`, `GpsSensor`, `NavFilter`, `SpecForce`, `Truth`, `PositionCtrl`, `AttitudeCtrl`,
   `RateCtrl`, `Supervisor`, `EngageCtrl`, `ContactCtrl`, `PhaseSelect`, `ArmServo`, `RubberMount`, `OmniContact`,
-  `OmniDrive`, `WallForce`
+  `OmniDrive`, `WallForce`, and the library subsystems `Rotor.bgsub.json` and `OmniWheel.bgsub.json` (generated)
 * `design/design.py` (derivation and gains), `design/build_model.py`, `design/build_docs.py`, `design/docs_pages.md`
 * `expected.json`: 62 checks (phase machine, normal force, the paper's 7.5 deg bound, locomotion, disengage, the K
   structure and values at three theta_sp, stability, scene bindings with the arm-axis forward-kinematics check, no

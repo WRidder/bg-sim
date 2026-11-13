@@ -50,7 +50,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "C1/f_n",
+          "signal": "C1/Contact/f_n",
           "t": 0.35,
           "value": 4.578,
           "abs": 0.01,
@@ -58,7 +58,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "C2/f_n",
+          "signal": "C2/Contact/f_n",
           "t": 0.35,
           "value": 4.578,
           "abs": 0.01,
@@ -66,7 +66,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "C3/f_n",
+          "signal": "C3/Contact/f_n",
           "t": 0.35,
           "value": 4.578,
           "abs": 0.01,
@@ -74,7 +74,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C4/f_n",
+          "signal": "C4/Contact/f_n",
           "value": 1e-06,
           "note": "face phase: the apex contact is free",
           "from_t": 0.0,
@@ -146,7 +146,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "C2/f_n",
+          "signal": "C2/Contact/f_n",
           "t": 1.85,
           "value": 6.867,
           "abs": 0.01,
@@ -154,7 +154,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "C3/f_n",
+          "signal": "C3/Contact/f_n",
           "t": 1.85,
           "value": 6.867,
           "abs": 0.01,
@@ -162,7 +162,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C1/f_n",
+          "signal": "C1/Contact/f_n",
           "value": 1e-06,
           "note": "edge phase: vertex 1 is free (f_n = 0 to 1e-6 N)",
           "from_t": 1.4,
@@ -170,7 +170,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C4/f_n",
+          "signal": "C4/Contact/f_n",
           "value": 1e-06,
           "note": "edge phase: vertex 4 is free (f_n = 0 to 1e-6 N)",
           "from_t": 1.4,
@@ -242,7 +242,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "C3/f_n",
+          "signal": "C3/Contact/f_n",
           "t": 3.75,
           "value": 13.734,
           "abs": 0.02,
@@ -250,7 +250,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C1/f_n",
+          "signal": "C1/Contact/f_n",
           "value": 1e-06,
           "note": "vertex phase: vertex 1 is free (f_n = 0 to 1e-6 N)",
           "from_t": 3.3,
@@ -258,7 +258,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C2/f_n",
+          "signal": "C2/Contact/f_n",
           "value": 1e-06,
           "note": "vertex phase: vertex 2 is free (f_n = 0 to 1e-6 N)",
           "from_t": 3.3,
@@ -266,7 +266,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C4/f_n",
+          "signal": "C4/Contact/f_n",
           "value": 1e-06,
           "note": "vertex phase: vertex 4 is free (f_n = 0 to 1e-6 N)",
           "from_t": 3.3,
@@ -274,7 +274,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "C4/f_n",
+          "signal": "C4/Contact/f_n",
           "value": 1e-06,
           "note": "the apex contact never carries load in the whole run (the apex clearance stays above 0.2 m)"
         },
@@ -482,19 +482,19 @@
               "coeff": 1.0
             },
             {
-              "signal": "C1/Ec",
+              "signal": "C1/Contact/Ec",
               "coeff": 1.0
             },
             {
-              "signal": "C2/Ec",
+              "signal": "C2/Contact/Ec",
               "coeff": 1.0
             },
             {
-              "signal": "C3/Ec",
+              "signal": "C3/Contact/Ec",
               "coeff": 1.0
             },
             {
-              "signal": "C4/Ec",
+              "signal": "C4/Contact/Ec",
               "coeff": 1.0
             },
             {

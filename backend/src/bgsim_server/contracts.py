@@ -1612,6 +1612,21 @@ class ModelBlockInline(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class SubsystemPins(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    params: (
+        list[constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*(/[A-Za-z_][A-Za-z0-9_]*)+$')]
+        | None
+    ) = None
+    starts: (
+        list[constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*(/[A-Za-z_][A-Za-z0-9_]*)+$')]
+        | None
+    ) = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class SignalDirection(Enum):
     input = 'input'
     output = 'output'
@@ -2709,6 +2724,10 @@ class CatalogBlock(BaseModel):
         None,
         description='Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).',
         title='ModelDimension',
+    )
+    subsystem: bool | None = Field(
+        None,
+        description="True for a drawn subsystem definition of the project library (library/<Name>.bgsub.json). The entry lists the definition's ports as its interface; source is empty, and its pinned parameters are read from the definition itself. Omitted for a block written as code.",
     )
 
 
@@ -4165,6 +4184,12 @@ class Model(BaseModel):
         description="Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003).",
     )
     dashboard: ModelDashboard | None = None
+    definitions: (
+        dict[constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$'), SubsystemDefinition] | None
+    ) = Field(
+        None,
+        description='Drawn subsystem definitions of the project library, keyed by name, as the editor holds them while a model is open. A document that carries them is compiled with them: an entry here takes precedence over library/<Name>.bgsub.json. Never written to a saved model: the library file is the definition.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -4208,14 +4233,14 @@ class ModelNode(BaseModel):
     flipX: bool | None = None
     params: dict[str, str] | None = Field(
         None,
-        description='Parameter values as constant expression strings, keyed by parameter name.',
+        description='Parameter values as constant expression strings, keyed by parameter name. On an instance of a drawn subsystem definition the key is a pinned path inside the definition (rotor/J).',
     )
     constants: dict[str, ModelConstantValue] | None = Field(
         None, description='Constant overrides, keyed by constant name.'
     )
     starts: dict[str, str] | None = Field(
         None,
-        description='Start-value overrides as expression strings, keyed by variable name.',
+        description='Start-value overrides as expression strings, keyed by variable name. On an instance of a textual composite or of a drawn subsystem definition the key is <component>/<variable>.',
     )
     ui: ModelNodeUi | None = None
     field_comment: str | None = Field(None, alias='$comment')
@@ -4227,6 +4252,10 @@ class Subsystem(BaseModel):
     )
     ports: list[ModelSubsystemPort]
     diagram: ModelDiagram
+    definition: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$') | None = Field(
+        None,
+        description="Set while a model is open in the editor: this subsystem is the editor's working copy of the library subsystem of that name, kept equal to the definition except for the pinned values. The compiler treats it as an ordinary subsystem. A saved model stores the node as an instance instead (block.ref project:<name>, with its pinned values in params and starts).",
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -4235,6 +4264,26 @@ class ModelBlockSubsystem(BaseModel):
         extra='forbid',
     )
     subsystem: Subsystem
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class SubsystemDefinition(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    format: Literal['bgsim.subsystem']
+    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$') = Field(
+        ...,
+        description="The definition's name: the file is library/<name>.bgsub.json and the reference is project:<name>.",
+    )
+    description: str | None = None
+    ports: list[ModelSubsystemPort]
+    diagram: ModelDiagram
+    pins: SubsystemPins | None = Field(
+        None,
+        description="What an instance may set for itself. Every entry is a path inside the definition: node names from the definition's diagram down, then the parameter or variable name (rotor/J, Inner/gear/n). Everything else has the definition's value in every instance.",
+        title='SubsystemPins',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 

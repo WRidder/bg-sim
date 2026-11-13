@@ -1,0 +1,25 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "robot",
+      "title": "The microduck and its XL330 servos",
+      "file": "pages/robot.md",
+      "children": [
+        {
+          "id": "parameters",
+          "title": "Parameters and sources",
+          "file": "pages/parameters.md",
+          "children": []
+        },
+        {
+          "id": "limits",
+          "title": "Limits",
+          "file": "pages/limits.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

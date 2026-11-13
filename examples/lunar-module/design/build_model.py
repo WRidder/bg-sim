@@ -13,7 +13,8 @@ gyroscopic `Coriolis`, the twist tap `Twist` and three wrench sources (engine, R
 gravity). The propellant leaving the vehicle takes its momentum with it through six `MR` elements
 on the joint's drive axes (a 1-junction per drive port), modulated by `Tank` (`PropellantTank`). The descent and hover models
 add the landing gear: four `ContactPoint`s on the lunar sphere (`LunarSurface3D`), mounted at the
-footpads through `FixedTransform3DNeutral`s.
+footpads through `FixedTransform3DNeutral`s. Each footpad (`Pad1..4`) is an instance of the library
+subsystem `library/LunarFoot.bgsub.json`, which this script writes too.
 """
 
 from __future__ import annotations
@@ -177,24 +178,59 @@ def vehicle(dg: Diagram, *, q0, p0, P0, tank: dict, engine_T0, c_eng, gear: bool
 def landing_gear(dg: Diagram) -> None:
     x0, y0 = 1000, 1200
     for k, (name, b) in enumerate(PADS):
-        y = y0 + 150 * k
-        dg.node(f"{name}At", "stdlib:spatial/LocalPose3D", x0, y, params={"x": b[0], "y": b[1], "z": b[2]})
-        dg.node(f"{name}Pose", "stdlib:multibond/ComposePose3D", x0 + 180, y)
-        dg.sig("Free", "pose", f"{name}Pose", "gp")
-        dg.sig(f"{name}At", "g", f"{name}Pose", "gl")
-        dg.node(f"{name}Surf", "project:LunarSurface3D", x0 + 360, y, params={"R": d.RM})
-        dg.sig(f"{name}Pose", "g", f"{name}Surf", "g")
-        dg.node(name, "stdlib:contact/ContactPoint", x0 + 540, y, params=d.GEAR_CONTACT)
-        dg.sig(f"{name}Pose", "g", name, "g")
-        dg.sig(f"{name}Surf", "o", name, "o")
-        dg.sig(f"{name}Surf", "fr", name, "fr")
-        dg.node(f"{name}Mount", "stdlib:multibond/FixedTransform3DNeutral", x0 + 720, y,
-                params={"x": -b[0], "y": -b[1], "z": -b[2]})
-        dg.bond("Body", None, f"{name}Mount", "b")
-        dg.bond(f"{name}Mount", "a", name, "p")
-    dg.note("Landing gear: four footpads (167.57 in from the X axis, TN D-6850), each a ContactPoint (Hunt-Crossley "
-            "normal force for pad, strut and soil; Coulomb friction mu = 0.4) on the lunar sphere below it "
-            "(LunarSurface3D), mounted at its pad through a FixedTransform3DNeutral.", x0, y0 - 100, 700, 60)
+        dg.node(name, "project:LunarFoot", x0 + 200 * k, y0,
+                params={"Local/x": b[0], "Local/y": b[1], "Local/z": b[2],
+                        "Mount/x": -b[0], "Mount/y": -b[1], "Mount/z": -b[2]})
+        dg.sig("Free", "pose", name, "pose")
+        dg.bond("Body", None, name, "p")
+    dg.note("Landing gear: four footpads (167.57 in from the X axis, TN D-6850), each an instance of the library "
+            "subsystem LunarFoot: a ContactPoint (Hunt-Crossley normal force for pad, strut and soil; Coulomb friction "
+            "mu = 0.4) on the lunar sphere below it (LunarSurface3D), mounted at its pad through a "
+            "FixedTransform3DNeutral.", x0, y0 - 100, 780, 60)
+
+
+def lunar_foot_definition() -> dict:
+    """library/LunarFoot.bgsub.json: one footpad. The ContactFoot of the other examples (foot pose, mount,
+    contact point) with its own surface: the tangent plane of the lunar sphere below the pad
+    (LunarSurface3D, fed by the pad's world pose) in place of the o/fr ports of a shared ground plane."""
+    s = Diagram()
+    s.node("Local", "stdlib:spatial/LocalPose3D", 0, 0, params={"x": 0.0, "y": 0.0, "z": 0.0})
+    s.node("Compose", "stdlib:multibond/ComposePose3D", 160, 0)
+    s.node("Surface", "project:LunarSurface3D", 320, 0, params={"R": d.RM})
+    s.node("Mount", "stdlib:multibond/FixedTransform3DNeutral", 160, 200, params={"x": 0.0, "y": 0.0, "z": 0.0})
+    s.node("Contact", "stdlib:contact/ContactPoint", 480, 120, params=d.GEAR_CONTACT)
+    s.bond("Mount", "a", "Contact", "p")
+    s.sig("Local", "g", "Compose", "gl")
+    s.sig("Compose", "g", "Surface", "g")
+    s.sig("Compose", "g", "Contact", "g")
+    s.sig("Surface", "o", "Contact", "o")
+    s.sig("Surface", "fr", "Contact", "fr")
+    # ids are the names inside a library subsystem
+    for n in s.nodes:
+        n["id"] = n["name"]
+    for c in s.conns:
+        c["id"] = "lunarfoot_" + c["id"]
+        c["from"]["node"] = next(n["name"] for n in s.nodes if s.ids[n["name"]] == c["from"]["node"])
+        c["to"]["node"] = next(n["name"] for n in s.nodes if s.ids[n["name"]] == c["to"]["node"])
+
+    def port(name, direction, node, p, unit=None, size=1):
+        return {"name": name, "kind": "signal", "direction": direction, "type": "Real", "size": [size],
+                "unit": unit, "node": node, "port": p}
+
+    return {
+        "format": "bgsim.subsystem", "name": "LunarFoot",
+        "description": ("One footpad of the lunar module: the pad point in the body frame (Local), its world pose "
+                        "(Compose), the tangent plane of the lunar sphere straight below it (Surface, "
+                        "LunarSurface3D), the fixed mount from the body to the pad (Mount) and a compliant "
+                        "Hunt-Crossley contact point with Coulomb friction (Contact). Pin the pad position with "
+                        "Local/x, Local/y, Local/z and the mount with Mount/x, Mount/y, Mount/z (the negated "
+                        "offsets). Generated by design/build_model.py."),
+        "ports": [{"name": "p", "kind": "power", "domain": "Spatial", "size": [6], "node": "Mount", "port": "b"},
+                  port("pose", "input", "Compose", "gp", size=7),
+                  port("f_n", "output", "Contact", "f_n", unit="N")],
+        "diagram": {"nodes": s.nodes, "connections": s.conns, "subsystemPorts": [], "annotations": []},
+        "pins": {"params": ["Local/x", "Local/y", "Local/z", "Mount/x", "Mount/y", "Mount/z"], "starts": []},
+    }
 
 
 def settings(t_end: float, points: int, reltol=1e-8) -> dict:
@@ -269,7 +305,7 @@ def descent_model() -> dict:
         {"id": "p4", "title": "Mass (kg) and usable propellant (kg)", "signals": ["Tank/m", "Tank/prop"]},
         {"id": "p5", "title": "Tilt of the thrust axis from vertical (deg)", "signals": ["State/tilt_deg"]},
         {"id": "p6", "title": "Velocity gained (ft/s)", "signals": ["Status/dv_fps"]},
-        {"id": "p7", "title": "Footpad loads (N)", "signals": ["Pad1/f_n", "Pad2/f_n", "Pad3/f_n", "Pad4/f_n"]},
+        {"id": "p7", "title": "Footpad loads (N)", "signals": ["Pad1/Contact/f_n", "Pad2/Contact/f_n", "Pad3/Contact/f_n", "Pad4/Contact/f_n"]},
         {"id": "p8", "title": "Trajectory: altitude (km) over range (km)", "signals": ["State/h_km"], "x": "State/s_km"},
         {"id": "p9", "title": "Hover time left (s)", "signals": ["Status/hover_left"]},
     ]
@@ -344,7 +380,7 @@ def hover_model() -> dict:
         {"id": "p2", "title": "Vertical and horizontal velocity (ft/s)", "signals": ["State/rdot_fps", "State/vh_fps"]},
         {"id": "p3", "title": "Usable propellant (kg)", "signals": ["Tank/prop"]},
         {"id": "p4", "title": "Hover time left (s)", "signals": ["Status/hover_left"]},
-        {"id": "p5", "title": "Footpad loads (N)", "signals": ["Pad1/f_n", "Pad2/f_n", "Pad3/f_n", "Pad4/f_n"]},
+        {"id": "p5", "title": "Footpad loads (N)", "signals": ["Pad1/Contact/f_n", "Pad2/Contact/f_n", "Pad3/Contact/f_n", "Pad4/Contact/f_n"]},
         {"id": "p6", "title": "Thrust-to-weight ratio", "signals": ["Status/tw"]},
     ]
     dash = {"autoRerun": True, "cards": [
@@ -361,7 +397,7 @@ def hover_model() -> dict:
         value("d9", "Descent rate", "State/rdot_fps", 1, "ft/s"),
         plot("d10", "Altitude (ft)", ["State/h_ft"], "2x2"),
         plot("d11", "Hover time left (s)", ["Status/hover_left"], "2x2"),
-        plot("d12", "Footpad loads (N)", ["Pad1/f_n", "Pad2/f_n", "Pad3/f_n", "Pad4/f_n"], "2x2"),
+        plot("d12", "Footpad loads (N)", ["Pad1/Contact/f_n", "Pad2/Contact/f_n", "Pad3/Contact/f_n", "Pad4/Contact/f_n"], "2x2"),
     ]}
     return model_doc("lm-hover", "The lunar module's landing phase (P66) flown from the dashboard: descent rate, "
                      "forward translation and the propellant margin. Generated by design/build_model.py.", dg,
@@ -759,7 +795,7 @@ def expected() -> dict:
          "note": "PUBLISHED (design limit): horizontal touchdown velocity at most 4 ft/s, TN D-6850"},
     ]
     for name, _ in PADS:
-        dsc.append({"kind": "max_abs_le", "signal": f"{name}/f_n", "value": d.STRUT_CRUSH_HIGH,
+        dsc.append({"kind": "max_abs_le", "signal": f"{name}/Contact/f_n", "value": d.STRUT_CRUSH_HIGH,
                     "note": "PUBLISHED (flight, indicative): no primary-strut stroking was recorded on Apollo 11 "
                             "(TN D-6850 table V), so no strut reached its 4,500 lb honeycomb cartridge, let alone the "
                             "9,500 lb one behind it (TN D-6850 fig. 6). The model's struts are rigid and a pad's force "
@@ -767,13 +803,13 @@ def expected() -> dict:
                             "the 9,500 lb level; the model's peak (forward pad, as the LM rocks onto it from a 4.5 deg "
                             "tilt) is about 10 % above 4,500 lb"})
     for name in ("Pad1", "Pad3"):
-        dsc.append(cv(f"{name}/delta", 774.0, d.PAD_PEN, "PUBLISHED (FITTED): the footpads penetrated the surface "
+        dsc.append(cv(f"{name}/Contact/delta", 774.0, d.PAD_PEN, "PUBLISHED (FITTED): the footpads penetrated the surface "
                       "2.5 to 3.5 in (MR 5.4); the contact stiffness is chosen so that a pad settles 3 in under a "
                       "quarter of the landing weight. Tolerance 0.75 in.", abs_=0.75 * 0.0254))
     w_td = td["m"] * d.MU / (d.RM + d.D_CG) ** 2
-    dsc.append({"kind": "compare_signals", "signal": "Pad1/f_n", "signal_b": "Pad2/f_n", "from_t": 770.0, "to_t": 775.0,
+    dsc.append({"kind": "compare_signals", "signal": "Pad1/Contact/f_n", "signal_b": "Pad2/Contact/f_n", "from_t": 770.0, "to_t": 775.0,
                 "max_abs": 0.05 * w_td / 4, "note": "at rest the two side pads carry the same load (within 5 %)"})
-    dsc.append(cv("Pad3/f_n", 774.0, w_td / 4, "at rest on level ground each pad carries a quarter of the lunar weight "
+    dsc.append(cv("Pad3/Contact/f_n", 774.0, w_td / 4, "at rest on level ground each pad carries a quarter of the lunar weight "
                   "m g(R + h) / 4 (statics; m from the scipy reference at touchdown)", rtol=1e-3))
     # ---------------------------------------------------------------------------- ascent
     asm = ASC["samples"]
@@ -880,6 +916,9 @@ def expected() -> dict:
 def main() -> int:
     (ROOT / "models").mkdir(exist_ok=True)
     (ROOT / "scenes").mkdir(exist_ok=True)
+    foot = ROOT / "library" / "LunarFoot.bgsub.json"
+    foot.write_text(json.dumps(lunar_foot_definition(), indent=2) + chr(10), encoding="utf-8", newline=chr(10))
+    print(f"wrote {foot}")
     for model in (descent_model(), ascent_model(), hover_model()):
         path = ROOT / "models" / f"{model['name']}.bgmodel.json"
         path.write_text(json.dumps(model, indent=1) + "\n", encoding="utf-8", newline="\n")

@@ -21,12 +21,19 @@ Clock ─► Traj ──g──► IK ──qr1..7──► PD ──u1..7──
 
 Robot (subsystem), per joint k:
 tau_k ─► Limit_k ─► Motor_k (MSe 1/N) ─► 1 [Rotor_k: I] ─► Gear_k (TF 1/N) ─► 0 [TauSense_k: De]
-      ─► 1 [Spring_k: C, Damper_k: R] ─► 1 [Friction_k: GazFriction] ─► J_k.drive (Revolute3D)
-J_k.qout ─► Encoder_k (Quantizer, 1 ms) ─► q_k        J_k.qdout ─► dq_k        TauSense_k ─► tauJ_k
-World ─ Mount ─ J1 ─ Link1 ─ BJ1 ─┬─ B1 (RigidBody3D, principal axes)
-                                  └─ T2 (modified-DH offset) ─ J2 ─ ... ─ J7 ─ Link7 ─ BJ7 ─ B7
-pose chain: W_k = W_{k−1} ∘ LN_k ∘ J_k.pose,  P_k = W_k ∘ LC_k ─► B_k.g,  TCP = W_7 ∘ LFlange
+      ─► 1 [Spring_k: C, Damper_k: R] ─► 1 [Friction_k: GazFriction] ─► L_k.drive
+L_k.q ─► Encoder_k (Quantizer, 1 ms) ─► q_k        L_k.qd ─► dq_k        TauSense_k ─► tauJ_k
+World ─ L1 ─ L2 ─ ... ─ L7          (RevoluteLink3D instances, child ─► parent)
+inside L_k: parent ─ T (modified-DH offset; L1: the base mount) ─ J (Revolute3D) ─ Link ─ BJ ─┬─ B (RigidBody3D, principal axes)
+pose chain: Base ─► L1.gp, L_k.g ─► L_{k+1}.gp; inside: W = gp ∘ LN ∘ J.pose,  P = W ∘ LC ─► B.g;  TCP = L7.g ∘ LFlange
 ```
+
+Every link is an instance of a library subsystem: `RevoluteLink3D` in `panda` and `panda-free`,
+`RevoluteLink3DRigid` (the same link on `Revolute3DRigid`) in the rigid variants. The definitions
+`library/RevoluteLink3D.bgsub.json` and `library/RevoluteLink3DRigid.bgsub.json` are written by
+`design/build_models.py` from `design/serial_link.py` (the same file as in `robot-arm-3d`); every
+offset, joint parameter, body and start deflection is pinned per instance, so joint `k` is `L<k>/J`
+(`Robot/L<k>/J` in `panda`) and its angle `L<k>/J/qout`.
 
 Everything is generated from `design/` (Python, run with `uv`):
 
@@ -34,7 +41,7 @@ Everything is generated from `design/` (Python, run with `uv`):
 | --- | --- |
 | `design/panda.py` | every number with its source: kinematics, Gaz parameters, friction, limits, the drive assumptions; Newton-Euler gravity, mass matrix and forward dynamics; the IK (Python port) and its round trip |
 | `design/design.py` | the task: waypoints, timing, gains, start states; generated gravity code |
-| `design/build_models.py` | `models/panda.bgmodel.json`, `models/panda-free.bgmodel.json` |
+| `design/build_models.py` | `models/panda.bgmodel.json`, `models/panda-free.bgmodel.json` (and the rigid variants), `library/RevoluteLink3D.bgsub.json`, `library/RevoluteLink3DRigid.bgsub.json` (from `design/serial_link.py`) |
 | `design/build_library.py` | `library/PandaTrajectory.jl`, `library/PandaIK.jl`, `library/PandaPD.jl` |
 | `design/build_scene.py` | `scenes/panda.sdf`, `scenes/panda-free.sdf` |
 | `design/convert_meshes.py` | `meshes/link0..7.glb` from the franka_description COLLADA files |
@@ -224,8 +231,8 @@ comparison, the six-axis `robot-arm-3d/arm` needs 113 s for 2 s of simulated tim
 
 | model | status | states | dt | substeps per 1 ms | worst error (rel. to peak) | signal | doStep mean / max | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `panda` | compared | 98 | 8e-8 s | 12500 | 1.16e-3 | `Robot/B1/inertia/p.e[4]` | 69.6 / 150 ms | W203, W207, W209 |
-| `panda-free` | compared | 84 | 8e-8 s | 12500 | 1.05e-5 | `J7/thd[2]` | 46.0 / 70 ms | W207, W209 |
+| `panda` | compared | 98 | 8e-8 s | 12500 | 1.16e-3 | `Robot/B1/inertia/p.e[4]` (now `Robot/L1/B/inertia/p.e[4]`) | 69.6 / 150 ms | W203, W207, W209 |
+| `panda-free` | compared | 84 | 8e-8 s | 12500 | 1.05e-5 | `J7/thd[2]` (now `L7/J/thd[2]`) | 46.0 / 70 ms | W207, W209 |
 
 Both models export, build, pass the symbol and allocation checks, and agree with the simulation.
 The default method (explicit RK4) is limited by the held directions: `|λ| = 3.2e6 1/s` needs a
@@ -250,7 +257,7 @@ and 37195 flops (the dense LU would be 622741).
 | `panda` | compared | 92 µs / 1.3 ms | under 3.0e-6 rad | under 2.4e-6 m | under 0.014 N·m |
 | `panda-free` | the harness diverged | | | | |
 
-The gate's worst relative error for `panda` under ros2 is 10.5, in `Robot/J6/Vrel[1]`. That is an
+The gate's worst relative error for `panda` under ros2 is 10.5, in `Robot/J6/Vrel[1]` (now `Robot/L6/J/Vrel[1]`). That is an
 internal rate of a held direction: the 1 ms step does not resolve the `1e7` modes, and the
 L-stable method damps them, which is the intent. The joint angles, flange and sensors above come
 from the same FMU, compared with the reference by `fmpy`. The frictionless free fall of
@@ -302,8 +309,8 @@ MuJoCo up to 1 s, with a 1e-8 rad floor. `panda-rigid` gets the 84 checks of `pa
 
 `scenes/panda.sdf` is the URDF tree of `franka_description`: links `panda_link0..7` at their rest
 poses with `meshes/link<i>.glb`, revolute joints `panda_joint1..7` with their frames on the child
-links (the axis is the child `z`). The models bind `joint:panda_joint<i>` to `J<i>/qout`
-(`Robot/J<i>/qout` in `panda`), so the viewer composes the arm itself. `panda.sdf` adds the target
+links (the axis is the child `z`). The models bind `joint:panda_joint<i>` to `L<i>/J/qout`
+(`Robot/L<i>/J/qout` in `panda`), so the viewer composes the arm itself. `panda.sdf` adds the target
 pose `Traj/g` (an RGB triad, `tcp_target`) and the simulated flange `Robot/TCP/g` (an orange ball,
 `tcp_actual`); `panda-free.sdf` has only the ball.
 

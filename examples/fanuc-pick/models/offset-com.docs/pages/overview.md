@@ -6,4 +6,4 @@ The offset makes a moment of $m g c$ = 0.88 N·m (x) and 0.44 N·m (y) about the
 
 **Gripping over the centre of mass** (`gx`, `gy` = `cx`, `cy`) removes the static moment. Then the offset case is almost as fast as the centred carton: see `offset-com-best`.
 
-![Cup utilisation, vacuum of the heavy and the light side, drop detection|900](assets/6acbd23ee305.png)
+![Cup utilisation, vacuum of the heavy and the light side, drop detection|900](assets/fcbce5e2375a.png)

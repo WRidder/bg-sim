@@ -7,7 +7,8 @@
     uv run examples/a109/design/design.py        # first
     uv run examples/a109/design/build_model.py
 
-The airframe (a subsystem, `airframe()`) is the same in every model: the multibond rigid body on a
+The airframe (a subsystem, `airframe()`; in a109-open-loop instances of the library subsystem
+`library/HeliAirframe.bgsub.json`) is the same in every model: the multibond rigid body on a
 free joint with one modulated wrench source per component at its own point (main rotor, fuselage,
 tail rotor, tailplane, fin), the drivetrain as a rotational bond graph (rotor inertia, mast
 0-junction coupled to the airframe yaw through ShaftAxis, gearbox junction with the engine, the
@@ -380,6 +381,100 @@ def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=Fals
     return d
 
 
+# --------------------------------------------------------------------------- the library airframe
+# a109-open-loop flies instances of library/HeliAirframe.bgsub.json: airframe() in calm air without the
+# gear, laid out on its own (AIRFRAME_LAYOUT). a109-sim keeps its inline airframe (gear, wind, engines).
+AIRFRAME = "HeliAirframe"
+AIRFRAME_POSE = ("qw", "qx", "qy", "qz", "px", "py", "pz")
+AIRFRAME_PINS = {"params": ["MR/rpm_mode", "TR/rpm_mode"],
+                 "starts": [f"Free/{k}" for k in AIRFRAME_POSE] + ["Body/inertia/P", "MR/a1", "MR/b1", "Rotor/P", "Gov/xi"]}
+_DX, _DY = 1760, 300   # the drivetrain's origin (MShaft), the relative layout of airframe()
+AIRFRAME_LAYOUT = {  # node -> (x, y) inside the definition
+    "th0In": (0, 300), "B1In": (0, 400), "A1In": (0, 500), "thtrIn": (0, 600),
+    "World": (200, 0), "Free": (360, 0), "Body": (520, 0),
+    **{f"Se{k}": (180 + 60 * k, 140) for k in range(1, 7)},
+    "Calm": (200, 300), "Air": (360, 300),
+    "MR": (600, 300), "Fus": (600, 460), "TR": (600, 620), "HT": (600, 780), "VT": (600, 940),
+    "Power": (780, 300), "Zero": (780, 1100),
+    **{f"W{c[0]}": (960, 300 + 160 * k) for k, c in enumerate(COMPONENTS)},
+    **{f"M{c[0]}": (1120, 300 + 160 * k) for k, c in enumerate(COMPONENTS)},
+    **{n: (_DX + dx, _DY + dy) for n, (dx, dy) in {
+        "MShaft": (0, 0), "Shaft": (0, 120), "Mast": (200, 240), "RotorJ": (400, 240), "Rotor": (600, 160),
+        "AeroLoad": (600, 320), "OmRotor": (600, 400), "GearJ": (0, 400), "Engine": (-200, 400), "Loss": (-200, 480),
+        "OmGear": (-200, 560), "TRGear": (0, 560), "TRJ": (0, 680), "TRLoad": (200, 680), "OmTR": (200, 760),
+        "PLoss": (-500, 480), "LossDiv": (-350, 480), "Gov": (-350, 300), "EngOn": (-500, 300)}.items()},
+}
+AIRFRAME_NOTES = [(0, -100), (600, 200), (_DX - 500, _DY - 120)]   # airframe, components, drivetrain
+
+
+def _box(node: dict) -> tuple[float, float, float, float]:
+    """The node's footprint in the editor with its name below: junctions and bond-graph letters 40 px,
+    other blocks a 60 px square."""
+    b = node["block"]
+    small = "junction" in b or b.get("ref", "").startswith("stdlib:bondgraph/")
+    s = 40 if small else 60
+    return node["position"]["x"], node["position"]["y"], s, s + 20
+
+
+def check_layout(nodes: list[dict], notes: list[dict], label: str, gap: float = 10.0) -> None:
+    boxes = [(n["name"], *_box(n)) for n in nodes] + [(f"note {a['id']}", a["x"], a["y"], a["w"], a["h"]) for a in notes]
+    for i, (na, xa, ya, wa, ha) in enumerate(boxes):
+        for nb, xb, yb, wb, hb in boxes[i + 1:]:
+            if xa < xb + wb + gap and xb < xa + wa + gap and ya < yb + hb + gap and yb < ya + ha + gap:
+                raise SystemExit(f"{label}: {na} overlaps {nb}")
+
+
+def _airframe_start(st: dict) -> dict:
+    return {"pose": st["pose"], "P": st["P"], "a1": st["a1"], "b1": st["b1"], "om": st["om"], "xi": st["xi"]}
+
+
+AIRFRAME_START = _airframe_start(DESIGN["open_loop"][0]["start"])   # the hover trim
+
+
+def _pinned_starts(start: dict) -> dict:
+    """The pinned start values of airframe(start), as airframe() writes them."""
+    out = {f"Free/{k}": ex(start["pose"][k]) for k in AIRFRAME_POSE}
+    out["Body/inertia/P"] = exvec(start["P"])
+    out["MR/a1"], out["MR/b1"] = ex(start["a1"]), ex(start["b1"])
+    out["Rotor/P"] = num(SI["drive"]["J"] * start["om"])
+    out["Gov/xi"] = ex(start["xi"])
+    return out
+
+
+def airframe_definition() -> dict:
+    """library/HeliAirframe.bgsub.json: airframe() in calm air at the hover trim; the global `rpm_mode`
+    of the model reaches it through the pinned MR/rpm_mode and TR/rpm_mode (default 1, the drivetrain's)."""
+    assert set(AIRFRAME_START["pose"]) == set(AIRFRAME_POSE)
+    d = airframe(AIRFRAME_START, rpm_mode="1.0")
+    doc = d.doc()
+    for n in doc["nodes"]:
+        x, y = AIRFRAME_LAYOUT[n["name"]]
+        n["position"] = {"x": x, "y": y}
+    assert len(AIRFRAME_LAYOUT) == len(doc["nodes"])
+    for a, (x, y) in zip(doc["annotations"], AIRFRAME_NOTES, strict=True):
+        a["x"], a["y"] = x, y
+    check_layout(doc["nodes"], doc["annotations"], AIRFRAME)
+    ports = doc.pop("subsystemPorts")
+    return {"format": "bgsim.subsystem", "name": AIRFRAME,
+            "description": ("One A109 in calm air (Heffley & Mnich, NASA CR-177476): the rigid body on a free joint with "
+                            "a wrench source per component (main rotor, fuselage, tail rotor, tailplane, fin), the "
+                            "drivetrain as a rotational bond graph, the governor and the air data. Inputs th0, B1, A1, "
+                            "thtr (deg). Pin the start state with Free/qw .. Free/pz, Body/inertia/P, MR/a1, MR/b1, "
+                            "Rotor/P and Gov/xi (default: the hover trim) and the rotor speed the aerodynamics see with "
+                            "MR/rpm_mode and TR/rpm_mode (1 the drivetrain's, 0 the nominal). Generated by "
+                            "design/build_model.py."),
+            "ports": ports, "diagram": doc, "pins": AIRFRAME_PINS}
+
+
+def airframe_instance(parent: Diagram, name: str, x: float, y: float, start: dict) -> str:
+    """An instance of the library airframe: it sets the start values where they differ from the definition's."""
+    own, base = _pinned_starts(start), _pinned_starts(AIRFRAME_START)
+    starts = {k: v for k, v in own.items() if v != base[k]}
+    parent.node(name, f"project:{AIRFRAME}", x, y, params={"MR/rpm_mode": "rpm_mode", "TR/rpm_mode": "rpm_mode"},
+                starts=starts)
+    return name
+
+
 # --------------------------------------------------------------------------- the 3D view
 VIEW_LIFT = 6.0       # m, the framed helicopter flies this far above the viewer's grid at the origin
 FLOOR_PERIOD = 10.0   # m, stripe spacing of the floor (the period of the scrolling pattern)
@@ -565,24 +660,23 @@ def model_open_loop():
                 "0 the nominal 385 rpm (the report's constant-RPM model)")]
     for k, a in enumerate(OL):
         lab = a["label"]
-        x0, y = 700 * (k % 2), 40 + 360 * (k // 2)
+        x0, y = 40 + 440 * k, 40   # side by side: the airframe is tall
         st = a["start"]
-        start = {"pose": st["pose"], "P": st["P"], "a1": st["a1"], "b1": st["b1"], "om": st["om"], "xi": st["xi"]}
-        airframe(start).subsystem(d, lab, x0 + 400, y + 100)
+        airframe_instance(d, lab, x0 + 200, y, _airframe_start(st))
         for j, nm in enumerate(("th0", "B1", "A1", "thtr")):
             c0 = st["ctrl_deg"][j]
             node = f"{lab}{nm}"
             if a["axis"] and AXIS_INPUT[a["axis"]] == nm:
                 if a["t_off"] is None:
-                    d.node(node, "stdlib:sources/Step", x0 + 100, y + 70 * j,
+                    d.node(node, "stdlib:sources/Step", x0, y + 90 * j,
                            params={"t_step": num(a["t_on"]), "initial": num(c0), "final": num(c0 + a["amp"])})
                 else:
-                    d.node(node, "stdlib:sources/Trapezoid", x0 + 100, y + 70 * j,
+                    d.node(node, "stdlib:sources/Trapezoid", x0, y + 90 * j,
                            params={"amplitude": num(a["amp"]), "rising": "0.0", "width": num(a["t_off"] - a["t_on"]),
                                    "falling": "0.0", "period": "1000.0", "n_periods": "1", "offset": num(c0),
                                    "t_start": num(a["t_on"])})
             else:
-                d.node(node, "stdlib:sources/Constant", x0 + 100, y + 70 * j, params={"value": num(c0)})
+                d.node(node, "stdlib:sources/Constant", x0, y + 90 * j, params={"value": num(c0)})
             d.sig(node, "y", lab, nm)
     labs = [a["label"] for a in OL]
     drifts = [a["kt"] * 0.5144444444444445 for a in OL]
@@ -594,7 +688,7 @@ def model_open_loop():
         {"id": "p5", "title": "Flapping a1, b1 (deg)", "signals": [f"{l}/MR/a1_deg" for l in labs] + [f"{l}/MR/b1_deg" for l in labs]},
         {"id": "p6", "title": "Height (m)", "signals": [f"{l}/Air/h" for l in labs]},
     ]
-    bindings = view(d, labs, OL_SLOTS, drifts, -30.0, 1500, 40)
+    bindings = view(d, labs, OL_SLOTS, drifts, -30.0, 1840, 40)
     scene = write_scene("a109-open-loop", list(zip([l.lower() for l in labs], OL_PAINT)),
                         "  a109-open-loop: Hover (red, framed), Coll (white, right), Lon (blue, left), Fwd (yellow, behind).\n"
                         "  The floor is a reference plane 30 m below the start height (sea level).",
@@ -1009,6 +1103,8 @@ def ground_cases() -> dict:
 
 
 def main() -> int:
+    (EXAMPLE / "library" / f"{AIRFRAME}.bgsub.json").write_text(json.dumps(airframe_definition(), indent=1) + "\n",
+                                                                  encoding="utf-8", newline="\n")
     models = {"a109-open-loop": model_open_loop(), "a109-sim": model_sim()}
     (EXAMPLE / "expected.json").write_text(json.dumps(expected(), indent=1) + "\n", encoding="utf-8", newline="\n")
     for name, doc in models.items():

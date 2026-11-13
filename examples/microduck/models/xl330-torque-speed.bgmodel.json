@@ -1,0 +1,373 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "xl330-torque-speed",
+  "$comment": "One XL330 instance on a speed dynamometer (no backlash).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Goal",
+        "name": "Goal",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Supply",
+        "name": "Supply",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 0,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "v_bat"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Servo",
+        "name": "Servo",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 200,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0",
+          "Friction/scale": "1.0",
+          "Backlash/gap": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "SpeedRamp",
+        "name": "SpeedRamp",
+        "block": {
+          "ref": "stdlib:sources/Ramp"
+        },
+        "position": {
+          "x": 420,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_start": "0.5",
+          "slope": "4.0",
+          "initial": "-8.0",
+          "duration": "7.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Dyno",
+        "name": "Dyno",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": 420,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s0001",
+        "kind": "signal",
+        "from": {
+          "node": "Goal",
+          "port": "y"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0002",
+        "kind": "bond",
+        "from": {
+          "node": "Supply",
+          "port": "p"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0003",
+        "kind": "signal",
+        "from": {
+          "node": "SpeedRamp",
+          "port": "y"
+        },
+        "to": {
+          "node": "Dyno",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0004",
+        "kind": "bond",
+        "from": {
+          "node": "Dyno",
+          "port": "p"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "horn"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**Torque-speed curve.** A dynamometer (MSf) turns the horn from -8 to 20 rad/s while the goal is far ahead, so the firmware asks for full PWM. Servo/tau_l is the torque at the horn: the current-limited stall line (i_limit) then the back-EMF line to the free speed v_bat/kt, minus the friction and the armature torque.",
+        "x": 0,
+        "y": -200,
+        "w": 700,
+        "h": 120,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 8.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1601
+    },
+    "event_limit": 100000
+  },
+  "parameters": [
+    {
+      "name": "kp_fw",
+      "value": "200.0",
+      "unit": "1",
+      "description": "XL330 Position P Gain register (robotd gain 200; standing 0.8x, limp 50)"
+    },
+    {
+      "name": "i_limit",
+      "value": "1.75",
+      "unit": "A",
+      "description": "Firmware current limit (BAM/training 1.75 A; impact-guard firmware on the robot 1.0 A)"
+    },
+    {
+      "name": "t_latency",
+      "value": "0.02",
+      "unit": "s",
+      "description": "Command latency, goal written to goal applied (a multiple of 5 ms)"
+    },
+    {
+      "name": "v_bat",
+      "value": "7.4",
+      "unit": "V",
+      "description": "Supply voltage (2S Li-ion: 8.2 V full, 7.4 V nominal, 6.6 V empty under load)"
+    },
+    {
+      "name": "k_motor",
+      "value": "0.36601349688984386",
+      "unit": "N*m/A",
+      "description": "Torque constant at the horn, also the back-EMF constant (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "r_motor",
+      "value": "2.8113923539223227",
+      "unit": "Ohm",
+      "description": "Winding plus driver resistance (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "armature",
+      "value": "0.0018077432831600838",
+      "unit": "kg*m^2",
+      "description": "Rotor and gears reflected to the horn (BAM XL330 M6 fit); the rotor inertia of XL330 is armature/288.4^2, the joint of XL330Rigid carries it as Ja"
+    }
+  ],
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Horn speed",
+      "signals": [
+        "SpeedRamp/y",
+        "Servo/HornSpeed/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Torques",
+      "signals": [
+        "Servo/MotorTorque/y",
+        "Servo/Transmit/y",
+        "Servo/Friction/tau_f"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Current and duty",
+      "signals": [
+        "Servo/Current/y",
+        "Servo/PwmLimit/y"
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Torque-speed curve",
+        "options": {
+          "markdown": true,
+          "text": "A dynamometer turns the horn from -8 to 20 rad/s with the goal far ahead. The flat part is the current limit, the slope the back-EMF; lower the limit to the 1.0 A of the robot's impact-guard firmware, or the supply to an empty pack."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Current limit",
+        "parameter": "global:i_limit",
+        "options": {
+          "min": 0.5,
+          "max": 1.75,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "A"
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Supply voltage",
+        "parameter": "global:v_bat",
+        "options": {
+          "min": 6.0,
+          "max": 8.4,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": "V"
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Horn torque",
+        "signals": [
+          "Servo/Transmit/y"
+        ],
+        "options": {
+          "decimals": 3,
+          "sparkline": true,
+          "unit": "N m"
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Horn speed",
+        "signals": [
+          "Servo/HornSpeed/y"
+        ],
+        "options": {
+          "decimals": 1,
+          "sparkline": true,
+          "unit": "rad/s"
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Torques (N m)",
+        "signals": [
+          "Servo/MotorTorque/y",
+          "Servo/Transmit/y",
+          "Servo/Friction/tau_f"
+        ]
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Current (A) and duty",
+        "signals": [
+          "Servo/Current/y",
+          "Servo/PwmLimit/y"
+        ]
+      }
+    ]
+  }
+}

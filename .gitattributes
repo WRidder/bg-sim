@@ -3,3 +3,4 @@
 *.jpg binary
 *.glb binary
 *.f64 binary
+*.bat text eol=crlf

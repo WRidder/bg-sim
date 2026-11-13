@@ -654,19 +654,31 @@ portref_port(p::PortRef) = p.port
 source_range(p::PortRef) = p.range
 
 """
-    ConnectDecl(from, to, range)
+    ConnectDecl(from, to, range[, kind])
 
-One `connect(a, b)` entry of `@connections`. The order is the source order; it decides which
-end is the bond's positive-power end when the connection is a bond.
+One `connect(a, b)` or `bond(a, b)` entry of `@connections`. The order is the source order; it
+decides which end is the bond's positive-power end when the connection is a bond.
+
+`kind` is `:auto` for `connect` (the port declarations decide: signal, bond or wire, plan D7)
+and `:bond` for `bond`, which states a bond between two power ports whatever their domain. Two
+concrete-domain power ports joined by `connect` are a wire (a node, no direction); `bond` is how
+a composite writes the directed bond a diagram draws between them (a joint on a body).
 """
 struct ConnectDecl
     from::PortRef
     to::PortRef
     range::SourceRange
+    kind::Symbol
 end
+
+ConnectDecl(from::PortRef, to::PortRef, range::SourceRange) = ConnectDecl(from, to, range, :auto)
 
 connect_from(c::ConnectDecl) = c.from
 connect_to(c::ConnectDecl) = c.to
+"""    connect_kind(c) -> :auto | :bond
+
+`:bond` for a `bond(a, b)` entry, `:auto` for `connect(a, b)`."""
+connect_kind(c::ConnectDecl) = c.kind
 source_range(c::ConnectDecl) = c.range
 
 """

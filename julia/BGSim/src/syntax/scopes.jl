@@ -363,7 +363,8 @@ Checked here:
   `@causality` of its own; `@parameters` are allowed and become the composite's tunable
   parameters (J2.6b), while `@observables` alias internal signals to the composite path;
 - component names are unique and do not collide with a declaration;
-- every `connect` side names an interface port or a declared component;
+- every `connect` side names an interface port or a declared component, and a `bond` joins
+  component ports or junctions only (an interface port is exposed with `connect`);
 - the parameter overrides of a component are constant expressions or a name of one of the
   composite's `@parameters` (the J2.6b symbolic alias);
 - every interface port is exposed by exactly one `connect` to a component port. The exposed
@@ -522,6 +523,20 @@ function _check_components!(ck::Checker)
                     hint = "declare it in `@components`, or fix the spelling",
                 )
             end
+        end
+        if c.kind === :bond && any(
+            r -> r.instance === nothing && !(r.port in junction_names), (c.from, c.to),
+        )
+            # `bond` is internal wiring. An interface port is a face: it *is* the internal
+            # port (or junction) it names, so there is no bond of its own to direct.
+            _report!(
+                ck,
+                "E001",
+                "`bond` joins two component ports, not a port of `$blockname`",
+                c;
+                scope = :connections,
+                hint = "expose an interface port with `connect(port, component.port)`",
+            )
         end
         if c.from.instance !== nothing && c.from.instance === c.to.instance &&
            c.from.port === c.to.port

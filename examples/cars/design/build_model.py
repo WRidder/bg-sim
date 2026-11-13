@@ -10,7 +10,9 @@
 Every model is the same vehicle bond graph (`car.py`) with different drivers, grounds and start
 states: the race car on flat ground (drop test, skid pad, top speed and braking) and the buggy
 (drop test, a 25 % grade, rolling hills). The `*-sim` models are the FMU sources of the
-host applications (apps/car-sim): their driver inputs are export inputs.
+host applications (apps/car-sim): their driver inputs are export inputs. The four suspension
+corners FL, FR, RL, RR are instances of the library subsystems RacecarFrontCorner,
+RacecarRearCorner, BuggyFrontCorner and BuggyRearCorner (library/*.bgsub.json, also written here).
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ EXAMPLE = HERE.parent
 sys.path.insert(0, str(HERE))
 
 from bg import Diagram, ex, g, model_doc, num, settings, vec  # noqa: E402
-from car import constant, vehicle, view  # noqa: E402
+from car import constant, corner_definition, vehicle, view  # noqa: E402
 from vehicles import CORNERS, vehicles  # noqa: E402
 
 V = vehicles()
@@ -585,6 +587,13 @@ def expected() -> dict:
 def main() -> int:
     out = EXAMPLE / "models"
     out.mkdir(exist_ok=True)
+    # the corner subsystems (one per vehicle and axle): every model holds four instances
+    for veh in ("racecar", "buggy"):
+        for c in ("FL", "RL"):
+            definition = corner_definition(V[veh], c)
+            path = EXAMPLE / "library" / f"{definition['name']}.bgsub.json"
+            path.write_text(json.dumps(definition, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print("wrote", path.name)
     models = {
         "racecar-settle": settle("racecar"),
         "racecar-skidpad": skidpad(),

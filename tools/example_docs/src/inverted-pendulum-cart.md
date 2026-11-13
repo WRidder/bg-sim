@@ -126,3 +126,93 @@ To recompute the gains: `uv run examples/inverted-pendulum-cart/design/design.py
 - no E901, E106, W202 or W206.
 
 The `W201`/`W205` warnings of the run are expected, see [the plant page](page:plant).
+
+@@ figures inverted-pendulum-cart-mpc
+{
+  "run": {
+    "kind": "plot", "model": "inverted-pendulum-cart-mpc", "xlim": [0, 5],
+    "rows": [
+      {"ylabel": "pendulum angle [deg]", "series": [{"signal": "ThetaInt/y", "label": "ThetaInt/y", "scale": 57.29577951308232}]},
+      {"ylabel": "cart position [m]", "series": [{"signal": "XInt/y", "label": "XInt/y"}, {"signal": "XRef/y", "label": "XRef/y (reference)", "style": "--"}], "legend": true},
+      {"ylabel": "force u [N]", "series": [{"signal": "MSe1/p.e", "label": "MSe1/p.e", "color": "#1b9e77"}], "hlines": [{"y": 20, "label": "limit +-20 N"}, {"y": -20}], "legend": true}
+    ]
+  }
+}
+@@ page inverted-pendulum-cart-mpc overview - | Constrained MPC
+# Constrained MPC on the same cart-pole
+
+[MPC1](block:MPC1) (`library/MPC.jl`) replaces the LQR with a 20 ms model-predictive
+controller. The plant, the scene and the 0.1 rad start are the same as
+[the original model](model:inverted-pendulum-cart); the step is now 0.3 m, which the
+unconstrained LQR would ask for with 26.8 N. The MPC respects the real ±20 N actuator and
+a 200 N/s slew limit.
+
+## The QP
+
+The prediction is the discrete linearisation at upright, condensed over $N=20$ samples.
+With $U = u_{prev}\mathbf 1 + L\Delta U$, the cost is
+
+$$J = \tfrac12 \Delta U^T H_d \Delta U + f_d^T \Delta U + \text{const},$$
+
+$$H_d = L^T(\Gamma^T\bar Q\Gamma+\bar R)L,\qquad f_d = L^T\left(\Gamma^T\bar Q\Phi e_0 + \Gamma^T\bar Q\Gamma\mathbf 1\,u_{prev}\right),$$
+
+and the only constraint is the box $\lvert\Delta u_k\rvert\le0.2$ N. [MPC1](block:MPC1)
+solves it by 20 ADMM iterations per 1 ms tick,
+
+$$U_c = (H_d+\rho I)^{-1}(\rho(z-y)-f_d),\qquad z = \operatorname{clamp}(U_c+y,\pm0.2),\qquad y\leftarrow y+U_c-z,$$
+
+warm-started from the previous tick, and applies
+$u=\operatorname{clamp}(u_{prev}+z_1,\pm20)$. The QP matrices are parameters of the block;
+`design/mpc.py` writes them and `design/build_mpc.py` regenerates the block and the model.
+
+![MPC run|900](@fig:run)
+
+## Results
+
+The MPC reaches 0.3 m and settles; the angle peaks at **12.9°** and the force at
+**18.58 N**, inside both limits. The rate-limited LQR on [the next page](model:inverted-pendulum-cart-rate)
+peaks at 15.5° and 20.00 N. The MPC starts braking earlier because it plans the force
+increment over 20 ms. The run takes about 28 s in the check environment, against 16 s for
+the rate-limited LQR.
+
+## What to try
+
+- Set `MPC1.du_max` to 0.1 N (100 N/s): the MPC becomes slower and the angle peak grows.
+- Set it to 1 N: the MPC plans a more aggressive force and the peak angle falls, until the
+  20 N limit binds.
+- Open the block source and set `iterations` to 5: the ADMM solution is not converged and
+  the force chatters. Twenty iterations are the design point.
+@@ figures inverted-pendulum-cart-rate
+{
+  "run": {
+    "kind": "plot", "model": "inverted-pendulum-cart-rate", "xlim": [0, 5],
+    "rows": [
+      {"ylabel": "pendulum angle [deg]", "series": [{"signal": "ThetaInt/y", "label": "ThetaInt/y", "scale": 57.29577951308232}]},
+      {"ylabel": "cart position [m]", "series": [{"signal": "XInt/y", "label": "XInt/y"}, {"signal": "XRef/y", "label": "XRef/y (reference)", "style": "--"}], "legend": true},
+      {"ylabel": "force [N]", "series": [{"signal": "MSe1/p.e", "label": "applied force"}], "hlines": [{"y": 20, "label": "limit +-20 N"}, {"y": -20}], "legend": true}
+    ]
+  }
+}
+@@ page inverted-pendulum-cart-rate overview - | Rate-limited LQR
+# Rate-limited LQR: the fair comparison
+
+[RateLimitedLQR1](block:RateLimitedLQR1) (`library/RateLimitedLQR.jl`) is the same LQR
+state feedback as [the original model](model:inverted-pendulum-cart), sampled at 1 ms,
+with the actuator's slew limit in the firmware:
+
+$$u_{cmd} = \operatorname{clamp}(-K[x-x_{ref},v,\theta,\omega],\pm20),$$
+
+$$u = \operatorname{clamp}\!\left(u_{prev}+\operatorname{clamp}(u_{cmd}-u_{prev},\pm0.2),\pm20\right).$$
+
+It is the fair comparison for the MPC: the same plant, the same 0.3 m step and the same
+20 N / 200 N/s actuator, but no plan beyond the current error.
+
+![Rate-limited LQR run|900](@fig:run)
+
+The applied force is the block's output: the limiter turns the LQR's instantaneous demand
+into a 200 N/s ramp, and the run peaks at exactly 20.00 N. The angle peaks at
+**15.5°**, 2.6° above the MPC's 12.9°. Both settle at 0.3 m; the rate limit costs a little
+settling (0.64° around t = 3 s against the MPC's 0.52°).
+
+The same block is the comparison used in [the MPC page](model:inverted-pendulum-cart-mpc);
+the two models share the plant, the scene and the step.

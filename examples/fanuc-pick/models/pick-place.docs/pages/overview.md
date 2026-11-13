@@ -4,7 +4,7 @@ A FANUC LR-10iA/10 picks a 1.5 kg carton (300 x 200 x 120 mm) from a conveyor an
 
 **The arm is kinematic.** It follows the planned joint trajectory exactly, as long as the plan stays inside the LR-10iA/10 datasheet limits: the joint ranges and rates, an acceleration and jerk limit per joint, the payload, and the allowable wrist moment and inertia. These limits are checked in every run as `Planner/util_*` (in % of the limit) and are constraints of the optimiser. There are no arm dynamics, drives or joint servos. The dynamics are in the gripper (cylinders, compliant rods, bellows cups, vacuum), the carton and its contents.
 
-![The model canvas|900](assets/428f4c9716f1.png)
+![The model canvas|900](assets/28d02af84823.png)
 
 The signal chain:
 
@@ -24,7 +24,7 @@ PickPlanner (1 kHz) --V, Vd, tk--> ToolMotion (spatial flow source) ==> gripper 
   - the rod body `RodBody<k>`;
   - the cup [Cup1](block:Cup1);
   - its ejector [Gen1](block:Gen1).
-- The carton [Parcel](block:Parcel) rests on four `ContactPoint` corners on the support plane.
+- The carton [Parcel](block:Parcel) rests on four `ContactPoint` corners on the support plane: [Floor1](block:Floor1) to `Floor4`, instances of the library subsystem `ContactFoot` (a mount and a `ContactPoint` each, pinned to the corner offsets).
 - [Monitor](block:Monitor) keeps the peak `U` of every zone while the carton is carried, the margins and the drop latch.
 
 The run: about 2 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 500 output points per second.
@@ -37,9 +37,9 @@ The run: about 2 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 500 output poin
 - the robot limits [Planner/util_max](signal:Planner/util_max) and the wrist load [Planner/util_M](signal:Planner/util_M);
 - the drop detection [Monitor/sep](signal:Monitor/sep) and [Monitor/held_ok](signal:Monitor/held_ok).
 
-![The cell at the lift: LR Mate 200iD/7L geometry, the gripper with its five cylinders, the carton|700](assets/42519e02998c.png)
+![The cell at the lift: LR Mate 200iD/7L geometry, the gripper with its five cylinders, the carton|700](assets/df4a795f48bc.png)
 
-![The default run: gripper path, strokes, vacuum, cup utilisation and robot limits|900](assets/df4c806b18b4.png)
+![The default run: gripper path, strokes, vacuum, cup utilisation and robot limits|900](assets/915c5cbf54bf.png)
 
 ## 3D view
 

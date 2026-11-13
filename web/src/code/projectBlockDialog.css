@@ -88,6 +88,41 @@
   color: var(--color-error-text);
 }
 
+/* "Save subsystem to project library" (library/SubsystemBlockDialog.tsx): the parameter list. */
+.project-block-dialog--wide {
+  width: min(600px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.project-block-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: var(--font-size-sm);
+}
+
+.project-block-dialog__link {
+  padding: 0;
+  font: inherit;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.project-block-dialog__error ul {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+}
+
+.project-block-dialog__error p {
+  margin: 0;
+}
+
 .project-block-dialog__actions {
   display: flex;
   justify-content: flex-end;

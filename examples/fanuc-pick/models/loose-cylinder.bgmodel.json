@@ -1791,136 +1791,25 @@
         "starts": {}
       },
       {
-        "id": "FMount1",
-        "name": "FMount1",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1800,
-          "y": 600
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(1*L_p/2 - cx)",
-          "y": "-(1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal1",
-        "name": "FLocal1",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1940,
-          "y": 640
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "1*L_p/2 - cx",
-          "y": "1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose1",
-        "name": "FPose1",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2080,
-          "y": 640
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {}
-      },
-      {
         "id": "Floor1",
         "name": "Floor1",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 2220,
+          "x": 1800,
           "y": 600
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "1*L_p/2 - cx",
+          "Local/y": "1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(1*L_p/2 - cx)",
+          "Mount/y": "-(1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMount2",
-        "name": "FMount2",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1800,
-          "y": 710
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(1*L_p/2 - cx)",
-          "y": "-(-1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal2",
-        "name": "FLocal2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1940,
-          "y": 750
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "1*L_p/2 - cx",
-          "y": "-1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose2",
-        "name": "FPose2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2080,
-          "y": 750
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -1928,77 +1817,22 @@
         "id": "Floor2",
         "name": "Floor2",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 2220,
-          "y": 710
+          "x": 2000,
+          "y": 600
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "1*L_p/2 - cx",
+          "Local/y": "-1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(1*L_p/2 - cx)",
+          "Mount/y": "-(-1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMount3",
-        "name": "FMount3",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1800,
-          "y": 820
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(-1*L_p/2 - cx)",
-          "y": "-(1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal3",
-        "name": "FLocal3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1940,
-          "y": 860
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-1*L_p/2 - cx",
-          "y": "1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose3",
-        "name": "FPose3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2080,
-          "y": 860
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -2006,77 +1840,22 @@
         "id": "Floor3",
         "name": "Floor3",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
-        },
-        "position": {
-          "x": 2220,
-          "y": 820
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMount4",
-        "name": "FMount4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+          "ref": "project:ContactFoot"
         },
         "position": {
           "x": 1800,
-          "y": 930
+          "y": 800
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "x": "-(-1*L_p/2 - cx)",
-          "y": "-(-1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
+          "Local/x": "-1*L_p/2 - cx",
+          "Local/y": "1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(-1*L_p/2 - cx)",
+          "Mount/y": "-(1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal4",
-        "name": "FLocal4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1940,
-          "y": 970
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-1*L_p/2 - cx",
-          "y": "-1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose4",
-        "name": "FPose4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2080,
-          "y": 970
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -2084,20 +1863,21 @@
         "id": "Floor4",
         "name": "Floor4",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 2220,
-          "y": 930
+          "x": 2000,
+          "y": 800
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "-1*L_p/2 - cx",
+          "Local/y": "-1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(-1*L_p/2 - cx)",
+          "Mount/y": "-(-1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
         "constants": {},
         "starts": {}
@@ -3441,60 +3221,24 @@
           "port": "p"
         },
         "to": {
-          "node": "FMount1",
-          "port": "b"
-        }
-      },
-      {
-        "id": "fp105",
-        "kind": "bond",
-        "from": {
-          "node": "FMount1",
-          "port": "a"
-        },
-        "to": {
           "node": "Floor1",
           "port": "p"
         }
       },
       {
-        "id": "fp106",
+        "id": "fp105",
         "kind": "signal",
         "from": {
           "node": "Pose",
           "port": "g"
         },
         "to": {
-          "node": "FPose1",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "fp107",
-        "kind": "signal",
-        "from": {
-          "node": "FLocal1",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPose1",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "fp108",
-        "kind": "signal",
-        "from": {
-          "node": "FPose1",
-          "port": "g"
-        },
-        "to": {
           "node": "Floor1",
-          "port": "g"
+          "port": "pose"
         }
       },
       {
-        "id": "fp109",
+        "id": "fp106",
         "kind": "signal",
         "from": {
           "node": "Support",
@@ -3503,6 +3247,42 @@
         "to": {
           "node": "Floor1",
           "port": "o"
+        }
+      },
+      {
+        "id": "fp107",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "fp108",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "p"
+        }
+      },
+      {
+        "id": "fp109",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "pose"
         }
       },
       {
@@ -3510,34 +3290,34 @@
         "kind": "signal",
         "from": {
           "node": "Support",
-          "port": "fr"
+          "port": "o"
         },
         "to": {
-          "node": "Floor1",
-          "port": "fr"
+          "node": "Floor2",
+          "port": "o"
         }
       },
       {
         "id": "fp111",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "Parcel",
-          "port": "p"
+          "node": "Support",
+          "port": "fr"
         },
         "to": {
-          "node": "FMount2",
-          "port": "b"
+          "node": "Floor2",
+          "port": "fr"
         }
       },
       {
         "id": "fp112",
         "kind": "bond",
         "from": {
-          "node": "FMount2",
-          "port": "a"
+          "node": "Parcel",
+          "port": "p"
         },
         "to": {
-          "node": "Floor2",
+          "node": "Floor3",
           "port": "p"
         }
       },
@@ -3549,228 +3329,84 @@
           "port": "g"
         },
         "to": {
-          "node": "FPose2",
-          "port": "gp"
+          "node": "Floor3",
+          "port": "pose"
         }
       },
       {
         "id": "fp114",
         "kind": "signal",
         "from": {
-          "node": "FLocal2",
-          "port": "g"
+          "node": "Support",
+          "port": "o"
         },
         "to": {
-          "node": "FPose2",
-          "port": "gl"
+          "node": "Floor3",
+          "port": "o"
         }
       },
       {
         "id": "fp115",
         "kind": "signal",
         "from": {
-          "node": "FPose2",
-          "port": "g"
+          "node": "Support",
+          "port": "fr"
         },
         "to": {
-          "node": "Floor2",
-          "port": "g"
+          "node": "Floor3",
+          "port": "fr"
         }
       },
       {
         "id": "fp116",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "Support",
-          "port": "o"
+          "node": "Parcel",
+          "port": "p"
         },
         "to": {
-          "node": "Floor2",
-          "port": "o"
+          "node": "Floor4",
+          "port": "p"
         }
       },
       {
         "id": "fp117",
         "kind": "signal",
         "from": {
-          "node": "Support",
-          "port": "fr"
+          "node": "Pose",
+          "port": "g"
         },
         "to": {
-          "node": "Floor2",
-          "port": "fr"
+          "node": "Floor4",
+          "port": "pose"
         }
       },
       {
         "id": "fp118",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "Parcel",
-          "port": "p"
+          "node": "Support",
+          "port": "o"
         },
         "to": {
-          "node": "FMount3",
-          "port": "b"
+          "node": "Floor4",
+          "port": "o"
         }
       },
       {
         "id": "fp119",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "FMount3",
-          "port": "a"
+          "node": "Support",
+          "port": "fr"
         },
         "to": {
-          "node": "Floor3",
-          "port": "p"
+          "node": "Floor4",
+          "port": "fr"
         }
       },
       {
         "id": "fp120",
-        "kind": "signal",
-        "from": {
-          "node": "Pose",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPose3",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "fp121",
-        "kind": "signal",
-        "from": {
-          "node": "FLocal3",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPose3",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "fp122",
-        "kind": "signal",
-        "from": {
-          "node": "FPose3",
-          "port": "g"
-        },
-        "to": {
-          "node": "Floor3",
-          "port": "g"
-        }
-      },
-      {
-        "id": "fp123",
-        "kind": "signal",
-        "from": {
-          "node": "Support",
-          "port": "o"
-        },
-        "to": {
-          "node": "Floor3",
-          "port": "o"
-        }
-      },
-      {
-        "id": "fp124",
-        "kind": "signal",
-        "from": {
-          "node": "Support",
-          "port": "fr"
-        },
-        "to": {
-          "node": "Floor3",
-          "port": "fr"
-        }
-      },
-      {
-        "id": "fp125",
-        "kind": "bond",
-        "from": {
-          "node": "Parcel",
-          "port": "p"
-        },
-        "to": {
-          "node": "FMount4",
-          "port": "b"
-        }
-      },
-      {
-        "id": "fp126",
-        "kind": "bond",
-        "from": {
-          "node": "FMount4",
-          "port": "a"
-        },
-        "to": {
-          "node": "Floor4",
-          "port": "p"
-        }
-      },
-      {
-        "id": "fp127",
-        "kind": "signal",
-        "from": {
-          "node": "Pose",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPose4",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "fp128",
-        "kind": "signal",
-        "from": {
-          "node": "FLocal4",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPose4",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "fp129",
-        "kind": "signal",
-        "from": {
-          "node": "FPose4",
-          "port": "g"
-        },
-        "to": {
-          "node": "Floor4",
-          "port": "g"
-        }
-      },
-      {
-        "id": "fp130",
-        "kind": "signal",
-        "from": {
-          "node": "Support",
-          "port": "o"
-        },
-        "to": {
-          "node": "Floor4",
-          "port": "o"
-        }
-      },
-      {
-        "id": "fp131",
-        "kind": "signal",
-        "from": {
-          "node": "Support",
-          "port": "fr"
-        },
-        "to": {
-          "node": "Floor4",
-          "port": "fr"
-        }
-      },
-      {
-        "id": "fp132",
         "kind": "signal",
         "from": {
           "node": "Content",
@@ -3782,7 +3418,7 @@
         }
       },
       {
-        "id": "fp133",
+        "id": "fp121",
         "kind": "signal",
         "from": {
           "node": "ContentPose",
@@ -3794,7 +3430,7 @@
         }
       },
       {
-        "id": "fp134",
+        "id": "fp122",
         "kind": "bond",
         "from": {
           "node": "Parcel",
@@ -3806,7 +3442,7 @@
         }
       },
       {
-        "id": "fp135",
+        "id": "fp123",
         "kind": "bond",
         "from": {
           "node": "WA",
@@ -3818,7 +3454,7 @@
         }
       },
       {
-        "id": "fp136",
+        "id": "fp124",
         "kind": "bond",
         "from": {
           "node": "Content",
@@ -3830,7 +3466,7 @@
         }
       },
       {
-        "id": "fp137",
+        "id": "fp125",
         "kind": "bond",
         "from": {
           "node": "WB",
@@ -3842,7 +3478,7 @@
         }
       },
       {
-        "id": "fp138",
+        "id": "fp126",
         "kind": "signal",
         "from": {
           "node": "Pose",
@@ -3854,7 +3490,7 @@
         }
       },
       {
-        "id": "fp139",
+        "id": "fp127",
         "kind": "signal",
         "from": {
           "node": "ContentPose",
@@ -3866,7 +3502,7 @@
         }
       },
       {
-        "id": "fp140",
+        "id": "fp128",
         "kind": "signal",
         "from": {
           "node": "Cup1",
@@ -3878,7 +3514,7 @@
         }
       },
       {
-        "id": "fp141",
+        "id": "fp129",
         "kind": "signal",
         "from": {
           "node": "Cup2",
@@ -3890,7 +3526,7 @@
         }
       },
       {
-        "id": "fp142",
+        "id": "fp130",
         "kind": "signal",
         "from": {
           "node": "Cup3",
@@ -3902,7 +3538,7 @@
         }
       },
       {
-        "id": "fp143",
+        "id": "fp131",
         "kind": "signal",
         "from": {
           "node": "Cup4",
@@ -3914,7 +3550,7 @@
         }
       },
       {
-        "id": "fp144",
+        "id": "fp132",
         "kind": "signal",
         "from": {
           "node": "Cup5",
@@ -3926,7 +3562,7 @@
         }
       },
       {
-        "id": "fp145",
+        "id": "fp133",
         "kind": "signal",
         "from": {
           "node": "Planner",
@@ -3938,7 +3574,7 @@
         }
       },
       {
-        "id": "fp146",
+        "id": "fp134",
         "kind": "signal",
         "from": {
           "node": "Planner",
@@ -3950,7 +3586,7 @@
         }
       },
       {
-        "id": "fp147",
+        "id": "fp135",
         "kind": "signal",
         "from": {
           "node": "Pose",
@@ -3962,7 +3598,7 @@
         }
       },
       {
-        "id": "fp148",
+        "id": "fp136",
         "kind": "signal",
         "from": {
           "node": "Planner",

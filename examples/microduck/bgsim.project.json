@@ -1,0 +1,8 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "microduck",
+  "models": ["xl330-step", "xl330-torque-speed", "microduck-stand", "microduck-hang"],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

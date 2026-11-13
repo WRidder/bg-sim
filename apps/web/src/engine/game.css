@@ -485,3 +485,51 @@ canvas#telemetry {
   height: 100%;
   background: var(--accent);
 }
+
+/* The AIM-9X seeker picture-in-picture, used only by the F-16 page. */
+#seeker {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 1;
+  width: 260px;
+  height: 160px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(125, 255, 176, 0.58);
+  border-radius: 4px;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: 0 0 22px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+#seeker .seeker-label {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  color: #7dffb0;
+  font: 600 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 4px #000;
+}
+
+#seeker .seeker-cross::before,
+#seeker .seeker-cross::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(255, 195, 77, 0.72);
+}
+
+#seeker .seeker-cross::before {
+  width: 34px;
+  height: 1px;
+  transform: translate(-50%, -50%);
+}
+
+#seeker .seeker-cross::after {
+  width: 1px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+}

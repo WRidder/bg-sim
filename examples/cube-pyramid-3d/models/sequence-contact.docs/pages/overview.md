@@ -2,7 +2,7 @@
 
 A free cube ($a = 0.2$ m) with **four reaction wheels in a pyramid** lies on a ground plane. A scripted torque profile spins the wheels so that the cube leaves its **face**, balances on an **edge** (tilt 45 deg) and then on a **corner** (tilt $\arctan\sqrt2 = 54.74$ deg, the body diagonal vertical). The ground is a compliant `ContactSurface`; every contact is a `ContactPoint` (Hunt-Crossley normal force, regularised Coulomb friction), so the phases are *emergent*: which vertices carry load follows from the contact forces, nothing is switched by hand. It is X-MB5 of plan 6, the cube/pyramid example of plans 3.3 and 9. The model `edge-contact` repeats the edge phase alone and `edge-switched` replaces the contacts by a `SwitchedPivot3D`; their pages compare the two.
 
-![The model canvas|900](assets/7bcc6840349c.png)
+![The model canvas|900](assets/f489eecd0d8f.png)
 
 ```
 Cube (RigidBody3D) <-- Pose (PoseIntegrator3D, floating base)
@@ -17,7 +17,7 @@ Cube (RigidBody3D) <-- Pose (PoseIntegrator3D, floating base)
 
 ## Run it
 
-Press **Run**. The model compiles to a 25-state system with 2512 recorded signals; the README measured roughly 8 minutes of wall time on a loaded machine (the MTK build of the contacts plus four driven wheels dominates). Plot [Sense/tilt](signal:Sense/tilt) and [Seq/ph](signal:Seq/ph), the vertex loads [C1/f_n](signal:C1/f_n) to [C4/f_n](signal:C4/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
+Press **Run**. The model compiles to a 25-state system with 2512 recorded signals; the README measured roughly 8 minutes of wall time on a loaded machine (the MTK build of the contacts plus four driven wheels dominates). Plot [Sense/tilt](signal:Sense/tilt) and [Seq/ph](signal:Seq/ph), the vertex loads [C1/Contact/f_n](signal:C1/Contact/f_n) to [C4/Contact/f_n](signal:C4/Contact/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
 
 ## 3D view
 

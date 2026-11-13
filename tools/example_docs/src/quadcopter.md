@@ -15,9 +15,9 @@
   "actuators": {
     "kind": "plot", "model": "quadcopter", "xlim": [0, 18],
     "rows": [
-      {"ylabel": "rotor speed [rad/s]", "series": [{"signal": "Drv1/rotor/w", "label": "rotor 1"}, {"signal": "Drv2/rotor/w", "label": "rotor 2"}, {"signal": "Drv3/rotor/w", "label": "rotor 3"}, {"signal": "Drv4/rotor/w", "label": "rotor 4"}], "legend": true},
+      {"ylabel": "rotor speed [rad/s]", "series": [{"signal": "Rotor1/Drive/rotor/w", "label": "rotor 1"}, {"signal": "Rotor2/Drive/rotor/w", "label": "rotor 2"}, {"signal": "Rotor3/Drive/rotor/w", "label": "rotor 3"}, {"signal": "Rotor4/Drive/rotor/w", "label": "rotor 4"}], "legend": true},
       {"ylabel": "battery [V] / [A]", "series": [{"signal": "Bat/V", "label": "Bat/V"}, {"signal": "Bat/I", "label": "Bat/I", "style": "--"}], "legend": true},
-      {"ylabel": "leg normal force [N]", "series": [{"signal": "Leg1/f_n", "label": "Leg1"}, {"signal": "Leg2/f_n", "label": "Leg2"}, {"signal": "Leg3/f_n", "label": "Leg3"}, {"signal": "Leg4/f_n", "label": "Leg4"}], "legend": true}
+      {"ylabel": "leg normal force [N]", "series": [{"signal": "Leg1/Contact/f_n", "label": "Leg1"}, {"signal": "Leg2/Contact/f_n", "label": "Leg2"}, {"signal": "Leg3/Contact/f_n", "label": "Leg3"}, {"signal": "Leg4/Contact/f_n", "label": "Leg4"}], "legend": true}
     ]
   },
   "estimator": {
@@ -51,11 +51,11 @@ The model document and the 3D scene are **generated**: `uv run examples/quadcopt
 
 ## Run it
 
-Press **Run**. The README measured 41 to 65 s of solve time on a loaded machine (51 800 solver steps, compile 1 to 3 s); every 2 ms discrete tick is recorded as a left/right event pair, so the run holds about 18 000 rows of 1559 signals (about 225 MB of data). Plot the mission ([Truth/x](signal:Truth/x), [Truth/y](signal:Truth/y), [Truth/z](signal:Truth/z) with [Mission/p_sp[1]](signal:Mission/p_sp[1])), the rotor speeds ([Drv1/rotor/w](signal:Drv1/rotor/w)), the battery ([Bat/V](signal:Bat/V), [Bat/I](signal:Bat/I)) and the estimator errors ([Err/pos](signal:Err/pos), [Err/att](signal:Err/att), [Err/vel](signal:Err/vel)).
+Press **Run**. The README measured 41 to 65 s of solve time on a loaded machine (51 800 solver steps, compile 1 to 3 s); every 2 ms discrete tick is recorded as a left/right event pair, so the run holds about 18 000 rows of 1559 signals (about 225 MB of data). Plot the mission ([Truth/x](signal:Truth/x), [Truth/y](signal:Truth/y), [Truth/z](signal:Truth/z) with [Mission/p_sp[1]](signal:Mission/p_sp[1])), the rotor speeds ([Rotor1/Drive/rotor/w](signal:Rotor1/Drive/rotor/w)), the battery ([Bat/V](signal:Bat/V), [Bat/I](signal:Bat/I)) and the estimator errors ([Err/pos](signal:Err/pos), [Err/att](signal:Err/att), [Err/vel](signal:Err/vel)).
 
 ## 3D view
 
-`scenes/quadcopter.sdf` has the link `body` (pose binding `Truth/q[1..4]`, `Truth/x`, `y`, `z`), the joints `rotor_1..4` (position bindings `Drv<k>/rotor/phi`, gain -1 for the clockwise rotors 3 and 4) and the ground link with the pads. Three moments of the mission: the climb, the first turn and the final descent.
+`scenes/quadcopter.sdf` has the link `body` (pose binding `Truth/q[1..4]`, `Truth/x`, `y`, `z`), the joints `rotor_1..4` (position bindings `Rotor<k>/Drive/rotor/phi`, gain -1 for the clockwise rotors 3 and 4) and the ground link with the pads. Three moments of the mission: the climb, the first turn and the final descent.
 
 ![Climb: t = 3 s|420](@fig:climb)
 
@@ -75,20 +75,22 @@ Nav (NavFilter, 500 Hz) --p,v,q----------------------+  +--- q --- Att          
   |   +-- Gps (GpsSensor, 50 Hz): p, v, heading                                            | tau
   +------ Imu (ImuSensor, 500 Hz): gyro, accel + low-pass                   Mix (QuadMixer, 500 Hz) <-- F
                                                                                            | w_cmd[4]
-Esc1..4 (Esc, 500 Hz: speed PI + motor-model feed-forward, voltage and current limits) <---+
+Rotor1..4 (library subsystem Rotor)                                                       |
+  Esc (Esc, 500 Hz: speed PI + motor-model feed-forward, voltage and current limits) <----+
   | u                                                                   Bat (Battery) --V--> Esc
   v
-Drv1..4 (stdlib ElectricDrive) --shaft--> Prop1..4 (Propeller: T = kT w|w|, Q = kQ w|w|)
+  Drive (stdlib ElectricDrive) --shaft--> Prop (Propeller: T = kT w|w|, Q = kQ w|w|)
   | i, w, P_el                                            | T
   +------------> RW (RotorWrench) <-- body twist, pose, wind, leg forces
                    | tx ty tz fx fy fz
 World (GroundSpatial) -- Free (Free3D) -- Body (RigidBody3D) -- Wrench (ExternalWrenchSpatial)
-                                             '-- Mount_k -- Leg_k (ContactPoint) ... Ground (ContactSurface)
+                                             '-- Leg1..4 (library subsystem ContactFoot:
+                                                 Mount -- Contact (ContactPoint)) ... Ground (ContactSurface)
 ```
 
 - **Airframe.** [World](block:World) (`GroundSpatial`) to [Free](block:Free) (`Free3D`) to [Body](block:Body) (`RigidBody3D`): 13 states (quaternion, position and the 6 momenta), gravity inside the body, six zero-effort `Se` sources ([FreeSe1](block:FreeSe1) to `FreeSe6`) on the unused drive ports of the free joint. Body frame: $x$ forward, $y$ left, $z$ up, origin at the centre of mass.
-- **Landing gear.** Four `ContactPoint` legs ([Leg1](block:Leg1) to `Leg4`; Hertz contact against one [Ground](block:Ground) `ContactSurface` plane, $k = 2\cdot10^4$ N/m, $\mu = 0.6$) at $(\pm0.11, \pm0.11, -0.085)$ m; they carry $m g = 13.24$ N on the ground and let take-off and landing happen in the same model. The accelerometer feels their normal force.
-- **Rotors** (x4). Each is [Esc1](block:Esc1) to [Drv1](block:Drv1) to [Prop1](block:Prop1). `ElectricDrive` is the stdlib bond graph motor: $R = 0.11\ \Omega$, $L = 40\ \mu$H, EM gyrator $k_t = 0.01038$ N·m/A (a 920 kV motor), rotor plus propeller inertia $J_m = 5\cdot10^{-5}$ kg·m². `Propeller` is a rotation one-port load with drag torque $Q = k_Q\,\omega\lvert\omega\rvert$ ($k_Q = 2.03\cdot10^{-7}$) and thrust $T = k_T\,\omega\lvert\omega\rvert$ ($k_T = 1.42\cdot10^{-5}$: 3.19 N at the hover speed of 482 rad/s, 8.5 N at 775 rad/s). Spin directions alternate along the diagonals.
+- **Landing gear.** Four legs ([Leg1](block:Leg1) to `Leg4`), each an instance of the library subsystem `ContactFoot` (`library/ContactFoot.bgsub.json`: the foot pose `Local` and `Compose`, the fixed `Mount` from the body to the foot and a `ContactPoint` named `Contact`; the instance pins the foot position). Hertz contact against one [Ground](block:Ground) `ContactSurface` plane, $k = 2\cdot10^4$ N/m, $\mu = 0.6$, at $(\pm0.11, \pm0.11, -0.085)$ m; they carry $m g = 13.24$ N on the ground and let take-off and landing happen in the same model. The accelerometer feels their normal force (`Leg1/Contact/f_n` to `Leg4/Contact/f_n`).
+- **Rotors** (x4). [Rotor1](block:Rotor1) to `Rotor4` are instances of the library subsystem `Rotor` (`library/Rotor.bgsub.json`): [Esc](block:Rotor1/Esc) to [Drive](block:Rotor1/Drive) (`ElectricDrive`) to [Prop](block:Rotor1/Prop) (`Propeller`), all four with the same values. `ElectricDrive` is the stdlib bond graph motor: $R = 0.11\ \Omega$, $L = 40\ \mu$H, EM gyrator $k_t = 0.01038$ N·m/A (a 920 kV motor), rotor plus propeller inertia $J_m = 5\cdot10^{-5}$ kg·m². `Propeller` is a rotation one-port load with drag torque $Q = k_Q\,\omega\lvert\omega\rvert$ ($k_Q = 2.03\cdot10^{-7}$) and thrust $T = k_T\,\omega\lvert\omega\rvert$ ($k_T = 1.42\cdot10^{-5}$: 3.19 N at the hover speed of 482 rad/s, 8.5 N at 775 rad/s). Spin directions alternate along the diagonals.
 - **Airframe wrench.** [RW](block:RW) (`RotorWrench`) assembles, in the body frame, the thrust force and its moments $r_k \times T_k e_z$, the **motor reaction torque** $-\mathrm{spin}_k\,(k_t i_k - b_m\omega_k)$ (the stator is the airframe, so the reaction of the rotor's inertia torque and of the propeller drag acts on it and the motor power balances), the gyroscopic term $-\Omega \times h$ of the rotors' spin momentum, linear air drag against $(v - R^T\,\mathrm{wind})$ and a small rotational damping; the six components drive one stdlib `ExternalWrenchSpatial` ([Wrench](block:Wrench)) on the body.
 - **Battery.** [Bat](block:Bat): a 3S pack with open-circuit voltage linear in the state of charge and 20 mΩ series resistance; it delivers the electrical power of the four motors, so the terminal voltage sags with the load (11.4 V at the 62 A spin-up). The ESCs limit their output by this live voltage.
 - **Wind.** [Wind](block:Wind) (a new Gaussian gust every 0.5 s, mean $(0.4, -0.2)$ m/s, $\sigma = 0.5$ m/s) through a 1 s [Gust](block:Gust) lag into the drag of `RotorWrench`.
@@ -102,7 +104,7 @@ World (GroundSpatial) -- Free (Free3D) -- Body (RigidBody3D) -- Wrench (External
 | [Att](block:Att) `AttitudeCtrl` | 250 Hz | quaternion-error P (PX4 `AttitudeControl`), rate limits |
 | [Rate](block:Rate) `RateCtrl` | 500 Hz | PID with D on the filtered measurement, conditional-integration anti-windup, torque limits; the yaw axis has a first-order torque low-pass |
 | [Mix](block:Mix) `QuadMixer` | 500 Hz | the pseudo-inverse of the allocation matrix; attitude has priority over collective thrust when a rotor would saturate (scale the torque part, then shift the collective part); speed command $\omega = \sqrt{T/k_T}$ |
-| [Esc1](block:Esc1) `Esc` | 500 Hz | rotor speed PI plus the steady-state voltage of the motor model as feed-forward, limited to $0.98\,V_{bat}$ and to $k_e\omega + R\,i_{lim}$ ($i_{lim}$ = 25 A, the current limit of the spin-up) |
+| [Esc](block:Rotor1/Esc) in [Rotor1](block:Rotor1) to `Rotor4` | 500 Hz | rotor speed PI plus the steady-state voltage of the motor model as feed-forward, limited to $0.98\,V_{bat}$ and to $k_e\omega + R\,i_{lim}$ ($i_{lim}$ = 25 A, the current limit of the spin-up) |
 
 The mixer's `Minv` is the pseudo-inverse of the matrix with rows $(1,\ r_y,\ -r_x,\ -\mathrm{spin}\,k_Q/k_T)$ (`design.py` asserts $M\,M^{-1} = I$).
 
@@ -165,7 +167,7 @@ The stdlib block is a function of $t$ through `floor`; every step of its stairca
 - waypoints: $x = 2.0$ at 7.9 s (0.03), $y = 2.0$ at 10.9 s (0.04), yaw 1.5707963 at 10.9 s (0.06); RMS differences to the set-points over $[5, 14.4]$ s at most 0.06 / 0.065 / 0.015 m; tracking distance at most 0.15 m;
 - attitude: tilt at most 0.3 rad (measured peak 0.247), roll and pitch at most 0.3 rad, quaternion norm error at most 1e-9;
 - landing: $z = 0.085$ m and `RW/fc` = 13.2435 N at 18 s;
-- actuators: rotor speeds at most 774.6 rad/s (peak 557.6, tolerance 25), `Esc1/u` at most 12.6 V, motor current at most 50 A, battery current at most 70 A, state of charge 0.9865 at 18 s;
+- actuators: rotor speeds at most 774.6 rad/s (peak 557.6, tolerance 25), `Rotor1/Esc/u` at most 12.6 V, motor current at most 50 A, battery current at most 70 A, state of charge 0.9865 at 18 s;
 - estimator: `Err/att` at most 0.03 (measured peak 0.0188), `Err/pos` at most 0.05 m, `Err/vel` at most 0.2 m/s, the gyro noise RMS against the truth at most 0.0075 rad/s, the attitude controller's rate set-point against the filter at most 0.07;
 - `scene_bindings`, and no E901, E106, E007, W201, W202, W205 or W206.
 @@ page quadcopter wind overview | Wind, gusts and the dashboard

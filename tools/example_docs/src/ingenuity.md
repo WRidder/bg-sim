@@ -90,7 +90,7 @@ Ingenuity takes off at 1 s, climbs at 1 m/s to 3 m, flies 5 m east in 8 s, turns
 
 ## What you see
 
-- On the ground the rotors spin at ground-idle collective: the four feet ([Foot1](block:Foot1) to `Foot4`) carry 90 % of the weight ([Foot1/f_n](signal:Foot1/f_n)).
+- On the ground the rotors spin at ground-idle collective: the four feet ([Foot1](block:Foot1) to `Foot4`, instances of the library subsystem `ContactFoot`) carry 90 % of the weight ([Foot1/Contact/f_n](signal:Foot1/Contact/f_n)).
 - In hover the collectives are 8.6 deg (upper) and 9.9 deg (lower) ([Telem/coll_u_deg](signal:Telem/coll_u_deg), [Telem/coll_l_deg](signal:Telem/coll_l_deg)): the lower rotor works in the upper rotor's wake and needs more pitch for the same torque. The rotors take 208 W of electrical power ([Telem/P_el](signal:Telem/P_el)), Flight One measured about 210 W.
 - The heading turn is made with the antisymmetric collective alone; the rotor speed ([GovL/speed_rpm](signal:GovL/speed_rpm)) never changes.
 - In the 3D view the rotors turn at 1/40 of their real speed (42 rev/s), so the counter-rotation is visible; the orange blade tips mark it.

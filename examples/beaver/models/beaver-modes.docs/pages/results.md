@@ -1,6 +1,6 @@
 # Results
 
-![The five modes|900](assets/47f5a66d35c8.png)
+![The five modes|900](assets/a82f3492f46f.png)
 
 | mode | bg-sim (fit or growth rate) | coupled linear model | THESIS Table 5-3 (decoupled) |
 | --- | --- | --- | --- |

@@ -138,7 +138,7 @@ def figures(t, s) -> dict[str, bytes]:
     for ax in axes:
         shade(ax, None)
     for k in (1, 2, 3):
-        axes[0].plot(t, s[f"Wheel{k}/f_n"], lw=0.8, label=f"wheel {k}")
+        axes[0].plot(t, s[f"Wheel{k}/Contact/f_n"], lw=0.8, label=f"wheel {k}")
     axes[0].plot(t, s["WallForce/N"], "k", label="total")
     axes[0].plot(t, s["WallForce/Npred"], "r--", label="m g tan(theta_sp)")
     axes[0].set_ylabel("normal force [N]")
@@ -164,7 +164,7 @@ def figures(t, s) -> dict[str, bytes]:
     axes[1].set_ylabel("height [m]")
     axes[1].legend(loc="upper left")
     for k in (1, 2, 3):
-        axes[2].plot(t, s[f"Wheel{k}/sd"] * 1e3, lw=0.7, label=f"wheel {k}")
+        axes[2].plot(t, s[f"Wheel{k}/Contact/sd"] * 1e3, lw=0.7, label=f"wheel {k}")
     axes[2].set_ylabel("driven slip [mm/s]")
     axes[2].set_xlabel("t [s]")
     axes[2].legend(ncol=3, loc="upper left")

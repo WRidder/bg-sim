@@ -10,7 +10,7 @@ NASA/JPL's Ingenuity made the first powered, controlled flight on another planet
 
 ![The demonstration flight, 12 s in: flying east at 3 m|600](assets/72a69ced654f.png)
 
-![The model canvas|900](assets/0ed9e353ab05.png)
+![The model canvas|900](assets/8c4443f19638.png)
 
 ## The bond graph
 

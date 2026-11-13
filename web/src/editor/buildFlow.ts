@@ -77,6 +77,7 @@ import {
   type SubsystemBoundary,
 } from "./subsystemBoundary";
 import { endpointLabel, exposeIssue, JUNCTION_PORT, terminalKindOf } from "./subsystemPorts";
+import { changedValueCount, linkedDefinition } from "../library/linkedSubsystems";
 
 export type DiagramNode =
   | Node<BlockNodeData, "block" | "subsystem">
@@ -338,6 +339,13 @@ export function buildDiagram(
       compact,
       image: "subsystem" in node.block ? (node.ui?.image ?? null) : null,
       exposed: exposed.get(node.id) ?? NO_EXPOSED,
+      linked:
+        linkedDefinition(node) === null
+          ? null
+          : {
+              definition: linkedDefinition(node) ?? "",
+              changed: changedValueCount(node, doc.definitions),
+            },
       labelSide: outsideLabel
         ? bondLabelSide(
             labelNode,

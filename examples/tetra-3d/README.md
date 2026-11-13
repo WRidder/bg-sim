@@ -109,7 +109,10 @@ two wheels 2 and 3 are symmetric about the vertical at the edge balance.
 the edge length, the torque limit and the timing: with the 1.4 kg of the cube and `L = 0.30 m` the
 vertex lift saturated 1.2 N m wheels and failed, `L = 0.25 m` with 1.6 N m works.
 `design/build_model.py` writes `models/sequence-contact.bgmodel.json`, `scenes/tetra-3d.sdf` and
-`meshes/tetra.glb` (the wiring and layout come from the cube example's `sequence-contact`).
+`meshes/tetra.glb` (the wiring and layout come from the cube example's `sequence-contact`). The vertex
+contacts `C1`–`C4` are instances of the library subsystem `ContactFoot` (mount, vertex pose and
+`ContactPoint`); the script copies `library/ContactFoot.bgsub.json` from the cube example and pins the
+vertex offsets on each instance, so the contact signals are `C<k>/Contact/f_n` etc.
 
 ## Model
 

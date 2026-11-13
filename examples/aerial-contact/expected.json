@@ -15,7 +15,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Drv1/rotor/w",
+          "signal": "Rotor1/Drive/rotor/w",
           "t": 0.0,
           "value": 534.368,
           "abs": 0.01,
@@ -143,7 +143,7 @@
         },
         {
           "kind": "min_ge",
-          "signal": "Wheel1/f_n",
+          "signal": "Wheel1/Contact/f_n",
           "from_t": 6.9,
           "to_t": 28.4,
           "value": 0.5,
@@ -151,7 +151,7 @@
         },
         {
           "kind": "min_ge",
-          "signal": "Wheel2/f_n",
+          "signal": "Wheel2/Contact/f_n",
           "from_t": 6.9,
           "to_t": 28.4,
           "value": 0.5,
@@ -159,7 +159,7 @@
         },
         {
           "kind": "min_ge",
-          "signal": "Wheel3/f_n",
+          "signal": "Wheel3/Contact/f_n",
           "from_t": 6.9,
           "to_t": 28.4,
           "value": 0.5,
@@ -312,7 +312,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "Drv1/rotor/w",
+          "signal": "Rotor1/Drive/rotor/w",
           "value": 957.0,
           "note": "rotor speed stays below the 957 rad/s of the 13 N (78 N total) limit (measured peak 729 rad/s)"
         },

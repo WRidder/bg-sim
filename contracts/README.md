@@ -90,3 +90,15 @@ without `x`, and the editor never writes `false`. The plot dock's panels carry t
 `plots` and `dashboard` they are editor state: the Julia parser keeps `plots` as plain data and the
 compiler ignores them. `model.xy-plots.json` is the valid fixture; `model.plot-x-not-signal.json`,
 `model.dashboard-plot-bad-aspect.json` and `model.dashboard-plot-empty-x.json` are rejected.
+
+Library subsystems: `model.schema.json#/$defs/subsystemDefinition` is a drawn subsystem of the
+project library, the file `library/<Name>.bgsub.json` (`format: "bgsim.subsystem"`, `ports`,
+`diagram`, and `pins.params`/`pins.starts`, the paths inside it an instance may set). A node with
+`block.ref` `project:<Name>` of such a file is an instance; its `params` and `starts` are keyed by
+pinned path (`rotor/J`). Two fields exist only for an open document and are never in a saved
+model: `definitions` (the definitions by name; an entry takes precedence over the library file)
+and `block.subsystem.definition` (this subsystem is the editor's working copy of that
+definition). The backend drops `definitions` on a model PUT; the editor writes instances back as
+references. `model.linked-subsystem.json` is the saved form with its definition alongside, and
+flattens like `model.linked-subsystem.drawn.json`, the same model drawn without the library. The
+catalog lists a definition as a block with `subsystem: true`, its ports and an empty source.

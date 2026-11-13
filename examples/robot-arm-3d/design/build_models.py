@@ -17,7 +17,9 @@ Models written into `models/` (the X-MB3 six-axis `arm.bgmodel.json` is never to
 * `rrr-multibond`  the same RRR geometry built from the M3 spatial stdlib (compliant
                    `Revolute3D`, `RigidBody3D`, `FixedTransform3DNeutral`) behind the same
                    torque sources, controller and references; `-soft` changes the joint
-                   stiffness only.
+                   stiffness only. Every link is an instance of the library subsystem
+                   `RevoluteLink3D`, whose definition `library/RevoluteLink3D.bgsub.json` this
+                   script writes from `serial_link.py` (the six-axis `arm` uses it too).
 
 Every designed number (tables, gains, free start) comes from `design.py`.
 """
@@ -31,6 +33,7 @@ from pathlib import Path
 import numpy as np
 
 import design as dz
+import serial_link as sl
 
 ROOT = Path(__file__).resolve().parent.parent
 MODELS = ROOT / "models"
@@ -514,9 +517,8 @@ def build_free() -> dict:
 JP = 1e-8  # principal moments of the point-mass bodies [kg m^2] (a point has none)
 MB = 1.0  # base body mass at the pivot [kg]; its inertia about z is Jb
 
-STAIR_X, STAIR_Y = 420, 340  # first row of the chain staircase
-STAIR_DX, STAIR_DY = 480, 200
-BAND_Y = 1000  # the composed-pose chain
+CHAIN_X, CHAIN_Y = 640, 400  # the first RevoluteLink3D instance
+CHAIN_DX = 360  # instance pitch along the chain
 
 
 def rotation_matrix(q) -> np.ndarray:
@@ -565,6 +567,25 @@ def static_deflections(
     return result
 
 
+# ------------------------------------------------------------------ the serial-link subsystem
+# Every link of the chain is an instance of `RevoluteLink3D` (design/serial_link.py writes the
+# definition, library/RevoluteLink3D.bgsub.json, shared with the six-axis `arm`).
+
+
+def link_instance(d: Diagram, k: int, x: int, y: int, t_pose, joint: dict, joint_starts: dict,
+                  link_pose, body: dict, ln_pose, lc_pose) -> str:
+    """Instance L<k> of RevoluteLink3D with every pin set."""
+    params, starts = sl.pins(pose_params(t_pose), joint, pose_params(link_pose), body,
+                             pose_params(ln_pose), pose_params(lc_pose), joint_starts)  # fmt: skip
+    return d.ref(f"l{k}", f"L{k}", f"project:{sl.name()}", x, y, params=params, starts=starts)
+
+
+def write_definition(definition: dict) -> None:
+    path = ROOT / "library" / f"{definition['name']}.bgsub.json"
+    path.write_text(json.dumps(definition, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"wrote {path.relative_to(ROOT.parent.parent)}")
+
+
 def build_multibond(design: dict, k_joint: float, name: str) -> dict:
     d = Diagram()
     kt = kr = k_joint
@@ -582,114 +603,45 @@ def build_multibond(design: dict, k_joint: float, name: str) -> dict:
     q0 = dz.Q_START
     deflections = static_deflections(ln, lc, mass, q0, k_joint)
 
-    bx = [STAIR_X + STAIR_DX * i for i in range(3)]
-    ry = [STAIR_Y + STAIR_DY * i for i in range(3)]
-    d.ref("world", "World", "stdlib:multibond/GroundSpatial", bx[0] - 120, ry[0])
-    d.ref(
-        "mount",
-        "Mount",
-        "stdlib:multibond/FixedTransform3DNeutral",
-        bx[0],
-        ry[0],
-        params=pose_params(IDENTITY),
-    )
-    d.ref(
-        "mpose",
-        "MountPose",
-        "stdlib:spatial/LocalPose3D",
-        bx[0] - 120,
-        BAND_Y,
-        params=pose_params(IDENTITY),
-    )
-    d.connect("bond", ("world", "p"), ("mount", "b"))
-
-    prev_world = "mpose"  # the ComposePose3D output holding W_{i-1}
+    # The chain: World -> L1 -> L2 -> L3, instances of RevoluteLink3D in a row.  L1's offset T
+    # is the base mount (identity); MountPose feeds the first link's parent pose.
+    lx = [CHAIN_X + CHAIN_DX * i for i in range(3)]
+    d.ref("world", "World", "stdlib:multibond/GroundSpatial", lx[0] - 200, CHAIN_Y + 100)
+    d.ref("mpose", "MountPose", "stdlib:spatial/LocalPose3D", lx[0] - 200, CHAIN_Y)
     for i in range(3):
         k = i + 1
-        x0, y0 = bx[i], ry[i]
-        d.ref(
-            f"j{k}", f"J{k}", "stdlib:spatial/Revolute3D", x0 + 120, y0,
-            params={
-                "kt": fmt(kt), "kr": fmt(kr),
-                "bt": fmt(1.4 * math.sqrt(kt * distal[i])),
-                "br": fmt(1.4 * math.sqrt(kr * 0.3)),
-                "q0": fmt(q0[i]),
-            },
-            starts={"dth": vec(deflections[i][0]), "dl": vec(deflections[i][1])},
-        )  # fmt: skip
-        d.ref(
-            f"link{k}",
-            f"Link{k}",
-            "stdlib:multibond/FixedTransform3DNeutral",
-            x0 + 240,
-            y0,
-            params=pose_params(lc[i]),
-        )
-        d.junction(f"bj{k}", f"BJ{k}", x0 + 360, y0 + 10)
-        d.ref(
-            f"b{k}", f"B{k}", "stdlib:spatial/RigidBody3D", x0 + 350, y0 + 100,
-            params={"m": fmt(mass[i]), "J": vec(inertia[i]), "g0": fmt(dz.G)},
+        # T_{i+1}: pose of body i in the joint-(i+1) frame = LN^-1 o LC_i (the mount for joint 1)
+        t_pose = IDENTITY if i == 0 else pose_mul(pose_inv(ln[i]), lc[i - 1])
+        joint = {
+            "kt": fmt(kt), "kr": fmt(kr),
+            "bt": fmt(1.4 * math.sqrt(kt * distal[i])),
+            "br": fmt(1.4 * math.sqrt(kr * 0.3)),
+            "q0": fmt(q0[i]),
+        }  # fmt: skip
+        link_instance(
+            d, k, lx[i], CHAIN_Y, t_pose, joint,
+            {"dth": vec(deflections[i][0]), "dl": vec(deflections[i][1])},
+            lc[i], {"m": fmt(mass[i]), "J": vec(inertia[i]), "g0": fmt(dz.G)}, ln[i], lc[i],
         )  # fmt: skip
         if i == 0:
-            d.connect("bond", ("mount", "a"), ("j1", "parent"))
+            d.connect("bond", ("world", "p"), ("l1", "parent"))
+            d.connect("signal", ("mpose", "g"), ("l1", "gp"))
         else:
-            # T_{i+1}: pose of body i in the joint-(i+1) frame = LN^-1 o LC_i
-            t_pose = pose_mul(pose_inv(ln[i]), lc[i - 1])
-            d.ref(
-                f"t{k}",
-                f"T{k}",
-                "stdlib:multibond/FixedTransform3DNeutral",
-                x0,
-                y0,
-                params=pose_params(t_pose),
-            )
-            d.connect("bond", (f"t{k}", "a"), (f"j{k}", "parent"))
-            d.connect("bond", (f"bj{k - 1}", None), (f"t{k}", "b"))
-        d.connect("bond", (f"j{k}", "child"), (f"link{k}", "a"))
-        d.connect("bond", (f"link{k}", "b"), (f"bj{k}", None))
-        d.connect("bond", (f"b{k}", "p"), (f"bj{k}", None))
-        # pose chain: W_i = W_{i-1} o LN_i o J_i.pose ; body pose = W_i o LC_i
-        d.ref(
-            f"ln{k}",
-            f"LN{k}",
-            "stdlib:spatial/LocalPose3D",
-            x0,
-            BAND_Y + 100,
-            params=pose_params(ln[i]),
-        )
-        d.ref(f"ca{k}", f"CA{k}", "stdlib:multibond/ComposePose3D", x0, BAND_Y)
-        d.ref(f"w{k}", f"W{k}", "stdlib:multibond/ComposePose3D", x0 + 120, BAND_Y)
-        d.ref(
-            f"lc{k}",
-            f"LC{k}",
-            "stdlib:spatial/LocalPose3D",
-            x0 + 350,
-            BAND_Y + 240,
-            params=pose_params(lc[i]),
-        )
-        d.ref(
-            f"pb{k}", f"P{k}", "stdlib:multibond/ComposePose3D", x0 + 350, BAND_Y + 120
-        )
-        d.connect("signal", (prev_world, "g"), (f"ca{k}", "gp"))
-        d.connect("signal", (f"ln{k}", "g"), (f"ca{k}", "gl"))
-        d.connect("signal", (f"ca{k}", "g"), (f"w{k}", "gp"))
-        d.connect("signal", (f"j{k}", "pose"), (f"w{k}", "gl"))
-        d.connect("signal", (f"w{k}", "g"), (f"pb{k}", "gp"))
-        d.connect("signal", (f"lc{k}", "g"), (f"pb{k}", "gl"))
-        d.connect("signal", (f"pb{k}", "g"), (f"b{k}", "g"))
-        prev_world = f"w{k}"
+            d.connect("bond", (f"l{i}", "child"), (f"l{k}", "parent"))
+            d.connect("signal", (f"l{i}", "g"), (f"l{k}", "gp"))
 
-    # measurement wires leave the joints upwards: lanes x = joint centre + 30 (q) / + 50 (qd)
-    feedback = [
-        (f"j{k}", "qout", bx[k - 1] + 150, ry[k - 1] - 30) for k in (1, 2, 3)
-    ] + [(f"j{k}", "qdout", bx[k - 1] + 170, ry[k - 1] - 30) for k in (1, 2, 3)]
+    # measurement wires leave the links' right edges to lanes right of each card
+    right = [x + sl.CARD[0] for x in lx]
+    feedback = [(f"l{k}", "q", right[k - 1] + 20, CHAIN_Y + 73) for k in (1, 2, 3)] + [
+        (f"l{k}", "qd", right[k - 1] + 40, CHAIN_Y + 99) for k in (1, 2, 3)
+    ]
     add_references(d, design)
     add_controller(d, design, feedback)
     add_torque_sources(
         d,
-        [("j1", "drive"), ("j2", "drive"), ("j3", "drive")],
-        [bx[i] + 200 for i in range(3)],
-        [ry[i] + 100 for i in range(3)],
+        [("l1", "drive"), ("l2", "drive"), ("l3", "drive")],
+        [x - 110 for x in lx],
+        [CHAIN_Y + 260] * 3,
         [[], [], []],
         top_lanes=True,
     )
@@ -710,10 +662,10 @@ def build_multibond(design: dict, k_joint: float, name: str) -> dict:
         "diagram": d.document(),
         "settings": settings("Rodas5P", 1e-8, 1e-10, 2001),
         "plots": torque_plots(
-            ["J1/qout", "J2/qout", "J3/qout"], ["J1/qdout", "J2/qdout", "J3/qdout"]
+            ["L1/J/qout", "L2/J/qout", "L3/J/qout"], ["L1/J/qdout", "L2/J/qdout", "L3/J/qdout"]
         ),
         "scene": SCENE,
-        "bindings": bindings(["J1/qout", "J2/qout", "J3/qout"]),
+        "bindings": bindings(["L1/J/qout", "L2/J/qout", "L3/J/qout"]),
     }
 
 
@@ -731,6 +683,7 @@ def main() -> None:
     write(build_rrr(design))
     write(build_free())
     write(build_torque(design))
+    write_definition(sl.definition())
     write(build_multibond(design, 1e7, "rrr-multibond"))
     write(build_multibond(design, 1e6, "rrr-multibond-soft"))
     write(build_multibond(design, 1e8, "rrr-multibond-stiff"))

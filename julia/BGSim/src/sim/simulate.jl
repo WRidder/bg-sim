@@ -243,7 +243,10 @@ _with_event_limit(cb, ::Base.RefValue{Int}, ::Int, args...) = cb
 #     has the old sign. DiffEqBase evaluates the conditions of the *last* firing a little past
 #     the start (`nudge_tprev`), so these are not found again, but a condition that fired
 #     earlier at the same instant is: two of them fire in turn at the same t, with zero-length
-#     steps, until MaxIters.
+#     steps, until MaxIters;
+#   * a repeat of the last firing itself. Several conditions on the same left root with
+#     different values there defeat the nudge (`_guard_nudge_reference!`): all of them fire
+#     again at the same t until the event limit (W206).
 #
 # The guard wraps every continuous callback:
 #
@@ -305,13 +308,35 @@ function _guard_record!(g::RootGuard, condition, integ, dirs)
     elseif condition isa GuardedCondition
         g.buffer[1] = condition.condition(integ.u, integ.t, integ)
     end
+    nearest = NaN
     for (i, d) in enumerate(dirs)
         d == 0 && continue
         g.fired_t[i] = t
         g.fired_v[i] = g.buffer[i]
         g.fired_dir[i] = d
         g.fired_serial[i] = g.serial[]
+        (isnan(nearest) || abs(g.buffer[i]) < abs(nearest)) && (nearest = g.buffer[i])
     end
+    condition isa GuardedCondition && _guard_nudge_reference!(integ, nearest)
+    return nothing
+end
+
+# The reference of DiffEqBase's repeat nudge. The next step evaluates the conditions of this
+# firing a little past its start only when the value closest to zero among them is still
+# within the callback's `abstol` (10 eps) of `integ.last_event_error`, the residual of the
+# root finder; otherwise it keeps their sign at the start, the old one of a left root.
+# For one condition the two are the same number. When several conditions land on the same
+# float (four gait switches of examples/spider whose phase sums are rounded differently: the
+# same left root, values a few 1e-15 apart), the residual is that of the last of them and the
+# comparison is with the one closest to zero: they differ by more than `abstol`, no nudge
+# is made, and the same conditions fire again at the same t, with zero-length steps, until
+# W206. The reference is therefore set to the value that comparison uses: unchanged values
+# are nudged past the root, and an affect that moves the value is still seen as a change.
+function _guard_nudge_reference!(integ, nearest::Float64)
+    isnan(nearest) && return nothing
+    hasproperty(integ, :last_event_error) || return nothing
+    integ.last_event_error isa AbstractFloat || return nothing
+    integ.last_event_error = nearest
     return nothing
 end
 
@@ -742,6 +767,9 @@ function fire_jump_events!(jump::JumpEvents, integ)
     fired = 0
     modified = false
     k = 0
+    # A jump event is no root of the solver: its affects leave the reference of the repeat
+    # nudge (`_guard_nudge_reference!`) with the solver's own last root.
+    reference = hasproperty(integ, :last_event_error) ? integ.last_event_error : nothing
     for (cb, n) in zip(jump.callbacks, jump.lengths)
         edges = Int8[_jump_edge(jump, k + i) for i in 1:n]
         k += n
@@ -766,6 +794,7 @@ function fire_jump_events!(jump::JumpEvents, integ)
         integ.sol.retcode == ReturnCode.Terminated && break
     end
     modified && SB.derivative_discontinuity!(integ, true)
+    reference === nothing || (integ.last_event_error = reference)
     return fired
 end
 

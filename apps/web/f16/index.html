@@ -9,6 +9,10 @@
   <body>
     <canvas id="world"></canvas>
     <canvas id="hud"></canvas>
+    <div id="seeker" hidden aria-label="AIM-9X seeker view">
+      <span class="seeker-label">SEEKER · AIM-9X</span>
+      <span class="seeker-cross"></span>
+    </div>
 
     <section id="loading" class="screen">
       <h1>Island Sortie</h1>
@@ -19,7 +23,7 @@
     <section id="title" class="screen panel-screen" hidden>
       <header>
         <h1>Island Sortie</h1>
-        <p class="lead">A fighter, a mountain island and fifteen gates.</p>
+        <p class="lead">A fighter, a mountain island, fifteen gates and three target drones.</p>
       </header>
       <div class="panel">
         <div class="choices" id="mode" role="radiogroup" aria-label="Mode">
@@ -30,6 +34,10 @@
           <button data-value="gates" role="radio">
             <strong>Gate run</strong>
             <span>Fifteen gates: down the runway, past the town, up the valley. <em id="best"></em></span>
+          </button>
+          <button data-value="intercept" role="radio">
+            <strong>Intercept</strong>
+            <span>Three target drones, a seeker lock and two AIM-9X. Tab selects, M fires.</span>
           </button>
         </div>
         <label id="start-row">Start
@@ -69,7 +77,9 @@
           <dt>Mouse drag, wheel</dt><dd>Look round, zoom</dd>
           <dt>R</dt><dd>Restart</dd>
           <dt>P or Esc</dt><dd>Pause</dd>
-          <dt>M</dt><dd>Sound</dd>
+          <dt>M</dt><dd>Fire AIM-9X when locked</dd>
+          <dt>Shift+M</dt><dd>Sound</dd>
+          <dt>Tab or N</dt><dd>Next target drone</dd>
           <dt>T, Shift+T</dt><dd>Telemetry, other side</dd>
           <dt>Y, Shift+Y</dt><dd>Setup, other side</dd>
         </dl>

@@ -657,6 +657,12 @@ export interface Model {
    */
   parameters?: ModelGlobalParameter[];
   dashboard?: ModelDashboard;
+  /**
+   * Drawn subsystem definitions of the project library, keyed by name, as the editor holds them while a model is open. A document that carries them is compiled with them: an entry here takes precedence over library/<Name>.bgsub.json. Never written to a saved model: the library file is the definition.
+   */
+  definitions?: {
+    [k: string]: SubsystemDefinition;
+  };
   $comment?: string;
 }
 /**
@@ -697,7 +703,7 @@ export interface ModelNode {
   rotation?: number;
   flipX?: boolean;
   /**
-   * Parameter values as constant expression strings, keyed by parameter name.
+   * Parameter values as constant expression strings, keyed by parameter name. On an instance of a drawn subsystem definition the key is a pinned path inside the definition (rotor/J).
    */
   params?: {
     [k: string]: string;
@@ -709,7 +715,7 @@ export interface ModelNode {
     [k: string]: ModelConstantValue;
   };
   /**
-   * Start-value overrides as expression strings, keyed by variable name.
+   * Start-value overrides as expression strings, keyed by variable name. On an instance of a textual composite or of a drawn subsystem definition the key is <component>/<variable>.
    */
   starts?: {
     [k: string]: string;
@@ -736,6 +742,10 @@ export interface ModelBlockSubsystem {
   subsystem: {
     ports: ModelSubsystemPort[];
     diagram: ModelDiagram;
+    /**
+     * Set while a model is open in the editor: this subsystem is the editor's working copy of the library subsystem of that name, kept equal to the definition except for the pinned values. The compiler treats it as an ordinary subsystem. A saved model stores the node as an instance instead (block.ref project:<name>, with its pinned values in params and starts).
+     */
+    definition?: string;
     $comment?: string;
   };
   $comment?: string;
@@ -1207,6 +1217,29 @@ export interface ModelDashboardScheduleRow {
    * One value per parameter column; null is a cell not filled in yet (the editor refuses to run with one).
    */
   values: (number | null)[];
+  $comment?: string;
+}
+/**
+ * A drawn subsystem of the project library: what the editor saves as library/<Name>.bgsub.json. A node with block.ref project:<Name> is an instance of it: the compiler puts the definition's diagram in place of the node, so every instance has the same structure. An instance sets a pinned parameter in its params and a pinned start value in its starts, both keyed by the path inside the definition (rotor/J).
+ */
+export interface SubsystemDefinition {
+  format: "bgsim.subsystem";
+  /**
+   * The definition's name: the file is library/<name>.bgsub.json and the reference is project:<name>.
+   */
+  name: string;
+  description?: string;
+  ports: ModelSubsystemPort[];
+  diagram: ModelDiagram;
+  pins?: SubsystemPins;
+  $comment?: string;
+}
+/**
+ * What an instance may set for itself. Every entry is a path inside the definition: node names from the definition's diagram down, then the parameter or variable name (rotor/J, Inner/gear/n). Everything else has the definition's value in every instance.
+ */
+export interface SubsystemPins {
+  params?: string[];
+  starts?: string[];
   $comment?: string;
 }
 export interface AssistantRunStartEvent {

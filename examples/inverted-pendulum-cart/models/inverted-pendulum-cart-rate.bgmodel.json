@@ -1,0 +1,1188 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "inverted-pendulum-cart-rate",
+  "$comment": "The existing LQR with the actuator's 200 N/s slew limit in the 1 ms firmware, on the same 0.3 m step as the MPC model. It is the fair comparison: the LQR only sees the current error, while the MPC plans the force increment over its 20 ms horizon.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "MSe1",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 950,
+          "y": 390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "CartJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 790,
+          "y": 390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "RB",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 720,
+          "y": 510
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "IM",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 860,
+          "y": 510
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "CartSensor",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 790,
+          "y": 270
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "HS",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 630,
+          "y": 390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "IMx",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 630,
+          "y": 270
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "MTFh",
+        "block": {
+          "ref": "stdlib:bondgraph/MTF"
+        },
+        "position": {
+          "x": 470,
+          "y": 390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "PendJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 110,
+          "y": 390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "MTFv",
+        "block": {
+          "ref": "stdlib:bondgraph/MTF"
+        },
+        "position": {
+          "x": 590,
+          "y": 630
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "VJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 750,
+          "y": 630
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "IMv",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 750,
+          "y": 770
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "MSeG",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 910,
+          "y": 630
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.962"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "PendSensor",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 110,
+          "y": 270
+        },
+        "rotation": 0,
+        "flipX": true,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "SinT",
+        "block": {
+          "ref": "stdlib:continuous/MathFunction"
+        },
+        "position": {
+          "x": 370,
+          "y": 770
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "fn": "0"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "CosT",
+        "block": {
+          "ref": "stdlib:continuous/MathFunction"
+        },
+        "position": {
+          "x": 370,
+          "y": 170
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "fn": "1"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "LSin",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 590,
+          "y": 770
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "LCos",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 470,
+          "y": 170
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "ThetaInt",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 260,
+          "y": 170
+        },
+        "rotation": 0,
+        "flipX": true,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.1"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "XInt",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 950,
+          "y": 270
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "XRef",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 790,
+          "y": -90
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "1.5",
+          "initial": "0.0",
+          "final": "0.3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "RateLimitedLQR1",
+        "block": {
+          "ref": "project:RateLimitedLQR"
+        },
+        "position": {
+          "x": 790,
+          "y": 30
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "K_x": "-89.442719",
+          "K_v": "-54.686555",
+          "K_theta": "-175.121631",
+          "K_omega": "-39.152990",
+          "u_max": "20.0",
+          "du_max": "0.2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "One",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1070,
+          "y": 630
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "x1",
+        "name": "x_ref",
+        "block": {
+          "ref": "stdlib:converters/ExportInputPass"
+        },
+        "position": {
+          "x": 870,
+          "y": -150
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "x2",
+        "name": "theta",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 1010,
+          "y": -150
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "x3",
+        "name": "x",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 1010,
+          "y": -90
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "x4",
+        "name": "force",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 1010,
+          "y": 30
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02"
+        },
+        "route": [],
+        "label": "controller force"
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n04",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b05",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n06"
+        },
+        "route": [],
+        "label": "v"
+      },
+      {
+        "id": "b06",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        },
+        "route": [],
+        "label": "v_x"
+      },
+      {
+        "id": "b07",
+        "kind": "bond",
+        "from": {
+          "node": "n08",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n06"
+        },
+        "route": [],
+        "label": "l*cos(theta)*w"
+      },
+      {
+        "id": "b08",
+        "kind": "bond",
+        "from": {
+          "node": "n09"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p1"
+        },
+        "route": [],
+        "label": "w"
+      },
+      {
+        "id": "b09",
+        "kind": "bond",
+        "from": {
+          "node": "n09"
+        },
+        "to": {
+          "node": "n10",
+          "port": "p1"
+        },
+        "route": [
+          {
+            "x": 140,
+            "y": 540
+          },
+          {
+            "x": 500,
+            "y": 540
+          },
+          {
+            "x": 500,
+            "y": 660
+          }
+        ],
+        "label": "w"
+      },
+      {
+        "id": "b10",
+        "kind": "bond",
+        "from": {
+          "node": "n09"
+        },
+        "to": {
+          "node": "n14",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b11",
+        "kind": "bond",
+        "from": {
+          "node": "n10",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n11"
+        },
+        "route": [],
+        "label": "v_y"
+      },
+      {
+        "id": "b12",
+        "kind": "bond",
+        "from": {
+          "node": "n13",
+          "port": "p"
+        },
+        "to": {
+          "node": "n11"
+        },
+        "route": [],
+        "label": "-m*g"
+      },
+      {
+        "id": "b13",
+        "kind": "bond",
+        "from": {
+          "node": "n11"
+        },
+        "to": {
+          "node": "n12",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n20",
+          "port": "u"
+        },
+        "route": [],
+        "label": "cart speed"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "v"
+        },
+        "route": [
+          {
+            "x": 880,
+            "y": 250
+          },
+          {
+            "x": 880,
+            "y": 230
+          },
+          {
+            "x": 790,
+            "y": 230
+          },
+          {
+            "x": 790,
+            "y": 130
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "x"
+        },
+        "route": [
+          {
+            "x": 980,
+            "y": 200
+          },
+          {
+            "x": 850,
+            "y": 200
+          }
+        ],
+        "label": "x"
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 220,
+            "y": 300
+          },
+          {
+            "x": 220,
+            "y": 200
+          }
+        ],
+        "label": "pendulum rate"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "theta"
+        },
+        "route": [
+          {
+            "x": 360,
+            "y": 140
+          },
+          {
+            "x": 740,
+            "y": 140
+          },
+          {
+            "x": 740,
+            "y": 70
+          }
+        ],
+        "label": "theta"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "w"
+        },
+        "route": [
+          {
+            "x": 180,
+            "y": 250
+          },
+          {
+            "x": 180,
+            "y": 30
+          },
+          {
+            "x": 740,
+            "y": 30
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "x1",
+          "port": "u"
+        },
+        "route": [],
+        "label": "0.2 m step at 1.5 s"
+      },
+      {
+        "id": "s07x",
+        "kind": "signal",
+        "from": {
+          "node": "x1",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "x_ref"
+        },
+        "route": [],
+        "label": "cart position setpoint (export input)"
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "u"
+        },
+        "to": {
+          "node": "n01",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 1100,
+            "y": 60
+          },
+          {
+            "x": 1100,
+            "y": 420
+          }
+        ],
+        "label": "force"
+      },
+      {
+        "id": "s09",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s10",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 350,
+            "y": 250
+          },
+          {
+            "x": 350,
+            "y": 800
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s11",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "y"
+        },
+        "to": {
+          "node": "n18",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s12",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n17",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s13",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "y"
+        },
+        "to": {
+          "node": "n08",
+          "port": "u"
+        },
+        "route": [],
+        "label": "l*cos(theta)"
+      },
+      {
+        "id": "s14",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        },
+        "route": [],
+        "label": "l*sin(theta)"
+      },
+      {
+        "id": "s15",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "y"
+        },
+        "to": {
+          "node": "n13",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "x_s1",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "x2",
+          "port": "u"
+        },
+        "route": [],
+        "label": "pendulum angle (export output)"
+      },
+      {
+        "id": "x_s2",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "y"
+        },
+        "to": {
+          "node": "x3",
+          "port": "u"
+        },
+        "route": [],
+        "label": "cart position (export output)"
+      },
+      {
+        "id": "x_s3",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "u"
+        },
+        "to": {
+          "node": "x4",
+          "port": "u"
+        },
+        "route": [],
+        "label": "cart force (export output)"
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Bond-graph plant (D28): cart 1-junction CartJ (I(M), R(b), MSe(u)) -> 0-junction HS sums v and l*cos(theta)*w into v_x -> I(m). Pendulum 1-junction PendJ (w) -> MTF l*cos(theta) and MTF l*sin(theta) -> 1-junction VJ (I(m), MSe(-m*g)) with v_y = -l*sin(theta)*w. Sensors and integrators only reconstruct x and theta.",
+        "x": -60,
+        "y": 880,
+        "w": 1100,
+        "h": 80
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 5.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 5001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Pendulum angle",
+      "signals": [
+        "ThetaInt/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Cart position",
+      "signals": [
+        "XInt/y",
+        "XRef/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Applied force",
+      "signals": [
+        "MSe1/p.e"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Rate-limited LQR force",
+      "signals": [
+        "RateLimitedLQR1/u"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/inverted-pendulum-cart.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:rail",
+      "property": "position",
+      "signal": "XInt/y"
+    },
+    {
+      "target": "joint:hinge",
+      "property": "position",
+      "signal": "ThetaInt/y"
+    }
+  ]
+}

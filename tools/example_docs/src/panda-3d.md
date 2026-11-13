@@ -5,7 +5,7 @@
   "run": {
     "kind": "plot", "model": "panda", "xlim": [0, 5.15],
     "rows": [
-      {"ylabel": "joint angle [rad]", "series": [{"signal": "Robot/J1/qout", "label": "q1"}, {"signal": "Robot/J2/qout", "label": "q2"}, {"signal": "Robot/J3/qout", "label": "q3"}, {"signal": "Robot/J4/qout", "label": "q4"}, {"signal": "Robot/J5/qout", "label": "q5"}, {"signal": "Robot/J6/qout", "label": "q6"}, {"signal": "Robot/J7/qout", "label": "q7"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "joint angle [rad]", "series": [{"signal": "Robot/L1/J/qout", "label": "q1"}, {"signal": "Robot/L2/J/qout", "label": "q2"}, {"signal": "Robot/L3/J/qout", "label": "q3"}, {"signal": "Robot/L4/J/qout", "label": "q4"}, {"signal": "Robot/L5/J/qout", "label": "q5"}, {"signal": "Robot/L6/J/qout", "label": "q6"}, {"signal": "Robot/L7/J/qout", "label": "q7"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "joint torque sensor [N m]", "series": [{"signal": "Robot/TauSense1/y", "label": "tauJ1"}, {"signal": "Robot/TauSense2/y", "label": "tauJ2"}, {"signal": "Robot/TauSense3/y", "label": "tauJ3"}, {"signal": "Robot/TauSense4/y", "label": "tauJ4"}, {"signal": "Robot/TauSense5/y", "label": "tauJ5"}, {"signal": "Robot/TauSense6/y", "label": "tauJ6"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "flange position [m]", "series": [{"signal": "Robot/TCP/g[5]", "label": "x"}, {"signal": "Traj/px", "label": "x target", "style": "--"}, {"signal": "Robot/TCP/g[6]", "label": "y"}, {"signal": "Traj/py", "label": "y target", "style": "--"}, {"signal": "Robot/TCP/g[7]", "label": "z"}, {"signal": "Traj/pz", "label": "z target", "style": "--"}], "legend": true, "legend_loc": "right"}
     ]
@@ -37,7 +37,7 @@ The run: 5.15 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 1031 output points
 
 ## 3D view
 
-`scenes/panda.sdf` is the URDF tree of `franka_description` with the official visual meshes (`meshes/link0..7.glb`); the seven joints are bound to `Robot/J<i>/qout`, so the viewer composes the arm itself. The RGB triad is the target pose `Traj/g`, the orange ball the simulated flange `Robot/TCP/g`.
+`scenes/panda.sdf` is the URDF tree of `franka_description` with the official visual meshes (`meshes/link0..7.glb`); the seven joints are bound to `Robot/L<i>/J/qout`, so the viewer composes the arm itself. The RGB triad is the target pose `Traj/g`, the orange ball the simulated flange `Robot/TCP/g`.
 
 ![3D view at t = 1.75 s: the flange trails the target in the move from waypoint 1 to 2|500](@fig:scene)
 
@@ -57,8 +57,9 @@ Continue with [the Robot subsystem](page:robot), [the outer layer](page:control)
 | mass (kg) | 4.971 | 0.6469 | 3.229 | 3.588 | 1.226 | 1.667 | 0.7355 |
 
   The flange is 0.107 m along $z_7$ ([TCP](block:Robot/TCP)).
-- **Bodies** ([B1](block:Robot/B1) to `B7`). Masses, centres of mass and inertia tensors are the physically feasible set of Gaz et al. 2019. `RigidBody3D` takes principal moments, so each tensor is diagonalised and the body 1-junction frame is the centre of mass turned to the principal axes ([CA1](block:Robot/CA1)).
-- **Joints** ([J1](block:Robot/J1) to `J7`). `Revolute3D` with the five other directions compliant ($k = 10^7$), damped at 0.7 of critical. The arm starts at rest at the ready pose on the consistent deflections of the joint reactions, so nothing rings at $t = 0$.
+- **Links** ([L1](block:Robot/L1) to `L7`). Each link is an instance of the library subsystem `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`): the offset `T` from the previous body (for `L1` the base mount), the joint `J`, the offset `Link` to the body's centre of mass, the body `B` on its 1-junction `BJ` and the pose band `CA`, `W`, `P`. Every value is pinned per instance, so joint 4 is `Robot/L4/J` and its angle `Robot/L4/J/qout`.
+- **Bodies** ([B](block:Robot/L1/B) in `L1` to `L7`). Masses, centres of mass and inertia tensors are the physically feasible set of Gaz et al. 2019. `RigidBody3D` takes principal moments, so each tensor is diagonalised and the body 1-junction frame is the centre of mass turned to the principal axes (`LC` of each link).
+- **Joints** ([J](block:Robot/L1/J) in `L1` to `L7`). `Revolute3D` with the five other directions compliant ($k = 10^7$), damped at 0.7 of critical. The arm starts at rest at the ready pose on the consistent deflections of the joint reactions, so nothing rings at $t = 0$.
 
 ## Drives (per joint)
 
@@ -147,7 +148,7 @@ $G(q)$ is the Gaz gravity torque, unrolled in the block (generated code, equal t
   "run": {
     "kind": "plot", "model": "panda-free", "xlim": [0, 1],
     "rows": [
-      {"ylabel": "joint angle [rad]", "series": [{"signal": "J1/qout", "label": "q1"}, {"signal": "J2/qout", "label": "q2"}, {"signal": "J3/qout", "label": "q3"}, {"signal": "J4/qout", "label": "q4"}, {"signal": "J5/qout", "label": "q5"}, {"signal": "J6/qout", "label": "q6"}, {"signal": "J7/qout", "label": "q7"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "joint angle [rad]", "series": [{"signal": "L1/J/qout", "label": "q1"}, {"signal": "L2/J/qout", "label": "q2"}, {"signal": "L3/J/qout", "label": "q3"}, {"signal": "L4/J/qout", "label": "q4"}, {"signal": "L5/J/qout", "label": "q5"}, {"signal": "L6/J/qout", "label": "q6"}, {"signal": "L7/J/qout", "label": "q7"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "flange position [m]", "series": [{"signal": "TCP/g[5]", "label": "x"}, {"signal": "TCP/g[6]", "label": "y"}, {"signal": "TCP/g[7]", "label": "z"}], "legend": true}
     ]
   }
@@ -155,7 +156,7 @@ $G(q)$ is the Gaz gravity torque, unrolled in the block (generated code, equal t
 @@ page panda-free overview - | Overview
 # Franka Emika Panda: free swing
 
-The bare Panda arm (the [J1](block:J1) to `J7` / [B1](block:B1) to `B7` chain of the `panda` model, without friction or drives: each drive port gets a zero effort source) is released at rest from the ready pose $q = (0, -\pi/4, 0, -3\pi/4, 0, \pi/2, \pi/4)$ and falls under gravity for 1 s. It checks the mechanics and the Gaz parameters against MuJoCo, which runs the same parameters from `reference/panda_gaz.xml`.
+The bare Panda arm (the [L1](block:L1) to `L7` chain of `RevoluteLink3D` instances of the `panda` model, without friction or drives: each drive port gets a zero effort source) is released at rest from the ready pose $q = (0, -\pi/4, 0, -3\pi/4, 0, \pi/2, \pi/4)$ and falls under gravity for 1 s. It checks the mechanics and the Gaz parameters against MuJoCo, which runs the same parameters from `reference/panda_gaz.xml`.
 
 ![The model canvas|900](@fig:diagram)
 

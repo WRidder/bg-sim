@@ -48,12 +48,16 @@ The 3D scene colours each cup by its utilisation, from blue to red, and turns a 
   - `ProfileSelect` picks one of the four transfer profiles.
   - `CupValve` is a line with an optional check valve or flow-closing valve.
   - `GripMonitor` provides the held flag and the lost-cup count.
+  - `ContactFoot.bgsub.json` is a library subsystem: one table contact (mount, corner pose and
+    `ContactPoint` on the table plane). The four corners under the carton (`Floor1` to `Floor4`) are
+    instances of it, pinned to their corner offsets.
 - `design/params.py`: all parameters. They become global parameters of the models.
 - `design/sizing.py`: the analytic sizing. It covers quasi-static cup loads (bellows statics linearised at
   the hang point, with the lift stroke, the bottoming and the vacuum- and stroke-dependent side stiffness
   of the nonlinear `SuctionCup`, and the bolt-group formula), the operating vacuum, the generator size, the
   pick-up ODE and the topology.
-- `design/build_model.py`: writes `models/*.bgmodel.json` and `scenes/suction-gripper.sdf` (through `scene.py`).
+- `design/build_model.py`: writes `models/*.bgmodel.json`, `library/ContactFoot.bgsub.json` and
+  `scenes/suction-gripper.sdf` (through `scene.py`).
 - `design/design.py`: the analysis.
   - It runs the hand calculation and validates it against simulations.
   - It covers DAF against jerk, the equal-time comparison and the scenarios.

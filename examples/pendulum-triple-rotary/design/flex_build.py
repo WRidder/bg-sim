@@ -11,7 +11,7 @@ The rigid models, `library/RotaryCtrl.jl` and the rigid scene stay as `build_mod
 Each flexible model is the rigid bond graph (`triple_build.build_model`) with the arm's
 `RigidBody3D` (and its transform, junction and pose blocks) replaced by a `FlexibleBeam3D` named
 `Arm`: end A on the motor joint's child, end B on the first pendulum joint (through the transform
-`T2`, now a pure rotation), `gA` from the joint chain, and the chain composed on from `Arm/poseB`.
+`L2/T`, now a pure rotation), `gA` from the joint chain, and the chain composed on from `Arm/poseB`.
 
     pendulum-triple-rotary-flex           the rigid firmware RotaryCtrl, unchanged (it fails)
     pendulum-triple-rotary-flex-lowpass   RotaryCtrlLP: the same weights, a 12 Hz low-pass in the loop
@@ -193,16 +193,18 @@ def flex_model(plant, dz: dict, fz: dict, name: str, kind: str) -> dict:
         "position": {"x": j1["position"]["x"] + 290, "y": j1["position"]["y"] + 60}, "rotation": 0, "flipX": False,
         "params": params, "constants": constants, "starts": {}, "ui": {"showLabel": True, "color": None},
     })
-    # the first pendulum joint sits on end B through a pure rotation; the chain composes on Arm/poseB
-    _node(doc, "t2")["params"] = tb.pose_params(tb.pose_inv(tb.RJF))
-    _node(doc, "ln2")["params"] = tb.pose_params(tb.RJF)
+    # the first pendulum joint sits on end B through a pure rotation (L2's T and LN); the chain
+    # composes on Arm/poseB
+    l2 = _node(doc, "l2")["params"]
+    l2.update({f"T/{k}": v for k, v in tb.pose_params(tb.pose_inv(tb.RJF)).items()})
+    l2.update({f"LN/{k}": v for k, v in tb.pose_params(tb.RJF).items()})
     dg = doc["diagram"]
     dg["connections"] = [c for c in dg["connections"]
-                         if not (c["from"]["node"] == "w1" and c["to"]["node"] == "ca2")]
+                         if not (c["from"]["node"] == "w1" and c["to"]["node"] == "l2")]
     _connect(doc, "bond", ("j1", "child"), ("arm", "A"))
-    _connect(doc, "bond", ("arm", "B"), ("t2", "b"))
+    _connect(doc, "bond", ("arm", "B"), ("l2", "parent"))
     _connect(doc, "signal", ("w1", "g"), ("arm", "gA"))
-    _connect(doc, "signal", ("arm", "poseB"), ("ca2", "gp"))
+    _connect(doc, "signal", ("arm", "poseB"), ("l2", "gp"))
     if kind == "lowpass":
         ctrl = _node(doc, "ctrl")
         ctrl["block"] = {"ref": "project:RotaryCtrlLP"}
@@ -235,7 +237,7 @@ def flex_bindings(fz: dict, n: int) -> list[dict]:
         return {"target": f"link:{link}", "property": "pose", "signal": [f"{sig}[{i}]" for i in range(1, 8)]}
 
     out = [pose("arm_bar", "Arm/pose"), pose("arm_tip", "Arm/poseB")]
-    out += [pose(f"rod{k}", f"W{k + 1}/g") for k in range(1, n + 1)]
+    out += [pose(f"rod{k}", f"L{k + 1}/W/g") for k in range(1, n + 1)]
     beam = {"axis": "+x", "y": "+y", "length": arm["L"]}
     for family, key, count in (("bending-y", "eta_y", arm["ny"]), ("bending-z", "eta_z", arm["nz"]), ("torsion", "eta_t", arm["nt"])):
         out.append({
@@ -274,7 +276,7 @@ def comment(dz: dict, fz: dict, kind: str) -> str:
         f"Flexible-arm variant of pendulum-triple-rotary: the arm is a FlexibleBeam3D (Arm), a {arm['b'] * 1e3:g} x "
         f"{arm['h'] * 1e3:g} mm stainless-steel strip on edge, {arm['L']:g} m, {arm['mass']:.3f} kg (the rigid arm's mass), "
         f"clamped-free modes ny = {arm['ny']}, nz = {arm['nz']}, nt = {arm['nt']}, zeta = {arm['zeta']:g}. End A on J1.child, "
-        "end B on J2 through T2 (a pure rotation), gA from W1, the chain composed on from Arm/poseB. "
+        "end B on J2 through L2's T (a pure rotation), gA from W1, the chain composed on from Arm/poseB. "
     )
     tail = {
         "rigid-ctrl": "Ctrl is the rigid design's RotaryCtrl, unchanged: it excites the arm's first bending mode and never catches the pendulum.",
@@ -296,7 +298,7 @@ def scene_sdf(plant, fz: dict) -> str:
         "  Z-up, metres. Every moving link is placed by a pose binding (no joints): the frames are the model's.",
         "    arm_bar  Arm/pose    the beam's reference frame = end A at the motor axis, x along the arm, z up",
         "    arm_tip  Arm/poseB   end B (deflected and turned with the tip slopes and the twist): the hinge housing",
-        "    rodK     W{K+1}/g    the pendulum joint K's child frame: x along the link, z = the hinge axis",
+        "    rodK     L{K+1}/W/g  the pendulum joint K's child frame: x along the link, z = the hinge axis",
         "  The strip `arm_strip` (a box from the hub, end A, to the tip, end B: beam axis +x, beam y +y, length",
         f"  {la:g} m) is deformed by Arm/eta_y[1..{arm['ny']}] (horizontal bending), Arm/eta_z[1..{arm['nz']}] (vertical) and",
         f"  Arm/eta_t[1..{arm['nt']}] (torsion), clamped-free basis. The scene is drawn at q = 0: the links upright.",

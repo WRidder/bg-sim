@@ -1,0 +1,281 @@
+{
+  "project": "aim9x",
+  "description": "AIM-9X Sidewinder: open-loop airframe, rate-command autopilot with TVC, and the full seeker / proportional-navigation intercept. Analytic reference values from design/design.py.",
+  "models": {
+    "aim9x-airframe": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aero/CN",
+          "t": 0.0,
+          "value": 0.11055115289648672,
+          "abs": 1e-06,
+          "note": "cna alpha + CN3 alpha^3 at alpha0 = 2 deg (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aero/n_z",
+          "t": 0.0,
+          "value": 0.27395895366229117,
+          "rtol": 0.0001,
+          "note": "qbar S CN / (m g0) at the start (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Air/qbar",
+          "t": 0.0,
+          "value": 163641.9350189322,
+          "rtol": 1e-06,
+          "note": "0.5 rho v^2 at 3000 m, 600 m/s (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Motor/T",
+          "t": 1.0,
+          "value": 19744.27290352364,
+          "rtol": 0.001,
+          "note": "mdot c_vac - p_a A_e at 1 s (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Motor/m",
+          "t": 4.0,
+          "value": 65.175,
+          "abs": 0.02,
+          "note": "m0 minus the area of the flow profile (design/design.py)"
+        },
+        {
+          "kind": "damping",
+          "signal": "Air/alpha_deg",
+          "from_t": 1.2,
+          "to_t": 3.8,
+          "offset": "constant",
+          "zeta": 0.14609656069566138,
+          "zeta_abs": 0.06,
+          "wn": 6.109772605249934,
+          "wn_rtol": 0.2,
+          "note": "short period after the 0.2 deg pitch doublet; the linearised mode is 0.146 at 6.11 rad/s (design/design.py)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/alpha_deg",
+          "value": 20.0,
+          "note": "the 0.2 deg doublet keeps the airframe in the linear range"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Fin1/y",
+          "value": 25.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Fin4/y",
+          "value": 25.0
+        }
+      ]
+    },
+    "aim9x-control": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AP/dp",
+          "value": 16.0001,
+          "note": "virtual pitch command limit"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AP/dy",
+          "value": 16.0001
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AP/dr",
+          "value": 12.0001
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/alpha_deg",
+          "value": 10.0,
+          "note": "the 40 m/s^2 command stays well inside the 30 deg command limit"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/beta_deg",
+          "value": 5.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/phi_deg",
+          "value": 2.0,
+          "note": "the roll loop holds wings level"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Fin1/y",
+          "value": 25.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Fin4/y",
+          "value": 25.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AP/tvc_p",
+          "value": 0.14,
+          "note": "TVC gimbal inside its 8 deg stop"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AP/tvc_y",
+          "value": 0.14
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/n_z",
+          "value": 10.0
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Aero/n_z",
+          "from_t": 1.5,
+          "to_t": 2.0,
+          "value": 0.3,
+          "note": "the acceleration command builds load factor"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Motor/T",
+          "t": 1.0,
+          "value": 19744.27290352364,
+          "rtol": 0.001,
+          "note": "mdot c_vac - p_a A_e at 1 s (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Motor/m",
+          "t": 4.0,
+          "value": 65.175,
+          "abs": 0.02,
+          "note": "m0 minus the area of the flow profile (design/design.py)"
+        }
+      ]
+    },
+    "aim9x-intercept": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seeker/range",
+          "t": 0.0,
+          "value": 2000.399960007998,
+          "abs": 1.0,
+          "note": "Euclidean launch range (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seeker/ir_target",
+          "t": 0.0,
+          "value": 0.3375646025141917,
+          "rtol": 0.01,
+          "note": "I r^-2 exp(-k r) with the rear-aspect intensity (design/design.py)"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Guide/pn_gain",
+          "signal_b": "Guide/vc_out",
+          "t": 0.5,
+          "value": 4.0,
+          "rtol": 1e-06,
+          "note": "pn_gain = N V_c: the PN law's gain"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/alpha_deg",
+          "value": 30.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Air/beta_deg",
+          "value": 20.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Fin1/y",
+          "value": 25.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Fin4/y",
+          "value": 25.0
+        },
+        {
+          "kind": "final_value",
+          "signal": "Status/min_range",
+          "t": 3.29,
+          "value": 18.0,
+          "abs": 5.0,
+          "note": "closest approach at the fuze event; the unfuzed trajectory passes inside 13 m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/fuze",
+          "value": 1.0,
+          "note": "the proximity fuze fires"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/hit",
+          "value": 1.0,
+          "note": "the target is inside the warhead's lethal radius"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Motor/T",
+          "t": 1.0,
+          "value": 19883.387265190402,
+          "rtol": 0.001,
+          "note": "mdot c_vac - p_a A_e at 6040 m (design/design.py)"
+        }
+      ]
+    }
+  }
+}

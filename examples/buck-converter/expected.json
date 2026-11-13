@@ -1,0 +1,241 @@
+{
+  "project": "buck-converter",
+  "description": "Acceptance for the averaged and switched buck converters. The averaged reference is design/design.json (scipy, the same PID equations and limits, and the steady state at 15 V / 2 A). Three switched-model checks need switching to pass: the inductor-current peak at 2 + dI/2, the input-current peak, and the 20 kHz spectral line. The inductor-current valley and the ripple on every recorded row are one-sided bounds (continuous conduction, ripple not above the analytic value), and the means are time-weighted.",
+  "models": {
+    "buck-averaged": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Vout/y",
+          "t": 0.05,
+          "value": 4.99999988,
+          "abs": 1e-07,
+          "note": "design/design.json final_v: the 5 V reference after the 1 A load step and the 12 -> 15 V line step (run and design agree to 1e-9)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Vout/y",
+          "t": 0.015,
+          "value": 4.99996399,
+          "abs": 1e-07,
+          "note": "design/design.json pre_load_v, before the load step (run and design agree to 1e-8)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Vout/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 5.00000339,
+          "abs": 1e-07,
+          "note": "design/design.json mean_v_40_50: time-weighted mean after the line step"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Vout/y",
+          "from_t": 0.02,
+          "to_t": 0.028,
+          "value": 4.8225,
+          "note": "the 1 A load step at 20 ms dips the output to 4.82261 V (design load_min_v); the bound leaves 0.1 mV"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Vout/y",
+          "from_t": 0.0,
+          "to_t": 0.05,
+          "value": 5.01241008,
+          "abs": 1e-06,
+          "note": "the largest output, after the load-step recovery at 23.5 ms (design peak_v)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IL/y",
+          "from_t": 0.0,
+          "to_t": 0.05,
+          "value": 2.35108614,
+          "abs": 1e-04,
+          "note": "the startup inrush at 0.244 ms (design max_i); the 5 us output grid samples the sharp peak 3e-5 low"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IL/y",
+          "from_t": 0.02,
+          "to_t": 0.028,
+          "value": 2.09323342,
+          "abs": 1e-05,
+          "note": "the load-step peak at 20.28 ms (design load_max_i)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IL/y",
+          "t": 0.05,
+          "value": 2.00000002,
+          "abs": 1e-07,
+          "note": "1 A in the load resistor + 1 A load step at 5 V (design final_i)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "DutySat/y",
+          "t": 0.05,
+          "value": 0.346666658,
+          "abs": 1e-07,
+          "note": "steady duty (Vref + R_L*I)/Vin = (5 + 0.1*2)/15 (design final_duty)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Iin/y",
+          "t": 0.05,
+          "value": 0.693333323,
+          "abs": 1e-07,
+          "note": "the MTF conserves power: input current d*i_L = 0.3467*2 A (design final_iin)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Pin/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 10.399998,
+          "abs": 1e-05,
+          "note": "input power 15 V * 0.6933 A = Pout 10 W + R_L*i^2 0.4 W (design mean_pin_40_50)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Pout/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 10.0000102,
+          "abs": 1e-05,
+          "note": "load power 5 V * 2 A (design mean_pout_40_50)"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Pout/y",
+          "signal_b": "Pin/y",
+          "t": 0.05,
+          "value": 0.961538441,
+          "rtol": 1e-06,
+          "note": "efficiency 10/10.4 = 96.15 %: the only loss is R_L (design final_efficiency)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W201", "W202", "W206"],
+          "note": "no solver failure, causality conflict, derivative causality, algebraic loop or event-limit stop; W205 (the bond graph is Generic, so dimensionless) is expected"
+        }
+      ]
+    },
+    "buck-switched": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Vout/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 5.0,
+          "abs": 2e-05,
+          "note": "time-weighted mean of the switched output is the 5 V set point (measured 5.000006 V)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "IL/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 2.0,
+          "abs": 2e-05,
+          "note": "time-weighted mean inductor current is the 2 A load (measured 1.999996 A)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Pout/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 10.0,
+          "abs": 1e-04,
+          "note": "time-weighted load power 5 V * 2 A (measured 10.00002 W). Pin/y is a pulse train that jumps at every edge, so its row-based mean is biased; README gives its mean from the switch state"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IL/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 2.180709,
+          "abs": 1e-03,
+          "note": "the inductor current peaks at 2 + dI/2 with dI = Vin*D*(1 - D)/(L*f_sw) = 0.361418 A at 15 V, D = 0.34667 (design steady_state_15V_2A); the averaged model stays at 2.000 A and fails this"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "IL/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 1.818,
+          "note": "the valley 2 - dI/2 = 1.819291 A (measured 1.819308 A); a lower bound only: it shows continuous conduction, the peak check above is what needs switching"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Iin/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 2.180709,
+          "abs": 1e-03,
+          "note": "the input current is the inductor current while the switch is on (MTF, modulus 1) and 0 while it is off, so it peaks at the inductor peak; the averaged input current is 0.693 A"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "IL/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "value": 20000.0,
+          "rtol": 0.005,
+          "note": "the dominant line of the inductor current is the 20 kHz switching frequency"
+        },
+        {
+          "kind": "ripple",
+          "signal": "IL/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "measure": "pp",
+          "all_rows": true,
+          "value": 0.365,
+          "note": "inductor ripple on every row (measured 0.36157 A pp) against dI = 0.361418 A pp at 15 V / 2 A (design); 1 % margin"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Vout/y",
+          "from_t": 0.04,
+          "to_t": 0.05,
+          "measure": "pp",
+          "all_rows": true,
+          "value": 0.005,
+          "note": "output ripple on every row (measured 4.878 mV pp) against dV = dI/(8*f_sw*C) = 4.806 mV pp (no ESR, design)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Vout/y",
+          "from_t": 0.02,
+          "to_t": 0.028,
+          "value": 4.824,
+          "note": "the load-step dip with the switching ripple (measured 4.82567 V); the averaged design bottoms at 4.82261 V"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W201", "W202", "W206"],
+          "note": "the PWM edges are events; the run must not hit the event limit. W205 (Generic bond graph) is expected"
+        }
+      ]
+    }
+  },
+  "compare": {
+    "a": "buck-averaged",
+    "b": "buck-switched",
+    "signal_a": "Vout/y",
+    "signal_b": "Vout/y",
+    "from_t": 0.04,
+    "to_t": 0.05,
+    "max_abs": 0.003,
+    "note": "the switched output stays within half its ripple (dV/2 = 2.4 mV) of the averaged one; observed 2.63 mV"
+  }
+}

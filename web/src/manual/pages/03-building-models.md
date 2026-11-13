@@ -103,6 +103,7 @@ A Generic port takes the domain of the bonds around it. A Generic two-port such 
 - **Enter:** double-click the subsystem, on the canvas or in the Model tree (a single click in the tree only centres it). **Leave:** `Esc`, **↑ Up**, or a crumb in the path bar above the canvas.
 - **Port terminals:** inside a subsystem, each port of the subsystem is a terminal. To add a port, drag an internal port onto the dashed **+ input**, **+ output** or **+ power** terminal, or right-click a port of an internal block and choose **Expose as subsystem port**. Right-click a terminal to **Rename port…**, **Delete port** or **Show outside connection**.
 - A subsystem can be exported on its own as an FMU (see [Export](page:export)).
+- **Reuse:** a subsystem that the model needs several times can be made a library subsystem with **Make reusable…** in the inspector. The node then is an instance, more instances come from the **Project** category, and an edit inside any instance changes them all (see [Projects and the library](page:projects-and-library)).
 
 ## Sticky notes
 

@@ -1,0 +1,27 @@
+microduck visual meshes (examples/microduck/meshes/*.glb, apps/web/src/microduck/duck.glb)
+
+Source
+  Pollen Robotics, microduck_rl, https://github.com/pollen-robotics/microduck_rl
+  commit 0daab160d3fb1c2cbaba16a4a19052f36709dd9e,
+  src/mjlab_microduck/robot/microduck/assets/*.stl (38 meshes) placed by the visual geoms of
+  src/mjlab_microduck/robot/microduck/robot_groundcontact.xml.
+  Copyright Pollen Robotics. The STL files are licensed under the Creative Commons
+  Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0),
+  https://creativecommons.org/licenses/by-nc-sa/4.0/ (microduck_rl LICENSE-MODELS.md).
+  The MJCF itself is Apache-2.0 (microduck_rl LICENSE).
+
+Changes (examples/microduck/design/build_visuals.py)
+  - every STL placed into the frame of the body it belongs to, by the geom's pos and quat;
+  - decimated with quadric edge collapse (MeshLab, pymeshlab) to a face budget per mesh
+    (796,844 source faces of the placed parts to 77,066 in total);
+  - vertex normals split at edges sharper than 35 degrees;
+  - the parts of one body merged per material colour, the colour taken from the MJCF material;
+  - written as glTF 2.0 binary: one file per body (meshes/), and one file with a node per body
+    and the lower beak in its own node on the mouth servo's axis (duck.glb, for the web game).
+
+Licence of these files
+  The GLB files are an adaptation of the Pollen Robotics STL files and are licensed under
+  CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). NON-COMMERCIAL USE ONLY.
+  This licence covers these mesh files only; it does not change the licence of the rest of
+  bg-sim, and the rest of bg-sim does not relicense them. Share them, or anything made from them,
+  only under the same licence, with this notice.

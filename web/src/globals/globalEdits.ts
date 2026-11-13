@@ -135,6 +135,11 @@ export function planRenameGlobal(doc: Model, name: string, next: string): EditPl
         entry.value = renameIdentifier(entry.value, name, target);
       }
       renameInDiagram(draft.diagram, name, target);
+      // The library subsystems the document holds use the globals too: without this the
+      // definition (and its library file) would keep the old name.
+      for (const definition of Object.values(draft.definitions ?? {})) {
+        renameInDiagram(definition.diagram, name, target);
+      }
     },
   };
 }

@@ -145,12 +145,44 @@ function _reference_rows(ref_dir::AbstractString)
     return ids, [raw[(r - 1) * ncol + 1:r * ncol] for r in 1:nrow]
 end
 
+"""The finite-difference noise floor of a Jacobian entry, for terms of order one. The central
+difference of `_numeric_jacobian` (`h = 6e-6 max(1, |x|)`) has a rounding error of about
+`eps / 2h ≈ 1.9e-11` per unit magnitude of the terms it differences; the floor is five times
+that. An entry at or below it cannot be told apart from an exact zero."""
+const FD_NOISE_FLOOR = 5 * eps(Float64) / (2 * 6.0e-6)
+
+"""    equilibrated_cond(A; floor = FD_NOISE_FLOOR) -> Float64
+
+The 1-norm condition number of `A` with its rows, then its columns, scaled to a largest
+absolute entry of 1. `Inf` when a row or a column is zero: every entry at or below the
+finite-difference noise floor `floor` (a number, or one per row of `A`). Without the floor the
+scaling would blow a row that is zero in exact arithmetic, but carries the cancellation noise of
+a finite difference (`1e-13`), up to an ordinary row, and a singular block would pass (cond
+`1e2`). The floor is absolute (in the model's units), so a well-posed block whose rows span many
+decades still passes as long as every row has an entry above it."""
+function equilibrated_cond(A::AbstractMatrix; floor = FD_NOISE_FLOOR)
+    r = vec(maximum(abs, A; dims = 2))
+    all(r .> floor) || return Inf
+    B = A ./ r
+    # a column is zero when every entry of it is at or below its row's floor
+    live = abs.(A) .> floor
+    all(any(live; dims = 1)) || return Inf
+    c = vec(maximum(abs, B; dims = 1))
+    return LinearAlgebra.cond(B ./ c', 1)
+end
+
 """    pencil_eigvals(J, mass) -> Vector{ComplexF64}
 
 The finite eigenvalues of `M x' = J x` for a diagonal `mass`: with `d` the rows where the
 mass is non-zero and `a` the algebraic rows, the eigenvalues of
 `M_dd⁻¹ (J_dd - J_da J_aa⁻¹ J_ad)`. Throws `LinearAlgebra.SingularException` when `J_aa` is
-singular (the DAE is not index 1 at that point)."""
+singular (the DAE is not index 1 at that point). Singular means ill-conditioned after the rows
+and then the columns of `J_aa` are scaled to a largest entry of 1: scaling an equation or an
+unknown changes no solvability, and a well-posed block can span many decades (`ω = P / J` of a
+link with a tiny inertia next to a contact force). A row or column of `J_aa` whose entries all
+lie at or below the finite-difference noise floor (`FD_NOISE_FLOOR` times the largest entry of
+the row in the full `J`, at least 1) counts as zero, so the scaling cannot turn FD noise into a
+regular row."""
 function pencil_eigvals(J::AbstractMatrix, mass::AbstractVector)
     a = findall(iszero, mass)
     isempty(a) && return ComplexF64.(LinearAlgebra.eigvals(J ./ mass))
@@ -158,7 +190,10 @@ function pencil_eigvals(J::AbstractMatrix, mass::AbstractVector)
     isempty(d) && return ComplexF64[]
     Jaa = J[a, a]
     F = LinearAlgebra.lu(Jaa; check = false)
-    LinearAlgebra.issuccess(F) && LinearAlgebra.cond(Jaa, 1) < 1e14 ||
+    # The noise floor of an algebraic row grows with the largest entry of its full row (the
+    # terms the finite difference cancels are at least that large), never below terms of 1.
+    floor = FD_NOISE_FLOOR .* max.(1.0, vec(maximum(abs, J[a, :]; dims = 2)))
+    LinearAlgebra.issuccess(F) && equilibrated_cond(Jaa; floor) < 1e14 ||
         throw(LinearAlgebra.SingularException(0))
     S = J[d, d] - J[d, a] * (F \ J[a, d])
     return ComplexF64.(LinearAlgebra.eigvals(S ./ mass[d]))

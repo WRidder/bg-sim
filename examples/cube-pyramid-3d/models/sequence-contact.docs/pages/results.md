@@ -1,6 +1,6 @@
 # Results and checks
 
-![Tilt, phase, vertex loads and wheel speeds|900](assets/ffecd2e1a108.png)
+![Tilt, phase, vertex loads and wheel speeds|900](assets/0297d19ad663.png)
 
 ## Measured (README, direct run of the pipeline)
 

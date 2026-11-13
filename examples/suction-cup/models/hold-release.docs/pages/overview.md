@@ -1,10 +1,10 @@
 # Suction cup: one bellows cup and a box
 
-One bellows suction cup holds a small box. The cup is a [SuctionCup](block:Cup), the 1.5-fold bellows cup of the `fanuc-pick` example (lip 32 mm, rest length 30 mm), with the nonlinear bellows switched on. It sits on a tool with a prescribed motion ([CupTool](block:Tool)). One compact ejector ([Gen](block:Gen)) evacuates it. The box is a free [RigidBody3D](block:Box) of 0.6 kg (120 x 120 x 40 mm). It starts on a table (four [ContactPoint](block:Floor1) corners), is lifted 60 mm, put through one motion, put back and released.
+One bellows suction cup holds a small box. The cup is a [SuctionCup](block:Cup), the 1.5-fold bellows cup of the `fanuc-pick` example (lip 32 mm, rest length 30 mm), with the nonlinear bellows switched on. It sits on a tool with a prescribed motion ([CupTool](block:Tool)). One compact ejector ([Gen](block:Gen)) evacuates it. The box is a free [RigidBody3D](block:Box) of 0.6 kg (120 x 120 x 40 mm). It starts on a table (four corner contacts [Floor1](block:Floor1) to `Floor4`, instances of the library subsystem `ContactFoot`: a mount and a [ContactPoint](block:Floor1/Contact) each), is lifted 60 mm, put through one motion, put back and released.
 
-![The model canvas|900](assets/41f8b73eb799.png)
+![The model canvas|900](assets/3110cdc3a111.png)
 
-![The 3D view: the see-through bellows between the tool flange and the box, the lip coloured by U|700](assets/5a302f344f51.png)
+![The 3D view: the see-through bellows between the tool flange and the box, the lip coloured by U|700](assets/0fd115267d4c.png)
 
 The example shows what the cup model does dynamically:
 

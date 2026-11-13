@@ -12,7 +12,8 @@ the full-travel one) and writes
 
 - `library/QuadCartCtrl.jl`, `QuadCartTraj.jl`, `QuadCartMonitor.jl` and the `QuadRotary*` blocks (with a
   short-travel design both controllers in one firmware block; the dashboard's select `Traj/controller`
-  picks one at run time);
+  picks one at run time), and `library/RevoluteLink3D.bgsub.json`, the library subsystem of one link of the
+  rotary chain (`design/serial_link.py`, shared with the other spatial serial-chain examples);
 - `models/quad-pendulum-swingup`, `-balance`, `-free` (cart) and `quad-rotary-swingup`, `-balance`,
   `-free` (rotary arm);
 - `scenes/quad-pendulum.sdf`, `scenes/quad-pendulum-rotary.sdf`;
@@ -33,6 +34,7 @@ sys.path.insert(0, str(HERE))
 import blocks  # noqa: E402
 import models as M  # noqa: E402
 import scenes  # noqa: E402
+import serial_link as sl  # noqa: E402
 
 
 def load(kind):
@@ -49,7 +51,7 @@ def card(cid, kind, size, title, **kw):
 def dashboard(dz, dzs, *, balance: bool, rotary: bool, auto: bool) -> dict:
     n = len(dz["L"])
     u_unit = "N m" if rotary else "N"
-    s_sig = "J1/qout" if rotary else "Rail/qout"
+    s_sig = "L1/J/qout" if rotary else "Rail/qout"
     s_title = "Arm angle" if rotary else "Cart x"
     s_unit = "rad" if rotary else "m"
     u_title = "Torque" if rotary else "F"
@@ -148,6 +150,10 @@ def main():
         (lib / f"{dz['ctrl_block'].replace('Ctrl', 'Traj')}.jl").write_text(blocks.traj_source(dz, dzs), encoding="utf-8", newline="\n")
         (lib / f"{dz['monitor_block']}.jl").write_text(blocks.monitor_source(dz, two), encoding="utf-8", newline="\n")
         rotary = kind == "rotary"
+        if rotary:  # the link of the rotary chain, a library subsystem (design/serial_link.py)
+            definition = sl.definition()
+            (lib / f"{definition['name']}.bgsub.json").write_text(json.dumps(definition, indent=2) + "\n", encoding="utf-8",
+                                                                   newline="\n")
         prefix = "quad-rotary" if rotary else "quad-pendulum"
         build = M.build_rotary if rotary else M.build_cart
         t_end = max(dz["t_end"], dzt["t_end"])

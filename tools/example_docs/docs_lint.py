@@ -10,7 +10,8 @@ Checks (every problem is one ``file:line: what is wrong; what to fix`` string):
   first 12 hex digits of its SHA-256;
 * ``page:`` links name a page of the same docs, ``project:`` links a page of the project docs,
   ``model:<name>/<id>`` a page of another model's docs (``model:<name>``: a model with docs),
-  ``block:`` links a node of the model (``Sub/Name`` for a node inside a subsystem), ``signal:``
+  ``block:`` links a node of the model (``Sub/Name`` for a node inside a subsystem or inside an
+  instance of a library subsystem, ``library/<Name>.bgsub.json``), ``signal:``
   links a signal the run produced; the project docs have no ``block:`` or ``signal:`` links;
 * every ``$...$`` / ``$$...$$`` span parses in KaTeX (``katex_check.mjs``), no unmatched ``$``,
   no raw HTML, no ``|`` inside math in a table row.
@@ -46,8 +47,40 @@ def _walk(pages: list[dict[str, Any]]):
         yield from _walk(page.get("children", []))
 
 
-def find_block(document: dict[str, Any], reference: str) -> bool:
-    """The ``findBlock`` of web/src/docs/docsLinks.ts: ``A/B/C`` through subsystem names."""
+def library_definitions(example_dir: Path) -> dict[str, dict[str, Any]]:
+    """The drawn subsystem definitions of a project library, by name: ``library/<Name>.bgsub.json``.
+
+    As in the compiler (``julia/BGSim/src/compile/link.jl``), a name that is also a code block
+    (``<Name>.jl``) is the block, and a file that cannot be read is no definition.
+    """
+    definitions: dict[str, dict[str, Any]] = {}
+    library = example_dir / "library"
+    for path in sorted(library.glob("*.bgsub.json")) if library.is_dir() else []:
+        name = path.name[: -len(".bgsub.json")]
+        if (library / f"{name}.jl").is_file():
+            continue
+        try:
+            definition = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(definition, dict) and isinstance(definition.get("diagram"), dict):
+            definitions[name] = definition
+    return definitions
+
+
+def find_block(
+    document: dict[str, Any],
+    reference: str,
+    definitions: dict[str, dict[str, Any]] | None = None,
+) -> bool:
+    """The ``findBlock`` of web/src/docs/docsLinks.ts: ``A/B/C`` through subsystem names.
+
+    A node on the way may be a drawn subsystem or an instance of a library subsystem
+    (``ref`` ``project:<Name>`` of a definition): the path goes on in the definition's diagram,
+    as the compiler puts it in place of the instance. ``definitions`` are the library files
+    (:func:`library_definitions`); the ones the document carries take precedence.
+    """
+    known = {**(definitions or {}), **(document.get("definitions") or {})}
     names = [part for part in reference.split("/") if part]
     nodes = document["diagram"]["nodes"]
     for depth, name in enumerate(names):
@@ -56,9 +89,15 @@ def find_block(document: dict[str, Any], reference: str) -> bool:
             return False
         if depth == len(names) - 1:
             return True
-        if "subsystem" not in node["block"]:
+        block = node["block"]
+        if "subsystem" in block:
+            nodes = block["subsystem"]["diagram"]["nodes"]
+            continue
+        ref = str(block.get("ref") or "")
+        definition = known.get(ref[len("project:"):]) if ref.startswith("project:") else None
+        if definition is None:
             return False
-        nodes = node["block"]["subsystem"]["diagram"]["nodes"]
+        nodes = definition["diagram"]["nodes"]
     return False
 
 
@@ -162,14 +201,19 @@ def lint_model_docs(
     wiki: str = "model",
     project_ids: set[str] | None = None,
     model_pages: dict[str, list[str]] | None = None,
+    definitions: dict[str, dict[str, Any]] | None = None,
 ) -> list[str]:
     """All problems of ``docs_dir`` as ``path:line: message`` strings (empty = clean).
 
     ``wiki`` is ``"model"`` for ``models/<m>.docs`` and ``"project"`` for the project docs.
     ``project_ids`` and ``model_pages`` (from :func:`example_wikis`) check ``project:`` and
     ``model:`` links; when left out they are read from the folders around ``docs_dir``.
+    ``definitions`` are the library subsystems a ``block:`` link may pass through; when left out
+    they are the example's ``library/*.bgsub.json`` (:func:`library_definitions`).
     """
     label = label or docs_dir.as_posix()
+    if definitions is None and wiki == "model":
+        definitions = library_definitions(docs_dir.parent.parent)
     if project_ids is None or model_pages is None:
         example_dir = docs_dir.parent if wiki == "project" else docs_dir.parent.parent
         found_project, found_models = example_wikis(example_dir)
@@ -269,8 +313,11 @@ def lint_model_docs(
             elif scheme == "block":
                 if model_document is None:
                     errors.append(f"{where}:{number}: block:{rest} cannot be checked without the model")
-                elif not find_block(model_document, rest):
-                    errors.append(f"{where}:{number}: link block:{rest} names no node of the model; use the node name (Sub/Name inside a subsystem)")
+                elif not find_block(model_document, rest, definitions):
+                    errors.append(
+                        f"{where}:{number}: link block:{rest} names no node of the model; use the node name "
+                        "(Sub/Name inside a subsystem or an instance of a library subsystem)"
+                    )
             elif scheme == "signal":
                 if signal_ids is None:
                     errors.append(f"{where}:{number}: signal:{rest} cannot be checked because the model has no run in expected.json")

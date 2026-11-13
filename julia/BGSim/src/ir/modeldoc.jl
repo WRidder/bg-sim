@@ -123,12 +123,30 @@ struct GlobalParam
     description::Union{String,Nothing}
 end
 
+"""    SubsystemDefinition(name, description, ports, diagram, pin_params, pin_starts)
+
+A drawn subsystem of the project library (contract `subsystemDefinition`, the file
+`library/<Name>.bgsub.json`). A node with `ref == "project:<Name>"` is an instance of it:
+`BGSim.Compile.link_definitions` puts `diagram` and `ports` in place of the node, so every
+instance has the same structure. `pin_params` and `pin_starts` are the paths inside the
+definition (`rotor/J`) an instance may set in its own `params` and `starts`."""
+struct SubsystemDefinition
+    name::String
+    description::String
+    ports::Vector{SubsystemPort}
+    diagram::ModelDiagram
+    pin_params::Vector{String}
+    pin_starts::Vector{String}
+end
+
 """    ModelDoc(name, language, diagram, settings, plots, scene, bindings, format, globals)
 
 The parsed model document. `settings` is the raw JSON object (a `Dict{String,Any}`) because
 the simulation stage reads `t_start`, `t_end`, `solver`, the tolerances, the output grid and
 `event_limit` from it and this stage has no reason to interpret them. `globals` keeps the
-document's global parameters in document order (`GlobalParam[]` when there are none)."""
+document's global parameters in document order (`GlobalParam[]` when there are none).
+`definitions` are the drawn subsystem definitions the document carries (the editor's unsaved
+copies); they take precedence over the files of the project library."""
 struct ModelDoc
     format::String
     language::String
@@ -139,10 +157,14 @@ struct ModelDoc
     scene::Any
     bindings::Vector{Any}
     globals::Vector{GlobalParam}
+    definitions::Dict{String,SubsystemDefinition}
 end
 
 ModelDoc(format, language, name, diagram, settings, plots, scene, bindings) =
     ModelDoc(format, language, name, diagram, settings, plots, scene, bindings, GlobalParam[])
+ModelDoc(format, language, name, diagram, settings, plots, scene, bindings, globals) =
+    ModelDoc(format, language, name, diagram, settings, plots, scene, bindings, globals,
+        Dict{String,SubsystemDefinition}())
 
 # ---------------------------------------------------------------------------------------
 # JSON helpers (JSON3.Object and plain Dict both work)
@@ -391,6 +413,13 @@ function parse_model(obj::AbstractDict)
     bindings_value = _get(obj, "bindings", nothing)
     bindings = bindings_value === nothing ? Any[] : _plain(bindings_value)
     globals = _parse_globals(_get(obj, "parameters", nothing))
+    definitions = Dict{String,SubsystemDefinition}()
+    definitions_value = _get(obj, "definitions", nothing)
+    if definitions_value !== nothing
+        for (key, value) in pairs(definitions_value)
+            definitions[String(key)] = parse_definition(value; name = String(key))
+        end
+    end
     return ModelDoc(
         format,
         language,
@@ -401,7 +430,63 @@ function parse_model(obj::AbstractDict)
         scene,
         Any[bindings...],
         globals,
+        definitions,
     )
+end
+
+"""    DEFINITION_SUFFIX
+
+The file suffix of a drawn subsystem definition in a project library:
+`library/<Name>.bgsub.json`."""
+const DEFINITION_SUFFIX = ".bgsub.json"
+
+"""    parse_definition(obj; name = nothing) -> SubsystemDefinition
+
+Read a drawn subsystem definition (contract `subsystemDefinition`) from a JSON object, a JSON
+string or a plain `Dict`. `name` overrides the name in the document (the file name or the
+key in a model's `definitions` is the name a model refers to)."""
+function parse_definition(obj; name = nothing)
+    obj isa AbstractString && return parse_definition(JSON3.read(obj); name = name)
+    own = name === nothing ? _str(_get(obj, "name", nothing), "definition name") : String(name)
+    what = "definition $own"
+    ports_value = _get(obj, "ports", nothing)
+    ports = ports_value === nothing ? SubsystemPort[] : SubsystemPort[
+        _parse_subsystem_port(p, "$what port $k") for (k, p) in enumerate(ports_value)
+    ]
+    diagram = _parse_diagram(_get(obj, "diagram", nothing), what)
+    pins = _get(obj, "pins", nothing)
+    pin_list(key) = pins === nothing ? String[] :
+        something(_string_vector(_get(pins, key, nothing), "$what pins.$key"), String[])
+    return SubsystemDefinition(
+        own,
+        _str_or(_get(obj, "description", nothing), ""),
+        ports,
+        diagram,
+        pin_list("params"),
+        pin_list("starts"),
+    )
+end
+
+"""    load_project_definitions(dir) -> (definitions, problems)
+
+Every `<Name>.bgsub.json` of the project library directory `dir`, by name. A file that cannot
+be read as a definition is left out and listed in `problems` as `name => message`. A missing
+directory yields nothing."""
+function load_project_definitions(dir::AbstractString)
+    definitions = Dict{String,SubsystemDefinition}()
+    problems = Pair{String,String}[]
+    isdir(dir) || return definitions, problems
+    for file in sort(readdir(dir))
+        endswith(file, DEFINITION_SUFFIX) || continue
+        name = file[1:(end - length(DEFINITION_SUFFIX))]
+        try
+            definitions[name] = parse_definition(
+                JSON3.read(read(joinpath(dir, file), String)); name = name)
+        catch err
+            push!(problems, name => sprint(showerror, err))
+        end
+    end
+    return definitions, problems
 end
 
 # The top-level `parameters` array. Structure only: a missing name or a non-string value is
@@ -465,5 +550,5 @@ function override_globals(md::ModelDoc, overrides::AbstractDict)
         for g in md.globals
     ]
     return ModelDoc(md.format, md.language, md.name, md.diagram, md.settings, md.plots,
-        md.scene, md.bindings, globals)
+        md.scene, md.bindings, globals, md.definitions)
 end

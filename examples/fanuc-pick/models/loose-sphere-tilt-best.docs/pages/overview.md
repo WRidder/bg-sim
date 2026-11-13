@@ -4,4 +4,4 @@ Stage A1 of `design/optimize_free.py`: the fixed families 3 and 4 of `optimize.p
 
 The optimum tilts much less than the specific force (the third trace is the angle between the tool axis and $\mathbf f$): the search found the best margin with a partial tilt. The dashboard has the tilt gain and the largest tilt as sliders.
 
-![Tilt, cup utilisation, margin and robot limits|900](assets/23f4184e0901.png)
+![Tilt, cup utilisation, margin and robot limits|900](assets/d17e3b983b0f.png)

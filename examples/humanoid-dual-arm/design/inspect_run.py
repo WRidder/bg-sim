@@ -26,14 +26,14 @@ def main() -> None:
     for tt in times:
         print(f"--- t = {tt:.3f}")
         for p in ("L", "R"):
-            q = np.array([at(t, c[f"{p}J{k}/qout"], tt) for k in range(1, 8)]) / srs.D
+            q = np.array([at(t, c[f"{p}Arm{k}/J/qout"], tt) for k in range(1, 8)]) / srs.D
             ik = np.array([at(t, c[f"IK{p}/q{k}"], tt) for k in range(1, 8)])
             print(f"  {p} q {np.round(q, 3)}  ik-q {np.round(q - ik, 3)}")
             print(f"    hand err {at(t, c[f'{p}HandError/e_mm'], tt):.3f} mm {at(t, c[f'{p}HandError/e_deg'], tt):.3f} deg;"
                   f" grasp F {at(t, c[f'{p}GraspLoad/F'], tt):.2f} N M {at(t, c[f'{p}GraspLoad/M'], tt):.3f};"
                   f" u {np.round([at(t, c[f'Servo{p}/u{k}'], tt) for k in range(1, 8)], 2)}")  # fmt: skip
         print(f"  box err {at(t, c['BoxError/e_mm'], tt):.3f} mm {at(t, c['BoxError/e_deg'], tt):.3f} deg; "
-              f"elbow L {np.round([at(t, c[f'LW4/g[{k}]'], tt) for k in (5, 6, 7)], 4)}")  # fmt: skip
+              f"elbow L {np.round([at(t, c[f'LArm4/W/g[{k}]'], tt) for k in (5, 6, 7)], 4)}")  # fmt: skip
     print("start q", np.round(q0, 3))
 
 

@@ -28,7 +28,7 @@ into the 0-junction of the internal mesh force, whose flow balance is the Willis
 
 ## The bond graph
 
-* **Planetary set** (subsystem `Planetary`): `TFc` (n = Zs + Zr), `TFs` (n = Zs), `TFr` (n = Zr)
+* **Planetary set** (`Planetary`, an instance of the library subsystem `library/Planetary.bgsub.json`): `TFc` (n = Zs + Zr), `TFs` (n = Zs), `TFr` (n = Zr)
   around the 0-junction `Mesh`. The effort of the 0-junction is the tooth-normalised mesh force F
   (`Planetary/MeshForce`); the sun carries Zs F, the ring Zr F and the carrier (Zs + Zr) F. The
   flow balance is Zs w_s + Zr w_r = (Zs + Zr) w_c. Sun, ring and carrier inertias sit on their
@@ -67,6 +67,12 @@ Only the controllers are custom blocks; no standard block does their job:
   computes the engine torque command and the firing flag, runs the MG1 speed PI that holds the
   engine on its set point, fills the wheel torque with MG2 within the MG2, battery-power and
   regeneration limits, blends in the friction brakes, and computes the two inverter moduli.
+
+The library also holds two drawn subsystems, written by `design/build_model.py`: `Planetary`
+(`library/Planetary.bgsub.json`, the planetary set of all four models) and `Meters`
+(`library/Meters.bgsub.json`, the trip computer of the three vehicle models). Each model holds them
+as instances with the same names, so every signal path (`Planetary/MeshForce/y`, `Meters/FuelL/y`)
+is what it was when they were drawn inline.
 
 ## Energy management
 

@@ -2,6 +2,6 @@
 
 This model is the `transfer` plant with `kind` = 2 and `T_move` = 0.74 s. The peak acceleration is 11.7 m/s², 43 % more than the trapezoid in `aggressive-trapezoid`, but the jerk is finite (λ = 0.3).
 
-![Utilisation and position|900](assets/9b6d90d48a95.png)
+![Utilisation and position|900](assets/3c3b656f602e.png)
 
 The maximum U reaches 1.53 for a moment, so the safety factor is gone, but no cup loses its seal, and the carton is placed at [Pose/px](signal:Pose/px) = 1.000 m.

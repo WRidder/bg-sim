@@ -11,12 +11,14 @@ Scenario (model `pendulum-triple-rotary`, 12 s):
 
 Model `pendulum-triple-rotary-free` is the same bond graph released from rest at a non-trivial pose with the controller off; `expected.json` compares it with the Lagrangian design model.
 
+The three pendulum links are instances `L2`, `L3`, `L4` of the library subsystem `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`, written by `design/build_model.py` from `design/serial_link.py`, the same definition as in `robot-arm-3d`, `panda-3d`, `quad-pendulum` and `humanoid-dual-arm`): the offset `T` from the body below, the joint `J` (`Revolute3D` about the arm axis), the offset `Link` to the centre of mass, the body `B` on its 1-junction `BJ` and the pose band `W`, `P`; every value is pinned per instance, and the bearings stay outside on the `drive` port. The arm (`Mount`, `J1`, `Link1`, `BJ1`, `Arm` and its pose band) stays flat in every model, because the flexible variants replace the arm body with a `FlexibleBeam3D`. Paths: `J2/qout` .. `J4/qout` of the flat diagram are `L2/J/qout` .. `L4/J/qout`, `Rod1` .. `Rod3` are `L2/B` .. `L4/B`, `W3/g` is `L3/W/g`. The e2e spec `web/tests/e2e/pendulum-rotary.spec.ts` still looks for the flat node names `J2` .. `J4`, `Rod1` .. `Rod3` of this example.
+
 ## Files
 
 | file | content |
 | --- | --- |
 | `design/design.py` | uv script: feasibility numbers, discrete LQR, trajectory optimisation, discrete TVLQR, closed-loop validation (nominal and six perturbed models), free swing; writes `design/design.json` (the collocation result is cached in `design/_swingup.npz`, `--fresh` recomputes it) |
-| `design/build_model.py` | writes the models, `library/RotaryCtrl.jl` (the gain and trajectory tables are its parameter defaults), `library/LinkAngles.jl`, the scene |
+| `design/build_model.py` | writes the models, `library/RotaryCtrl.jl` (the gain and trajectory tables are its parameter defaults), `library/LinkAngles.jl`, `library/RevoluteLink3D.bgsub.json` (from `design/serial_link.py`), the scene |
 | `design/finish.py` | runs both models on the real backend, compares with the design, writes `expected.json`; `--docs` writes the model docs |
 | `design/triple_lib.py` | the model, the implicit collocation, the discrete TVLQR, the firmware and the closed loop |
 | `design/triple_build.py`, `triple_finish.py`, `triple_docs.py` | adapted copies of the double's `rotary_build.py`, `rotary_finish.py`, `rotary_docs.py`; the backend runner is the double's `runner.py`, imported unchanged |

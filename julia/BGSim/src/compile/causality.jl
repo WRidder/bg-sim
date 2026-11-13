@@ -711,6 +711,7 @@ function post_compile_warnings(flat::Flat.FlatModel, system)::Vector{Diagnostic}
     end
     out = Diagnostic[]
     seen = Set{String}()
+    dropped = Flat.FlatVar[]
     for equation in flat.equations
         ids = String[]
         _ddt_ids!(ids, equation.lhs)
@@ -722,9 +723,57 @@ function post_compile_warnings(flat::Flat.FlatModel, system)::Vector{Diagnostic}
             variable = _flat_variable(flat, id)
             variable === nothing && continue
             push!(out, _post_compile_w201(variable))
+            push!(dropped, variable)
         end
     end
+    append!(out, _w219(flat, system, dropped))
     return sort_diagnostics(out)
+end
+
+"""    _w219(flat, system, dropped) -> Vector{Diagnostic}
+
+W219: in an index-reduced model (the conservative compile of `BGSim._needs_index_reduction`)
+a variable declared `state = :prefer` appears under `ddt` but index reduction did not keep it
+as a differential state (`dropped` are the `ddt` variables that were not kept). The state
+priorities are hints: MTK's dummy-derivative selection can still pick another member of the
+constraint group, and the dropped variable is then recovered from the constraints, which can
+become singular in some configurations (a rigid joint rate recovered from body momenta). A
+preference of a storage element in derivative causality (SCAP's W201) is not passed on as a
+priority (see `BGSim._state_priorities!`), so it is not reported either. The message names
+the differential states kept that carry no such preference."""
+function _w219(flat::Flat.FlatModel, system, dropped::Vector{Flat.FlatVar})
+    isempty(dropped) && return Diagnostic[]
+    BGSim._needs_index_reduction(flat) || return Diagnostic[]
+    preferred = BGSim._preferred_states(flat)
+    missed = [v for v in dropped if v.id in preferred]
+    isempty(missed) && return Diagnostic[]
+    others = String[]
+    for x in BGSim.ModelingToolkit.collect_differential_variables(system)
+        name = BGSim.signal_name(x)
+        startswith(name, "__bg") && continue   # a generated `int` state
+        name in preferred || push!(others, name)
+    end
+    sort!(others)
+    instead = isempty(others) ? "" :
+              " (it kept $(length(others)) state(s) without a preference instead: " *
+              join(("`$x`" for x in first(others, 4)), ", ") * (length(others) > 4 ? ", ..." : "") * ")"
+    out = Diagnostic[]
+    for variable in missed
+        origin = variable.origin
+        block = origin.block
+        source = origin.range === nothing || block === nothing ? nothing :
+                 BGSim.SourceRef(BGSim.source_kind(block), block, origin.range)
+        push!(out, diag(
+            "W219",
+            "`$(variable.id)` is declared `state = :prefer` but index reduction did not keep it as a differential state$instead; it is recovered from the constraints, which can become singular",
+            hint = "the derivative of a preferred variable must appear in an equation of its block (a rigid joint's armature term `Ja * qdd`); a storage element in derivative causality (W201) should not be the only one that prefers its state",
+            path = origin.path,
+            block = block,
+            source = source,
+            node = origin.node,
+        ))
+    end
+    return out
 end
 
 _unwrap_num(ex) = ex isa BGSim.Symbolics.Num ? BGSim.Symbolics.unwrap(ex) : ex

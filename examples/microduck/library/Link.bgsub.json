@@ -1,0 +1,471 @@
+{
+  "format": "bgsim.subsystem",
+  "name": "Link",
+  "description": "One jointed body of the microduck without its joint: the frame from the parent's centre of mass to the joint (T), the frame from the joint to this body's principal centre-of-mass frame (L), the rigid body on its 1-junction, and the pose band that gives the body frame and the principal frame in the world. The joint is bonded between to_joint and from_joint.",
+  "ports": [
+    {
+      "name": "parent",
+      "kind": "power",
+      "domain": "Spatial",
+      "size": [
+        6
+      ],
+      "node": "T",
+      "port": "b"
+    },
+    {
+      "name": "to_joint",
+      "kind": "power",
+      "domain": "Spatial",
+      "size": [
+        6
+      ],
+      "node": "T",
+      "port": "a"
+    },
+    {
+      "name": "from_joint",
+      "kind": "power",
+      "domain": "Spatial",
+      "size": [
+        6
+      ],
+      "node": "L",
+      "port": "a"
+    },
+    {
+      "name": "com",
+      "kind": "power",
+      "domain": "Spatial",
+      "size": [
+        6
+      ],
+      "node": "BJ",
+      "port": "junction"
+    },
+    {
+      "name": "parent_pose",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        7
+      ],
+      "unit": null,
+      "node": "CA",
+      "port": "gp"
+    },
+    {
+      "name": "joint_pose",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        7
+      ],
+      "unit": null,
+      "node": "W",
+      "port": "gl"
+    },
+    {
+      "name": "pose",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        7
+      ],
+      "unit": null,
+      "node": "W",
+      "port": "g"
+    },
+    {
+      "name": "com_pose",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        7
+      ],
+      "unit": null,
+      "node": "P",
+      "port": "g"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "T",
+        "name": "T",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "L",
+        "name": "L",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 360,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "BJ",
+        "name": "BJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 520,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Body",
+        "name": "Body",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 520,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "1.0",
+          "J": "[0.1, 0.1, 0.1]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "LN",
+        "name": "LN",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 0,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "CA",
+        "name": "CA",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 0,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "W",
+        "name": "W",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 180,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "LC",
+        "name": "LC",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 360,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "P",
+        "name": "P",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 520,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b0001",
+        "kind": "bond",
+        "from": {
+          "node": "L",
+          "port": "b"
+        },
+        "to": {
+          "node": "BJ"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0002",
+        "kind": "bond",
+        "from": {
+          "node": "Body",
+          "port": "p"
+        },
+        "to": {
+          "node": "BJ"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0003",
+        "kind": "signal",
+        "from": {
+          "node": "LN",
+          "port": "g"
+        },
+        "to": {
+          "node": "CA",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0004",
+        "kind": "signal",
+        "from": {
+          "node": "CA",
+          "port": "g"
+        },
+        "to": {
+          "node": "W",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0005",
+        "kind": "signal",
+        "from": {
+          "node": "W",
+          "port": "g"
+        },
+        "to": {
+          "node": "P",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0006",
+        "kind": "signal",
+        "from": {
+          "node": "LC",
+          "port": "g"
+        },
+        "to": {
+          "node": "P",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0007",
+        "kind": "signal",
+        "from": {
+          "node": "P",
+          "port": "g"
+        },
+        "to": {
+          "node": "Body",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**Bonds.** `parent` is the parent body's centre-of-mass junction. T carries it to the joint frame (`to_joint`); the joint sits outside, between `to_joint` and `from_joint`. L carries the joint's child side to this body's principal centre-of-mass frame, the 1-junction BJ (`com`), where the body, the next link and the contact points attach.",
+        "x": 0,
+        "y": -150,
+        "w": 640,
+        "h": 110,
+        "color": "blue"
+      },
+      {
+        "id": "a002",
+        "kind": "text",
+        "text": "**Pose band.** W = parent_pose o LN o joint_pose is the body frame in the world (`pose`, what the 3D scene reads); P = W o LC is the principal frame (`com_pose`), which the body and the contact points read.",
+        "x": 0,
+        "y": 540,
+        "w": 640,
+        "h": 90,
+        "color": "blue"
+      }
+    ]
+  },
+  "pins": {
+    "params": [
+      "T/qw",
+      "T/qx",
+      "T/qy",
+      "T/qz",
+      "T/x",
+      "T/y",
+      "T/z",
+      "L/qw",
+      "L/qx",
+      "L/qy",
+      "L/qz",
+      "L/x",
+      "L/y",
+      "L/z",
+      "LN/qw",
+      "LN/qx",
+      "LN/qy",
+      "LN/qz",
+      "LN/x",
+      "LN/y",
+      "LN/z",
+      "LC/qw",
+      "LC/qx",
+      "LC/qy",
+      "LC/qz",
+      "LC/x",
+      "LC/y",
+      "LC/z",
+      "Body/m",
+      "Body/J"
+    ],
+    "starts": []
+  }
+}

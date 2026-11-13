@@ -1,0 +1,5169 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "microduck-stand",
+  "$comment": "The microduck released at the STAND pose; the 14 XL330 servos hold the HOME goals (no policy).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Goal_left_hip_yaw",
+        "name": "Goal_left_hip_yaw",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_left_hip_roll",
+        "name": "Goal_left_hip_roll",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -1110
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "-0.0873"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_left_hip_pitch",
+        "name": "Goal_left_hip_pitch",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "-0.4579"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_left_knee",
+        "name": "Goal_left_knee",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -930
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "-0.0049"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_left_ankle",
+        "name": "Goal_left_ankle",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -840
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.453"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_neck_pitch",
+        "name": "Goal_neck_pitch",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -750
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.3491"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_head_pitch",
+        "name": "Goal_head_pitch",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -660
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.3491"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_head_yaw",
+        "name": "Goal_head_yaw",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -570
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_head_roll",
+        "name": "Goal_head_roll",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_right_hip_yaw",
+        "name": "Goal_right_hip_yaw",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -390
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_right_hip_roll",
+        "name": "Goal_right_hip_roll",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0873"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_right_hip_pitch",
+        "name": "Goal_right_hip_pitch",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -210
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.4579"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_right_knee",
+        "name": "Goal_right_knee",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0049"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Goal_right_ankle",
+        "name": "Goal_right_ankle",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": -1200,
+          "y": -30
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "-0.453"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "World",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": -600,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Free",
+        "name": "Free",
+        "block": {
+          "ref": "stdlib:spatial/Free3D"
+        },
+        "position": {
+          "x": -440,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "pz": "0.11692153101431274"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FreeSe1",
+        "name": "FreeSe1",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -440,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FreeSe2",
+        "name": "FreeSe2",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -440,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FreeSe3",
+        "name": "FreeSe3",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -440,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FreeSe4",
+        "name": "FreeSe4",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -440,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FreeSe5",
+        "name": "FreeSe5",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -440,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FreeSe6",
+        "name": "FreeSe6",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -440,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Battery",
+        "name": "Battery",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": -600,
+          "y": -900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "v_bat"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "BatJ",
+        "name": "BatJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": -460,
+          "y": -900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "BatCurrent",
+        "name": "BatCurrent",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": -420,
+          "y": -800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Bus",
+        "name": "Bus",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": -320,
+          "y": -900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Rbat",
+        "name": "Rbat",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": -500,
+          "y": -800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "r_bat"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Cbus",
+        "name": "Cbus",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": -320,
+          "y": -800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.001"
+        },
+        "constants": {},
+        "starts": {
+          "q": "0.001*v_bat"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "BusVoltage",
+        "name": "BusVoltage",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": -240,
+          "y": -800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Ground",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:contact/ContactSurface"
+        },
+        "position": {
+          "x": -600,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "trunk_L",
+        "name": "trunk_L",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 160,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.30361390880131783",
+          "qx": "0.3039524290387047",
+          "qy": "0.6407351261712254",
+          "qz": "-0.6363096835301191",
+          "x": "-0.0226332",
+          "y": "-2.70828e-05",
+          "z": "0.00280064"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "trunk_bj",
+        "name": "trunk_bj",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 300,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "trunk_link",
+        "name": "trunk_link",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 300,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.199224",
+          "J": "[9.852651409383537e-05, 0.00014079887191245793, 0.0001459316139937065]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "trunk_LC",
+        "name": "trunk_LC",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 160,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.30361390880131783",
+          "qx": "0.3039524290387047",
+          "qy": "0.6407351261712254",
+          "qz": "-0.6363096835301191",
+          "x": "-0.0226332",
+          "y": "-2.70828e-05",
+          "z": "0.00280064"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "trunk_P",
+        "name": "trunk_P",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 300,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_yaw_link",
+        "name": "left_hip_yaw_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 680,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.6679949763914825",
+          "T/qx": "0.23525143838284715",
+          "T/qy": "-0.6646263459347792",
+          "T/qz": "-0.23814132892870035",
+          "T/x": "-0.0175270828",
+          "T/y": "-0.0286332",
+          "T/z": "-0.0078006400000000045",
+          "L/qw": "0.01643932985640513",
+          "L/qx": "0.7069156586424383",
+          "L/qy": "-0.01643932985640513",
+          "L/qz": "-0.7069156586424382",
+          "L/x": "-8.8e-11",
+          "L/y": "0.00099414",
+          "L/z": "0.0168917",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "0.006",
+          "LN/y": "0.0175",
+          "LN/z": "-0.005",
+          "LC/qw": "0.01643932985640513",
+          "LC/qx": "0.7069156586424383",
+          "LC/qy": "-0.01643932985640513",
+          "LC/qz": "-0.7069156586424382",
+          "LC/x": "-8.8e-11",
+          "LC/y": "0.00099414",
+          "LC/z": "0.0168917",
+          "Body/m": "0.0230406",
+          "Body/J": "[2.3241322433233854e-06, 3.4198877566766147e-06, 4.1964e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_yaw_joint",
+        "name": "left_hip_yaw_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 480,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.0"
+        },
+        "constants": {
+          "q_min": "-0.4363323129985824",
+          "q_max": "0.5235987755982988"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_yaw",
+        "name": "left_hip_yaw",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 480,
+          "y": -1300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_roll_link",
+        "name": "left_hip_roll_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 1160,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.4882404943333962",
+          "T/qx": "-0.5114892175726493",
+          "T/qy": "-0.4882404943333962",
+          "T/qz": "0.5114892175726493",
+          "T/x": "-8.8e-11",
+          "T/y": "-0.004391700000000002",
+          "T/z": "-0.015505860000000003",
+          "L/qw": "1.7570294949403574e-05",
+          "L/qx": "-0.442315749531647",
+          "L/qy": "-3.759504040703664e-05",
+          "L/qz": "-0.8968593958888734",
+          "L/x": "0.014815",
+          "L/y": "1.6179e-08",
+          "L/z": "-0.00829992",
+          "LN/qw": "0.7071067811865477",
+          "LN/qx": "-0.7071067811865475",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.0",
+          "LN/y": "0.0165",
+          "LN/z": "0.0125",
+          "LC/qw": "1.7570294949403574e-05",
+          "LC/qx": "-0.442315749531647",
+          "LC/qy": "-3.759504040703664e-05",
+          "LC/qz": "-0.8968593958888734",
+          "LC/x": "0.014815",
+          "LC/y": "1.6179e-08",
+          "LC/z": "-0.00829992",
+          "Body/m": "0.00618934",
+          "Body/J": "[3.5245839627768914e-07, 1.157529999987118e-06, 1.1597556037351934e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_roll_joint",
+        "name": "left_hip_roll_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 960,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "-0.0873"
+        },
+        "constants": {
+          "q_min": "-0.3839724354386992",
+          "q_max": "0.38397243543880577"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_roll",
+        "name": "left_hip_roll",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 960,
+          "y": -1300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "-0.0873",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "-0.0873",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_pitch_link",
+        "name": "left_hip_pitch_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 1640,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.6695775603375316",
+          "T/qx": "0.2272994058462915",
+          "T/qy": "0.22724424051093498",
+          "T/qz": "-0.6695975850829889",
+          "T/x": "-1.6179e-08",
+          "T/y": "-0.010200079999999999",
+          "T/z": "-0.010185000000000001",
+          "L/qw": "0.5233046035439823",
+          "L/qx": "-0.026248860216010198",
+          "L/qy": "0.006005190636059521",
+          "L/qz": "-0.8517201576412646",
+          "L/x": "0.006766",
+          "L/y": "0.0228838",
+          "L/z": "0.0134531",
+          "LN/qw": "0.5",
+          "LN/qx": "-0.5",
+          "LN/qy": "0.5",
+          "LN/qz": "-0.5",
+          "LN/x": "0.025",
+          "LN/y": "0.0",
+          "LN/z": "-0.0185",
+          "LC/qw": "0.5233046035439823",
+          "LC/qx": "-0.026248860216010198",
+          "LC/qy": "0.006005190636059521",
+          "LC/qz": "-0.8517201576412646",
+          "LC/x": "0.006766",
+          "LC/y": "0.0228838",
+          "LC/z": "0.0134531",
+          "Body/m": "0.0482067",
+          "Body/J": "[8.117992081470836e-06, 1.910804196247167e-05, 1.98452659560575e-05]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_pitch_joint",
+        "name": "left_hip_pitch_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1440,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "-0.4579"
+        },
+        "constants": {
+          "q_min": "-1.570796326794949",
+          "q_max": "1.5707963267948442"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_hip_pitch",
+        "name": "left_hip_pitch",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 1440,
+          "y": -1300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "-0.4579",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "-0.4579",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_knee_link",
+        "name": "left_knee_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 2120,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.014314436036082945",
+          "T/qx": "-0.23222486534932563",
+          "T/qy": "0.9722893329335011",
+          "T/qz": "0.022807058078234257",
+          "T/x": "-0.012893299999999996",
+          "T/y": "-0.015233999999999998",
+          "T/z": "-0.017453100000000006",
+          "L/qw": "0.5702627108965027",
+          "L/qx": "0.41809125517692713",
+          "L/qy": "-0.5702626861872622",
+          "L/qz": "-0.41809163068404204",
+          "L/x": "-1.52e-10",
+          "L/y": "0.0318937",
+          "L/z": "-0.00953505",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "0.022",
+          "LN/y": "0.0357771",
+          "LN/z": "-0.004",
+          "LC/qw": "0.5702627108965027",
+          "LC/qx": "0.41809125517692713",
+          "LC/qy": "-0.5702626861872622",
+          "LC/qz": "-0.41809163068404204",
+          "LC/x": "-1.52e-10",
+          "LC/y": "0.0318937",
+          "LC/z": "-0.00953505",
+          "Body/m": "0.0215844",
+          "Body/J": "[1.9137833772389263e-06, 4.580536622760666e-06, 5.250560000000408e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_knee_joint",
+        "name": "left_knee_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1920,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "-0.0049"
+        },
+        "constants": {
+          "q_min": "-1.5707963267948983",
+          "q_max": "1.5707963267948948"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_knee",
+        "name": "left_knee",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 1920,
+          "y": -1300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "-0.0049",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "-0.0049",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_ankle_link",
+        "name": "left_ankle_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 2600,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.4180912551769272",
+          "T/qx": "-0.5702627108965029",
+          "T/qy": "-0.41809163068404204",
+          "T/qz": "0.5702626861872622",
+          "T/x": "-1.52e-10",
+          "T/y": "0.010106300000000006",
+          "T/z": "-0.01646495",
+          "L/qw": "0.7119704394779868",
+          "L/qx": "-0.7015555600674546",
+          "L/qy": "0.0024653518902359815",
+          "L/qz": "0.03019621645206692",
+          "L/x": "-0.00615742",
+          "L/y": "-0.0137483",
+          "L/z": "-0.0156585",
+          "LN/qw": "0.0",
+          "LN/qx": "1.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.0",
+          "LN/y": "0.042",
+          "LN/z": "-0.026",
+          "LC/qw": "0.7119704394779868",
+          "LC/qx": "-0.7015555600674546",
+          "LC/qy": "0.0024653518902359815",
+          "LC/qz": "0.03019621645206692",
+          "LC/x": "-0.00615742",
+          "LC/y": "-0.0137483",
+          "LC/z": "-0.0156585",
+          "Body/m": "0.0300246",
+          "Body/J": "[5.90333840156386e-06, 7.743197719635798e-06, 1.1162273878800348e-05]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_ankle_joint",
+        "name": "left_ankle_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 2400,
+          "y": -1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.453"
+        },
+        "constants": {
+          "q_min": "-1.5707963267949063",
+          "q_max": "1.5707963267948868"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "left_ankle",
+        "name": "left_ankle",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 2400,
+          "y": -1300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.453",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.453",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootL1",
+        "name": "FootL1",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2600,
+          "y": -800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "-0.02101973239094078",
+          "Pose/y": "-0.011851298434190768",
+          "Pose/z": "-0.0077988329281652325",
+          "Mount/x": "0.02101973239094078",
+          "Mount/y": "0.011851298434190768",
+          "Mount/z": "0.0077988329281652325"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootL2",
+        "name": "FootL2",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2770,
+          "y": -800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "-0.019889321459178235",
+          "Pose/y": "0.010204291162879915",
+          "Pose/z": "-0.009955737525805457",
+          "Mount/x": "0.019889321459178235",
+          "Mount/y": "-0.010204291162879915",
+          "Mount/z": "0.009955737525805457"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootL3",
+        "name": "FootL3",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2600,
+          "y": -690
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "0.0171691697518111",
+          "Pose/y": "0.010486336103458525",
+          "Pose/z": "-0.011676085847136771",
+          "Mount/x": "-0.0171691697518111",
+          "Mount/y": "-0.010486336103458525",
+          "Mount/z": "0.011676085847136771"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootL4",
+        "name": "FootL4",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2770,
+          "y": -690
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "0.017388226575525082",
+          "Pose/y": "-0.015305745400731787",
+          "Pose/z": "-0.00907308154292937",
+          "Mount/x": "-0.017388226575525082",
+          "Mount/y": "0.015305745400731787",
+          "Mount/z": "0.00907308154292937"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "neck_pitch_link",
+        "name": "neck_pitch_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 680,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.9030070448189047",
+          "T/qx": "-0.0031292605012783734",
+          "T/qy": "0.00023936995542501646",
+          "T/qz": "0.4296142775073569",
+          "T/x": "0.048633200000000015",
+          "T/y": "0.029620860000000006",
+          "T/z": "0.014527082800000011",
+          "L/qw": "0.5",
+          "L/qx": "0.5",
+          "L/qy": "0.5",
+          "L/qz": "0.5",
+          "L/x": "0.0",
+          "L/y": "-0.025",
+          "L/z": "0.0141665",
+          "LN/qw": "0.0",
+          "LN/qx": "0.0",
+          "LN/qy": "-0.7071067811865476",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.026",
+          "LN/y": "0.0145",
+          "LN/z": "0.0324215",
+          "LC/qw": "0.5",
+          "LC/qx": "0.5",
+          "LC/qy": "0.5",
+          "LC/qz": "0.5",
+          "LC/x": "0.0",
+          "LC/y": "-0.025",
+          "LC/z": "0.0141665",
+          "Body/m": "0.0368414",
+          "Body/J": "[3.12694e-06, 1.63707e-05, 1.72925e-05]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "neck_pitch_joint",
+        "name": "neck_pitch_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 480,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.3491"
+        },
+        "constants": {
+          "q_min": "-1.5707963267948974",
+          "q_max": "1.0471975511965967"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "neck_pitch",
+        "name": "neck_pitch",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 480,
+          "y": -300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.3491",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.3491",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_pitch_link",
+        "name": "head_pitch_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 1160,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.5",
+          "T/qx": "-0.5",
+          "T/qy": "0.5",
+          "T/qz": "-0.5",
+          "T/x": "0.0",
+          "T/y": "-0.025",
+          "T/z": "-0.0141665",
+          "L/qw": "0.7071067811865476",
+          "L/qx": "0.0",
+          "L/qy": "-0.7071067811865475",
+          "L/qz": "0.0",
+          "L/x": "-6.533e-09",
+          "L/y": "0.0116641",
+          "L/z": "-0.0145",
+          "LN/qw": "0.0",
+          "LN/qx": "1.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.0",
+          "LN/y": "-0.05",
+          "LN/z": "0.0",
+          "LC/qw": "0.7071067811865476",
+          "LC/qx": "0.0",
+          "LC/qy": "-0.7071067811865475",
+          "LC/qz": "0.0",
+          "LC/x": "-6.533e-09",
+          "LC/y": "0.0116641",
+          "LC/z": "-0.0145",
+          "Body/m": "0.00572",
+          "Body/J": "[5.12111e-07, 9.66855e-07, 1.09186e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_pitch_joint",
+        "name": "head_pitch_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 960,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.3491"
+        },
+        "constants": {
+          "q_min": "-1.5707963267948966",
+          "q_max": "1.5707963267948966"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_pitch",
+        "name": "head_pitch",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 960,
+          "y": -300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.3491",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.3491",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_yaw_link",
+        "name": "head_yaw_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 1640,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.5",
+          "T/qx": "0.5",
+          "T/qy": "0.5",
+          "T/qz": "0.4999999999999999",
+          "T/x": "6.533000000000003e-09",
+          "T/y": "0.0",
+          "T/z": "-0.007029000000000002",
+          "L/qw": "0.9844361927267663",
+          "L/qx": "-0.10976063265546819",
+          "L/qy": "-0.008385469874405603",
+          "L/qz": "-0.1369951454018937",
+          "L/x": "-0.000166657",
+          "L/y": "-0.00500964",
+          "L/z": "0.0178065",
+          "LN/qw": "0.0",
+          "LN/qx": "0.0",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.0",
+          "LN/y": "0.0186931",
+          "LN/z": "-0.0145",
+          "LC/qw": "0.9844361927267663",
+          "LC/qx": "-0.10976063265546819",
+          "LC/qy": "-0.008385469874405603",
+          "LC/qz": "-0.1369951454018937",
+          "LC/x": "-0.000166657",
+          "LC/y": "-0.00500964",
+          "LC/z": "0.0178065",
+          "Body/m": "0.0486",
+          "Body/J": "[6.887804907974077e-06, 8.117877396259051e-06, 9.65511769576687e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_yaw_joint",
+        "name": "head_yaw_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1440,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.0"
+        },
+        "constants": {
+          "q_min": "-2.9670597283903613",
+          "q_max": "2.9670597283903595"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_yaw",
+        "name": "head_yaw",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 1440,
+          "y": -300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_roll_link",
+        "name": "head_roll_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 2120,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.7020309301341912",
+          "T/qx": "-0.17448268396132327",
+          "T/qy": "0.6901720849109358",
+          "T/qz": "-0.019257708645308947",
+          "T/x": "0.003306500000000002",
+          "T/y": "-0.00500964",
+          "T/z": "-0.017733343000000002",
+          "L/qw": "0.7203811328753097",
+          "L/qx": "0.01646762229089037",
+          "L/qy": "0.6932785649621923",
+          "L/qz": "0.012027974781042903",
+          "L/x": "0.00460523",
+          "L/y": "0.00120047",
+          "L/z": "-0.0324761",
+          "LN/qw": "0.7071067811865477",
+          "LN/qx": "0.0",
+          "LN/qy": "-0.7071067811865475",
+          "LN/qz": "0.0",
+          "LN/x": "-0.0179",
+          "LN/y": "0.0",
+          "LN/z": "0.0145",
+          "LC/qw": "0.7203811328753097",
+          "LC/qx": "0.01646762229089037",
+          "LC/qy": "0.6932785649621923",
+          "LC/qz": "0.012027974781042903",
+          "LC/x": "0.00460523",
+          "LC/y": "0.00120047",
+          "LC/z": "-0.0324761",
+          "Body/m": "0.188766",
+          "Body/J": "[0.0001494606648026423, 0.000254265736749713, 0.00032106659844764474]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_roll_joint",
+        "name": "head_roll_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1920,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.0"
+        },
+        "constants": {
+          "q_min": "-0.43633231299858327",
+          "q_max": "0.4363323129985815"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "head_roll",
+        "name": "head_roll",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 1920,
+          "y": -300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_yaw_link",
+        "name": "right_hip_yaw_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 680,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.6679949763914825",
+          "T/qx": "0.23525143838284715",
+          "T/qy": "-0.6646263459347792",
+          "T/qz": "-0.23814132892870035",
+          "T/x": "0.01747291720000001",
+          "T/y": "-0.028633200000000008",
+          "T/z": "-0.0078006400000000045",
+          "L/qw": "0.01643932985640513",
+          "L/qx": "0.7069156586424383",
+          "L/qy": "-0.01643932985640513",
+          "L/qz": "-0.7069156586424382",
+          "L/x": "-8.8e-11",
+          "L/y": "0.00099414",
+          "L/z": "0.0168917",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "0.006",
+          "LN/y": "-0.0175",
+          "LN/z": "-0.005",
+          "LC/qw": "0.01643932985640513",
+          "LC/qx": "0.7069156586424383",
+          "LC/qy": "-0.01643932985640513",
+          "LC/qz": "-0.7069156586424382",
+          "LC/x": "-8.8e-11",
+          "LC/y": "0.00099414",
+          "LC/z": "0.0168917",
+          "Body/m": "0.0230406",
+          "Body/J": "[2.3241322433233854e-06, 3.4198877566766147e-06, 4.1964e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_yaw_joint",
+        "name": "right_hip_yaw_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 480,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.0"
+        },
+        "constants": {
+          "q_min": "-0.523598775598297",
+          "q_max": "0.43633231299858416"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_yaw",
+        "name": "right_hip_yaw",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 480,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_roll_link",
+        "name": "right_hip_roll_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 1160,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.5114892175726493",
+          "T/qx": "-0.4882404943333962",
+          "T/qy": "0.5114892175726493",
+          "T/qz": "-0.4882404943333962",
+          "T/x": "8.800000000000005e-11",
+          "T/y": "0.004391700000000002",
+          "T/z": "-0.015505860000000005",
+          "L/qw": "1.7570294949403574e-05",
+          "L/qx": "-0.442315749531647",
+          "L/qy": "-3.759504040703664e-05",
+          "L/qz": "-0.8968593958888734",
+          "L/x": "0.014815",
+          "L/y": "1.6212e-08",
+          "L/z": "-0.00829992",
+          "LN/qw": "0.0",
+          "LN/qx": "0.0",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.0",
+          "LN/y": "0.0165",
+          "LN/z": "0.0125",
+          "LC/qw": "1.7570294949403574e-05",
+          "LC/qx": "-0.442315749531647",
+          "LC/qy": "-3.759504040703664e-05",
+          "LC/qz": "-0.8968593958888734",
+          "LC/x": "0.014815",
+          "LC/y": "1.6212e-08",
+          "LC/z": "-0.00829992",
+          "Body/m": "0.00618934",
+          "Body/J": "[3.5245839627768914e-07, 1.157529999987118e-06, 1.1597556037351934e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_roll_joint",
+        "name": "right_hip_roll_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 960,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.0873"
+        },
+        "constants": {
+          "q_min": "-0.3839724354387507",
+          "q_max": "0.38397243543875426"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_roll",
+        "name": "right_hip_roll",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 960,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0873",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0873",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_pitch_link",
+        "name": "right_hip_pitch_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 1640,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.6695775603375316",
+          "T/qx": "0.2272994058462915",
+          "T/qy": "0.22724424051093498",
+          "T/qz": "-0.6695975850829889",
+          "T/x": "-1.6212e-08",
+          "T/y": "-0.010200079999999999",
+          "T/z": "-0.010185000000000001",
+          "L/qw": "0.8517201576412645",
+          "L/qx": "0.006005190636059551",
+          "L/qy": "-0.02624886021601022",
+          "L/qz": "-0.5233046035439824",
+          "L/x": "-0.006766",
+          "L/y": "0.0228838",
+          "L/z": "0.0134531",
+          "LN/qw": "0.5",
+          "LN/qx": "-0.5",
+          "LN/qy": "0.5",
+          "LN/qz": "-0.5",
+          "LN/x": "0.025",
+          "LN/y": "0.0",
+          "LN/z": "-0.0185",
+          "LC/qw": "0.8517201576412645",
+          "LC/qx": "0.006005190636059551",
+          "LC/qy": "-0.02624886021601022",
+          "LC/qz": "-0.5233046035439824",
+          "LC/x": "-0.006766",
+          "LC/y": "0.0228838",
+          "LC/z": "0.0134531",
+          "Body/m": "0.0482067",
+          "Body/J": "[8.117992081470836e-06, 1.910804196247167e-05, 1.98452659560575e-05]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_pitch_joint",
+        "name": "right_hip_pitch_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1440,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.4579"
+        },
+        "constants": {
+          "q_min": "-1.57079632679494",
+          "q_max": "1.570796326794853"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_hip_pitch",
+        "name": "right_hip_pitch",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 1440,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.4579",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.4579",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_knee_link",
+        "name": "right_knee_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 2120,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.006005190636059551",
+          "T/qx": "-0.8517201576412645",
+          "T/qy": "-0.5233046035439824",
+          "T/qz": "0.02624886021601022",
+          "T/x": "0.015233999999999998",
+          "T/y": "0.0128933",
+          "T/z": "-0.0174531",
+          "L/qw": "0.6988717741510697",
+          "L/qx": "-0.6988720571467685",
+          "L/qy": "-0.10760120271871317",
+          "L/qz": "-0.10760145077026866",
+          "L/x": "-0.0318937",
+          "L/y": "-1.52e-10",
+          "L/z": "-0.00953505",
+          "LN/qw": "0.0",
+          "LN/qx": "1.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "-0.022",
+          "LN/y": "0.0357771",
+          "LN/z": "-0.004",
+          "LC/qw": "0.6988717741510697",
+          "LC/qx": "-0.6988720571467685",
+          "LC/qy": "-0.10760120271871317",
+          "LC/qz": "-0.10760145077026866",
+          "LC/x": "-0.0318937",
+          "LC/y": "-1.52e-10",
+          "LC/z": "-0.00953505",
+          "Body/m": "0.0215844",
+          "Body/J": "[1.9137833772389263e-06, 4.580536622760667e-06, 5.250560000000407e-06]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_knee_joint",
+        "name": "right_knee_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1920,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "0.0049"
+        },
+        "constants": {
+          "q_min": "-1.5707963267949339",
+          "q_max": "1.5707963267948593"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_knee",
+        "name": "right_knee",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 1920,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0049",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "0.0049",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_ankle_link",
+        "name": "right_ankle_link",
+        "block": {
+          "ref": "project:Link"
+        },
+        "position": {
+          "x": 2600,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T/qw": "0.5702627108965026",
+          "T/qx": "0.4180912551769275",
+          "T/qy": "0.5702626861872623",
+          "T/qz": "0.418091630684042",
+          "T/x": "-1.520000022440494e-10",
+          "T/y": "0.010106300000000006",
+          "T/z": "-0.016464950000000006",
+          "L/qw": "0.711999241788759",
+          "L/qx": "-0.7015248763945282",
+          "L/qy": "-0.0025545372677144803",
+          "L/qz": "-0.030222538464235078",
+          "L/x": "0.00615539",
+          "L/y": "-0.0137482",
+          "L/z": "-0.0156566",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "-0.042",
+          "LN/y": "0.0",
+          "LN/z": "-0.026",
+          "LC/qw": "0.711999241788759",
+          "LC/qx": "-0.7015248763945282",
+          "LC/qy": "-0.0025545372677144803",
+          "LC/qz": "-0.030222538464235078",
+          "LC/x": "0.00615539",
+          "LC/y": "-0.0137482",
+          "LC/z": "-0.0156566",
+          "Body/m": "0.0300251",
+          "Body/J": "[5.903438255781445e-06, 7.743205838473821e-06, 1.1162245905744725e-05]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_ankle_joint",
+        "name": "right_ankle_joint",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 2400,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000.0",
+          "kr": "100000.0",
+          "bt": "141.4213562373095",
+          "br": "2.8284271247461903",
+          "q0": "-0.453"
+        },
+        "constants": {
+          "q_min": "-1.5707963267949028",
+          "q_max": "1.5707963267948903"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "right_ankle",
+        "name": "right_ankle",
+        "block": {
+          "ref": "project:XL330"
+        },
+        "position": {
+          "x": 2400,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "-0.453",
+          "Friction/scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "Encoder/phi": "-0.453",
+          "Backlash/phi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootR1",
+        "name": "FootR1",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2600,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "0.019888743920955517",
+          "Pose/y": "0.010208594962331952",
+          "Pose/z": "-0.00995845204562625",
+          "Mount/x": "-0.019888743920955517",
+          "Mount/y": "-0.010208594962331952",
+          "Mount/z": "0.00995845204562625"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootR2",
+        "name": "FootR2",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2770,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "0.0210228964648126",
+          "Pose/y": "-0.011846619477023427",
+          "Pose/z": "-0.0077996762736445594",
+          "Mount/x": "-0.0210228964648126",
+          "Mount/y": "0.011846619477023427",
+          "Mount/z": "0.0077996762736445594"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootR3",
+        "name": "FootR3",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2600,
+          "y": 1310
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "-0.01738461778210876",
+          "Pose/y": "-0.015307364938154312",
+          "Pose/z": "-0.009070233463381608",
+          "Mount/x": "0.01738461778210876",
+          "Mount/y": "0.015307364938154312",
+          "Mount/z": "0.009070233463381608"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "FootR4",
+        "name": "FootR4",
+        "block": {
+          "ref": "project:GroundContact"
+        },
+        "position": {
+          "x": 2770,
+          "y": 1310
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Pose/x": "-0.01716994357800873",
+          "Pose/y": "0.010484518777174805",
+          "Pose/z": "-0.011675561661434401",
+          "Mount/x": "0.01716994357800873",
+          "Mount/y": "-0.010484518777174805",
+          "Mount/z": "0.011675561661434401"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b0001",
+        "kind": "bond",
+        "from": {
+          "node": "World",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0002",
+        "kind": "bond",
+        "from": {
+          "node": "FreeSe1",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "drive1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0003",
+        "kind": "bond",
+        "from": {
+          "node": "FreeSe2",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "drive2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0004",
+        "kind": "bond",
+        "from": {
+          "node": "FreeSe3",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "drive3"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0005",
+        "kind": "bond",
+        "from": {
+          "node": "FreeSe4",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "drive4"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0006",
+        "kind": "bond",
+        "from": {
+          "node": "FreeSe5",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "drive5"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0007",
+        "kind": "bond",
+        "from": {
+          "node": "FreeSe6",
+          "port": "p"
+        },
+        "to": {
+          "node": "Free",
+          "port": "drive6"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0008",
+        "kind": "bond",
+        "from": {
+          "node": "Battery",
+          "port": "p"
+        },
+        "to": {
+          "node": "BatJ"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0009",
+        "kind": "bond",
+        "from": {
+          "node": "BatJ"
+        },
+        "to": {
+          "node": "BatCurrent",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0010",
+        "kind": "bond",
+        "from": {
+          "node": "BatJ"
+        },
+        "to": {
+          "node": "Bus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0011",
+        "kind": "bond",
+        "from": {
+          "node": "BatJ"
+        },
+        "to": {
+          "node": "Rbat",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0012",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "Cbus",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0013",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "BusVoltage",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0014",
+        "kind": "bond",
+        "from": {
+          "node": "trunk_L",
+          "port": "b"
+        },
+        "to": {
+          "node": "trunk_bj"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0015",
+        "kind": "bond",
+        "from": {
+          "node": "trunk_link",
+          "port": "p"
+        },
+        "to": {
+          "node": "trunk_bj"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0016",
+        "kind": "signal",
+        "from": {
+          "node": "trunk_LC",
+          "port": "g"
+        },
+        "to": {
+          "node": "trunk_P",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0017",
+        "kind": "signal",
+        "from": {
+          "node": "trunk_P",
+          "port": "g"
+        },
+        "to": {
+          "node": "trunk_link",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0018",
+        "kind": "bond",
+        "from": {
+          "node": "Free",
+          "port": "child"
+        },
+        "to": {
+          "node": "trunk_L",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0019",
+        "kind": "signal",
+        "from": {
+          "node": "Free",
+          "port": "pose"
+        },
+        "to": {
+          "node": "trunk_P",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0020",
+        "kind": "bond",
+        "from": {
+          "node": "trunk_bj"
+        },
+        "to": {
+          "node": "left_hip_yaw_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0021",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_yaw_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "left_hip_yaw_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0022",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_yaw_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "left_hip_yaw_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0023",
+        "kind": "signal",
+        "from": {
+          "node": "Free",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_hip_yaw_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0024",
+        "kind": "signal",
+        "from": {
+          "node": "left_hip_yaw_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_hip_yaw_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0025",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_yaw",
+          "port": "horn"
+        },
+        "to": {
+          "node": "left_hip_yaw_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0026",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "left_hip_yaw",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0027",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_left_hip_yaw",
+          "port": "y"
+        },
+        "to": {
+          "node": "left_hip_yaw",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0028",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_yaw_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "left_hip_roll_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0029",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_roll_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "left_hip_roll_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0030",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_roll_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "left_hip_roll_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0031",
+        "kind": "signal",
+        "from": {
+          "node": "left_hip_yaw_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_hip_roll_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0032",
+        "kind": "signal",
+        "from": {
+          "node": "left_hip_roll_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_hip_roll_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0033",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_roll",
+          "port": "horn"
+        },
+        "to": {
+          "node": "left_hip_roll_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0034",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "left_hip_roll",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0035",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_left_hip_roll",
+          "port": "y"
+        },
+        "to": {
+          "node": "left_hip_roll",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0036",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_roll_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "left_hip_pitch_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0037",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_pitch_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "left_hip_pitch_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0038",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_pitch_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "left_hip_pitch_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0039",
+        "kind": "signal",
+        "from": {
+          "node": "left_hip_roll_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_hip_pitch_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0040",
+        "kind": "signal",
+        "from": {
+          "node": "left_hip_pitch_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_hip_pitch_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0041",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_pitch",
+          "port": "horn"
+        },
+        "to": {
+          "node": "left_hip_pitch_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0042",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "left_hip_pitch",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0043",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_left_hip_pitch",
+          "port": "y"
+        },
+        "to": {
+          "node": "left_hip_pitch",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0044",
+        "kind": "bond",
+        "from": {
+          "node": "left_hip_pitch_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "left_knee_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0045",
+        "kind": "bond",
+        "from": {
+          "node": "left_knee_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "left_knee_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0046",
+        "kind": "bond",
+        "from": {
+          "node": "left_knee_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "left_knee_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0047",
+        "kind": "signal",
+        "from": {
+          "node": "left_hip_pitch_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_knee_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0048",
+        "kind": "signal",
+        "from": {
+          "node": "left_knee_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_knee_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0049",
+        "kind": "bond",
+        "from": {
+          "node": "left_knee",
+          "port": "horn"
+        },
+        "to": {
+          "node": "left_knee_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0050",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "left_knee",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0051",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_left_knee",
+          "port": "y"
+        },
+        "to": {
+          "node": "left_knee",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0052",
+        "kind": "bond",
+        "from": {
+          "node": "left_knee_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "left_ankle_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0053",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "left_ankle_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0054",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "left_ankle_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0055",
+        "kind": "signal",
+        "from": {
+          "node": "left_knee_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_ankle_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0056",
+        "kind": "signal",
+        "from": {
+          "node": "left_ankle_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "left_ankle_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0057",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle",
+          "port": "horn"
+        },
+        "to": {
+          "node": "left_ankle_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0058",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "left_ankle",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0059",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_left_ankle",
+          "port": "y"
+        },
+        "to": {
+          "node": "left_ankle",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0060",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootL1",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0061",
+        "kind": "signal",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootL1",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0062",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootL1",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0063",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootL1",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0064",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootL2",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0065",
+        "kind": "signal",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootL2",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0066",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootL2",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0067",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootL2",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0068",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootL3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0069",
+        "kind": "signal",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootL3",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0070",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootL3",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0071",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootL3",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0072",
+        "kind": "bond",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootL4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0073",
+        "kind": "signal",
+        "from": {
+          "node": "left_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootL4",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0074",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootL4",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0075",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootL4",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0076",
+        "kind": "bond",
+        "from": {
+          "node": "trunk_bj"
+        },
+        "to": {
+          "node": "neck_pitch_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0077",
+        "kind": "bond",
+        "from": {
+          "node": "neck_pitch_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "neck_pitch_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0078",
+        "kind": "bond",
+        "from": {
+          "node": "neck_pitch_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "neck_pitch_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0079",
+        "kind": "signal",
+        "from": {
+          "node": "Free",
+          "port": "pose"
+        },
+        "to": {
+          "node": "neck_pitch_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0080",
+        "kind": "signal",
+        "from": {
+          "node": "neck_pitch_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "neck_pitch_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0081",
+        "kind": "bond",
+        "from": {
+          "node": "neck_pitch",
+          "port": "horn"
+        },
+        "to": {
+          "node": "neck_pitch_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0082",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "neck_pitch",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0083",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_neck_pitch",
+          "port": "y"
+        },
+        "to": {
+          "node": "neck_pitch",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0084",
+        "kind": "bond",
+        "from": {
+          "node": "neck_pitch_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "head_pitch_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0085",
+        "kind": "bond",
+        "from": {
+          "node": "head_pitch_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "head_pitch_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0086",
+        "kind": "bond",
+        "from": {
+          "node": "head_pitch_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "head_pitch_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0087",
+        "kind": "signal",
+        "from": {
+          "node": "neck_pitch_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "head_pitch_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0088",
+        "kind": "signal",
+        "from": {
+          "node": "head_pitch_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "head_pitch_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0089",
+        "kind": "bond",
+        "from": {
+          "node": "head_pitch",
+          "port": "horn"
+        },
+        "to": {
+          "node": "head_pitch_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0090",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "head_pitch",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0091",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_head_pitch",
+          "port": "y"
+        },
+        "to": {
+          "node": "head_pitch",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0092",
+        "kind": "bond",
+        "from": {
+          "node": "head_pitch_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "head_yaw_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0093",
+        "kind": "bond",
+        "from": {
+          "node": "head_yaw_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "head_yaw_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0094",
+        "kind": "bond",
+        "from": {
+          "node": "head_yaw_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "head_yaw_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0095",
+        "kind": "signal",
+        "from": {
+          "node": "head_pitch_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "head_yaw_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0096",
+        "kind": "signal",
+        "from": {
+          "node": "head_yaw_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "head_yaw_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0097",
+        "kind": "bond",
+        "from": {
+          "node": "head_yaw",
+          "port": "horn"
+        },
+        "to": {
+          "node": "head_yaw_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0098",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "head_yaw",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0099",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_head_yaw",
+          "port": "y"
+        },
+        "to": {
+          "node": "head_yaw",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0100",
+        "kind": "bond",
+        "from": {
+          "node": "head_yaw_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "head_roll_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0101",
+        "kind": "bond",
+        "from": {
+          "node": "head_roll_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "head_roll_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0102",
+        "kind": "bond",
+        "from": {
+          "node": "head_roll_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "head_roll_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0103",
+        "kind": "signal",
+        "from": {
+          "node": "head_yaw_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "head_roll_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0104",
+        "kind": "signal",
+        "from": {
+          "node": "head_roll_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "head_roll_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0105",
+        "kind": "bond",
+        "from": {
+          "node": "head_roll",
+          "port": "horn"
+        },
+        "to": {
+          "node": "head_roll_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0106",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "head_roll",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0107",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_head_roll",
+          "port": "y"
+        },
+        "to": {
+          "node": "head_roll",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0108",
+        "kind": "bond",
+        "from": {
+          "node": "trunk_bj"
+        },
+        "to": {
+          "node": "right_hip_yaw_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0109",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_yaw_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "right_hip_yaw_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0110",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_yaw_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "right_hip_yaw_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0111",
+        "kind": "signal",
+        "from": {
+          "node": "Free",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_hip_yaw_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0112",
+        "kind": "signal",
+        "from": {
+          "node": "right_hip_yaw_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_hip_yaw_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0113",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_yaw",
+          "port": "horn"
+        },
+        "to": {
+          "node": "right_hip_yaw_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0114",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "right_hip_yaw",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0115",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_right_hip_yaw",
+          "port": "y"
+        },
+        "to": {
+          "node": "right_hip_yaw",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0116",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_yaw_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "right_hip_roll_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0117",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_roll_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "right_hip_roll_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0118",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_roll_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "right_hip_roll_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0119",
+        "kind": "signal",
+        "from": {
+          "node": "right_hip_yaw_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_hip_roll_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0120",
+        "kind": "signal",
+        "from": {
+          "node": "right_hip_roll_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_hip_roll_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0121",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_roll",
+          "port": "horn"
+        },
+        "to": {
+          "node": "right_hip_roll_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0122",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "right_hip_roll",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0123",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_right_hip_roll",
+          "port": "y"
+        },
+        "to": {
+          "node": "right_hip_roll",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0124",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_roll_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "right_hip_pitch_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0125",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_pitch_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "right_hip_pitch_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0126",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_pitch_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "right_hip_pitch_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0127",
+        "kind": "signal",
+        "from": {
+          "node": "right_hip_roll_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_hip_pitch_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0128",
+        "kind": "signal",
+        "from": {
+          "node": "right_hip_pitch_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_hip_pitch_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0129",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_pitch",
+          "port": "horn"
+        },
+        "to": {
+          "node": "right_hip_pitch_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0130",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "right_hip_pitch",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0131",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_right_hip_pitch",
+          "port": "y"
+        },
+        "to": {
+          "node": "right_hip_pitch",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0132",
+        "kind": "bond",
+        "from": {
+          "node": "right_hip_pitch_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "right_knee_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0133",
+        "kind": "bond",
+        "from": {
+          "node": "right_knee_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "right_knee_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0134",
+        "kind": "bond",
+        "from": {
+          "node": "right_knee_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "right_knee_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0135",
+        "kind": "signal",
+        "from": {
+          "node": "right_hip_pitch_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_knee_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0136",
+        "kind": "signal",
+        "from": {
+          "node": "right_knee_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_knee_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0137",
+        "kind": "bond",
+        "from": {
+          "node": "right_knee",
+          "port": "horn"
+        },
+        "to": {
+          "node": "right_knee_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0138",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "right_knee",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0139",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_right_knee",
+          "port": "y"
+        },
+        "to": {
+          "node": "right_knee",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0140",
+        "kind": "bond",
+        "from": {
+          "node": "right_knee_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "right_ankle_link",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0141",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "to_joint"
+        },
+        "to": {
+          "node": "right_ankle_joint",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0142",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle_joint",
+          "port": "child"
+        },
+        "to": {
+          "node": "right_ankle_link",
+          "port": "from_joint"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0143",
+        "kind": "signal",
+        "from": {
+          "node": "right_knee_link",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_ankle_link",
+          "port": "parent_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0144",
+        "kind": "signal",
+        "from": {
+          "node": "right_ankle_joint",
+          "port": "pose"
+        },
+        "to": {
+          "node": "right_ankle_link",
+          "port": "joint_pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0145",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle",
+          "port": "horn"
+        },
+        "to": {
+          "node": "right_ankle_joint",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0146",
+        "kind": "bond",
+        "from": {
+          "node": "Bus"
+        },
+        "to": {
+          "node": "right_ankle",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0147",
+        "kind": "signal",
+        "from": {
+          "node": "Goal_right_ankle",
+          "port": "y"
+        },
+        "to": {
+          "node": "right_ankle",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0148",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootR1",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0149",
+        "kind": "signal",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootR1",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0150",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootR1",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0151",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootR1",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0152",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootR2",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0153",
+        "kind": "signal",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootR2",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0154",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootR2",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0155",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootR2",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0156",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootR3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0157",
+        "kind": "signal",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootR3",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0158",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootR3",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0159",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootR3",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0160",
+        "kind": "bond",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com"
+        },
+        "to": {
+          "node": "FootR4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0161",
+        "kind": "signal",
+        "from": {
+          "node": "right_ankle_link",
+          "port": "com_pose"
+        },
+        "to": {
+          "node": "FootR4",
+          "port": "pose"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0162",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "o"
+        },
+        "to": {
+          "node": "FootR4",
+          "port": "o"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0163",
+        "kind": "signal",
+        "from": {
+          "node": "Ground",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FootR4",
+          "port": "fr"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**microduck holding HOME.** Released 0.1 mm above the floor at the STAND pose, the 14 servos hold the HOME goals at kp 200 with no policy. HOME is balanced only by a policy that keeps balancing it: the robot sags into its backlash and its P gains and tips forward, past 40 deg after about 1.1 s (the microduck design notes report the same in their simulation). Only the soles touch the ground, so the run ends before the head would.",
+        "x": -1200,
+        "y": -1500,
+        "w": 900,
+        "h": 160,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.3,
+    "solver": "Rodas5P",
+    "reltol": 1e-05,
+    "abstol": 1e-07,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 651
+    },
+    "event_limit": 100000
+  },
+  "parameters": [
+    {
+      "name": "kp_fw",
+      "value": "200.0",
+      "unit": "1",
+      "description": "XL330 Position P Gain register (robotd gain 200; standing 0.8x, limp 50)"
+    },
+    {
+      "name": "i_limit",
+      "value": "1.75",
+      "unit": "A",
+      "description": "Firmware current limit (BAM/training 1.75 A; impact-guard firmware on the robot 1.0 A)"
+    },
+    {
+      "name": "t_latency",
+      "value": "0.02",
+      "unit": "s",
+      "description": "Command latency, goal written to goal applied (a multiple of 5 ms)"
+    },
+    {
+      "name": "v_bat",
+      "value": "7.4",
+      "unit": "V",
+      "description": "Supply voltage (2S Li-ion: 8.2 V full, 7.4 V nominal, 6.6 V empty under load)"
+    },
+    {
+      "name": "k_motor",
+      "value": "0.36601349688984386",
+      "unit": "N*m/A",
+      "description": "Torque constant at the horn, also the back-EMF constant (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "r_motor",
+      "value": "2.8113923539223227",
+      "unit": "Ohm",
+      "description": "Winding plus driver resistance (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "armature",
+      "value": "0.0018077432831600838",
+      "unit": "kg*m^2",
+      "description": "Rotor and gears reflected to the horn (BAM XL330 M6 fit); the rotor inertia of XL330 is armature/288.4^2, the joint of XL330Rigid carries it as Ja"
+    },
+    {
+      "name": "r_bat",
+      "value": "0.1",
+      "unit": "Ohm",
+      "description": "Battery + wiring resistance (assumed; training randomises the sag 0..0.2 V per N m)"
+    }
+  ],
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Trunk attitude (quaternion) and height",
+      "signals": [
+        "Free/pose[1]",
+        "Free/pose[2]",
+        "Free/pose[3]",
+        "Free/pose[4]",
+        "Free/pose[7]"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Leg joint angles (encoders)",
+      "signals": [
+        "left_hip_pitch/Encoder/y",
+        "left_knee/Encoder/y",
+        "left_ankle/Encoder/y",
+        "right_hip_pitch/Encoder/y",
+        "right_knee/Encoder/y",
+        "right_ankle/Encoder/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Leg motor currents",
+      "signals": [
+        "left_hip_pitch/Current/y",
+        "left_knee/Current/y",
+        "left_ankle/Current/y",
+        "right_hip_pitch/Current/y",
+        "right_knee/Current/y",
+        "right_ankle/Current/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Foot normal forces",
+      "signals": [
+        "FootL1/Contact/f_n",
+        "FootL2/Contact/f_n",
+        "FootL3/Contact/f_n",
+        "FootL4/Contact/f_n",
+        "FootR1/Contact/f_n",
+        "FootR2/Contact/f_n",
+        "FootR3/Contact/f_n",
+        "FootR4/Contact/f_n"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Battery current and bus voltage",
+      "signals": [
+        "BatCurrent/y",
+        "BusVoltage/y"
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "microduck holding HOME",
+        "options": {
+          "markdown": true,
+          "text": "No policy: the 14 servos hold the HOME pose and the robot tips forward within about a second, as the microduck notes say it does in their simulation. Raise the P gain and see how long it stays up. A run takes a few minutes."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Position P gain (kp_fw)",
+        "parameter": "global:kp_fw",
+        "options": {
+          "min": 50.0,
+          "max": 800.0,
+          "step": 10.0,
+          "decimals": 0
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Supply voltage",
+        "parameter": "global:v_bat",
+        "options": {
+          "min": 6.0,
+          "max": 8.4,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": "V"
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Trunk quaternion w",
+        "signals": [
+          "Free/pose[1]"
+        ],
+        "options": {
+          "decimals": 3,
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Battery current",
+        "signals": [
+          "BatCurrent/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "sparkline": true,
+          "unit": "A"
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Trunk attitude and height",
+        "signals": [
+          "Free/pose[1]",
+          "Free/pose[3]",
+          "Free/pose[7]"
+        ]
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Foot normal forces (N)",
+        "signals": [
+          "FootL1/Contact/f_n",
+          "FootL2/Contact/f_n",
+          "FootL3/Contact/f_n",
+          "FootL4/Contact/f_n",
+          "FootR1/Contact/f_n",
+          "FootR2/Contact/f_n",
+          "FootR3/Contact/f_n",
+          "FootR4/Contact/f_n"
+        ]
+      }
+    ]
+  },
+  "scene": {
+    "file": "scenes/microduck.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:trunk_base",
+      "property": "pose",
+      "signal": [
+        "Free/pose[1]",
+        "Free/pose[2]",
+        "Free/pose[3]",
+        "Free/pose[4]",
+        "Free/pose[5]",
+        "Free/pose[6]",
+        "Free/pose[7]"
+      ]
+    },
+    {
+      "target": "link:yaw2roll",
+      "property": "pose",
+      "signal": [
+        "left_hip_yaw_link/W/g[1]",
+        "left_hip_yaw_link/W/g[2]",
+        "left_hip_yaw_link/W/g[3]",
+        "left_hip_yaw_link/W/g[4]",
+        "left_hip_yaw_link/W/g[5]",
+        "left_hip_yaw_link/W/g[6]",
+        "left_hip_yaw_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:hip_l",
+      "property": "pose",
+      "signal": [
+        "left_hip_roll_link/W/g[1]",
+        "left_hip_roll_link/W/g[2]",
+        "left_hip_roll_link/W/g[3]",
+        "left_hip_roll_link/W/g[4]",
+        "left_hip_roll_link/W/g[5]",
+        "left_hip_roll_link/W/g[6]",
+        "left_hip_roll_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:upper_leg_left",
+      "property": "pose",
+      "signal": [
+        "left_hip_pitch_link/W/g[1]",
+        "left_hip_pitch_link/W/g[2]",
+        "left_hip_pitch_link/W/g[3]",
+        "left_hip_pitch_link/W/g[4]",
+        "left_hip_pitch_link/W/g[5]",
+        "left_hip_pitch_link/W/g[6]",
+        "left_hip_pitch_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:leg",
+      "property": "pose",
+      "signal": [
+        "left_knee_link/W/g[1]",
+        "left_knee_link/W/g[2]",
+        "left_knee_link/W/g[3]",
+        "left_knee_link/W/g[4]",
+        "left_knee_link/W/g[5]",
+        "left_knee_link/W/g[6]",
+        "left_knee_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:ankle_left",
+      "property": "pose",
+      "signal": [
+        "left_ankle_link/W/g[1]",
+        "left_ankle_link/W/g[2]",
+        "left_ankle_link/W/g[3]",
+        "left_ankle_link/W/g[4]",
+        "left_ankle_link/W/g[5]",
+        "left_ankle_link/W/g[6]",
+        "left_ankle_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:neck",
+      "property": "pose",
+      "signal": [
+        "neck_pitch_link/W/g[1]",
+        "neck_pitch_link/W/g[2]",
+        "neck_pitch_link/W/g[3]",
+        "neck_pitch_link/W/g[4]",
+        "neck_pitch_link/W/g[5]",
+        "neck_pitch_link/W/g[6]",
+        "neck_pitch_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:neck_pitch",
+      "property": "pose",
+      "signal": [
+        "head_pitch_link/W/g[1]",
+        "head_pitch_link/W/g[2]",
+        "head_pitch_link/W/g[3]",
+        "head_pitch_link/W/g[4]",
+        "head_pitch_link/W/g[5]",
+        "head_pitch_link/W/g[6]",
+        "head_pitch_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:yaw_roll_motion",
+      "property": "pose",
+      "signal": [
+        "head_yaw_link/W/g[1]",
+        "head_yaw_link/W/g[2]",
+        "head_yaw_link/W/g[3]",
+        "head_yaw_link/W/g[4]",
+        "head_yaw_link/W/g[5]",
+        "head_yaw_link/W/g[6]",
+        "head_yaw_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:jaw_soft",
+      "property": "pose",
+      "signal": [
+        "head_roll_link/W/g[1]",
+        "head_roll_link/W/g[2]",
+        "head_roll_link/W/g[3]",
+        "head_roll_link/W/g[4]",
+        "head_roll_link/W/g[5]",
+        "head_roll_link/W/g[6]",
+        "head_roll_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:bearing_roll",
+      "property": "pose",
+      "signal": [
+        "right_hip_yaw_link/W/g[1]",
+        "right_hip_yaw_link/W/g[2]",
+        "right_hip_yaw_link/W/g[3]",
+        "right_hip_yaw_link/W/g[4]",
+        "right_hip_yaw_link/W/g[5]",
+        "right_hip_yaw_link/W/g[6]",
+        "right_hip_yaw_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:hip_l_2",
+      "property": "pose",
+      "signal": [
+        "right_hip_roll_link/W/g[1]",
+        "right_hip_roll_link/W/g[2]",
+        "right_hip_roll_link/W/g[3]",
+        "right_hip_roll_link/W/g[4]",
+        "right_hip_roll_link/W/g[5]",
+        "right_hip_roll_link/W/g[6]",
+        "right_hip_roll_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:upper_leg_right",
+      "property": "pose",
+      "signal": [
+        "right_hip_pitch_link/W/g[1]",
+        "right_hip_pitch_link/W/g[2]",
+        "right_hip_pitch_link/W/g[3]",
+        "right_hip_pitch_link/W/g[4]",
+        "right_hip_pitch_link/W/g[5]",
+        "right_hip_pitch_link/W/g[6]",
+        "right_hip_pitch_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:leg_2",
+      "property": "pose",
+      "signal": [
+        "right_knee_link/W/g[1]",
+        "right_knee_link/W/g[2]",
+        "right_knee_link/W/g[3]",
+        "right_knee_link/W/g[4]",
+        "right_knee_link/W/g[5]",
+        "right_knee_link/W/g[6]",
+        "right_knee_link/W/g[7]"
+      ]
+    },
+    {
+      "target": "link:ankle_right",
+      "property": "pose",
+      "signal": [
+        "right_ankle_link/W/g[1]",
+        "right_ankle_link/W/g[2]",
+        "right_ankle_link/W/g[3]",
+        "right_ankle_link/W/g[4]",
+        "right_ankle_link/W/g[5]",
+        "right_ankle_link/W/g[6]",
+        "right_ankle_link/W/g[7]"
+      ]
+    }
+  ]
+}

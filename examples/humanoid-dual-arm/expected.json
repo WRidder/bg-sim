@@ -2251,7 +2251,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ1/qout",
+          "signal": "LArm1/J/qout",
           "t": 0.0,
           "value": 0.5239151089582044,
           "abs": 1e-09,
@@ -2259,7 +2259,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ1/qout",
+          "signal": "RArm1/J/qout",
           "t": 0.0,
           "value": 0.5239151089582044,
           "abs": 1e-09,
@@ -2267,7 +2267,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ2/qout",
+          "signal": "LArm2/J/qout",
           "t": 0.0,
           "value": 0.5059250611542607,
           "abs": 1e-09,
@@ -2275,7 +2275,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ2/qout",
+          "signal": "RArm2/J/qout",
           "t": 0.0,
           "value": 0.5059250611542607,
           "abs": 1e-09,
@@ -2283,7 +2283,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ3/qout",
+          "signal": "LArm3/J/qout",
           "t": 0.0,
           "value": -1.5707855985752563,
           "abs": 1e-09,
@@ -2291,7 +2291,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ3/qout",
+          "signal": "RArm3/J/qout",
           "t": 0.0,
           "value": -1.5707855985752563,
           "abs": 1e-09,
@@ -2299,7 +2299,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ4/qout",
+          "signal": "LArm4/J/qout",
           "t": 0.0,
           "value": 1.454900990643875,
           "abs": 1e-09,
@@ -2307,7 +2307,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ4/qout",
+          "signal": "RArm4/J/qout",
           "t": 0.0,
           "value": 1.454900990643875,
           "abs": 1e-09,
@@ -2315,7 +2315,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ5/qout",
+          "signal": "LArm5/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -2323,7 +2323,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ5/qout",
+          "signal": "RArm5/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -2331,7 +2331,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ6/qout",
+          "signal": "LArm6/J/qout",
           "t": 0.0,
           "value": -0.9489669069539168,
           "abs": 1e-09,
@@ -2339,7 +2339,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ6/qout",
+          "signal": "RArm6/J/qout",
           "t": 0.0,
           "value": -0.9489669069539168,
           "abs": 1e-09,
@@ -2347,7 +2347,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ7/qout",
+          "signal": "LArm7/J/qout",
           "t": 0.0,
           "value": 1.0468746273960814,
           "abs": 1e-09,
@@ -2355,7 +2355,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ7/qout",
+          "signal": "RArm7/J/qout",
           "t": 0.0,
           "value": 1.0468746273960814,
           "abs": 1e-09,
@@ -2475,7 +2475,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[5]",
+          "signal": "LArm4/W/g[5]",
           "t": 0.0,
           "value": 0.17004935921935121,
           "abs": 1e-09,
@@ -2483,7 +2483,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[6]",
+          "signal": "LArm4/W/g[6]",
           "t": 0.0,
           "value": 0.3550773833957637,
           "abs": 1e-09,
@@ -2491,7 +2491,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[7]",
+          "signal": "LArm4/W/g[7]",
           "t": 0.0,
           "value": 0.9556809213575419,
           "abs": 1e-09,
@@ -2667,7 +2667,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ1/qout",
+          "signal": "LArm1/J/qout",
           "signal_b": "IKL/qr1",
           "from_t": 0.0,
           "max_abs": 0.0067,
@@ -2675,7 +2675,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ2/qout",
+          "signal": "LArm2/J/qout",
           "signal_b": "IKL/qr2",
           "from_t": 0.0,
           "max_abs": 0.0089,
@@ -2683,7 +2683,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ3/qout",
+          "signal": "LArm3/J/qout",
           "signal_b": "IKL/qr3",
           "from_t": 0.0,
           "max_abs": 0.018,
@@ -2691,7 +2691,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ4/qout",
+          "signal": "LArm4/J/qout",
           "signal_b": "IKL/qr4",
           "from_t": 0.0,
           "max_abs": 0.0058,
@@ -2699,7 +2699,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ5/qout",
+          "signal": "LArm5/J/qout",
           "signal_b": "IKL/qr5",
           "from_t": 0.0,
           "max_abs": 0.018,
@@ -2707,7 +2707,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ6/qout",
+          "signal": "LArm6/J/qout",
           "signal_b": "IKL/qr6",
           "from_t": 0.0,
           "max_abs": 0.016,
@@ -2715,7 +2715,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ7/qout",
+          "signal": "LArm7/J/qout",
           "signal_b": "IKL/qr7",
           "from_t": 0.0,
           "max_abs": 0.017,
@@ -2723,7 +2723,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ1/qout",
+          "signal": "RArm1/J/qout",
           "signal_b": "IKR/qr1",
           "from_t": 0.0,
           "max_abs": 0.0067,
@@ -2731,7 +2731,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ2/qout",
+          "signal": "RArm2/J/qout",
           "signal_b": "IKR/qr2",
           "from_t": 0.0,
           "max_abs": 0.0089,
@@ -2739,7 +2739,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ3/qout",
+          "signal": "RArm3/J/qout",
           "signal_b": "IKR/qr3",
           "from_t": 0.0,
           "max_abs": 0.018,
@@ -2747,7 +2747,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ4/qout",
+          "signal": "RArm4/J/qout",
           "signal_b": "IKR/qr4",
           "from_t": 0.0,
           "max_abs": 0.0058,
@@ -2755,7 +2755,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ5/qout",
+          "signal": "RArm5/J/qout",
           "signal_b": "IKR/qr5",
           "from_t": 0.0,
           "max_abs": 0.018,
@@ -2763,7 +2763,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ6/qout",
+          "signal": "RArm6/J/qout",
           "signal_b": "IKR/qr6",
           "from_t": 0.0,
           "max_abs": 0.016,
@@ -2771,7 +2771,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ7/qout",
+          "signal": "RArm7/J/qout",
           "signal_b": "IKR/qr7",
           "from_t": 0.0,
           "max_abs": 0.017,
@@ -2815,7 +2815,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[5]",
+          "signal": "LArm4/W/g[5]",
           "t": 3.95,
           "value": 0.06019031792783671,
           "abs": 0.0001,
@@ -2823,7 +2823,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[6]",
+          "signal": "LArm4/W/g[6]",
           "t": 3.95,
           "value": 0.27782416854759945,
           "abs": 0.00019,
@@ -2831,7 +2831,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[7]",
+          "signal": "LArm4/W/g[7]",
           "t": 3.95,
           "value": 0.8845309806984432,
           "abs": 0.0011,
@@ -2839,7 +2839,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[5]",
+          "signal": "LArm4/W/g[5]",
           "t": 6.45,
           "value": 0.042040706007879375,
           "abs": 0.0001,
@@ -2847,7 +2847,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[6]",
+          "signal": "LArm4/W/g[6]",
           "t": 6.45,
           "value": 0.23553450010155064,
           "abs": 0.00014,
@@ -2855,7 +2855,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[7]",
+          "signal": "LArm4/W/g[7]",
           "t": 6.45,
           "value": 0.8743240923871223,
           "abs": 0.0011,
@@ -3133,7 +3133,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ1/qout",
+          "signal": "LArm1/J/qout",
           "signal_b": "IKL/qr1",
           "from_t": 0.0,
           "max_abs": 0.0016,
@@ -3141,7 +3141,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ2/qout",
+          "signal": "LArm2/J/qout",
           "signal_b": "IKL/qr2",
           "from_t": 0.0,
           "max_abs": 0.013,
@@ -3149,7 +3149,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ3/qout",
+          "signal": "LArm3/J/qout",
           "signal_b": "IKL/qr3",
           "from_t": 0.0,
           "max_abs": 0.0038,
@@ -3157,7 +3157,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ4/qout",
+          "signal": "LArm4/J/qout",
           "signal_b": "IKL/qr4",
           "from_t": 0.0,
           "max_abs": 0.0073,
@@ -3165,7 +3165,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ5/qout",
+          "signal": "LArm5/J/qout",
           "signal_b": "IKL/qr5",
           "from_t": 0.0,
           "max_abs": 0.0058,
@@ -3173,7 +3173,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ6/qout",
+          "signal": "LArm6/J/qout",
           "signal_b": "IKL/qr6",
           "from_t": 0.0,
           "max_abs": 0.077,
@@ -3181,7 +3181,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "LJ7/qout",
+          "signal": "LArm7/J/qout",
           "signal_b": "IKL/qr7",
           "from_t": 0.0,
           "max_abs": 0.002,
@@ -3189,7 +3189,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ1/qout",
+          "signal": "RArm1/J/qout",
           "signal_b": "IKR/qr1",
           "from_t": 0.0,
           "max_abs": 0.0016,
@@ -3197,7 +3197,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ2/qout",
+          "signal": "RArm2/J/qout",
           "signal_b": "IKR/qr2",
           "from_t": 0.0,
           "max_abs": 0.013,
@@ -3205,7 +3205,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ3/qout",
+          "signal": "RArm3/J/qout",
           "signal_b": "IKR/qr3",
           "from_t": 0.0,
           "max_abs": 0.0038,
@@ -3213,7 +3213,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ4/qout",
+          "signal": "RArm4/J/qout",
           "signal_b": "IKR/qr4",
           "from_t": 0.0,
           "max_abs": 0.0073,
@@ -3221,7 +3221,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ5/qout",
+          "signal": "RArm5/J/qout",
           "signal_b": "IKR/qr5",
           "from_t": 0.0,
           "max_abs": 0.0058,
@@ -3229,7 +3229,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ6/qout",
+          "signal": "RArm6/J/qout",
           "signal_b": "IKR/qr6",
           "from_t": 0.0,
           "max_abs": 0.077,
@@ -3237,7 +3237,7 @@
         },
         {
           "kind": "compare_signals",
-          "signal": "RJ7/qout",
+          "signal": "RArm7/J/qout",
           "signal_b": "IKR/qr7",
           "from_t": 0.0,
           "max_abs": 0.002,
@@ -3245,7 +3245,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ3/qout",
+          "signal": "LArm3/J/qout",
           "t": 6.45,
           "value": -1.5707963267948966,
           "abs": 0.0063,
@@ -3253,7 +3253,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LJ5/qout",
+          "signal": "LArm5/J/qout",
           "t": 6.45,
           "value": 0.0,
           "abs": 0.01,
@@ -3301,7 +3301,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ3/qout",
+          "signal": "RArm3/J/qout",
           "t": 6.45,
           "value": -1.5707963267948966,
           "abs": 0.0063,
@@ -3309,7 +3309,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "RJ5/qout",
+          "signal": "RArm5/J/qout",
           "t": 6.45,
           "value": 0.0,
           "abs": 0.01,
@@ -3357,7 +3357,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[5]",
+          "signal": "LArm4/W/g[5]",
           "t": 6.45,
           "value": 0.2155950776150047,
           "abs": 0.0001,
@@ -3365,7 +3365,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[6]",
+          "signal": "LArm4/W/g[6]",
           "t": 6.45,
           "value": 0.3795309861566872,
           "abs": 0.0023,
@@ -3373,7 +3373,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "LW4/g[7]",
+          "signal": "LArm4/W/g[7]",
           "t": 6.45,
           "value": 1.0069472880087522,
           "abs": 0.0013,

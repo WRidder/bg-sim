@@ -5,10 +5,10 @@ A hexarotor flies up to a wall, pushes an end-effector on it with a tilted thrus
 
 The model contains
 
-- a 2.1 kg hexarotor (80 cm across, 950 Kv motors, 10x4.5 in propellers, 16 V tether, 78 N maximum thrust) as a multibond floating body, every rotor a chain [Esc1](block:Esc1) - [Drv1](block:Drv1) - [Prop1](block:Prop1) (six of them), the air and rotor wrench in [RW](block:RW);
+- a 2.1 kg hexarotor (80 cm across, 950 Kv motors, 10x4.5 in propellers, 16 V tether, 78 N maximum thrust) as a multibond floating body, every rotor ([Rotor1](block:Rotor1) to `Rotor6`) an instance of the library subsystem `Rotor`, the chain `Esc` - `Drive` (`ElectricDrive`) - `Prop` (`Propeller`), the air and rotor wrench in [RW](block:RW);
 - a one-DoF manipulator: a position servo [Servo](block:Servo) about the body y axis, driven by [ServoCtl](block:ServoCtl), and a 0.6 m carbon tube [Arm](block:Arm) (0.23 kg, rigid);
 - the rubber shock mount [Rub](block:Rub), a compliant spherical joint with the spring-damper [RubK](block:RubK), and the 0.15 kg end-effector [EE](block:EE);
-- three omnidirectional wheels at 120 degrees, each an anisotropic contact [Wheel1](block:Wheel1), [Wheel2](block:Wheel2), [Wheel3](block:Wheel3) against the wall [Wall](block:Wall), driven open loop by [Omni](block:Omni);
+- three omnidirectional wheels at 120 degrees, each an instance of the library subsystem `OmniWheel` ([Wheel1](block:Wheel1), [Wheel2](block:Wheel2), [Wheel3](block:Wheel3): wheel pose, mount and an anisotropic contact named `Contact`) against the wall [Wall](block:Wall), driven open loop by [Omni](block:Omni);
 - the firmware: sensors ([Imu](block:Imu), [Gps](block:Gps)) and the navigation filter [Nav](block:Nav), the phase machine [Sup](block:Sup), and three controllers: the free-flight cascade ([Pos](block:Pos), [Att](block:Att), [Rate](block:Rate)), the engage controller [Eng](block:Eng) and the gain-scheduled LQR contact controller [Con](block:Con), selected by [Sel](block:Sel) and allocated to the rotors by [Mix](block:Mix).
 
 The run lasts 34 s and starts in hover (there is no take-off; the landing legs of the quadcopter example are not part of this model). It approaches the wall in free flight, engages with the pitch reference $\theta_{sp}$ ramping from 12 to 20 degrees, holds contact while $\theta_{sp}$ ramps to 27 degrees, climbs 0.30 m and descends again by an open-loop wheel velocity command, disengages by $C = 0.75$ m and hovers.
@@ -75,7 +75,7 @@ The same PX4-style cascade as the quadcopter example (X5.7), re-tuned for the he
 | attitude (P) | [Att](block:Att) | quaternion error, $K = 5$ 1/s |
 | rate (PID) | [Rate](block:Rate) | $K_p = (J + 0.02) \cdot 26$ rad/s: crossover 38 rad/s, phase margin 61 degrees |
 | allocation | [Mix](block:Mix) | pseudo-inverse of the $4\times 6$ allocation matrix; attitude has priority over thrust when a rotor saturates |
-| rotor speed | [Esc1](block:Esc1) | PI + motor-model feed-forward at 250 Hz: crossover 72 rad/s, phase margin 57 degrees |
+| rotor speed | `Esc` in [Rotor1](block:Rotor1) | PI + motor-model feed-forward at 250 Hz: crossover 72 rad/s, phase margin 57 degrees |
 
 **Gravity compensation and the CoM correction.** The thrust feedforward is $m_{nom}(a_{cmd} + g)$ with the total mass (2.5 kg assumed, 2.48 kg true). The arm and the end-effector hang ahead of the centre of mass and tip the nose down with the static torque $-g\,(m_{arm} L_m/2 + m_{ee}(L_m + 0.03)) = @TAUFF@$ N m about $y_b$; the rate controller adds this constant after its limits (`tau_ff`), as the paper does with a tuned constant. The integrators have nothing static to carry, so the hover is clean (height within 1 cm of the set-point). The paper has no integral action in altitude; this model keeps the velocity integrator, which removes the small steady-state height error.
 
@@ -143,7 +143,7 @@ Back to [the overview](page:overview).
 
 **Rubber shock mount.** [RubK](block:RubK) turns the unit quaternion of the spherical joint into the exact conservative restoring torque $-2 k w v$ ($U = 2k\sin^2(\vartheta/2)$) plus a damper; the three torque components act on the end-effector through the joint's rotation ports. The end-effector's orientation is thereby decoupled from the arm's: it sags 2.5 degrees under its own weight in free flight and lines up with the wall when the three wheels touch it.
 
-**Omni-wheel contact.** The standard `ContactPoint` has two fixed isotropic friction tangents; a wheel does not, so [Wheel1](block:Wheel1) is the example-local `OmniContact`. The normal force is the same smooth Hunt-Crossley law ($k = 4000$ N/m with the 3/2 power, $c = 4$ s/m, no pull), and the traction is anisotropic. With $e$ the wheel's drive direction (its body direction $(0, -\sin\alpha, \cos\alpha)$ rotated to the world and projected on the wall) and $r = n \times e$ the free roller direction, $u$ the commanded wheel surface speed and $v$ the velocity of the contact point:
+**Omni-wheel contact.** The standard `ContactPoint` has two fixed isotropic friction tangents; a wheel does not, so the contact inside [Wheel1](block:Wheel1) (`Wheel1/Contact`) is the example-local `OmniContact`. The normal force is the same smooth Hunt-Crossley law ($k = 4000$ N/m with the 3/2 power, $c = 4$ s/m, no pull), and the traction is anisotropic. With $e$ the wheel's drive direction (its body direction $(0, -\sin\alpha, \cos\alpha)$ rotated to the world and projected on the wall) and $r = n \times e$ the free roller direction, $u$ the commanded wheel surface speed and $v$ the velocity of the contact point:
 
 $$s_d = e\cdot v + u,\quad s_r = r\cdot v,\qquad F_d = \mu_d f_n \tanh\frac{s_d}{v_s},\quad F_r = \mu_r f_n \tanh\frac{s_r}{v_r},\qquad F = f_n n - F_d\, e - F_r\, r$$
 

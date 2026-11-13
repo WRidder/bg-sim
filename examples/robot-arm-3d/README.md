@@ -8,12 +8,20 @@ geometry and inertias of the J-MB10 six-axis golden test, and it is the 3D twin 
 bundle, drawn as **three strokes**.
 
 ```
-World ─ Mount ─ J1 ─ Link1 ─ BJ1 ─┬─ B1 (RigidBody3D)
-                (Revolute3D)  (CoM) (1-junction) └─ T2 ─ J2 ─ Link2 ─ BJ2 ─┬─ B2
-                                                       (standard-DH offset)   └─ T3 ─ J3 ─ ... ─ J6 ─ Link6 ─ BJ6 ─ B6
-D1..D6 (MSe torque sources) ──► J1..J6.drive            Ctrl (ArmPD6, 1 ms) ──► D1..D6
-J_i.qout, J_i.qdout, Clock ──► Ctrl                      MountPose ∘ LN_i ∘ J_i.pose ∘ LC_i ──► B_i.g,  W6 ∘ LTool ──► TCP
+World ─ L1 ─ L2 ─ L3 ─ L4 ─ L5 ─ L6          (RevoluteLink3D instances, child ──► parent)
+inside each L_i:  parent ─ T ─ J ─ Link ─ BJ ─┬─ B (RigidBody3D);  BJ is the port `child`
+                  (offset) (Revolute3D) (CoM) (1-junction)
+D1..D6 (MSe torque sources) ──► L1..L6.drive             Ctrl (ArmPD6, 1 ms) ──► D1..D6
+L_i.q, L_i.qd, Clock ──► Ctrl                            MountPose ──► L1.gp,  L_i.g ──► L_{i+1}.gp,  L6.g ∘ LTool ──► TCP
 ```
+
+Each link is an instance of the library subsystem `RevoluteLink3D`
+(`library/RevoluteLink3D.bgsub.json`, written by `design/build_models.py` and shared with the
+`rrr-multibond*` models): the offset `T` from the parent body's frame to the joint (for `L1` the
+identity base mount), the joint `J`, the offset `Link` to the centre of mass, the body `B` on its
+1-junction `BJ`, and the pose band `W = gp ∘ LN ∘ J.pose`, `P = W ∘ LC`. Every offset, joint
+parameter, body and start deflection is pinned per instance, so the joint angles are
+`L1/J/qout` .. `L6/J/qout` and the body poses `L<i>/P/g`.
 
 ## The construction
 
@@ -24,13 +32,13 @@ J_i.qout, J_i.qdout, Clock ──► Ctrl                      MountPose ∘ LN_
 * **Geometry.** Joint `i+1` sits at the standard-DH fixed part `Tz(d) Tx(a) Rx(α)` of link `i`
   (UR5-like: `d = 0.0892, 0, 0, 0.1092, 0.0947, 0.0823 m`, `a = 0, −0.425, −0.392, 0, 0, 0 m`,
   `α = π/2, 0, 0, π/2, −π/2, 0`). The body-1-junction frame is the link's centre of mass, so the
-  next joint offset is `N − c_i` in that frame (`T2..T6`), with masses 3.7, 8.4, 2.3, 1.2, 1.2,
+  next joint offset is `N − c_i` in that frame (`L2/T`..`L6/T`), with masses 3.7, 8.4, 2.3, 1.2, 1.2,
   0.74 kg and principal inertias about the centre of mass.
 * **Drives.** One `MSe` torque source per joint on the joint's `Rotation` drive port, fed by the
   controller. A flow source cannot impose the joint motion (derivative causality, `W201`), so the
   joints are torque driven.
-* **Poses.** Composed, never integrated: `W_i = W_{i−1} ∘ LN_i ∘ J_i.pose`, the body pose is
-  `W_i ∘ LC_i` (feeds `B_i.g`, which gravity reads), and `TCP = W6 ∘ LTool` with a
+* **Poses.** Composed, never integrated: `W_i = W_{i−1} ∘ LN_i ∘ J_i.pose` (`L<i>/W`), the body
+  pose is `W_i ∘ LC_i` (`L<i>/P`, feeds `L<i>/B.g`, which gravity reads), and `TCP = W6 ∘ LTool` with a
   `0.0823 + 0.1 = 0.1823 m` flange-plus-tool offset along the flange `z`.
 * **Start.** The arm is released at rest at the home pose `q = (0, −1.2, 1.2, −1.5, −1.5, 0)` on
   its **consistent deflections** (`starts` of `dth`, `dl` from the independent Newton-Euler
@@ -105,7 +113,9 @@ state, 2339 equation system, so the horizon is kept at 2 s; `expected.json` sets
   and `no_diagnostics` (`W201`, `E101`, `E102`, `E103`, `E106`, `E007`, `W206`).
 * `web/tests/e2e/robot-arm-3d.spec.ts` — imports the sample, asserts the three-stroke Spatial
   bonds and the single-stroke drive bonds, takes the canvas screenshot, runs the model and reads
-  the settled `J2/qout` and `J5/qout` from the plot legend (real worker, about 6 minutes).
+  the settled `J2/qout` and `J5/qout` from the plot legend (real worker, about 6 minutes). The test
+  predates the `RevoluteLink3D` instances: its node names, bond ids and signal paths (now
+  `L2/J/qout`, `L5/J/qout`) still describe the flat drawing.
 
 ---
 
@@ -204,13 +214,15 @@ same (`first_tick = 1`); with the command at t = 0 it differs by 4e-4 rad during
 `rrr-multibond` is the same arm built from the M3 spatial stdlib, following `arm.bgmodel.json`:
 
 * a base body (1 kg at the pivot, isotropic inertia `Jb`, so its yaw inertia is the plan's `Jb`) on a
-  compliant `Revolute3D` about world z (`World` -> `Mount` -> `J1`);
+  compliant `Revolute3D` about world z (`World` -> `L1`, whose `T` is the identity mount);
 * joints 2 and 3 about world `-y`: the joint frame is `Rx(90 deg)` (local z = -y), so positive `q`
-  raises the arm; `LN2` places joint 2 at the shoulder, `LN3` places joint 3 `l2` along the upper
-  arm, `T2` and `T3` are `LN^-1 o LC`;
+  raises the arm; `L2/LN` places joint 2 at the shoulder, `L3/LN` places joint 3 `l2` along the
+  upper arm, `L2/T` and `L3/T` are `LN^-1 o LC`;
 * point masses as `RigidBody3D` bodies (`m2` at the elbow, `m3` at the tip, 1e-8 kg m^2 principal
-  moments because a point has none), links `l2` and `l3` as `FixedTransform3DNeutral` (`Link2`,
-  `Link3`); the body poses for gravity come from the `ComposePose3D` chain of `arm.bgmodel.json`;
+  moments because a point has none), links `l2` and `l3` as `FixedTransform3DNeutral` (`L2/Link`,
+  `L3/Link`); the body poses for gravity come from the `ComposePose3D` chain of `arm.bgmodel.json`;
+* every link is an instance `L1`..`L3` of the library subsystem `RevoluteLink3D`, the same
+  definition as the links of `arm`;
 * held directions `kt = kr = 1e7` with 0.7-critical damping, released on their **static
   deflections** (`dth`, `dl` from the weight of everything distal; `design/build_models.py`).
 
@@ -248,7 +260,7 @@ rotation carrier, with a small counterweight so the yaw is visible), an upper-ar
 box, with small spheres marking the point masses. `joint1` axis `0 0 1`; `joint2` and `joint3` axis
 `0 -1 0` (rotating +x toward +z is a rotation about -y). Every `rrr*` model sets
 `"scene": {"file": "scenes/rrr.sdf"}` and binds `joint:joint1..3` `position` to its angles
-(`Arm/q1..q3`, or `J1..J3/qout` in the multibond models, unit rad). The scene was checked with the
+(`Arm/q1..q3`, or `L1/J/qout`..`L3/J/qout` in the multibond models, unit rad). The scene was checked with the
 viewer's own parser and resolver (`web/src/scene`): no diagnostics, tip at (0.7, 0, 0) for q = 0,
 (0, 0, 0.7) for `q2 = pi/2` and (0, 0.7, 0) for `q1 = pi/2`.
 
@@ -257,6 +269,8 @@ viewer's own parser and resolver (`web/src/scene`): no diagnostics, tip at (0.7,
 * `models/rrr.bgmodel.json`, `rrr-free`, `rrr-torque`, `rrr-multibond`, `rrr-multibond-soft`,
   `rrr-multibond-stiff` — the models (written by `design/build_models.py`).
 * `library/ArmDynamics3R.jl`, `library/ArmCtrl3R.jl` — the equation block and the 1 ms firmware.
+* `library/RevoluteLink3D.bgsub.json` — the serial-link subsystem of `arm` and `rrr-multibond*`
+  (written by `design/build_models.py`; `arm` was converted to it once, by hand-run script).
 * `design/design.py`, `design/build_models.py` — references, gains, the numpy replica, model writer.
 * `scenes/rrr.sdf` — the 3D scene.
 * `expected.json` — extended additively: the 43 X-MB3 checks are unchanged; X5.3 adds the `rrr`,
@@ -266,4 +280,4 @@ viewer's own parser and resolver (`web/src/scene`): no diagnostics, tip at (0.7,
 
 ## 3D view
 
-`scenes/arm.sdf` draws the six-axis arm for `arm`: every link is bound by its world pose to the model's composed body pose `P<i>/g[1..7]` (quaternion first), so the viewer needs no joint axes or kinematics of its own. A hub cylinder marks each joint axis and the bars run to the next joint; the red sphere is the tool centre point. (The RRR models of X5.3 use `scenes/rrr.sdf`.)
+`scenes/arm.sdf` draws the six-axis arm for `arm`: every link is bound by its world pose to the model's composed body pose `L<i>/P/g[1..7]` (quaternion first), so the viewer needs no joint axes or kinematics of its own. A hub cylinder marks each joint axis and the bars run to the next joint; the red sphere is the tool centre point. (The RRR models of X5.3 use `scenes/rrr.sdf`.)

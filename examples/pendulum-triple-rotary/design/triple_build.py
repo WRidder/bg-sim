@@ -7,11 +7,11 @@ bond graph is assembled here.
 
 Bond graph (multibond, spatial)::
 
-    World -- Mount -- J1 (Revolute3D, world z) -- ArmLink -- BJ1 -- Arm (RigidBody3D)
-                       |drive                                 |
+    World -- Mount -- J1 (Revolute3D, world z) -- Link1 -- BJ1 -- Arm (RigidBody3D)
+                       |drive                                |
        Motor (ElectricDrive) -- Shaft (ElasticShaft) -- Gear (IdealGear)
-                                                              T2 -- J2 (Revolute3D, arm axis) -- L1 link -- BJ2 -- Link1
-                                                                            T3 -- J3 ... (one joint and one body per link)
+                                                             L2 -- L3 -- L4   (RevoluteLink3D instances, child -> parent)
+    inside L<k>: T -- J (Revolute3D, arm axis) -- Link -- BJ -- B (the rod, RigidBody3D), the pose band
     Dist (ExternalWrenchSpatial) on the tip link through a FixedTransform3DNeutral at the tip.
 """
 
@@ -22,6 +22,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+import serial_link as sl
 import triple_lib as tl
 
 # ------------------------------------------------------------------ small helpers
@@ -313,6 +314,12 @@ def settings(t_end: float, points: int, reltol=1e-6, abstol=1e-8) -> dict:
     }
 
 
+def joint_path(k: int, var: str) -> str:
+    """A joint variable's signal path: `J1/<var>` for the flat motor joint, `L<k>/J/<var>` for the
+    pendulum joints inside the RevoluteLink3D instances."""
+    return f"J1/{var}" if k == 1 else f"L{k}/J/{var}"
+
+
 def build_model(plant: tl.Plant, dz: dict, name: str, free: bool) -> dict:
     n = plant.n_links
     nq = plant.nq
@@ -334,57 +341,64 @@ def build_model(plant: tl.Plant, dz: dict, name: str, free: bool) -> dict:
     d.ref("mpose", "MountPose", "stdlib:spatial/LocalPose3D", bx[0] - 140, band, params=pose_params(IDENTITY))
     d.connect("bond", ("world", "p"), ("mount", "b"))
 
-    prev_world = "mpose"
-    for i in range(nq):
+    # Link 1 (the motor arm) is drawn flat: the flexible-arm variants (flex_build.py) replace its
+    # body with a FlexibleBeam3D. The pendulum links 2..nq are instances L2..L<nq> of the library
+    # subsystem RevoluteLink3D (design/serial_link.py): T -> J -> Link -> BJ <- B and the pose band.
+    def joint_params(i: int) -> dict:
+        return {
+            "kt": fmt(k_joint), "kr": fmt(k_joint),
+            "bt": fmt(1.4 * math.sqrt(k_joint * distal[i])),
+            "br": fmt(1.4 * math.sqrt(k_joint * jref[i])),
+            "q0": fmt(q_start[i]),
+        }  # fmt: skip
+
+    def body_params(i: int) -> dict:
+        return {"m": fmt(mass[i]), "J": vec(inertia[i]), "g0": fmt(tl.G)}
+
+    x0, y0 = bx[0], ry[0]
+    d.ref("j1", "J1", "stdlib:spatial/Revolute3D", x0 + 120, y0, params=joint_params(0),
+          starts={"dth": vec(deflections[0][0]), "dl": vec(deflections[0][1])})  # fmt: skip
+    d.ref("link1", "Link1", "stdlib:multibond/FixedTransform3DNeutral", x0 + 240, y0, params=pose_params(lc[0]))
+    d.junction("bj1", "BJ1", x0 + 360, y0 + 10)
+    d.ref("b1", "Arm", "stdlib:spatial/RigidBody3D", x0 + 350, y0 + 100, params=body_params(0))
+    d.connect("bond", ("mount", "a"), ("j1", "parent"))
+    d.connect("bond", ("j1", "child"), ("link1", "a"))
+    d.connect("bond", ("link1", "b"), ("bj1", None))
+    d.connect("bond", ("b1", "p"), ("bj1", None))
+    d.ref("ln1", "LN1", "stdlib:spatial/LocalPose3D", x0, band + 100, params=pose_params(ln[0]))
+    d.ref("ca1", "CA1", "stdlib:multibond/ComposePose3D", x0, band)
+    d.ref("w1", "W1", "stdlib:multibond/ComposePose3D", x0 + 120, band)
+    d.ref("lc1", "LC1", "stdlib:spatial/LocalPose3D", x0 + 350, band + 240, params=pose_params(lc[0]))
+    d.ref("pb1", "P1", "stdlib:multibond/ComposePose3D", x0 + 350, band + 120)
+    d.connect("signal", ("mpose", "g"), ("ca1", "gp"))
+    d.connect("signal", ("ln1", "g"), ("ca1", "gl"))
+    d.connect("signal", ("ca1", "g"), ("w1", "gp"))
+    d.connect("signal", ("j1", "pose"), ("w1", "gl"))
+    d.connect("signal", ("w1", "g"), ("pb1", "gp"))
+    d.connect("signal", ("lc1", "g"), ("pb1", "gl"))
+    d.connect("signal", ("pb1", "g"), ("b1", "g"))
+    for i in range(1, nq):
         k = i + 1
-        x0, y0 = bx[i], ry[i]
-        d.ref(
-            f"j{k}", f"J{k}", "stdlib:spatial/Revolute3D", x0 + 120, y0,
-            params={
-                "kt": fmt(k_joint), "kr": fmt(k_joint),
-                "bt": fmt(1.4 * math.sqrt(k_joint * distal[i])),
-                "br": fmt(1.4 * math.sqrt(k_joint * jref[i])),
-                "q0": fmt(q_start[i]),
-            },
-            starts={"dth": vec(deflections[i][0]), "dl": vec(deflections[i][1])},
+        params, starts = sl.pins(
+            pose_params(pose_mul(pose_inv(ln[i]), lc[i - 1])), joint_params(i), pose_params(lc[i]), body_params(i),
+            pose_params(ln[i]), pose_params(lc[i]), {"dth": vec(deflections[i][0]), "dl": vec(deflections[i][1])},
         )  # fmt: skip
-        d.ref(f"link{k}", f"Link{k}", "stdlib:multibond/FixedTransform3DNeutral", x0 + 240, y0, params=pose_params(lc[i]))
-        d.junction(f"bj{k}", f"BJ{k}", x0 + 360, y0 + 10)
-        body = "Arm" if i == 0 else f"Rod{i}"
-        d.ref(
-            f"b{k}", body, "stdlib:spatial/RigidBody3D", x0 + 350, y0 + 100,
-            params={"m": fmt(mass[i]), "J": vec(inertia[i]), "g0": fmt(tl.G)},
-        )  # fmt: skip
-        if i == 0:
-            d.connect("bond", ("mount", "a"), ("j1", "parent"))
-        else:
-            t_pose = pose_mul(pose_inv(ln[i]), lc[i - 1])
-            d.ref(f"t{k}", f"T{k}", "stdlib:multibond/FixedTransform3DNeutral", x0, y0, params=pose_params(t_pose))
-            d.connect("bond", (f"t{k}", "a"), (f"j{k}", "parent"))
-            d.connect("bond", (f"bj{k - 1}", None), (f"t{k}", "b"))
-        d.connect("bond", (f"j{k}", "child"), (f"link{k}", "a"))
-        d.connect("bond", (f"link{k}", "b"), (f"bj{k}", None))
-        d.connect("bond", (f"b{k}", "p"), (f"bj{k}", None))
-        d.ref(f"ln{k}", f"LN{k}", "stdlib:spatial/LocalPose3D", x0, band + 100, params=pose_params(ln[i]))
-        d.ref(f"ca{k}", f"CA{k}", "stdlib:multibond/ComposePose3D", x0, band)
-        d.ref(f"w{k}", f"W{k}", "stdlib:multibond/ComposePose3D", x0 + 120, band)
-        d.ref(f"lc{k}", f"LC{k}", "stdlib:spatial/LocalPose3D", x0 + 350, band + 240, params=pose_params(lc[i]))
-        d.ref(f"pb{k}", f"P{k}", "stdlib:multibond/ComposePose3D", x0 + 350, band + 120)
-        d.connect("signal", (prev_world, "g"), (f"ca{k}", "gp"))
-        d.connect("signal", (f"ln{k}", "g"), (f"ca{k}", "gl"))
-        d.connect("signal", (f"ca{k}", "g"), (f"w{k}", "gp"))
-        d.connect("signal", (f"j{k}", "pose"), (f"w{k}", "gl"))
-        d.connect("signal", (f"w{k}", "g"), (f"pb{k}", "gp"))
-        d.connect("signal", (f"lc{k}", "g"), (f"pb{k}", "gl"))
-        d.connect("signal", (f"pb{k}", "g"), (f"b{k}", "g"))
-        prev_world = f"w{k}"
+        d.ref(f"l{k}", f"L{k}", f"project:{sl.name()}", bx[i] + 120, ry[i], params=params, starts=starts)
+        d.connect("bond", ("bj1", None) if i == 1 else (f"l{i}", "child"), (f"l{k}", "parent"))
+        d.connect("signal", ("w1", "g") if i == 1 else (f"l{i}", "g"), (f"l{k}", "gp"))
+
+    def joint(k: int, port: str) -> tuple[str, str]:
+        """A joint's port: J1 is drawn flat, J2.. sit in the instances L2.. (`q`, `qd`, `drive`)."""
+        if k == 1:
+            return "j1", {"q": "qout", "qd": "qdout"}.get(port, port)
+        return f"l{k}", port
 
     # the pendulum joints are passive: bearing friction only (a viscous damper on the drive port)
     for i in range(1, nq):
         k = i + 1
         d.ref(f"fric{k}", f"Bearing{k}", "stdlib:rotation/RotationalDamper", bx[i] + 120, ry[i] - 110, params={"d": fmt(dz["jfric"])})
         d.ref(f"fix{k}", f"Frame{k}", "stdlib:rotation/FixedShaft", bx[i] + 280, ry[i] - 110)
-        d.connect("wire", (f"j{k}", "drive"), (f"fric{k}", "a"))
+        d.connect("wire", joint(k, "drive"), (f"fric{k}", "a"))
         d.connect("wire", (f"fric{k}", "b"), (f"fix{k}", "a"))
 
     # drive: Motor (ElectricDrive, voltage input) - Shaft (ElasticShaft) - Gear - J1.drive
@@ -399,7 +413,7 @@ def build_model(plant: tl.Plant, dz: dict, name: str, free: bool) -> dict:
     d.ref("gear", "Gear", "stdlib:rotation/IdealGear", bx[0] + 200, ry[0] + 330, params={"n": fmt(dr["ng"])})
     d.connect("wire", ("motor", "shaft"), ("shaft", "a"))
     d.connect("wire", ("shaft", "b"), ("gear", "a"))
-    d.connect("wire", ("gear", "b"), ("j1", "drive"))
+    d.connect("wire", ("gear", "b"), joint(1, "drive"))
 
     # firmware, clock and measurements
     params = {
@@ -415,11 +429,11 @@ def build_model(plant: tl.Plant, dz: dict, name: str, free: bool) -> dict:
     d.connect("signal", ("ctrl", "u"), ("motor", "u"))
     for i in range(nq):
         k = i + 1
-        d.connect("signal", (f"j{k}", "qout"), ("ctrl", f"q{k}"))
-        d.connect("signal", (f"j{k}", "qdout"), ("ctrl", f"w{k}"))
+        d.connect("signal", joint(k, "q"), ("ctrl", f"q{k}"))
+        d.connect("signal", joint(k, "qd"), ("ctrl", f"w{k}"))
     d.ref("angles", "Angles", "project:LinkAngles", bx[-1] + 360, 60)
     for k in range(1, n + 1):
-        d.connect("signal", (f"j{k + 1}", "qout"), ("angles", f"q{k}"))
+        d.connect("signal", joint(k + 1, "q"), ("angles", f"q{k}"))
 
     # the disturbance: a force pulse on the tip of the last link, perpendicular to the rod in the pendulum plane
     tip = pose_params(((1.0, 0.0, 0.0, 0.0), (-plant.lengths[-1] / 2, 0.0, 0.0)))
@@ -436,12 +450,12 @@ def build_model(plant: tl.Plant, dz: dict, name: str, free: bool) -> dict:
     )  # fmt: skip
     d.ref("zero", "Zero", "stdlib:sources/Constant", bx[-1] + 360, ry[-1] + 120, params={"value": "0.0"})
     d.connect("bond", ("dist", "p"), ("tipt", "a"))
-    d.connect("bond", ("tipt", "b"), (f"bj{nq}", None))
+    d.connect("bond", ("tipt", "b"), (f"l{nq}", "child"))
     for port in ("tx", "ty", "tz", "fx", "fz"):
         d.connect("signal", ("zero", "y"), ("dist", port))
     d.connect("signal", ("pulse", "y"), ("dist", "fy"))
 
-    names = [f"J{i + 1}/qout" for i in range(nq)]
+    names = [joint_path(i + 1, "qout") for i in range(nq)]
     joint_names = ["arm"] + [f"link{k}" for k in range(1, n + 1)]
     t_end = dz["t_free"] if free else dz["t_end"]
     plots = [
@@ -449,7 +463,7 @@ def build_model(plant: tl.Plant, dz: dict, name: str, free: bool) -> dict:
         {"id": "p2", "title": "Arm angle", "signals": ["J1/qout"]},
         {"id": "p3", "title": "Motor voltage", "signals": ["Ctrl/u"]},
         {"id": "p4", "title": "Controller phase", "signals": ["Ctrl/phase"]},
-        {"id": "p5", "title": "Joint rates", "signals": [f"J{i + 1}/qdout" for i in range(nq)]},
+        {"id": "p5", "title": "Joint rates", "signals": [joint_path(i + 1, "qdout") for i in range(nq)]},
     ]
     return {
         "format": "bgsim.model",
@@ -481,7 +495,7 @@ def scene_sdf(plant: tl.Plant, example: str) -> str:
         "",
         "  Z-up, metres. The scene is drawn at q = 0: the arm along +X from the vertical axis, the links",
         "  standing upright (+Z) on its tip. The arm turns about +Z (joint arm, the model's J1/qout). The",
-        "  links swing about the arm axis, joint axis +X (J2/qout ... : a positive angle tilts the chain",
+        "  links swing about the arm axis, joint axis +X (L2/J/qout ... : a positive angle tilts the chain",
         "  towards -Y, relative to the link below). The model's hanging start is q2 = pi.",
         "-->",
         '<sdf version="1.9">',

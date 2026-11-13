@@ -22,12 +22,20 @@ Traj (ObjectTrajectory) ──obj──► IKL, IKR (stacked)  ──qr1..7─�
                          └─obj─► IdealL, IdealR (ideal SRS, kinematic, drawn beside the robot)
 Traj.g ──► BoxError ◄── BoxPose (simulated box)          LHandError, RHandError: hand vs grasp target
 
-per arm p ∈ {L, R}:   WorldP ─ MountP ─ pJ1 ─ pLink1 ─ pBJ1 ─┬─ pB1 (RigidBody3D)
-                                                            └─ pT2 ─ pJ2 ─ ... ─ pJ7 ─ pLink7 ─ pBJ7 ─ pB7
+per arm p ∈ {L, R}:   WorldP ─ pArm1 ─ pArm2 ─ ... ─ pArm7      (BaseP ─► pArm1.gp, pArm7.g ─► pHand)
+  pArmk (RevoluteLink3D): T ─ J (Revolute3D) ─ Link ─ BJ ─ B (RigidBody3D), pose band W, P
 drive k:  pMotork (MSe) ─► 1 [pRotork: I] ─► 0 [pTauSensek: De] ─► 1 [pSpringk: C, pDamperk: R]
-          ─► 1 [pFrictionk: R] ─► pJk.drive
-grasp:    pBJ7 ─ pTip ─ pWeld (Revolute3D, all six directions sprung) ─ pGrip ─ BoxJ ─ Box (RigidBody3D)
+          ─► 1 [pFrictionk: R] ─► pArmk.drive (the joint pArmk/J)
+grasp:    pArm7.child ─ pTip ─ pWeld (Revolute3D, all six directions sprung) ─ pGrip ─ BoxJ ─ Box (RigidBody3D)
 ```
+
+Every link of an arm is an instance of the library subsystem `RevoluteLink3D`
+(`library/RevoluteLink3D.bgsub.json`, written by `design/build_models.py` from `design/serial_link.py`, the
+same definition as in `robot-arm-3d`, `panda-3d`, `pendulum-triple-rotary` and `quad-pendulum`): the offset
+`T` from the body below (for `pArm1` the shoulder mount), the joint `J`, the offset `Link` to the centre of
+mass, the body `B` on its 1-junction `BJ` and the pose band `W = gp o LN o J.pose`, `P = W o LC`. The
+instance pins all of them; the drives, the hand frame and the grasp stay outside. Paths: `LJ4/qout` of the
+flat diagram is `LArm4/J/qout`, `LW4/g` is `LArm4/W/g`, `LB4` is `LArm4/B`.
 
 Everything is generated from `design/` (Python, run with `uv`):
 
@@ -192,8 +200,8 @@ first 0.3 s, at a tenth of the cost.
 `scenes/humanoid.sdf` has two torsos (pedestal, body, shoulders, head). The robot stands at the
 origin: the left arm is blue, the right arm orange and the box purple, with a translucent box at
 the commanded pose. The ideal-SRS pair (green, with its own box) stands 1 m to its right. Every
-arm is a URDF-style tree of seven revolute joints bound to the joint angles: `LJk/qout` and
-`RJk/qout` in `humanoid-hold`, `IKL/qrk` … in `humanoid-ik`. The viewer composes the arms itself.
+arm is a URDF-style tree of seven revolute joints bound to the joint angles: `LArmk/J/qout` and
+`RArmk/J/qout` in `humanoid-hold`, `IKL/qrk` … in `humanoid-ik`. The viewer composes the arms itself.
 
 ## Limitations
 

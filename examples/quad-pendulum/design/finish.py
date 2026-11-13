@@ -40,15 +40,15 @@ SHORT = [{"target": "Traj/controller", "value": 1}]
 
 
 def base_sig(kind):
-    return "Rail/qout" if kind == "cart" else "J1/qout"
+    return "Rail/qout" if kind == "cart" else "L1/J/qout"
 
 
 def base_rate(kind):
-    return "Rail/qdout" if kind == "cart" else "J1/qdout"
+    return "Rail/qdout" if kind == "cart" else "L1/J/qdout"
 
 
 def joint1(kind):
-    return "Joint1/qout" if kind == "cart" else "J2/qout"
+    return "Joint1/qout" if kind == "cart" else "L2/J/qout"
 
 
 def ledger(sig):

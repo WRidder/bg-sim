@@ -4,7 +4,7 @@
 
   Z-up, metres. The scene is drawn at q = 0: the arm along +X from the vertical axis, the links
   standing upright (+Z) on its tip. The arm turns about +Z (joint arm, the model's J1/qout). The
-  links swing about the arm axis, joint axis +X (J2/qout ... : a positive angle tilts the chain
+  links swing about the arm axis, joint axis +X (L2/J/qout ... : a positive angle tilts the chain
   towards -Y, relative to the link below). The model's hanging start is q2 = pi.
 -->
 <sdf version="1.9">

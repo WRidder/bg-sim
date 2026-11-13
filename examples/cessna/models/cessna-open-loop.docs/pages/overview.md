@@ -6,7 +6,7 @@ A Cessna 172P built from the data of JSBSim's c172p, released on each of its fiv
 
 | block | role |
 | --- | --- |
-| [SP](block:SP), [Ph](block:Ph), [DR](block:DR), [Ro](block:Ro), [Sl](block:Sl) | one aircraft each (a subsystem): the airframe, the engine and propeller, the aerodynamics and the controls held at the trim |
+| [SP](block:SP), [Ph](block:Ph), [DR](block:DR), [Ro](block:Ro), [Sl](block:Sl) | one aircraft each, an instance of the library subsystem `C172Airframe` that sets only its start state: the airframe, the engine and propeller, the aerodynamics and the controls held at the trim |
 | [RateRo](block:RateRo), [RateSl](block:RateSl) | $\lambda = \dot\phi/\phi$ of the bank angle: on a real mode this is its eigenvalue |
 
 ## What to try

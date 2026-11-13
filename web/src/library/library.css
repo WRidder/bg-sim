@@ -531,3 +531,16 @@
   padding-top: var(--space-2);
   border-top: var(--border-width) solid var(--color-border);
 }
+
+/* Removing a library subsystem: the menu asks first. */
+.library-menu__confirm {
+  max-width: 260px;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.library-menu__confirm p {
+  margin: 0 0 4px;
+}

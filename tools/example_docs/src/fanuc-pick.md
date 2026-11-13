@@ -47,7 +47,7 @@ PickPlanner (1 kHz) --V, Vd, tk--> ToolMotion (spatial flow source) ==> gripper 
   - the rod body `RodBody<k>`;
   - the cup [Cup1](block:Cup1);
   - its ejector [Gen1](block:Gen1).
-- The carton [Parcel](block:Parcel) rests on four `ContactPoint` corners on the support plane.
+- The carton [Parcel](block:Parcel) rests on four `ContactPoint` corners on the support plane: [Floor1](block:Floor1) to `Floor4`, instances of the library subsystem `ContactFoot` (a mount and a `ContactPoint` each, pinned to the corner offsets).
 - [Monitor](block:Monitor) keeps the peak `U` of every zone while the carton is carried, the margins and the drop latch.
 
 The run: about 2 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 500 output points per second.

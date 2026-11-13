@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "onnxruntime-web": "^1.31.1",
     "three": "^0.187.0"
   },
   "devDependencies": {

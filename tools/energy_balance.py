@@ -48,7 +48,9 @@ Classification comes from the model: the run manifest records the model name and
 each signal's owning instance path, the project's ``models/<name>.bgmodel.json``
 maps the path to a block ref, and the block's type is classified by the rules in
 :data:`TYPE_CLASS` (composites are resolved through the ``@components`` of their
-source in ``julia/BGSim/stdlib`` or the project ``library/``).  ``overrides``
+source in ``julia/BGSim/stdlib`` or the project ``library/``; an instance of a
+drawn library subsystem, ``library/<Name>.bgsub.json``, is followed into the
+definition's diagram, as the compiler puts it in place of the node).  ``overrides``
 (``{glob: class}`` on instance paths, first match wins) takes precedence.
 
 Usage::
@@ -163,8 +165,11 @@ class Classifier:
     """Maps an instance path to a ledger class.
 
     ``model`` is the model document (or ``None``); ``project_dir`` locates
-    ``library/<Name>.jl`` for ``project:`` refs; ``overrides`` maps instance-path
-    globs to classes and is consulted first.
+    ``library/<Name>.jl`` and the drawn subsystems ``library/<Name>.bgsub.json`` for
+    ``project:`` refs; ``overrides`` maps instance-path globs to classes and is
+    consulted first.  A node that is an instance of a drawn library subsystem is
+    followed into the definition's diagram, nested instances included, so the paths
+    are the simulation's (``Leg3/Hip/damper``).
     """
 
     def __init__(
@@ -180,6 +185,7 @@ class Classifier:
             if cls not in CLASSES or cls == "unclassified":
                 raise ValueError(f"override {pattern!r}: unknown class {cls!r}")
         self._components: dict[str, dict[str, str] | None] = {}
+        self._definitions: dict[str, dict[str, Any] | None] = {}
 
     # -- source lookup
 
@@ -226,6 +232,32 @@ class Classifier:
         self._components[key] = result
         return result
 
+    def _definition(self, name: str) -> dict[str, Any] | None:
+        """The drawn library subsystem ``project:<name>`` refers to, or ``None`` for a block.
+
+        The rules of the compiler (``julia/BGSim/src/compile/link.jl``): a definition the
+        document carries wins over the library file ``library/<name>.bgsub.json``, and a name
+        that is also a code block (``library/<name>.jl``) is the block.
+        """
+        if name in self._definitions:
+            return self._definitions[name]
+        result: dict[str, Any] | None = None
+        carried = (self.model or {}).get("definitions") or {}
+        if isinstance(carried.get(name), dict):
+            result = carried[name]
+        elif self.project_dir is not None:
+            library = self.project_dir / "library"
+            candidate = library / f"{name}.bgsub.json"
+            if candidate.is_file() and not (library / f"{name}.jl").is_file():
+                try:
+                    loaded = json.loads(candidate.read_text(encoding="utf-8"))
+                except ValueError:
+                    loaded = None
+                if isinstance(loaded, dict) and isinstance(loaded.get("diagram"), dict):
+                    result = loaded
+        self._definitions[name] = result
+        return result
+
     # -- resolution
 
     def _node(self, nodes: list[dict[str, Any]], name: str) -> dict[str, Any] | None:
@@ -240,6 +272,7 @@ class Classifier:
             return None, "no model document"
         parts = instance.split("/")
         diagram = self.model.get("diagram") or {}
+        entered: list[str] = []
         index = 0
         while index < len(parts):
             node = self._node(diagram.get("nodes") or [], parts[index])
@@ -255,6 +288,15 @@ class Classifier:
             ref = str(block.get("ref") or "")
             project = ref.startswith("project:")
             body = ref.split(":", 1)[1] if ":" in ref else ref
+            definition = self._definition(body) if project else None
+            if definition is not None:
+                # An instance of a library subsystem: the compiler puts the definition's diagram
+                # in place of the node, so the path goes on inside it (`Leg3/Hip/w`).
+                if body in entered:
+                    return None, f"the library subsystem {body!r} contains itself"
+                entered.append(body)
+                diagram = definition.get("diagram") or {}
+                continue
             domain, _, name = body.rpartition("/")
             return self._descend(name, domain or None, project, parts[index:], ref)
         return None, "the path ends on a subsystem"

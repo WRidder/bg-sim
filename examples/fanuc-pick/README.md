@@ -31,7 +31,10 @@ The model docs (Docs tab, `models/*.docs`) hold the derivations and the tables. 
 | `*-opt` | the highest pick rate of `design/optimize_free.py`: free timing (family 5), tilt, yaw window and the gripper timing |
 
 All models share one plant (`design/build_models.py`). They differ only in their global parameters,
-and the loose-content models add the content body. In the editor every global is in the Equations
+and the loose-content models add the content body. The four corner contacts of the carton on the
+support plane (`Floor1` to `Floor4`) are instances of the library subsystem
+`library/ContactFoot.bgsub.json` (a mount and a `ContactPoint`, pinned to the corner offsets), which
+`design/build_models.py` writes with the models. In the editor every global is in the Equations
 manager, and the dashboard has sliders for the family, the speed and acceleration limits, the jerk
 share, the blend distance, the lift height, the cylinder lead, the vacuum wait, the centre of mass and
 the pick and place yaw.
@@ -260,7 +263,7 @@ uv run examples/fanuc-pick/design/build_scene.py      # scenes/fanuc-pick-{box,s
 uv run examples/fanuc-pick/design/optimize.py         # design/results.json and the results table above
 uv run examples/fanuc-pick/design/optimize_free.py --loose-strict            # the ablation (results.json "ablation")
 uv run examples/fanuc-pick/design/optimize_free.py --refine --loose-strict   # a second pass from the first one's optima
-uv run examples/fanuc-pick/design/build_models.py     # models/*.bgmodel.json, bgsim.project.json
+uv run examples/fanuc-pick/design/build_models.py     # models/*.bgmodel.json, library/ContactFoot.bgsub.json, bgsim.project.json
 uv run examples/fanuc-pick/design/reference.py        # design/reference.json
 uv run examples/fanuc-pick/design/build_expected.py   # expected.json
 julia --project=julia/BGSim examples/fanuc-pick/design/run_model.jl jobs.json out/   # batch runs with overrides

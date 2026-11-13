@@ -609,9 +609,9 @@
    },
    {
     "id": "n29",
-    "name": "Pad1At",
+    "name": "Pad1",
     "block": {
-     "ref": "stdlib:spatial/LocalPose3D"
+     "ref": "project:LunarFoot"
     },
     "position": {
      "x": 1000,
@@ -620,9 +620,12 @@
     "rotation": 0,
     "flipX": false,
     "params": {
-     "x": "-1.9507200000000005",
-     "y": "4.256278",
-     "z": "0.0"
+     "Local/x": "-1.9507200000000005",
+     "Local/y": "4.256278",
+     "Local/z": "0.0",
+     "Mount/x": "1.9507200000000005",
+     "Mount/y": "-4.256278",
+     "Mount/z": "-0.0"
     },
     "constants": {},
     "starts": {},
@@ -633,17 +636,24 @@
    },
    {
     "id": "n30",
-    "name": "Pad1Pose",
+    "name": "Pad2",
     "block": {
-     "ref": "stdlib:multibond/ComposePose3D"
+     "ref": "project:LunarFoot"
     },
     "position": {
-     "x": 1180,
+     "x": 1200,
      "y": 1200
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "Local/x": "-1.9507200000000005",
+     "Local/y": "-4.256278",
+     "Local/z": "0.0",
+     "Mount/x": "1.9507200000000005",
+     "Mount/y": "4.256278",
+     "Mount/z": "-0.0"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -653,18 +663,23 @@
    },
    {
     "id": "n31",
-    "name": "Pad1Surf",
+    "name": "Pad3",
     "block": {
-     "ref": "project:LunarSurface3D"
+     "ref": "project:LunarFoot"
     },
     "position": {
-     "x": 1360,
+     "x": 1400,
      "y": 1200
     },
     "rotation": 0,
     "flipX": false,
     "params": {
-     "R": "1737400.0"
+     "Local/x": "-1.9507200000000005",
+     "Local/y": "0.0",
+     "Local/z": "4.256278",
+     "Mount/x": "1.9507200000000005",
+     "Mount/y": "-0.0",
+     "Mount/z": "-4.256278"
     },
     "constants": {},
     "starts": {},
@@ -675,25 +690,23 @@
    },
    {
     "id": "n32",
-    "name": "Pad1",
+    "name": "Pad4",
     "block": {
-     "ref": "stdlib:contact/ContactPoint"
+     "ref": "project:LunarFoot"
     },
     "position": {
-     "x": 1540,
+     "x": 1600,
      "y": 1200
     },
     "rotation": 0,
     "flipX": false,
     "params": {
-     "k": "39370.078740157485",
-     "xref": "0.07619999999999999",
-     "c": "2.0",
-     "mu": "0.4",
-     "vs": "0.02",
-     "bt": "0.0",
-     "eps": "0.001",
-     "feps": "1e-06"
+     "Local/x": "-1.9507200000000005",
+     "Local/y": "0.0",
+     "Local/z": "-4.256278",
+     "Mount/x": "1.9507200000000005",
+     "Mount/y": "-0.0",
+     "Mount/z": "4.256278"
     },
     "constants": {},
     "starts": {},
@@ -704,387 +717,6 @@
    },
    {
     "id": "n33",
-    "name": "Pad1Mount",
-    "block": {
-     "ref": "stdlib:multibond/FixedTransform3DNeutral"
-    },
-    "position": {
-     "x": 1720,
-     "y": 1200
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "1.9507200000000005",
-     "y": "-4.256278",
-     "z": "-0.0"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n34",
-    "name": "Pad2At",
-    "block": {
-     "ref": "stdlib:spatial/LocalPose3D"
-    },
-    "position": {
-     "x": 1000,
-     "y": 1350
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "-1.9507200000000005",
-     "y": "-4.256278",
-     "z": "0.0"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n35",
-    "name": "Pad2Pose",
-    "block": {
-     "ref": "stdlib:multibond/ComposePose3D"
-    },
-    "position": {
-     "x": 1180,
-     "y": 1350
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {},
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n36",
-    "name": "Pad2Surf",
-    "block": {
-     "ref": "project:LunarSurface3D"
-    },
-    "position": {
-     "x": 1360,
-     "y": 1350
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "R": "1737400.0"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n37",
-    "name": "Pad2",
-    "block": {
-     "ref": "stdlib:contact/ContactPoint"
-    },
-    "position": {
-     "x": 1540,
-     "y": 1350
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "k": "39370.078740157485",
-     "xref": "0.07619999999999999",
-     "c": "2.0",
-     "mu": "0.4",
-     "vs": "0.02",
-     "bt": "0.0",
-     "eps": "0.001",
-     "feps": "1e-06"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n38",
-    "name": "Pad2Mount",
-    "block": {
-     "ref": "stdlib:multibond/FixedTransform3DNeutral"
-    },
-    "position": {
-     "x": 1720,
-     "y": 1350
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "1.9507200000000005",
-     "y": "4.256278",
-     "z": "-0.0"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n39",
-    "name": "Pad3At",
-    "block": {
-     "ref": "stdlib:spatial/LocalPose3D"
-    },
-    "position": {
-     "x": 1000,
-     "y": 1500
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "-1.9507200000000005",
-     "y": "0.0",
-     "z": "4.256278"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n40",
-    "name": "Pad3Pose",
-    "block": {
-     "ref": "stdlib:multibond/ComposePose3D"
-    },
-    "position": {
-     "x": 1180,
-     "y": 1500
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {},
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n41",
-    "name": "Pad3Surf",
-    "block": {
-     "ref": "project:LunarSurface3D"
-    },
-    "position": {
-     "x": 1360,
-     "y": 1500
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "R": "1737400.0"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n42",
-    "name": "Pad3",
-    "block": {
-     "ref": "stdlib:contact/ContactPoint"
-    },
-    "position": {
-     "x": 1540,
-     "y": 1500
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "k": "39370.078740157485",
-     "xref": "0.07619999999999999",
-     "c": "2.0",
-     "mu": "0.4",
-     "vs": "0.02",
-     "bt": "0.0",
-     "eps": "0.001",
-     "feps": "1e-06"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n43",
-    "name": "Pad3Mount",
-    "block": {
-     "ref": "stdlib:multibond/FixedTransform3DNeutral"
-    },
-    "position": {
-     "x": 1720,
-     "y": 1500
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "1.9507200000000005",
-     "y": "-0.0",
-     "z": "-4.256278"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n44",
-    "name": "Pad4At",
-    "block": {
-     "ref": "stdlib:spatial/LocalPose3D"
-    },
-    "position": {
-     "x": 1000,
-     "y": 1650
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "-1.9507200000000005",
-     "y": "0.0",
-     "z": "-4.256278"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n45",
-    "name": "Pad4Pose",
-    "block": {
-     "ref": "stdlib:multibond/ComposePose3D"
-    },
-    "position": {
-     "x": 1180,
-     "y": 1650
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {},
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n46",
-    "name": "Pad4Surf",
-    "block": {
-     "ref": "project:LunarSurface3D"
-    },
-    "position": {
-     "x": 1360,
-     "y": 1650
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "R": "1737400.0"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n47",
-    "name": "Pad4",
-    "block": {
-     "ref": "stdlib:contact/ContactPoint"
-    },
-    "position": {
-     "x": 1540,
-     "y": 1650
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "k": "39370.078740157485",
-     "xref": "0.07619999999999999",
-     "c": "2.0",
-     "mu": "0.4",
-     "vs": "0.02",
-     "bt": "0.0",
-     "eps": "0.001",
-     "feps": "1e-06"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n48",
-    "name": "Pad4Mount",
-    "block": {
-     "ref": "stdlib:multibond/FixedTransform3DNeutral"
-    },
-    "position": {
-     "x": 1720,
-     "y": 1650
-    },
-    "rotation": 0,
-    "flipX": false,
-    "params": {
-     "x": "1.9507200000000005",
-     "y": "-0.0",
-     "z": "4.256278"
-    },
-    "constants": {},
-    "starts": {},
-    "ui": {
-     "showLabel": true,
-     "color": null
-    }
-   },
-   {
-    "id": "n49",
     "name": "Guid",
     "block": {
      "ref": "project:DescentGuidance"
@@ -1121,7 +753,7 @@
     }
    },
    {
-    "id": "n50",
+    "id": "n34",
     "name": "Throttle",
     "block": {
      "ref": "project:DpsThrottle"
@@ -1150,7 +782,7 @@
     }
    },
    {
-    "id": "n51",
+    "id": "n35",
     "name": "Windows",
     "block": {
      "ref": "stdlib:sources/Constant"
@@ -1172,7 +804,7 @@
     }
    },
    {
-    "id": "n52",
+    "id": "n36",
     "name": "RateCmd",
     "block": {
      "ref": "stdlib:continuous/Lookup1D"
@@ -1197,7 +829,7 @@
     }
    },
    {
-    "id": "n53",
+    "id": "n37",
     "name": "Clock",
     "block": {
      "ref": "stdlib:sources/Time"
@@ -1217,7 +849,7 @@
     }
    },
    {
-    "id": "n54",
+    "id": "n38",
     "name": "FwdCmd",
     "block": {
      "ref": "stdlib:continuous/Lookup1D"
@@ -2072,22 +1704,21 @@
      "port": "pose"
     },
     "to": {
-     "node": "n30",
-     "port": "gp"
+     "node": "n29",
+     "port": "pose"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s062",
-    "kind": "signal",
+    "id": "b062",
+    "kind": "bond",
     "from": {
-     "node": "n29",
-     "port": "g"
+     "node": "n03"
     },
     "to": {
-     "node": "n30",
-     "port": "gl"
+     "node": "n29",
+     "port": "p"
     },
     "route": [],
     "label": null
@@ -2096,26 +1727,25 @@
     "id": "s063",
     "kind": "signal",
     "from": {
-     "node": "n30",
-     "port": "g"
+     "node": "n02",
+     "port": "pose"
     },
     "to": {
-     "node": "n31",
-     "port": "g"
+     "node": "n30",
+     "port": "pose"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s064",
-    "kind": "signal",
+    "id": "b064",
+    "kind": "bond",
     "from": {
-     "node": "n30",
-     "port": "g"
+     "node": "n03"
     },
     "to": {
-     "node": "n32",
-     "port": "g"
+     "node": "n30",
+     "port": "p"
     },
     "route": [],
     "label": null
@@ -2124,39 +1754,39 @@
     "id": "s065",
     "kind": "signal",
     "from": {
-     "node": "n31",
-     "port": "o"
+     "node": "n02",
+     "port": "pose"
     },
     "to": {
-     "node": "n32",
-     "port": "o"
+     "node": "n31",
+     "port": "pose"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s066",
-    "kind": "signal",
-    "from": {
-     "node": "n31",
-     "port": "fr"
-    },
-    "to": {
-     "node": "n32",
-     "port": "fr"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b067",
+    "id": "b066",
     "kind": "bond",
     "from": {
      "node": "n03"
     },
     "to": {
-     "node": "n33",
-     "port": "b"
+     "node": "n31",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s067",
+    "kind": "signal",
+    "from": {
+     "node": "n02",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n32",
+     "port": "pose"
     },
     "route": [],
     "label": null
@@ -2165,8 +1795,7 @@
     "id": "b068",
     "kind": "bond",
     "from": {
-     "node": "n33",
-     "port": "a"
+     "node": "n03"
     },
     "to": {
      "node": "n32",
@@ -2183,8 +1812,8 @@
      "port": "pose"
     },
     "to": {
-     "node": "n35",
-     "port": "gp"
+     "node": "n33",
+     "port": "g"
     },
     "route": [],
     "label": null
@@ -2193,12 +1822,12 @@
     "id": "s070",
     "kind": "signal",
     "from": {
-     "node": "n34",
-     "port": "g"
+     "node": "n06",
+     "port": "y"
     },
     "to": {
-     "node": "n35",
-     "port": "gl"
+     "node": "n33",
+     "port": "V"
     },
     "route": [],
     "label": null
@@ -2207,12 +1836,12 @@
     "id": "s071",
     "kind": "signal",
     "from": {
-     "node": "n35",
-     "port": "g"
+     "node": "n22",
+     "port": "m"
     },
     "to": {
-     "node": "n36",
-     "port": "g"
+     "node": "n33",
+     "port": "m"
     },
     "route": [],
     "label": null
@@ -2221,340 +1850,7 @@
     "id": "s072",
     "kind": "signal",
     "from": {
-     "node": "n35",
-     "port": "g"
-    },
-    "to": {
-     "node": "n37",
-     "port": "g"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s073",
-    "kind": "signal",
-    "from": {
-     "node": "n36",
-     "port": "o"
-    },
-    "to": {
-     "node": "n37",
-     "port": "o"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s074",
-    "kind": "signal",
-    "from": {
-     "node": "n36",
-     "port": "fr"
-    },
-    "to": {
-     "node": "n37",
-     "port": "fr"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b075",
-    "kind": "bond",
-    "from": {
-     "node": "n03"
-    },
-    "to": {
-     "node": "n38",
-     "port": "b"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b076",
-    "kind": "bond",
-    "from": {
-     "node": "n38",
-     "port": "a"
-    },
-    "to": {
-     "node": "n37",
-     "port": "p"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s077",
-    "kind": "signal",
-    "from": {
-     "node": "n02",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n40",
-     "port": "gp"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s078",
-    "kind": "signal",
-    "from": {
-     "node": "n39",
-     "port": "g"
-    },
-    "to": {
-     "node": "n40",
-     "port": "gl"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s079",
-    "kind": "signal",
-    "from": {
-     "node": "n40",
-     "port": "g"
-    },
-    "to": {
-     "node": "n41",
-     "port": "g"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s080",
-    "kind": "signal",
-    "from": {
-     "node": "n40",
-     "port": "g"
-    },
-    "to": {
-     "node": "n42",
-     "port": "g"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s081",
-    "kind": "signal",
-    "from": {
-     "node": "n41",
-     "port": "o"
-    },
-    "to": {
-     "node": "n42",
-     "port": "o"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s082",
-    "kind": "signal",
-    "from": {
-     "node": "n41",
-     "port": "fr"
-    },
-    "to": {
-     "node": "n42",
-     "port": "fr"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b083",
-    "kind": "bond",
-    "from": {
-     "node": "n03"
-    },
-    "to": {
-     "node": "n43",
-     "port": "b"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b084",
-    "kind": "bond",
-    "from": {
-     "node": "n43",
-     "port": "a"
-    },
-    "to": {
-     "node": "n42",
-     "port": "p"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s085",
-    "kind": "signal",
-    "from": {
-     "node": "n02",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n45",
-     "port": "gp"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s086",
-    "kind": "signal",
-    "from": {
-     "node": "n44",
-     "port": "g"
-    },
-    "to": {
-     "node": "n45",
-     "port": "gl"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s087",
-    "kind": "signal",
-    "from": {
-     "node": "n45",
-     "port": "g"
-    },
-    "to": {
-     "node": "n46",
-     "port": "g"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s088",
-    "kind": "signal",
-    "from": {
-     "node": "n45",
-     "port": "g"
-    },
-    "to": {
-     "node": "n47",
-     "port": "g"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s089",
-    "kind": "signal",
-    "from": {
-     "node": "n46",
-     "port": "o"
-    },
-    "to": {
-     "node": "n47",
-     "port": "o"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s090",
-    "kind": "signal",
-    "from": {
-     "node": "n46",
-     "port": "fr"
-    },
-    "to": {
-     "node": "n47",
-     "port": "fr"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b091",
-    "kind": "bond",
-    "from": {
-     "node": "n03"
-    },
-    "to": {
-     "node": "n48",
-     "port": "b"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "b092",
-    "kind": "bond",
-    "from": {
-     "node": "n48",
-     "port": "a"
-    },
-    "to": {
-     "node": "n47",
-     "port": "p"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s093",
-    "kind": "signal",
-    "from": {
-     "node": "n02",
-     "port": "pose"
-    },
-    "to": {
-     "node": "n49",
-     "port": "g"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s094",
-    "kind": "signal",
-    "from": {
-     "node": "n06",
-     "port": "y"
-    },
-    "to": {
-     "node": "n49",
-     "port": "V"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s095",
-    "kind": "signal",
-    "from": {
-     "node": "n22",
-     "port": "m"
-    },
-    "to": {
-     "node": "n49",
-     "port": "m"
-    },
-    "route": [],
-    "label": null
-   },
-   {
-    "id": "s096",
-    "kind": "signal",
-    "from": {
-     "node": "n49",
+     "node": "n33",
      "port": "u"
     },
     "to": {
@@ -2565,52 +1861,52 @@
     "label": "thrust direction"
    },
    {
-    "id": "s097",
+    "id": "s073",
     "kind": "signal",
     "from": {
-     "node": "n49",
+     "node": "n33",
      "port": "T_req"
     },
     "to": {
-     "node": "n50",
+     "node": "n34",
      "port": "T_req"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s098",
+    "id": "s074",
     "kind": "signal",
     "from": {
      "node": "n25",
      "port": "h_pad"
     },
     "to": {
-     "node": "n50",
+     "node": "n34",
      "port": "h_pad"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s099",
+    "id": "s075",
     "kind": "signal",
     "from": {
      "node": "n22",
      "port": "prop"
     },
     "to": {
-     "node": "n50",
+     "node": "n34",
      "port": "prop"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s100",
+    "id": "s076",
     "kind": "signal",
     "from": {
-     "node": "n50",
+     "node": "n34",
      "port": "T_cmd"
     },
     "to": {
@@ -2621,10 +1917,10 @@
     "label": null
    },
    {
-    "id": "s101",
+    "id": "s077",
     "kind": "signal",
     "from": {
-     "node": "n51",
+     "node": "n35",
      "port": "y"
     },
     "to": {
@@ -2635,56 +1931,56 @@
     "label": "windows angle"
    },
    {
-    "id": "s102",
+    "id": "s078",
     "kind": "signal",
     "from": {
      "node": "n25",
      "port": "h_ft"
     },
     "to": {
-     "node": "n52",
+     "node": "n36",
      "port": "u"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s103",
+    "id": "s079",
     "kind": "signal",
     "from": {
-     "node": "n53",
+     "node": "n37",
      "port": "y"
     },
     "to": {
-     "node": "n54",
+     "node": "n38",
      "port": "u"
     },
     "route": [],
     "label": null
    },
    {
-    "id": "s104",
+    "id": "s080",
     "kind": "signal",
     "from": {
-     "node": "n52",
+     "node": "n36",
      "port": "y"
     },
     "to": {
-     "node": "n49",
+     "node": "n33",
      "port": "rate_cmd"
     },
     "route": [],
     "label": "descent rate"
    },
    {
-    "id": "s105",
+    "id": "s081",
     "kind": "signal",
     "from": {
-     "node": "n54",
+     "node": "n38",
      "port": "y"
     },
     "to": {
-     "node": "n49",
+     "node": "n33",
      "port": "fwd_cmd"
     },
     "route": [],
@@ -2705,10 +2001,10 @@
    {
     "id": "a2",
     "kind": "text",
-    "text": "Landing gear: four footpads (167.57 in from the X axis, TN D-6850), each a ContactPoint (Hunt-Crossley normal force for pad, strut and soil; Coulomb friction mu = 0.4) on the lunar sphere below it (LunarSurface3D), mounted at its pad through a FixedTransform3DNeutral.",
+    "text": "Landing gear: four footpads (167.57 in from the X axis, TN D-6850), each an instance of the library subsystem LunarFoot: a ContactPoint (Hunt-Crossley normal force for pad, strut and soil; Coulomb friction mu = 0.4) on the lunar sphere below it (LunarSurface3D), mounted at its pad through a FixedTransform3DNeutral.",
     "x": 1000,
     "y": 1100,
-    "w": 700,
+    "w": 780,
     "h": 60
    },
    {
@@ -2769,10 +2065,10 @@
    "id": "p5",
    "title": "Footpad loads (N)",
    "signals": [
-    "Pad1/f_n",
-    "Pad2/f_n",
-    "Pad3/f_n",
-    "Pad4/f_n"
+    "Pad1/Contact/f_n",
+    "Pad2/Contact/f_n",
+    "Pad3/Contact/f_n",
+    "Pad4/Contact/f_n"
    ]
   },
   {
@@ -3032,10 +2328,10 @@
     "size": "2x2",
     "title": "Footpad loads (N)",
     "signals": [
-     "Pad1/f_n",
-     "Pad2/f_n",
-     "Pad3/f_n",
-     "Pad4/f_n"
+     "Pad1/Contact/f_n",
+     "Pad2/Contact/f_n",
+     "Pad3/Contact/f_n",
+     "Pad4/Contact/f_n"
     ]
    }
   ]

@@ -2,7 +2,7 @@
 
 A three-joint arm: a hand-derived Hamiltonian equation block ([Arm](block:Arm), `ArmDynamics3R`) behind three DC motors and 50:1 gears, a 1 ms discrete PD controller with gravity compensation ([Ctrl](block:Ctrl), `ArmCtrl3R`) and minimum-jerk `TimeTable` references ([Ref1](block:Ref1), [Ref2](block:Ref2), [Ref3](block:Ref3)). The same geometry is rebuilt from the spatial multibond stdlib in `rrr-multibond` and compared joint by joint (DEC-M5-2). The six-axis arm is the model `arm`.
 
-![The model canvas|900](assets/5ab90d55154a.png)
+![The model canvas|900](assets/6286156d344a.png)
 
 ```
 Ref1..3 (TimeTable) -> Ctrl (ArmCtrl3R, 1 ms) -u_i-> Amp - Motor - Gear (n = 50) -> Arm (ArmDynamics3R: j1 j2 j3)

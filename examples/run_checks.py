@@ -13,7 +13,7 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   with ``{"name", "example"}``);
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
-* evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
+* evaluates every check kind (``final_value``, ``cursor_value``, ``mean_value``, ``max_abs``,
   ``max_abs_le``, ``min_ge``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
   ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
   ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak``, ``damping``,
@@ -122,6 +122,18 @@ mean) removes everything below that corner with a centered moving average of
 
     {"kind": "ripple", "signal": "Iphase/y", "from_t": 1.0, "to_t": 1.15,
      "highpass_hz": 1000.0, "measure": "rms", "value": 0.8}
+
+The uniform grid can step over the peaks of a switched waveform (a 5 us grid samples a
+20 kHz triangle at fixed phases).  ``"all_rows": true`` (only with ``highpass_hz`` 0)
+measures on every recorded row instead, event rows included: ``pp`` is the largest
+minus the smallest row, ``rms`` the time-weighted RMS about the time-weighted mean.
+
+``mean_value`` is the time-weighted mean of ``signal`` over ``[from_t, to_t]``
+(default the whole run), compared with ``value`` through ``rtol``/``abs``: the
+equal-time event rows are collapsed and the trapezoid integral is divided by the window
+length, so the denser rows around the events carry no extra weight.  It reads the mean
+of a switched waveform; a signal that jumps at the events (a PWM pulse train) is only
+approximated, because the rows of an event instant may carry either side of the jump.
 
 ``fft_peak`` is the dominant frequency (Hz) of ``signal`` over ``[from_t, to_t]``
 (default the whole run), compared with ``value`` through ``rtol``/``abs`` like the
@@ -648,6 +660,57 @@ def _value_check(
         f"({tolerance_text}; |delta| {difference:.3g})"
     )
     report.check(difference <= total, label, detail)
+
+
+def _mean_value_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The mean of a signal over a time window, for a switched or noisy waveform."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} mean_value"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    expected = float(check["value"])
+    tolerance = _tolerance(check, expected)
+    if tolerance is None:
+        report.check(False, label, "the check needs 'rtol' or 'abs'")
+        return
+    total, tolerance_text = tolerance
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    if not (first <= from_t < to_t <= last):
+        report.check(False, label, f"[{from_t:g}, {to_t:g}] is not a window inside the run's [{first:g}, {last:g}]")
+        return
+    measured = _time_mean(run.time, run.signals[signal], from_t, to_t)
+    difference = abs(measured - expected)
+    detail = (
+        f"time-weighted mean over [{from_t:g}, {to_t:g}] measured {measured:.12g}, "
+        f"expected {expected:.12g} ({tolerance_text}; |delta| {difference:.3g})"
+    )
+    report.check(difference <= total, label, detail)
+
+
+def _time_mean(times: np.ndarray, values: np.ndarray, from_t: float, to_t: float) -> float:
+    """Time-weighted mean of a signal over ``[from_t, to_t]``.
+
+    The rows are not uniform (the output grid plus every event instant, recorded twice),
+    so a plain mean over rows weights the event instants.  The equal-time rows are
+    collapsed (``_collapsed``), the window ends are interpolated, and the trapezoid
+    integral is divided by the window length.  The trapezoid is exact for a signal that is
+    linear between rows; a signal that jumps at an event (a PWM pulse) is only
+    approximated, because the rows of an event instant may carry either side of the jump.
+    """
+    t, y = _collapsed(times, values)
+    inside = (t > from_t) & (t < to_t)
+    tt = np.concatenate(([from_t], t[inside], [to_t]))
+    yy = np.concatenate(([np.interp(from_t, t, y)], y[inside], [np.interp(to_t, t, y)]))
+    return float(np.sum(0.5 * (yy[1:] + yy[:-1]) * np.diff(tt)) / (to_t - from_t))
 
 
 def _max_abs_check(
@@ -1656,6 +1719,31 @@ def _ripple_check(
     if not window.any():
         report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
         return
+    all_rows = bool(check.get("all_rows", False))
+    if all_rows:
+        # Every recorded row, event rows included: no resampling can cut a peak off.
+        if highpass > 0.0:
+            report.check(False, label, "'all_rows' needs highpass_hz 0 (the high-pass resamples)")
+            return
+        times = run.time[window]
+        values = run.signals[signal][window]
+        if np.unique(times).size < 3:
+            report.check(False, label, "the window has fewer than three distinct times")
+            return
+        span = (float(times[0]), float(times[-1]))
+        if measure == "rms":
+            mean = _time_mean(times, values, *span)
+            measured = float(np.sqrt(_time_mean(times, (values - mean) ** 2, *span)))
+            how = "time-weighted mean removed"
+        else:
+            measured = float(np.max(values) - np.min(values))
+            how = "peak to peak"
+        detail = (
+            f"over [{from_t:g}, {to_t:g}], all {times.size} rows, {how}: "
+            f"{measure} {measured:.6g} (limit {limit:g})"
+        )
+        report.check(measured <= limit, label, detail)
+        return
     times, values = _collapsed(run.time[window], run.signals[signal][window])
     if times.size < 3:
         report.check(False, label, "the window has fewer than three samples")
@@ -2486,6 +2574,8 @@ def _check_model_checks(
         kind = check.get("kind")
         if kind in {"final_value", "cursor_value"}:
             _value_check(report, project, model, run, check, str(kind))
+        elif kind == "mean_value":
+            _mean_value_check(report, project, model, run, check)
         elif kind == "max_abs":
             _max_abs_check(report, project, model, run, check)
         elif kind == "max_abs_le":

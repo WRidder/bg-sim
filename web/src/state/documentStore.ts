@@ -80,6 +80,24 @@ import {
   type TerminalKind,
 } from "../editor/subsystemPorts";
 import type { CatalogIndex } from "../library/catalogIndex";
+import { applySubsystemReplacement, type SubsystemBlockPlan } from "../library/subsystemToBlock";
+import { markDefinitionRemoved } from "./definitionFiles";
+import {
+  definitionFrom,
+  definitionNameProblem,
+  dehydrateModel,
+  hydrateModel,
+  instanceKey,
+  instanceValues,
+  linkedDefinition,
+  newInstanceSubsystem,
+  type PinKind,
+  pinResolves,
+  readPin,
+  syncLinked,
+  withPin,
+  writePin,
+} from "../library/linkedSubsystems";
 import type { ClipboardEnvelope } from "../contracts/clipboard";
 import type { LibraryLookup } from "../clipboard/dependencies";
 import { buildEnvelope, emptyEnvelope, isEmptyEnvelope } from "../clipboard/envelope";
@@ -336,6 +354,39 @@ export interface DocumentActions {
    */
   replaceInlineWithRef: (nodeIds: readonly string[], ref: string) => EditResult & { replaced?: string[] };
   /**
+   * "Save to project library" of a subsystem (library/subsystemToBlock.ts):
+   * the subsystem node `nodeId`, anywhere in the model, becomes an instance of
+   * the library block `ref` with the plan's values, in one undo step. Its
+   * name, position and outside connections are kept. `path` is the node's
+   * instance path; dashboard inputs on a parameter the block now exposes
+   * follow it.
+   */
+  replaceSubsystemWithRef: (
+    nodeId: string,
+    ref: string,
+    path: string,
+    plan: SubsystemBlockPlan,
+  ) => EditResult;
+  /**
+   * Make the subsystem node `nodeId` of the active diagram a library subsystem
+   * named `name`: the definition is added to the document and the node becomes
+   * its first instance (one undo entry). `blockNames` are the block names the
+   * library already has.
+   */
+  makeSubsystemReusable: (nodeId: string, name: string, blockNames: readonly string[]) => EditResult;
+  /** Turn an instance into an ordinary subsystem with the values it has now. */
+  detachInstance: (nodeId: string) => EditResult;
+  /** Pin or unpin a parameter or start value of a library subsystem (a path inside it). */
+  setDefinitionPin: (definition: string, kind: PinKind, path: string, pinned: boolean) => EditResult;
+  /** Set one pinned value of the instance `nodeId` of the active diagram. */
+  setInstanceValue: (nodeId: string, kind: PinKind, path: string, value: string) => EditResult;
+  /** Return pinned values of an instance to the definition's: one `path`, or all of them. */
+  resetInstanceValues: (nodeId: string, only?: { kind: PinKind; path: string }) => EditResult;
+  /** Remove a library subsystem from the document; its instances become ordinary subsystems. */
+  removeDefinition: (name: string) => EditResult;
+  /** Dismiss the message of an edit that was refused. */
+  clearEditNotice: () => void;
+  /**
    * Replace the embedded source of an inline code node (plan 7.7). Pass
    * `coalesce` while the editor has a typing gesture open so one editing
    * session is one undo step.
@@ -477,6 +528,8 @@ export interface DocumentState {
   /** The key of the gesture currently in progress, or null. */
   gestureKey: string | null;
   lastHistKey: string | null;
+  /** Why the last edit was refused (a library subsystem that would contain itself), or null. */
+  editNotice: string | null;
 }
 
 export type DocumentStore = DocumentState & DocumentActions;
@@ -501,6 +554,7 @@ const INITIAL_STATE: DocumentState = {
   clipboard: EMPTY_CLIPBOARD,
   gestureKey: null,
   lastHistKey: null,
+  editNotice: null,
 };
 
 function clone<T>(value: T): T {
@@ -619,9 +673,35 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     if (doc === null) {
       return null;
     }
-    const [next, patches, inversePatches] = produceWithPatches(doc, recipe);
+    const produced = produceWithPatches(doc, recipe);
+    let [next, patches, inversePatches] = produced;
     if (patches.length === 0) {
       return next;
+    }
+    // Library subsystems: every instance is a copy of its definition, so an edit inside
+    // one of them is carried to the definition and to the other instances here.
+    const preferred = new Set(
+      state.activePath.map((_, index) => instanceKey(state.activePath.slice(0, index + 1))),
+    );
+    const synced = syncLinked(next, doc, preferred);
+    if (!synced.ok) {
+      set({ editNotice: synced.error });
+      return null;
+    }
+    if (synced.model !== next) {
+      next = synced.model;
+      const elsewhere = (patch: Patch): boolean =>
+        patch.path[0] !== "diagram" && patch.path[0] !== "definitions";
+      patches = [
+        ...patches.filter(elsewhere),
+        { op: "replace", path: ["diagram"], value: next.diagram },
+        { op: "replace", path: ["definitions"], value: next.definitions },
+      ];
+      inversePatches = [
+        ...inversePatches.filter(elsewhere),
+        { op: "replace", path: ["diagram"], value: doc.diagram },
+        { op: "replace", path: ["definitions"], value: doc.definitions },
+      ];
     }
 
     const key = options.coalesce ?? null;
@@ -657,6 +737,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     const activePath = clampPath(next, state.activePath);
     set({
       doc: next,
+      editNotice: null,
       revision: state.revision + 1,
       past,
       future: [],
@@ -768,6 +849,14 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         diagram.nodes.map((node) => node.name),
       );
       const node = createNodeFromBlock(block, roundPosition(position), id, name);
+      const definition = block.subsystem === true ? doc.definitions?.[block.name] : undefined;
+      if (definition !== undefined) {
+        // A library subsystem: the node is a working copy of the definition.
+        node.block = { subsystem: newInstanceSubsystem(definition) };
+        delete node.params;
+        delete node.constants;
+        delete node.starts;
+      }
       return addNode(node);
     },
 
@@ -1678,6 +1767,155 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       return { ok: true, replaced };
     },
 
+    replaceSubsystemWithRef: (nodeId, ref, path, plan) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const next = ref.trim();
+      if (next.length === 0) {
+        return { ok: false, error: "Enter a block reference." };
+      }
+      let replaced = false;
+      const activePath = [...get().activePath];
+      commit((draft) => {
+        replaced = applySubsystemReplacement(draft, nodeId, next, path, plan, activePath);
+      });
+      return replaced
+        ? { ok: true }
+        : { ok: false, error: "That subsystem is no longer in the model." };
+    },
+
+    makeSubsystemReusable: (nodeId, name, blockNames) => {
+      const doc = get().doc;
+      const node = currentDiagram()?.nodes.find((entry) => entry.id === nodeId);
+      if (doc === null || node === undefined || !("subsystem" in node.block)) {
+        return { ok: false, error: "That subsystem is no longer in the diagram." };
+      }
+      if (node.block.subsystem.definition !== undefined) {
+        return {
+          ok: false,
+          error: `${node.name} already is an instance of ${node.block.subsystem.definition}.`,
+        };
+      }
+      const problem = definitionNameProblem(name, doc.definitions, blockNames);
+      if (problem !== null) {
+        return { ok: false, error: problem };
+      }
+      const definition = definitionFrom(name, node.block.subsystem);
+      const path = [...get().activePath];
+      const done = commit((draft) => {
+        const target = activeDiagram(draft, path)?.nodes.find((entry) => entry.id === nodeId);
+        if (target === undefined || !("subsystem" in target.block)) {
+          return;
+        }
+        draft.definitions = { ...(draft.definitions ?? {}), [name]: definition };
+        target.block.subsystem.definition = name;
+      });
+      return done === null
+        ? { ok: false, error: get().editNotice ?? "Nothing changed." }
+        : { ok: true };
+    },
+
+    detachInstance: (nodeId) => {
+      const node = currentDiagram()?.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined || linkedDefinition(node) === null) {
+        return { ok: false, error: "That block is not an instance of a library subsystem." };
+      }
+      commitActive((diagram) => {
+        const target = diagram.nodes.find((entry) => entry.id === nodeId);
+        if (target !== undefined && "subsystem" in target.block) {
+          delete target.block.subsystem.definition;
+        }
+      });
+      return { ok: true };
+    },
+
+    setDefinitionPin: (definition, kind, path, pinned) => {
+      const current = get().doc?.definitions?.[definition];
+      if (current === undefined) {
+        return { ok: false, error: `The library has no subsystem named ${definition}.` };
+      }
+      const next = withPin(current, kind, path, pinned);
+      if (next !== current) {
+        commit((draft) => {
+          draft.definitions = { ...(draft.definitions ?? {}), [definition]: next };
+        });
+      }
+      return { ok: true };
+    },
+
+    setInstanceValue: (nodeId, kind, path, value) => {
+      const node = currentDiagram()?.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined || !("subsystem" in node.block) || linkedDefinition(node) === null) {
+        return { ok: false, error: "That block is not an instance of a library subsystem." };
+      }
+      if (!pinResolves(node.block.subsystem.diagram, path)) {
+        return { ok: false, error: `${path} names nothing in ${node.name} any more.` };
+      }
+      const diagram = writePin(node.block.subsystem.diagram, kind, path, value);
+      if (diagram !== node.block.subsystem.diagram) {
+        commitActive((active) => {
+          const target = active.nodes.find((entry) => entry.id === nodeId);
+          if (target !== undefined && "subsystem" in target.block) {
+            target.block.subsystem.diagram = diagram;
+          }
+        });
+      }
+      return { ok: true };
+    },
+
+    resetInstanceValues: (nodeId, only) => {
+      const doc = get().doc;
+      const node = currentDiagram()?.nodes.find((entry) => entry.id === nodeId);
+      const name = node === undefined ? null : linkedDefinition(node);
+      const definition = name === null ? undefined : doc?.definitions?.[name];
+      if (node === undefined || !("subsystem" in node.block) || definition === undefined) {
+        return { ok: false, error: "That block is not an instance of a library subsystem." };
+      }
+      let diagram = node.block.subsystem.diagram;
+      for (const entry of instanceValues(node.block.subsystem, definition)) {
+        if (!entry.changed || !entry.resolves) {
+          continue;
+        }
+        if (only === undefined || (only.kind === entry.kind && only.path === entry.path)) {
+          diagram = writePin(
+            diagram,
+            entry.kind,
+            entry.path,
+            readPin(definition.diagram, entry.kind, entry.path),
+          );
+        }
+      }
+      if (diagram !== node.block.subsystem.diagram) {
+        commitActive((active) => {
+          const target = active.nodes.find((entry) => entry.id === nodeId);
+          if (target !== undefined && "subsystem" in target.block) {
+            target.block.subsystem.diagram = diagram;
+          }
+        });
+      }
+      return { ok: true };
+    },
+
+    removeDefinition: (name) => {
+      if (get().doc?.definitions?.[name] === undefined) {
+        return { ok: false, error: `The library has no subsystem named ${name}.` };
+      }
+      commit((draft) => {
+        const { [name]: _removed, ...rest } = draft.definitions ?? {};
+        draft.definitions = rest;
+      });
+      // The file goes with the next save; an undo before that keeps it.
+      const project = get().project;
+      if (project !== null) {
+        markDefinitionRemoved(project, name);
+      }
+      return { ok: true };
+    },
+
+    clearEditNotice: () => set({ editNotice: null }),
+
     setInlineSource: (nodeId, source, options = {}) => {
       const diagram = currentDiagram();
       if (diagram === null) {
@@ -2130,7 +2368,15 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       return flowIds;
     },
 
-    replaceDocument: (next) => {
+    replaceDocument: (incoming) => {
+      // A document from outside the editor (the assistant's Apply, a saved file) is in the
+      // saved form: instances as references and no definitions. It is opened like a file,
+      // with the library subsystems this document holds, so none of them is lost.
+      const current = get().doc;
+      const next =
+        current?.definitions !== undefined && incoming.definitions === undefined
+          ? hydrateModel(incoming, dehydrateModel(current).files)
+          : incoming;
       commit((draft) => {
         const target = draft as unknown as Record<string, unknown>;
         for (const key of Object.keys(target)) {

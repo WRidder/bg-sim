@@ -1,0 +1,138 @@
+{
+  "$comment": "A subsystem definition must have a diagram.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "LinkedBranches",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "se",
+        "name": "Se1",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "params": {
+          "e": "1.0"
+        }
+      },
+      {
+        "id": "z",
+        "name": "Z",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 120,
+          "y": 0
+        }
+      },
+      {
+        "id": "i1",
+        "name": "A",
+        "position": {
+          "x": 240,
+          "y": -80
+        },
+        "block": {
+          "ref": "project:Branch"
+        }
+      },
+      {
+        "id": "i2",
+        "name": "B",
+        "position": {
+          "x": 240,
+          "y": 80
+        },
+        "block": {
+          "ref": "project:Branch"
+        },
+        "params": {
+          "R1/r": "47.0"
+        },
+        "starts": {
+          "C1/q": "2e-3"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s",
+        "kind": "bond",
+        "from": {
+          "node": "se",
+          "port": "p"
+        },
+        "to": {
+          "node": "z"
+        }
+      },
+      {
+        "id": "k1",
+        "kind": "bond",
+        "from": {
+          "node": "z"
+        },
+        "to": {
+          "node": "i1",
+          "port": "p"
+        }
+      },
+      {
+        "id": "k2",
+        "kind": "bond",
+        "from": {
+          "node": "z"
+        },
+        "to": {
+          "node": "i2",
+          "port": "p"
+        }
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 2000
+    },
+    "event_limit": 10000
+  },
+  "definitions": {
+    "Branch": {
+      "format": "bgsim.subsystem",
+      "name": "Branch",
+      "description": "A resistor and a capacitor in series behind one port.",
+      "ports": [
+        {
+          "name": "p",
+          "kind": "power",
+          "domain": "Generic",
+          "size": [
+            1
+          ],
+          "node": "j",
+          "port": "junction"
+        }
+      ],
+      "pins": {
+        "params": [
+          "R1/r"
+        ],
+        "starts": [
+          "C1/q"
+        ]
+      }
+    }
+  }
+}

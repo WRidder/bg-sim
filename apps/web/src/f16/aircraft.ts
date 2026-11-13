@@ -349,6 +349,8 @@ export interface FighterParts {
   flameTime: { value: number };
   flamePower: { value: number };
   gear: FighterGear;
+  /** The two wingtip rounds, hidden when a missile is fired. */
+  stations: THREE.Group[];
 }
 
 const PAINT = /* glsl */ `
@@ -588,18 +590,22 @@ export function buildFighter(): FighterParts {
   root.add(frame);
 
   // Missiles on the wing tips, painted white with their guidance bands.
+  const stations: THREE.Group[] = [];
   for (const side of [1, -1] as const) {
+    const station = new THREE.Group();
+    root.add(station);
+    stations.push(station);
     const missile = along(revolve([[0.001, 1.46], [0.03, 1.32], [0.063, 1.14], [0.063, -1.42], [0.05, -1.46], [0.001, -1.46]], 16), -3.2, side * 4.82, -0.02);
     const mesh = new THREE.Mesh(missile, pale);
     mesh.castShadow = true;
-    root.add(mesh);
+    station.add(mesh);
     for (const [x, span] of [[-1.05, 0.15], [1.0, 0.13]] as const) {
       for (const angle of [0.78, 2.35, 3.93, 5.5]) {
         const fin = new THREE.BoxGeometry(0.3, 0.008, span);
         fin.translate(0, 0, 0.063 + span / 2);
         fin.rotateX(angle);
         fin.translate(-3.2 + x, side * 4.82, -0.02);
-        root.add(new THREE.Mesh(fin, pale));
+        station.add(new THREE.Mesh(fin, pale));
       }
     }
   }
@@ -695,5 +701,5 @@ export function buildFighter(): FighterParts {
   }, 10, 12));
 
   root.add(gear.group);
-  return { root, stabilators, flapLeft, flapRight, rudder, burnerGlow, flame, flameTime, flamePower, gear };
+  return { root, stabilators, flapLeft, flapRight, rudder, burnerGlow, flame, flameTime, flamePower, gear, stations };
 }

@@ -33,15 +33,17 @@ and the loop margins (below).
    |   +-- Gps (GpsSensor, 50 Hz): p, v, heading                                              | tau
    +------ Imu (ImuSensor, 500 Hz): gyro, accel + low-pass                    Mix (QuadMixer, 500 Hz) <-- F
                                                                                               | w_cmd[4]
- Esc1..4 (Esc, 500 Hz: speed PI + motor-model feed-forward, voltage and current limits) <-----+
+ Rotor1..4 (library subsystem Rotor)                                                          |
+   Esc (Esc, 500 Hz: speed PI + motor-model feed-forward, voltage and current limits) <-------+
    | u                                                                      Bat (Battery) --V--> Esc
    v
- Drv1..4 (stdlib ElectricDrive: R, L, k_t, rotor + propeller inertia) --shaft--> Prop1..4 (Propeller: T = kT w|w|, Q = kQ w|w|)
+   Drive (stdlib ElectricDrive: R, L, k_t, rotor + propeller inertia) --shaft--> Prop (Propeller: T = kT w|w|, Q = kQ w|w|)
    | i, w, P_el                                              | T
    +------------> RW (RotorWrench) <-- body twist, pose, wind, leg forces
                     | tx ty tz fx fy fz
  World (GroundSpatial) -- Free (Free3D) -- Body (RigidBody3D, m, J) -- Wrench (ExternalWrenchSpatial)
-                                              |-- Mount_k -- Leg_k (stdlib ContactPoint) ... Ground (ContactSurface)
+                                              |-- Leg1..4 (library subsystem ContactFoot:
+                                                     Mount -- Contact (stdlib ContactPoint)) ... Ground (ContactSurface)
 ```
 
 * **Airframe.** `GroundSpatial -> Free3D -> RigidBody3D` (13 states: quaternion + position + the 6
@@ -50,7 +52,12 @@ and the loop margins (below).
 * **Landing gear.** Four `ContactPoint` legs (Hertz contact against one `ContactSurface` plane,
   k = 2e4 N/m, mu = 0.6) at (+-0.11, +-0.11, -0.085) m; they carry m g = 13.24 N on the ground and let
   the take-off and the landing happen in the same model. The accelerometer feels their normal force.
-* **Rotors** (x4). Each is `Esc -> ElectricDrive -> Propeller`. `ElectricDrive` is the stdlib bond-graph
+  The legs `Leg1..4` are instances of the library subsystem `ContactFoot` (`library/ContactFoot.bgsub.json`:
+  foot pose `Local` + `Compose`, the body-to-foot `Mount` and the `ContactPoint` named `Contact`; each
+  instance pins its foot position), so the normal forces are `Leg<k>/Contact/f_n`.
+* **Rotors** (x4). Each is `Esc -> ElectricDrive -> Propeller`; `Rotor1..4` are instances of the library
+  subsystem `Rotor` (`library/Rotor.bgsub.json`, inner blocks `Esc`, `Drive` and `Prop`, the same values in
+  all four), so a rotor speed is `Rotor<k>/Drive/rotor/w`. `ElectricDrive` is the stdlib bond-graph
   motor (voltage source, R = 0.11 Ohm, L = 40 uH, EM gyrator k_t = 0.01038 N m/A for a 920 kV motor, rotor +
   propeller inertia J_m = 5e-5 kg m^2). `Propeller` is a rotation one-port load, drag torque
   Q = kQ w|w| (kQ = 2.03e-7), and outputs the thrust T = kT w|w| (kT = 1.42e-5: 3.19 N at the hover
@@ -161,10 +168,10 @@ which only exchange `qd`/`F`, `w_sp` and `tau`. A manipulator reaction wrench ca
 * `models/quadcopter.bgmodel.json`, `models/quadcopter-repeat.bgmodel.json`, `models/quadcopter-wind-hover.bgmodel.json` (generated), `bgsim.project.json`
 * `library/` `RotorWrench`, `Propeller`, `Battery`, `Esc`, `QuadMixer`, `RateCtrl`, `AttitudeCtrl`,
   `PositionCtrl`, `NavFilter`, `ImuSensor`, `GpsSensor`, `Waypoints`, `Wind`, `Gust`, `GustPulse`, `Truth`, `EstError`,
-  `Pack3`, `Pack4`, `Unpack4`
-* `design/design.py` (gain derivation), `design/build_model.py` (model and scene generator)
+  `Pack3`, `Pack4`, `Unpack4`, and the library subsystems `Rotor.bgsub.json` and `ContactFoot.bgsub.json` (generated)
+* `design/design.py` (gain derivation), `design/build_model.py` (model, library subsystem and scene generator)
 * `scenes/quadcopter.sdf`: link `body` (pose binding `Truth/q[1..4]`, `Truth/x`, `y`, `z`), joints `rotor_1..4`
-  (position bindings `Drv<k>/rotor/phi`, gain -1 for the clockwise rotors 3 and 4), ground link with the pads
+  (position bindings `Rotor<k>/Drive/rotor/phi`, gain -1 for the clockwise rotors 3 and 4), ground link with the pads
 * `expected.json`: 38 checks on the mission, the actuators, the estimator, the scene bindings and the
   diagnostics, plus 2 on the twin and eight `compare` entries (bit-identical discrete parts against the twin)
 * `web/tests/e2e/quadcopter.spec.ts` (port 8782)

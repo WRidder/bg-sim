@@ -90,6 +90,10 @@ export interface CatalogBlock {
    */
   path: string;
   dimension?: ModelDimension;
+  /**
+   * True for a drawn subsystem definition of the project library (library/<Name>.bgsub.json). The entry lists the definition's ports as its interface; source is empty, and its pinned parameters are read from the definition itself. Omitted for a block written as code.
+   */
+  subsystem?: boolean;
 }
 export interface ConstantDecl {
   name: string;

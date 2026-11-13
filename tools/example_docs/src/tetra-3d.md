@@ -9,7 +9,7 @@
     "rows": [
       {"ylabel": "angle to balance dir. [deg]", "series": [{"signal": "Sense/ang_edge", "label": "to edge balance", "scale": 57.29577951308232}, {"signal": "Sense/ang_vert", "label": "to vertex balance", "scale": 57.29577951308232, "style": "--"}], "ylim": [0, 90], "legend": true},
       {"ylabel": "phase Seq/ph [-]", "series": [{"signal": "Seq/ph", "label": "Seq/ph", "color": "#444444"}]},
-      {"ylabel": "vertex normal force [N]", "series": [{"signal": "C1/f_n", "label": "C1"}, {"signal": "C2/f_n", "label": "C2"}, {"signal": "C3/f_n", "label": "C3"}, {"signal": "C4/f_n", "label": "C4 (apex)"}], "legend": true},
+      {"ylabel": "vertex normal force [N]", "series": [{"signal": "C1/Contact/f_n", "label": "C1"}, {"signal": "C2/Contact/f_n", "label": "C2"}, {"signal": "C3/Contact/f_n", "label": "C3"}, {"signal": "C4/Contact/f_n", "label": "C4 (apex)"}], "legend": true},
       {"ylabel": "wheel speed [rad/s]", "series": [{"signal": "WJoint1/qdout", "label": "wheel 1"}, {"signal": "WJoint2/qdout", "label": "wheel 2"}, {"signal": "WJoint3/qdout", "label": "wheel 3"}, {"signal": "WJoint4/qdout", "label": "wheel 4"}], "legend": true, "legend_loc": "upper left"}
     ]
   },
@@ -43,7 +43,7 @@ The blocks: [Tetra](block:Tetra), [Pose](block:Pose), [Ground](block:Ground), th
 
 ## Run it
 
-Press **Run**: 3.8 s with 761 output points and the contact system; about 40 s of solving on a warm worker. Plot [Sense/ang_vert](signal:Sense/ang_vert) (the angle between the world vertical and the vertex balance direction: it ends below 0.02 deg), [Seq/ph](signal:Seq/ph), the vertex loads [C3/f_n](signal:C3/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
+Press **Run**: 3.8 s with 761 output points and the contact system; about 40 s of solving on a warm worker. Plot [Sense/ang_vert](signal:Sense/ang_vert) (the angle between the world vertical and the vertex balance direction: it ends below 0.02 deg), [Seq/ph](signal:Seq/ph), the vertex loads [C3/Contact/f_n](signal:C3/Contact/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
 
 ## 3D view
 
@@ -68,7 +68,7 @@ Body frame: origin = centre of mass = centre of the circumscribed sphere, $z$ up
 | $v_3$ | $(+L/2,\ -\rho/2,\ -r)$ |
 | $v_4$ (apex) | $(0,\ 0,\ R)$ |
 
-Vertices 1 to 3 form the base face; the `ContactPoint` `C_k` sits on vertex $k$ ([Mount1](block:Mount1), [Local1](block:Local1) hold the vertex position).
+Vertices 1 to 3 form the base face; the contact `C_k` ([C1](block:C1) to `C4`) sits on vertex $k$. Each is an instance of the library subsystem `ContactFoot` (mount, vertex pose and `ContactPoint`, copied from the cube example), and its pins `Local/x..z` and `Mount/x..z` (on [C1/Local](block:C1/Local) and [C1/Mount](block:C1/Mount)) hold the vertex position.
 
 ## Wheels
 

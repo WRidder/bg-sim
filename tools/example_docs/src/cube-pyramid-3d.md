@@ -9,7 +9,7 @@
     "rows": [
       {"ylabel": "cube tilt [deg]", "series": [{"signal": "Sense/tilt", "label": "Sense/tilt", "scale": 57.29577951308232}], "hlines": [{"y": 45, "label": "edge 45 deg"}, {"y": 54.7356, "label": "corner 54.74 deg"}], "legend": true, "legend_loc": "upper left"},
       {"ylabel": "phase Seq/ph [-]", "series": [{"signal": "Seq/ph", "label": "Seq/ph", "color": "#444444"}]},
-      {"ylabel": "vertex normal force [N]", "series": [{"signal": "C1/f_n", "label": "C1"}, {"signal": "C2/f_n", "label": "C2"}, {"signal": "C3/f_n", "label": "C3"}, {"signal": "C4/f_n", "label": "C4"}], "legend": true},
+      {"ylabel": "vertex normal force [N]", "series": [{"signal": "C1/Contact/f_n", "label": "C1"}, {"signal": "C2/Contact/f_n", "label": "C2"}, {"signal": "C3/Contact/f_n", "label": "C3"}, {"signal": "C4/Contact/f_n", "label": "C4"}], "legend": true},
       {"ylabel": "wheel speed [rad/s]", "series": [{"signal": "WJoint1/qdout", "label": "wheel 1"}, {"signal": "WJoint2/qdout", "label": "wheel 2"}, {"signal": "WJoint3/qdout", "label": "wheel 3"}, {"signal": "WJoint4/qdout", "label": "wheel 4"}], "legend": true, "legend_loc": "upper left"}
     ]
   }
@@ -34,7 +34,7 @@ Cube (RigidBody3D) <-- Pose (PoseIntegrator3D, floating base)
 
 ## Run it
 
-Press **Run**. The model compiles to a 25-state system with 2512 recorded signals; the README measured roughly 8 minutes of wall time on a loaded machine (the MTK build of the contacts plus four driven wheels dominates). Plot [Sense/tilt](signal:Sense/tilt) and [Seq/ph](signal:Seq/ph), the vertex loads [C1/f_n](signal:C1/f_n) to [C4/f_n](signal:C4/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
+Press **Run**. The model compiles to a 25-state system with 2512 recorded signals; the README measured roughly 8 minutes of wall time on a loaded machine (the MTK build of the contacts plus four driven wheels dominates). Plot [Sense/tilt](signal:Sense/tilt) and [Seq/ph](signal:Seq/ph), the vertex loads [C1/Contact/f_n](signal:C1/Contact/f_n) to [C4/Contact/f_n](signal:C4/Contact/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
 
 ## 3D view
 
@@ -51,7 +51,7 @@ Continue with [the construction](page:construction), [the firmware](page:firmwar
 # Construction
 
 - **Body.** [Cube](block:Cube) (`RigidBody3D`, $m = 0.4$ kg, $J = m a^2/6 = 2.667\cdot10^{-3}$ kg·m² on all three axes) on a [Pose](block:Pose) (`PoseIntegrator3D`, D-MB6 floating base). The total mass with the wheels is $m_{total} = 0.4 + 4\cdot0.25 = 1.4$ kg (weight 13.734 N).
-- **Contacts.** Vertex $k$ ($k - 1 = b_x + 2 b_y + 4 b_z$, coordinates $\pm a/2$) has a `FixedTransform3DNeutral` mount ([Mount1](block:Mount1)), a `LocalPose3D`, composed with the body pose by `ComposePose3D`, and a `ContactPoint` ([C1](block:C1)): $k = 2\cdot10^4$ N/m at $x_{ref} = 1$ mm (Hertz exponent 3/2), $c = 5$ s/m, $\mu = 0.8$, $v_s = 1$ mm/s. Vertex 1 $= (-,-,-)$ is the corner, vertices 1 and 2 are the edge $y = z = -a/2$, vertices 1 to 4 are the bottom face. [Ground](block:Ground) is the `ContactSurface`.
+- **Contacts.** Vertex $k$ ($k - 1 = b_x + 2 b_y + 4 b_z$, coordinates $\pm a/2$) is an instance ([C1](block:C1)) of the library subsystem `ContactFoot` (`library/ContactFoot.bgsub.json`, pinned to the vertex offset): a `FixedTransform3DNeutral` mount ([C1/Mount](block:C1/Mount)), a `LocalPose3D` (`C1/Local`), composed with the body pose by `ComposePose3D`, and a `ContactPoint` ([C1/Contact](block:C1/Contact)): $k = 2\cdot10^4$ N/m at $x_{ref} = 1$ mm (Hertz exponent 3/2), $c = 5$ s/m, $\mu = 0.8$, $v_s = 1$ mm/s. Vertex 1 $= (-,-,-)$ is the corner, vertices 1 and 2 are the edge $y = z = -a/2$, vertices 1 to 4 are the bottom face. [Ground](block:Ground) is the `ContactSurface`.
 - **Wheels** exactly as in `reaction-wheel-3d` (X-MB4): axis $a_k = (\sin\beta\cos\varphi_k,\ \sin\beta\sin\varphi_k,\ \cos\beta)$, $\beta = \arctan\sqrt2$, $\varphi_k = 0, 90, 180, 270$ deg, so that $A A^T = \mathrm{diag}(2\sin^2\beta,\ 2\sin^2\beta,\ 4\cos^2\beta) = \tfrac43 I$. Each wheel is a `RigidBody3D` ($0.25$ kg, $J = (10^{-3}, 10^{-3}, 2\cdot10^{-3})$ kg·m²) at 0.06 m from the cube centre on a `Revolute3D` ($k_r = 2\cdot10^4$, $k_t = 10^6$), driven by a `CurrentControlledDrive` ($k_t = 0.1$ N·m/A, rotor $J_m = 10^{-8}$) through an `ElasticShaft` ($k = 100$, $d = 2\cdot10^{-3}$). Each transformer's `a` side faces the joint and its `b` side the body, and every body mount has an identity `WLink` for the frame check (E007).
 - **Sensors.** [Sense](block:Sense) (`CubeSense`: tilt, the loaded-vertex count, the sum of the normal forces), [Tap](block:Tap) (`WheelTap`), `BodyEnergy` ([EnCube](block:EnCube) and each wheel) and [Ledger](block:Ledger) (dissipated contact energy, motor input work, shaft and rotor energy).
 
@@ -119,7 +119,7 @@ Initial attitude; rest on the face (the sum of the normal forces equals the weig
     "kind": "plot", "model": "edge-contact", "xlim": [0, 1.2],
     "rows": [
       {"ylabel": "cube tilt [deg]", "series": [{"signal": "Sense/tilt", "label": "Sense/tilt", "scale": 57.29577951308232}], "hlines": [{"y": 45, "label": "edge balance 45 deg"}], "legend": true},
-      {"ylabel": "vertex normal force [N]", "series": [{"signal": "C1/f_n", "label": "C1"}, {"signal": "C2/f_n", "label": "C2"}, {"signal": "C3/f_n", "label": "C3"}, {"signal": "C4/f_n", "label": "C4"}], "legend": true}
+      {"ylabel": "vertex normal force [N]", "series": [{"signal": "C1/Contact/f_n", "label": "C1"}, {"signal": "C2/Contact/f_n", "label": "C2"}, {"signal": "C3/Contact/f_n", "label": "C3"}, {"signal": "C4/Contact/f_n", "label": "C4"}], "legend": true}
     ]
   }
 }

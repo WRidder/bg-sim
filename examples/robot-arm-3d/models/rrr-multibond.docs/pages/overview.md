@@ -2,19 +2,20 @@
 
 The same three-joint arm as `rrr-torque`, built from the M3 spatial stdlib following the patterns of the six-axis `arm`, driven by the same torque sources, controller and references (DEC-M5-2). The two are compared joint by joint.
 
-![The model canvas|900](assets/b8d9ced11b51.png)
+![The model canvas|900](assets/0eaa784f438d.png)
 
 ## Construction
 
-- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; [B1](block:B1)) on a compliant `Revolute3D` about world $z$ ([J1](block:J1));
-- joints 2 and 3 about world $-y$: the joint frame is $R_x(90^\circ)$ (local $z = -y$), so a positive $q$ raises the arm; `LN2` places joint 2 at the shoulder, `LN3` places joint 3 $l_2$ along the upper arm, `T2` and `T3` are $LN^{-1}\circ LC$;
+- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; [L1/B](block:L1/B)) on a compliant `Revolute3D` about world $z$ ([L1/J](block:L1/J));
+- joints 2 and 3 about world $-y$: the joint frame is $R_x(90^\circ)$ (local $z = -y$), so a positive $q$ raises the arm; `L2/LN` places joint 2 at the shoulder, `L3/LN` places joint 3 $l_2$ along the upper arm, `L2/T` and `L3/T` are $LN^{-1}\circ LC$;
 - point masses as `RigidBody3D` bodies ($m_2$ at the elbow, $m_3$ at the tip, $10^{-8}$ kg·m² principal moments because a point has none), links $l_2$ and $l_3$ as `FixedTransform3DNeutral`; the body poses for gravity come from a `ComposePose3D` chain as in the six-axis arm;
 - held directions $k_t = k_r = 10^7$ with 0.7-critical damping, released on their **static deflections** (`dth`, `dl` from the weight of everything distal; `design/build_models.py`);
+- each link is an instance of the library subsystem `RevoluteLink3D` ([L1](block:L1), [L2](block:L2), [L3](block:L3)), the same definition as the six-axis arm's links;
 - the settings: 5 s with `Rodas5P`, `reltol` 1e-8, `abstol` 1e-10, 2001 points.
 
-The joint angles are [J1/qout](signal:J1/qout), [J2/qout](signal:J2/qout), [J3/qout](signal:J3/qout); the controller [Ctrl](block:Ctrl) is the `ArmCtrl3R` of `rrr` (gains 354/334/46 and 35.4/33.4/4.6).
+The joint angles are [L1/J/qout](signal:L1/J/qout), [L2/J/qout](signal:L2/J/qout), [L3/J/qout](signal:L3/J/qout); the controller [Ctrl](block:Ctrl) is the `ArmCtrl3R` of `rrr` (gains 354/334/46 and 35.4/33.4/4.6).
 
-![Joint angles and tracking errors of the multibond arm|900](assets/5cbecd985b16.png)
+![Joint angles and tracking errors of the multibond arm|900](assets/61fcd7f04609.png)
 
 ## Tolerance of the comparison
 

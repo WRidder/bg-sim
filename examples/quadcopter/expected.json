@@ -53,7 +53,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Drv1/rotor/w",
+          "signal": "Rotor1/Drive/rotor/w",
           "t": 4.8,
           "value": 482.4,
           "abs": 8.0,
@@ -173,41 +173,41 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "Drv1/rotor/w",
+          "signal": "Rotor1/Drive/rotor/w",
           "value": 774.6,
           "note": "rotor speed below the 774.6 rad/s of the 8.5 N thrust limit of the mixer (measured peak 557.6 rad/s = 5325 rpm)"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Drv2/rotor/w",
+          "signal": "Rotor2/Drive/rotor/w",
           "value": 774.6
         },
         {
           "kind": "max_abs_le",
-          "signal": "Drv3/rotor/w",
+          "signal": "Rotor3/Drive/rotor/w",
           "value": 774.6
         },
         {
           "kind": "max_abs_le",
-          "signal": "Drv4/rotor/w",
+          "signal": "Rotor4/Drive/rotor/w",
           "value": 774.6
         },
         {
           "kind": "max_abs",
-          "signal": "Drv1/rotor/w",
+          "signal": "Rotor1/Drive/rotor/w",
           "value": 557.6,
           "abs": 25.0,
           "note": "peak rotor speed of the mission (the rotors never get near the thrust limit)"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Esc1/u",
+          "signal": "Rotor1/Esc/u",
           "value": 12.6,
           "note": "the ESC command never exceeds the open-circuit voltage of the 3S pack (measured peak 8.4 V)"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Drv1/isense/y",
+          "signal": "Rotor1/Drive/isense/y",
           "value": 50.0,
           "note": "motor current peak at the spin-up from standstill (measured 44 A; the ESC current limit is 25 A of voltage headroom)"
         },

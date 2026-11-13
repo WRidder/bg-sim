@@ -791,6 +791,113 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
         @test all(ct[id] == cj[id] for id in keys(ct))
     end
 
+    @testset "bond(a, b): a directed bond between two concrete power ports" begin
+        # A diagram may draw a bond between two concrete-domain ports (a joint on a body).
+        # `connect` makes such a pair a wire, so the text form states the bond with `bond`.
+        composite(entry) = _comp_inline("""
+        @block GearPair begin
+            @ports begin
+                a::Power{Rotation}
+                b::Power{Rotation}
+            end
+            @components begin
+                gear = LossyGear(n = 10.0, eta = 0.9)
+                play = GearBacklash(k = 1e4, d = 5.0, gap = 0.01)
+            end
+            @connections begin
+                connect(a, gear.a)
+                $entry
+                connect(play.b, b)
+            end
+        end
+        """)
+        function subsystem(kind)
+            block = _comp_json_subsystem_g1()
+            block["subsystem"]["diagram"]["connections"] =
+                Any[_comp_conn("ic1", kind, "g1", "b", "p1", "a")]
+            return block
+        end
+        key(block) = compile_key(_comp_flat(_comp_drive(block)))
+        messages(block) = sort([(d.code, d.message) for d in _comp_flat(_comp_drive(block)).diagnostics])
+
+        pb = _comp_block(composite("bond(gear.b, play.a)")["inline"]["source"])
+        @test [connect_kind(c) for c in connections(pb)] == [:auto, :bond, :auto]
+
+        # The text bond is the model-JSON bond, and `connect` is still the wire.
+        @test key(composite("bond(gear.b, play.a)")) == key(subsystem("bond"))
+        @test key(composite("connect(gear.b, play.a)")) == key(subsystem("wire"))
+        @test key(subsystem("bond")) != key(subsystem("wire"))
+        @test messages(composite("bond(gear.b, play.a)")) == messages(subsystem("bond"))
+        @test isempty(_comp_errors(_comp_flat(_comp_drive(composite("connect(gear.b, play.a)")))))
+
+        # An interface port is exposed with `connect`; `bond` is internal wiring.
+        d = check_block(_comp_block("""
+        @block A begin
+            @ports a::Power{Rotation}
+            @components g = LossyGear()
+            @connections bond(a, g.a)
+        end
+        """))
+        @test _comp_has(d, "E001", "`bond` joins two component ports")
+
+        # A junction end is fine, written bare as in `connect`.
+        d = check_block(_comp_block("""
+        @block A begin
+            @ports a::Power{Rotation}
+            @components begin
+                node = Junction(1)
+                g = LossyGear()
+            end
+            @connections begin
+                connect(a, g.a)
+                bond(g.b, node)
+            end
+        end
+        """))
+        @test !any(x -> x.severity == "error", d)
+
+        # A signal port cannot carry a bond.
+        fm = _comp_flat(_comp_model("M", Any[_comp_node("n1", "S1", _comp_inline("""
+        @block S begin
+            @components begin
+                c = Constant()
+                g = LossyGear()
+            end
+            @connections bond(c.y, g.a)
+        end
+        """))], Any[]))
+        @test _comp_has(fm.diagnostics, "E003", "names the signal port `y` of `Constant`")
+    end
+
+    @testset "a composite passes a matrix parameter to a component" begin
+        table(block) = _comp_flat(_comp_model("M", Any[
+            _comp_node("n1", "C1", _comp_ref("stdlib:sources/Constant")),
+            _comp_node("n2", "L1", block),
+        ], Any[
+            _comp_conn("c1", "signal", "n1", "y", "n2", "u"),
+            _comp_conn("c2", "signal", "n1", "y", "n2", "v"),
+        ]))
+        text = table(_comp_inline("""
+        @block Map begin
+            @inputs begin
+                u::Real
+                v::Real
+            end
+            @outputs y::Real
+            @components lut = Lookup2D(N = 2, breaks = [0.0 1.0; -1.0 1.0], table = [1.0 2.0; 3.0 4.0])
+            @connections begin
+                connect(u, lut.u)
+                connect(v, lut.v)
+                connect(y, lut.y)
+            end
+        end
+        """))
+        @test isempty(_comp_errors(text))
+        values = Dict(p.id => p.value for p in text.parameters)
+        @test [values["L1/lut/breaks[$i,$j]"] for i in 1:2, j in 1:2] == [0.0 1.0; -1.0 1.0]
+        @test [values["L1/lut/table[$i,$j]"] for i in 1:2, j in 1:2] == [1.0 2.0; 3.0 4.0]
+    end
+
     @testset "GearWithBacklash: the composite simulates through the gap and into contact" begin
         fm = _comp_flat(_comp_drive(_comp_ref("project:GearWithBacklash")))
         result, dir = _comp_run(fm; t_end = 0.5)

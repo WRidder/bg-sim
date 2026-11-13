@@ -2,7 +2,7 @@
 
 A free **regular tetrahedron** (edge $L = 0.25$ m) lies on its base face on a ground plane. A **reaction wheel is tied to each of its four faces**: the spin axis is the outward normal of the face and the wheel sits inside the body 35 mm from the centre of mass towards the face centroid. A scripted torque profile spins the wheels so that the body leaves its **face**, balances on an **edge** (two contacts) and then on a single **vertex** (one contact). The ground is a compliant `ContactSurface` and every vertex is a `ContactPoint` (Hunt-Crossley normal force, regularised Coulomb friction), so the phases are *emergent*: which vertices carry load follows from the contact forces; nothing is switched by hand. It is work package X5.6 of the M5 plan; the cube version of the same idea is `cube-pyramid-3d` (X-MB5).
 
-![The model canvas|900](assets/c0422e97f8f2.png)
+![The model canvas|900](assets/b4acadd4eaec.png)
 
 ```
 Tetra (RigidBody3D) <-- Pose (PoseIntegrator3D, floating base)
@@ -19,7 +19,7 @@ The blocks: [Tetra](block:Tetra), [Pose](block:Pose), [Ground](block:Ground), th
 
 ## Run it
 
-Press **Run**: 3.8 s with 761 output points and the contact system; about 40 s of solving on a warm worker. Plot [Sense/ang_vert](signal:Sense/ang_vert) (the angle between the world vertical and the vertex balance direction: it ends below 0.02 deg), [Seq/ph](signal:Seq/ph), the vertex loads [C3/f_n](signal:C3/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
+Press **Run**: 3.8 s with 761 output points and the contact system; about 40 s of solving on a warm worker. Plot [Sense/ang_vert](signal:Sense/ang_vert) (the angle between the world vertical and the vertex balance direction: it ends below 0.02 deg), [Seq/ph](signal:Seq/ph), the vertex loads [C3/Contact/f_n](signal:C3/Contact/f_n) and the wheel speeds [WJoint1/qdout](signal:WJoint1/qdout).
 
 ## 3D view
 
@@ -29,6 +29,6 @@ Press **Run**: 3.8 s with 761 output points and the contact system; about 40 s o
 
 ![Edge balance: t = 1.6 s|420](assets/fbebb1fe5f13.png)
 
-![Vertex balance: t = 3.4 s|420](assets/61eb8d22eecd.png)
+![Vertex balance: t = 3.4 s|420](assets/0b0b0608ae97.png)
 
 Continue with [the geometry](page:geometry), [the firmware](page:firmware) and [the results](page:results).

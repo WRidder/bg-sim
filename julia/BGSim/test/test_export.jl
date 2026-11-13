@@ -575,6 +575,33 @@ end
         @test _EX.pencil_eigvals([-2.0 1.0; 1.0 -4.0], [1.0, 0.0]) ≈ [-1.75]
         @test_throws LinearAlgebra.SingularException _EX.pencil_eigvals(
             [-2.0 1.0; 1.0 0.0], [1.0, 0.0])
+        # A well-posed algebraic block over 16 decades (cond 1e16 as it stands) is index 1:
+        # x' = -x + z1 + z2, 0 = x - 1e-8 z1, 0 = x - 1e8 z2  ->  λ = -1 + 1e8 + 1e-8.
+        Jw = [-1.0 1.0 1.0; 1.0 -1e-8 0.0; 1.0 0.0 -1e8]
+        @test LinearAlgebra.cond(Jw[2:3, 2:3], 1) > 1e14
+        @test real(only(_EX.pencil_eigvals(Jw, [1.0, 0.0, 0.0]))) ≈ -1 + 1e8 + 1e-8
+        @test _EX.equilibrated_cond([1.0 0.0; 0.0 0.0]) == Inf
+        # E111 guard: a row (or column) that is zero up to finite-difference noise is zero. The
+        # scaling alone would blow the 1e-13 noise up to a regular row (cond about 1e2).
+        A6 = [4.0 1 0 0 0 1; 1 5 1 0 0 0; 0 1 6 1 0 0; 0 0 1 7 1 0; 1 0 0 1 8 1; 0 0 0 0 0 0]
+        noisy = copy(A6)
+        noisy[6, :] = 1e-13 .* [0.3, -0.7, 0.5, 0.9, -0.2, 0.6]
+        @test _EX.equilibrated_cond(noisy; floor = 0.0) < 1e4   # what the guard prevents
+        @test _EX.equilibrated_cond(noisy) == Inf
+        @test _EX.equilibrated_cond(collect(noisy')) == Inf      # the same as a column
+        # the floor of a row scales with its terms: 1e-10 noise in a 1e3 block, per-row floor
+        big = 1e3 .* A6
+        big[6, :] = 1e-10 .* [0.3, -0.7, 0.5, 0.9, -0.2, 0.6]
+        @test _EX.equilibrated_cond(big; floor = _EX.FD_NOISE_FLOOR .* 1e3) == Inf
+        # well posed, rows over 16 decades: every row has an entry above the floor
+        @test isfinite(_EX.equilibrated_cond([1.0 0.5 0; 0 1e-8 2e-8; 3e8 0 1e8]))
+        # the pencil: the noisy algebraic row of x' = -x + z1, 0 = x - z1 + noise*z2,
+        # 0 = 1e-13 (x + z1 + z2) is singular, not index 1
+        Jn = [-1.0 1.0 0.0; 1.0 -1.0 1e-13; 1e-13 1e-13 1e-13]
+        @test LinearAlgebra.issuccess(LinearAlgebra.lu(Jn[2:3, 2:3]; check = false))
+        @test_throws LinearAlgebra.SingularException _EX.pencil_eigvals(Jn, [1.0, 0.0, 0.0])
+        # ... and the 16-decade block of `Jw` above stays index 1
+        @test length(_EX.pencil_eigvals(Jw, [1.0, 0.0, 0.0])) == 1
     end
 
     @testset "stiff undamped modes are damped numerically (D-EX7, W213)" begin

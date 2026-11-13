@@ -114,10 +114,10 @@ The start pose of the scenario, (0, −0.20, 0.35) m, was chosen so that the 6-D
   "run": {
     "kind": "plot", "model": "humanoid-hold", "xlim": [0, 6.5],
     "rows": [
-      {"ylabel": "left joint [rad]", "series": [{"signal": "LJ1/qout", "label": "q1"}, {"signal": "LJ2/qout", "label": "q2"}, {"signal": "LJ3/qout", "label": "q3"}, {"signal": "LJ4/qout", "label": "q4"}, {"signal": "LJ5/qout", "label": "q5"}, {"signal": "LJ6/qout", "label": "q6"}, {"signal": "LJ7/qout", "label": "q7"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "left joint [rad]", "series": [{"signal": "LArm1/J/qout", "label": "q1"}, {"signal": "LArm2/J/qout", "label": "q2"}, {"signal": "LArm3/J/qout", "label": "q3"}, {"signal": "LArm4/J/qout", "label": "q4"}, {"signal": "LArm5/J/qout", "label": "q5"}, {"signal": "LArm6/J/qout", "label": "q6"}, {"signal": "LArm7/J/qout", "label": "q7"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "box error [mm, deg]", "series": [{"signal": "BoxError/e_mm", "label": "box [mm]"}, {"signal": "BoxError/e_deg", "label": "box [deg]"}, {"signal": "LHandError/e_mm", "label": "left hand [mm]", "style": "--"}], "legend": true, "legend_loc": "right",
        "hlines": [{"y": 2, "label": "2 mm / 2 deg"}]},
-      {"ylabel": "left elbow (world) [m]", "series": [{"signal": "LW4/g[5]", "label": "x"}, {"signal": "LW4/g[6]", "label": "y"}, {"signal": "LW4/g[7]", "label": "z"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "left elbow (world) [m]", "series": [{"signal": "LArm4/W/g[5]", "label": "x"}, {"signal": "LArm4/W/g[6]", "label": "y"}, {"signal": "LArm4/W/g[7]", "label": "z"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "grasp load [N, N m]", "series": [{"signal": "LGraspLoad/F", "label": "left F"}, {"signal": "RGraspLoad/F", "label": "right F"}, {"signal": "LGraspLoad/M", "label": "left M"}], "legend": true, "legend_loc": "right"}
     ]
   },
@@ -137,7 +137,7 @@ The start pose of the scenario, (0, −0.20, 0.35) m, was chosen so that the 6-D
 
 The firmware of `humanoid-ik` on the **dynamic** robot. Two multibody arms carry a 1.5 kg box on stiff grasp springs:
 
-- **Arms** ([LJ1](block:LJ1) to `LJ7`, `RJ1` to `RJ7`): `Revolute3D` joints with the page's axes and offsets, and the five other directions compliant ($10^6$, damped at 0.7 of critical). The links ([LB1](block:LB1) to `LB7`) are `RigidBody3D` solid cylinders with **illustrative** masses: 1.0, 1.0, 2.0, 0.8, 1.2, 0.4 and 0.6 kg.
+- **Arms** ([LArm1](block:LArm1) to `LArm7`, `RArm1` to `RArm7`): every link is an instance of the library subsystem `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`: the offset from the body below, the joint `J`, the offset to the centre of mass, the body `B` on its junction and the pose band). The joints ([LArm1/J](block:LArm1/J) ...) are `Revolute3D` with the page's axes and offsets, and the five other directions compliant ($10^6$, damped at 0.7 of critical). The link bodies ([LArm1/B](block:LArm1/B) ...) are `RigidBody3D` solid cylinders with **illustrative** masses: 1.0, 1.0, 2.0, 0.8, 1.2, 0.4 and 0.6 kg.
 - **Drives**, one per joint: the motor torque `MSe` ([LMotor1](block:LMotor1)) on the reflected rotor inertia ([LRotor1](block:LRotor1)), then a torque sensor ([LTauSense1](block:LTauSense1)) and an elastic gear ([LSpring1](block:LSpring1), [LDamper1](block:LDamper1)) on the relative rate, then joint friction ([LFriction1](block:LFriction1)) into the joint's drive port. The springs start preloaded with the holding torque.
 - **Grasp**: per hand, a `Revolute3D` weld ([LWeld](block:LWeld)) with all six directions sprung at $10^5$ N/m and $10^3$ N·m/rad, between the hand and the box ([Box](block:Box)).
 - **Firmware** at 1 kHz: [Traj](block:Traj) → [IKL](block:IKL)/[IKR](block:IKR) → [ServoL](block:ServoL)/[ServoR](block:ServoR) (PID with integral and the holding-torque feedforward, torque limits 80 / 20 N·m).

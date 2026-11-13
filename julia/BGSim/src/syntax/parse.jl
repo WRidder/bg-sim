@@ -1570,7 +1570,9 @@ end
 Parse one `@connections begin connect(a, b) ... end` scope. Each side of a `connect` is a
 port of this block (`a`) or a port of one of its components (`gear.a`). Both power and
 signal ports are written the same way: the port declarations decide what the connection
-means (J2.6, plan D7).
+means (J2.6, plan D7). `bond(a, b)` states a bond from `a` to `b` between two component power
+ports (or junctions) whatever their domain, where `connect` would make two concrete-domain
+ports a wire.
 """
 function _parse_connections_scope!(b::BlockBuilder, args, stmt)
     if length(args) != 1
@@ -1605,12 +1607,12 @@ end
 function _parse_connect!(b::BlockBuilder, node)
     rng = _range(node, b.filename)
     ch = _children(node)
-    if !(kind(node) == K"call" && !isempty(ch) && _leaf_symbol(ch[1]) === :connect &&
-         length(ch) == 3)
+    callee = kind(node) == K"call" && !isempty(ch) ? _leaf_symbol(ch[1]) : nothing
+    if !((callee === :connect || callee === :bond) && length(ch) == 3)
         _error!(
             b,
             "E001",
-            "an `@connections` entry is `connect(portA, portB)`",
+            "an `@connections` entry is `connect(portA, portB)` or `bond(portA, portB)`",
             node;
             scope = :connections,
             hint = "write `connect(gear.b, play.a)`, with a port of this block or `instance.port` on each side",
@@ -1620,7 +1622,7 @@ function _parse_connect!(b::BlockBuilder, node)
     from = _parse_portref!(b, ch[2])
     to = _parse_portref!(b, ch[3])
     (from === nothing || to === nothing) && return nothing
-    push!(b.connection_items, ConnectDecl(from, to, rng))
+    push!(b.connection_items, ConnectDecl(from, to, rng, callee === :bond ? :bond : :auto))
     return nothing
 end
 

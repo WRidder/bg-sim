@@ -9,7 +9,7 @@ Body frame: origin = centre of mass = centre of the circumscribed sphere, $z$ up
 | $v_3$ | $(+L/2,\ -\rho/2,\ -r)$ |
 | $v_4$ (apex) | $(0,\ 0,\ R)$ |
 
-Vertices 1 to 3 form the base face; the `ContactPoint` `C_k` sits on vertex $k$ ([Mount1](block:Mount1), [Local1](block:Local1) hold the vertex position).
+Vertices 1 to 3 form the base face; the contact `C_k` ([C1](block:C1) to `C4`) sits on vertex $k$. Each is an instance of the library subsystem `ContactFoot` (mount, vertex pose and `ContactPoint`, copied from the cube example), and its pins `Local/x..z` and `Mount/x..z` (on [C1/Local](block:C1/Local) and [C1/Mount](block:C1/Mount)) hold the vertex position.
 
 ## Wheels
 

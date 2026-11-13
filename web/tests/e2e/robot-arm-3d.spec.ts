@@ -13,12 +13,17 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * 1. import the `robot-arm-3d` sample through the Open dialog (the sample flow
  *    copies `examples/<name>` into the projects root and opens its first model,
  *    `arm`);
- * 2. assert the spatial multibond canvas: every `Power{Spatial}` bond is a
- *    three-stroke bundle (`data-multibond-strokes="3"`, three stroke paths, one
- *    causal bar) while the six `Rotation` drive bonds stay single-stroke;
+ * 2. assert the spatial multibond canvas: the six links are instances `L1..L6`
+ *    of the project's library subsystem `RevoluteLink3D`; every `Power{Spatial}`
+ *    bond of the chain (ground -> L1 -> ... -> L6) is a three-stroke bundle
+ *    (`data-multibond-strokes="3"`, three stroke paths, one causal bar) while
+ *    the six `Rotation` drive bonds `D<k> -> L<k>.drive` stay single-stroke;
+ *    inside an instance (opened by a double-click) the link's own spatial bonds
+ *    (offset -> joint -> offset -> body junction <- body) are bundles too;
  * 3. take the stable `robot-arm-3d.png` canvas screenshot;
  * 4. press Run, wait for `done` (the 72-state arm takes minutes on the first compile);
- * 5. plot `J2/qout` and `J5/qout`, read the settled angles at the end of the run.
+ * 5. plot `L2/J/qout` and `L5/J/qout` (the joints inside the instances), read the
+ *    settled angles at the end of the run.
  *
  * Like the other example specs this one needs Julia (the fake worker answers every
  * run from its `Synthetic/*` fixture). It starts a backend and the real worker on a
@@ -255,55 +260,72 @@ test("imports the 3D robot arm, shows three strokes, runs it and reads the joint
 
   await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("run-button")).toBeEnabled();
-  for (const name of [
-    "World",
-    "Mount",
-    "J1",
-    "Link1",
-    "BJ1",
-    "B1",
-    "T2",
-    "J2",
-    "B6",
-    "D1",
-    "D6",
-    "Ctrl",
-    "Clock",
-    "W6",
-    "TCP",
-  ]) {
+  // The root diagram: ground, mount pose, the six link instances with their drives, the
+  // controller and the tool point.
+  const links = ["L1", "L2", "L3", "L4", "L5", "L6"];
+  const drives = ["D1", "D2", "D3", "D4", "D5", "D6"];
+  for (const name of ["World", "MountPose", ...links, ...drives, "Ctrl", "Clock", "LTool", "TCP"]) {
     await expect(node(page, name)).toBeVisible();
   }
+  await expect(page.getByTestId("diagram-node")).toHaveCount(18);
 
-  // Spatial: three strokes on every power bond, one causal bar per bundle.
-  const spatialBonds = [
-    "c01", "c03", "c04", "c05", "c06",
-    "c18", "c19", "c20", "c21", "c22",
-    "c34", "c35", "c36", "c37", "c38",
-    "c50", "c51", "c52", "c53", "c54",
-    "c66", "c67", "c68", "c69", "c70",
-    "c82", "c83", "c84", "c85", "c86",
-  ];
-  for (const id of spatialBonds) {
+  // Spatial: three strokes on every power bond of the chain, one causal bar per bundle.
+  const expectBundle = async (id: string) => {
     const edge = page.getByTestId(`edge-${id}`);
     await expect(edge).toBeVisible();
     await expect(edge).toHaveAttribute("data-multibond-strokes", "3");
     await expect(edge.locator(".editor-edge__multibond-stroke")).toHaveCount(3);
     await expect(page.getByTestId(`causal-stroke-${id}`)).toHaveCount(1);
+  };
+  // World -> L1.parent, then L<k>.child -> L<k+1>.parent.
+  const chainBonds = ["c01", "c19", "c35", "c51", "c67", "c83"];
+  for (const id of chainBonds) {
+    await expectBundle(id);
   }
   await expect(page.getByTestId("edge-c01")).toHaveAttribute(
     "aria-label",
     "Spatial multibond, 6 components, 3 strokes",
   );
-  // The six Rotation drive bonds are scalar bonds: one stroke, no bundle attributes.
-  for (const id of ["c08", "c24", "c40", "c56", "c72", "c88"]) {
+  // The six Rotation drive bonds D<k> -> L<k>.drive are scalar bonds: one stroke, no bundle
+  // attributes.
+  const driveBonds = ["c08", "c24", "c40", "c56", "c72", "c88"];
+  for (const id of driveBonds) {
     const drive = page.getByTestId(`edge-${id}`);
     await expect(drive).toBeVisible();
     expect(await drive.getAttribute("data-multibond-strokes")).toBeNull();
     await expect(drive.locator(".editor-edge__multibond-stroke")).toHaveCount(0);
+    await expect(page.getByTestId(`causal-stroke-${id}`)).toHaveCount(1);
   }
+  // Every bond of the root diagram is one of the two kinds.
+  await expect(page.locator('[data-testid^="causal-stroke-"]')).toHaveCount(
+    chainBonds.length + driveBonds.length,
+  );
 
-  // Stable screenshot of the flat graph with the three-stroke bundles.
+  // Inside a link: open L2 (a RevoluteLink3D instance). The offset T, the joint J, the
+  // offset Link, the body junction BJ and the body B are joined by spatial bundles; the
+  // joint's Rotation drive port is the instance's `drive` port.
+  await node(page, "L2").dblclick({ position: { x: 8, y: 8 } });
+  await expect(page.getByTestId("subsystem-breadcrumbs")).toBeVisible();
+  await expect(page.getByTestId("breadcrumb-1")).toHaveAttribute("data-breadcrumb-name", "L2");
+  await expect(page.getByTestId("breadcrumb-1")).toContainText("RevoluteLink3D");
+  for (const name of ["T", "J", "Link", "BJ", "B", "CA", "W", "LN", "P", "LC"]) {
+    await expect(node(page, name)).toBeVisible();
+  }
+  await expect(page.getByTestId("diagram-node")).toHaveCount(10);
+  const innerBonds = ["link_b01", "link_b02", "link_b03", "link_b04"];
+  for (const id of innerBonds) {
+    await expectBundle(id);
+  }
+  await expect(page.locator('[data-testid^="causal-stroke-"]')).toHaveCount(innerBonds.length);
+  for (const port of ["parent", "child", "drive"]) {
+    await expect(page.getByTestId(`boundary-wire-${port}`)).toHaveAttribute("data-kind", "power");
+  }
+  // Back to the root diagram through the breadcrumbs.
+  await page.getByTestId("breadcrumb-0").click();
+  await expect(page.getByTestId("diagram-node")).toHaveCount(18);
+  await expect(node(page, "L2")).toBeVisible();
+
+  // Stable screenshot of the root diagram: the link instances joined by three-stroke bundles.
   await fitAndSettle(page);
   const canvas = page.getByTestId("canvas-surface");
   await expect(canvas).toHaveScreenshot("robot-arm-3d.png", {
@@ -321,7 +343,7 @@ test("imports the 3D robot arm, shows three strokes, runs it and reads the joint
 
   await page.getByRole("tab", { name: "Signals" }).click();
   await expect(page.getByTestId("signal-browser")).toBeVisible();
-  for (const signal of ["J2/qout", "J5/qout"]) {
+  for (const signal of ["L2/J/qout", "L5/J/qout"]) {
     const item = page.locator(
       `[data-testid="signal-item"][data-signal-id="${signal}"]`,
     );
@@ -346,6 +368,6 @@ test("imports the 3D robot arm, shows three strokes, runs it and reads the joint
   await expect
     .poll(async () => Math.abs((await legendSeconds(page)) - T_END))
     .toBeLessThan(0.02);
-  expect(Math.abs((await legendNumber(page, "J2/qout")) - Q2)).toBeLessThan(5e-3);
-  expect(Math.abs((await legendNumber(page, "J5/qout")) - Q5)).toBeLessThan(5e-3);
+  expect(Math.abs((await legendNumber(page, "L2/J/qout")) - Q2)).toBeLessThan(5e-3);
+  expect(Math.abs((await legendNumber(page, "L5/J/qout")) - Q5)).toBeLessThan(5e-3);
 });

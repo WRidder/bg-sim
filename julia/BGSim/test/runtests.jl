@@ -337,6 +337,9 @@ include("test_edits.jl")
 # Dashboard inputs (plan/DASHBOARD_PLAN.md): parameter overrides and the parameter schedule.
 include("test_overrides.jl")
 
+# Linked subsystems: drawn definitions of the project library and their instances.
+include("test_linked.jl")
+
 # Work package J4.5: the worker debug methods.
 include("test_worker_debug.jl")
 

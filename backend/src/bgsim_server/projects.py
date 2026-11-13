@@ -26,6 +26,9 @@ Endpoint summary (all under ``/api``)::
     GET    /projects/{p}/library/{block}          the block source (text/plain)
     PUT    /projects/{p}/library/{block}          write the source
     DELETE /projects/{p}/library/{block}          remove it
+    GET    /projects/{p}/subsystems               every drawn subsystem definition, by name
+    PUT    /projects/{p}/subsystems/{name}        validate and write library/<name>.bgsub.json
+    DELETE /projects/{p}/subsystems/{name}        remove it
 
 ``{m}`` is the model name (the file is ``models/<m>.bgmodel.json``); a trailing
 ``.bgmodel.json`` is accepted and stripped. ``{block}`` is the block name (the file
@@ -66,7 +69,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from referencing import Registry, Resource
 
 from .config import BACKEND_VERSION, Settings
-from .contracts import Model, Project
+from .contracts import Model, Project, SubsystemDefinition
 
 # Generated folders that a new project never copies from an example: run data, exports,
 # logs and caches (the repository's .gitignore). A design script's run folder inside an
@@ -121,6 +124,8 @@ router = APIRouter()
 PROJECT_FILE = "bgsim.project.json"
 MODEL_SUFFIX = ".bgmodel.json"
 LIBRARY_SUFFIX = ".jl"
+#: A drawn subsystem definition of the project library: ``library/<Name>.bgsub.json``.
+SUBSYSTEM_SUFFIX = ".bgsub.json"
 #: The docs folder of a model lives next to its file: ``models/<m>.docs/`` (work package W5.6).
 DOCS_SUFFIX = ".docs"
 #: The project docs, shared by every model of the project, live in ``<project>/docs/``.
@@ -732,6 +737,10 @@ class ProjectStore:
         project = self._load_project(project_dir)
         self._check_schema("model", document, "the model document")
         _validate(Model, document, "the model document")
+        # The definitions a document carries are the editor's working copies of the library
+        # subsystems; the library file is the definition, so they are never saved in a model.
+        if "definitions" in document:
+            document = {key: value for key, value in document.items() if key != "definitions"}
         _atomic_write(self._model_path(project_dir, model_name), _json_text(document))
         if model_name not in project.models:
             project.models.append(model_name)
@@ -777,6 +786,12 @@ class ProjectStore:
         project_dir = self._require_project(name)
         project = self._load_project(project_dir)
         block_name = _block_name(block)
+        if self._subsystem_path(project_dir, project, block_name).is_file():
+            raise ProjectError(
+                409,
+                f"the project library already has a subsystem named {block_name!r}; "
+                "a block and a subsystem cannot share a name",
+            )
         _atomic_write(self._library_path(project_dir, project, block_name), source)
         return {
             "project": project_dir.name,
@@ -791,6 +806,87 @@ class ProjectStore:
         path = self._library_path(project_dir, project, block_name)
         if not path.is_file():
             raise ProjectError(404, f"unknown block {block!r} in project {name!r}")
+        try:
+            path.unlink()
+        except OSError as exc:
+            raise ProjectError(500, f"could not delete {path}: {exc}") from exc
+        return project_dir.name
+
+    # ------------------------------------------------------------------ subsystems
+
+    def _subsystem_path(self, project_dir: Path, project: Project, name: str) -> Path:
+        return _inside(self._library_dir(project_dir, project), f"{name}{SUBSYSTEM_SUFFIX}")
+
+    def list_subsystems(self, name: str) -> dict[str, Any]:
+        """Every drawn subsystem definition of the project library, by name.
+
+        A file that is not a valid definition is left out and named in ``problems``.
+        """
+        project_dir = self._require_project(name)
+        project = self._load_project(project_dir)
+        library_dir = self._library_dir(project_dir, project)
+        definitions: dict[str, Any] = {}
+        problems: dict[str, str] = {}
+        if library_dir.is_dir():
+            for path in sorted(library_dir.iterdir(), key=lambda entry: entry.name.lower()):
+                if (
+                    not path.is_file()
+                    or path.is_symlink()
+                    or not path.name.endswith(SUBSYSTEM_SUFFIX)
+                ):
+                    continue
+                stem = path.name[: -len(SUBSYSTEM_SUFFIX)]
+                if not _BLOCK_PATTERN.fullmatch(stem):
+                    continue
+                if (library_dir / f"{stem}{LIBRARY_SUFFIX}").is_file():
+                    # One name, two files (copied in by hand): the code block is the block,
+                    # as in the catalog and the compiler.
+                    problems[stem] = (
+                        f"the library also has the block {stem}{LIBRARY_SUFFIX}; "
+                        "a block and a subsystem cannot share a name"
+                    )
+                    continue
+                try:
+                    document = _read_json(path)
+                    _validate(SubsystemDefinition, document, f"the subsystem {stem!r}")
+                except HTTPException as exc:
+                    problems[stem] = _detail_message(exc.detail)
+                    continue
+                # The file name is the name a model refers to.
+                document["name"] = stem
+                definitions[stem] = document
+        return {"definitions": definitions, "problems": problems}
+
+    def put_subsystem(self, name: str, subsystem: str, document: Any) -> dict[str, Any]:
+        project_dir = self._require_project(name)
+        project = self._load_project(project_dir)
+        subsystem_name = _block_name(subsystem.removesuffix(SUBSYSTEM_SUFFIX))
+        if not isinstance(document, dict):
+            raise ProjectError(422, "the subsystem definition must be a JSON object")
+        document = {**document, "name": subsystem_name}
+        _validate(SubsystemDefinition, document, "the subsystem definition")
+        if self._library_path(project_dir, project, subsystem_name).is_file():
+            raise ProjectError(
+                409,
+                f"the project library already has a block named {subsystem_name!r}; "
+                "a block and a subsystem cannot share a name",
+            )
+        _atomic_write(
+            self._subsystem_path(project_dir, project, subsystem_name), _json_text(document)
+        )
+        return {
+            "project": project_dir.name,
+            "name": subsystem_name,
+            "file": f"{subsystem_name}{SUBSYSTEM_SUFFIX}",
+        }
+
+    def delete_subsystem(self, name: str, subsystem: str) -> str:
+        project_dir = self._require_project(name)
+        project = self._load_project(project_dir)
+        subsystem_name = _block_name(subsystem.removesuffix(SUBSYSTEM_SUFFIX))
+        path = self._subsystem_path(project_dir, project, subsystem_name)
+        if not path.is_file():
+            raise ProjectError(404, f"unknown subsystem {subsystem!r} in project {name!r}")
         try:
             path.unlink()
         except OSError as exc:
@@ -934,6 +1030,33 @@ async def put_model(project: str, model: str, request: Request, store: Store) ->
 def delete_model(project: str, model: str, store: Store) -> Response:
     """Delete the model file and its entry in the project's tab list."""
     store.delete_model(project, model)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/projects/{project}/subsystems")
+def list_subsystems(project: str, store: Store) -> dict[str, Any]:
+    """The drawn subsystem definitions of the project library (library/<Name>.bgsub.json)."""
+    return store.list_subsystems(project)
+
+
+@router.put("/projects/{project}/subsystems/{subsystem:path}")
+async def put_subsystem(
+    project: str, subsystem: str, request: Request, store: Store
+) -> dict[str, Any]:
+    """Validate and write one subsystem definition, and drop the catalog cache."""
+    document = await _json_body(request, "subsystem definition")
+    result = store.put_subsystem(project, subsystem, document)
+    _invalidate(request, result["project"])
+    return result
+
+
+@router.delete(
+    "/projects/{project}/subsystems/{subsystem:path}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_subsystem(project: str, subsystem: str, request: Request, store: Store) -> Response:
+    """Delete one subsystem definition and drop the catalog cache."""
+    name = store.delete_subsystem(project, subsystem)
+    _invalidate(request, name)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

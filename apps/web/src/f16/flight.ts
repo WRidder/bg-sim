@@ -161,6 +161,45 @@ export class Flight extends Sim<Output> {
     return (((this.get("psi_deg") + this.frame.heading) % 360) + 360) % 360;
   }
 
+  /** The F-16's body x axis in NED (north, east, down). */
+  noseNed(): [number, number, number] {
+    const w = this.get("q_w");
+    const x = this.get("q_x");
+    const y = this.get("q_y");
+    const z = this.get("q_z");
+    return [
+      1 - 2 * (y * y + z * z),
+      2 * (x * y + w * z),
+      2 * (x * z - w * y),
+    ];
+  }
+
+  /** A wingtip station's world north/east/altitude; side 0 is left, 1 right. */
+  stationWorld(side: 0 | 1): { north: number; east: number; alt: number } {
+    const w = this.get("q_w");
+    const x = this.get("q_x");
+    const y = this.get("q_y");
+    const z = this.get("q_z");
+    const r00 = 1 - 2 * (y * y + z * z);
+    const r01 = 2 * (x * y - w * z);
+    const r02 = 2 * (x * z + w * y);
+    const r10 = 2 * (x * y + w * z);
+    const r11 = 1 - 2 * (x * x + z * z);
+    const r12 = 2 * (y * z - w * x);
+    const r20 = 2 * (x * z - w * y);
+    const r21 = 2 * (y * z + w * x);
+    const r22 = 1 - 2 * (x * x + y * y);
+    // Body frame is forward-left-up; the quotient is forward-right-down.
+    const bx = -2.6;
+    const by = side === 0 ? -4.82 : 4.82;
+    const bz = 0;
+    return {
+      north: this.north() + r00 * bx + r01 * by + r02 * bz,
+      east: this.east() + r10 * bx + r11 * by + r12 * bz,
+      alt: this.altitude() - (r20 * bx + r21 * by + r22 * bz),
+    };
+  }
+
   /** Height above the sea. */
   altitude(): number {
     return this.get("alt_m") + lift(this.north(), this.east());

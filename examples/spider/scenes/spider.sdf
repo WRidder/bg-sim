@@ -1,0 +1,311 @@
+<?xml version="1.0"?>
+<!--
+  spider: a T8X-class eight-legged robot, x forward, y left, z up, metres. The body mesh
+  carries the cephalothorax, the abdomen, the eyes and the eight hip bosses. Each leg is
+  three links (coxa, femur, tibia) whose joints are bound to the model's joint angles; the
+  foot pad is part of the tibia. The floor slab covers the commanded walk path of
+  spider-walk plus the leg span, with a dark rim on all four sides. The meshes are written
+  by design/make_meshes.py; this file by design/build_model.py.
+-->
+<sdf version="1.9">
+  <model name="spider">
+    <link name="floor">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor_slab">
+        <pose>0.2319 0.3503 -0.012 0 0 0</pose>
+        <geometry><box><size>1.0638 1.3007 0.024</size></box></geometry>
+        <material><diffuse>0.50 0.52 0.55 1</diffuse></material>
+      </visual>
+      <visual name="floor_edge_n">
+        <pose>0.2319 1.0107 -0.010 0 0 0</pose>
+        <geometry><box><size>1.1038 0.02 0.028</size></box></geometry>
+        <material><diffuse>0.18 0.22 0.28 1</diffuse></material>
+      </visual>
+      <visual name="floor_edge_s">
+        <pose>0.2319 -0.3100 -0.010 0 0 0</pose>
+        <geometry><box><size>1.1038 0.02 0.028</size></box></geometry>
+        <material><diffuse>0.18 0.22 0.28 1</diffuse></material>
+      </visual>
+      <visual name="floor_edge_e">
+        <pose>0.7738 0.3503 -0.010 0 0 0</pose>
+        <geometry><box><size>0.02 1.3007 0.028</size></box></geometry>
+        <material><diffuse>0.18 0.22 0.28 1</diffuse></material>
+      </visual>
+      <visual name="floor_edge_w">
+        <pose>-0.3100 0.3503 -0.010 0 0 0</pose>
+        <geometry><box><size>0.02 1.3007 0.028</size></box></geometry>
+        <material><diffuse>0.18 0.22 0.28 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="body">
+      <pose>0 0 0.110 0 0 0</pose>
+      <visual name="body_mesh">
+        <geometry><mesh><uri>meshes/spider_body.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg1_coxa">
+      <pose>0.072 0.032 0.11 0 0 0.610865238</pose>
+      <visual name="leg1_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg1_femur">
+      <pose>0.108861842 0.0578109396 0.11 1.570796327 0 0.610865238</pose>
+      <visual name="leg1_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg1_tibia">
+      <pose>0.198968567 0.120904348 0.11 1.570796327 0 0.610865238</pose>
+      <visual name="leg1_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg1_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg1_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg1_femur_joint" type="revolute">
+      <parent>leg1_coxa</parent>
+      <child>leg1_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg1_tibia_joint" type="revolute">
+      <parent>leg1_femur</parent>
+      <child>leg1_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg2_coxa">
+      <pose>0.024 0.04 0.11 0 0 1.13446401</pose>
+      <visual name="leg2_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg2_femur">
+      <pose>0.0430178218 0.0807838504 0.11 1.570796327 0 1.13446401</pose>
+      <visual name="leg2_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg2_tibia">
+      <pose>0.0895058306 0.180477707 0.11 1.570796327 0 1.13446401</pose>
+      <visual name="leg2_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg2_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg2_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg2_femur_joint" type="revolute">
+      <parent>leg2_coxa</parent>
+      <child>leg2_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg2_tibia_joint" type="revolute">
+      <parent>leg2_femur</parent>
+      <child>leg2_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg3_coxa">
+      <pose>-0.024 0.04 0.11 0 0 2.00712864</pose>
+      <visual name="leg3_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg3_femur">
+      <pose>-0.0430178218 0.0807838504 0.11 1.570796327 0 2.00712864</pose>
+      <visual name="leg3_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg3_tibia">
+      <pose>-0.0895058306 0.180477707 0.11 1.570796327 0 2.00712864</pose>
+      <visual name="leg3_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg3_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg3_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg3_femur_joint" type="revolute">
+      <parent>leg3_coxa</parent>
+      <child>leg3_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg3_tibia_joint" type="revolute">
+      <parent>leg3_femur</parent>
+      <child>leg3_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg4_coxa">
+      <pose>-0.072 0.032 0.11 0 0 2.53072742</pose>
+      <visual name="leg4_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg4_femur">
+      <pose>-0.108861842 0.0578109396 0.11 1.570796327 0 2.53072742</pose>
+      <visual name="leg4_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg4_tibia">
+      <pose>-0.198968567 0.120904348 0.11 1.570796327 0 2.53072742</pose>
+      <visual name="leg4_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg4_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg4_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg4_femur_joint" type="revolute">
+      <parent>leg4_coxa</parent>
+      <child>leg4_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg4_tibia_joint" type="revolute">
+      <parent>leg4_femur</parent>
+      <child>leg4_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg5_coxa">
+      <pose>0.072 -0.032 0.11 0 0 -0.610865238</pose>
+      <visual name="leg5_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg5_femur">
+      <pose>0.108861842 -0.0578109396 0.11 1.570796327 0 -0.610865238</pose>
+      <visual name="leg5_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg5_tibia">
+      <pose>0.198968567 -0.120904348 0.11 1.570796327 0 -0.610865238</pose>
+      <visual name="leg5_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg5_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg5_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg5_femur_joint" type="revolute">
+      <parent>leg5_coxa</parent>
+      <child>leg5_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg5_tibia_joint" type="revolute">
+      <parent>leg5_femur</parent>
+      <child>leg5_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg6_coxa">
+      <pose>0.024 -0.04 0.11 0 0 -1.13446401</pose>
+      <visual name="leg6_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg6_femur">
+      <pose>0.0430178218 -0.0807838504 0.11 1.570796327 0 -1.13446401</pose>
+      <visual name="leg6_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg6_tibia">
+      <pose>0.0895058306 -0.180477707 0.11 1.570796327 0 -1.13446401</pose>
+      <visual name="leg6_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg6_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg6_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg6_femur_joint" type="revolute">
+      <parent>leg6_coxa</parent>
+      <child>leg6_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg6_tibia_joint" type="revolute">
+      <parent>leg6_femur</parent>
+      <child>leg6_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg7_coxa">
+      <pose>-0.024 -0.04 0.11 0 0 -2.00712864</pose>
+      <visual name="leg7_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg7_femur">
+      <pose>-0.0430178218 -0.0807838504 0.11 1.570796327 0 -2.00712864</pose>
+      <visual name="leg7_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg7_tibia">
+      <pose>-0.0895058306 -0.180477707 0.11 1.570796327 0 -2.00712864</pose>
+      <visual name="leg7_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg7_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg7_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg7_femur_joint" type="revolute">
+      <parent>leg7_coxa</parent>
+      <child>leg7_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg7_tibia_joint" type="revolute">
+      <parent>leg7_femur</parent>
+      <child>leg7_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+    <link name="leg8_coxa">
+      <pose>-0.072 -0.032 0.11 0 0 -2.53072742</pose>
+      <visual name="leg8_coxa_mesh">
+        <geometry><mesh><uri>meshes/spider_coxa.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg8_femur">
+      <pose>-0.108861842 -0.0578109396 0.11 1.570796327 0 -2.53072742</pose>
+      <visual name="leg8_femur_mesh">
+        <geometry><mesh><uri>meshes/spider_femur.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="leg8_tibia">
+      <pose>-0.198968567 -0.120904348 0.11 1.570796327 0 -2.53072742</pose>
+      <visual name="leg8_tibia_mesh">
+        <geometry><mesh><uri>meshes/spider_tibia.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="leg8_coxa_joint" type="revolute">
+      <parent>body</parent>
+      <child>leg8_coxa</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.2</lower><upper>1.2</upper></limit></axis>
+    </joint>
+    <joint name="leg8_femur_joint" type="revolute">
+      <parent>leg8_coxa</parent>
+      <child>leg8_femur</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.5</lower><upper>1.8</upper></limit></axis>
+    </joint>
+    <joint name="leg8_tibia_joint" type="revolute">
+      <parent>leg8_femur</parent>
+      <child>leg8_tibia</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.5</lower><upper>0.2</upper></limit></axis>
+    </joint>
+  </model>
+</sdf>

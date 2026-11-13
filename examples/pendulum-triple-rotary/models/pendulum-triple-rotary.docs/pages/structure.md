@@ -5,19 +5,19 @@ The plant is a **spatial multibond bond graph** (`stdlib:spatial/*`, `stdlib:mul
 ```
 World -- Mount -- J1 (Revolute3D, world z) -- Link1 -- BJ1 -- Arm (RigidBody3D)
  Motor (ElectricDrive) -- Shaft (ElasticShaft) -- Gear (IdealGear 70) -- J1.drive
- BJ1 -- T2 -- J2 (Revolute3D, arm axis) -- Link2 -- BJ2 -- Rod1 (RigidBody3D)
- BJ2 -- T3 -- J3 -- Link3 -- BJ3 -- Rod2
- BJ3 -- T4 -- J4 -- Link4 -- BJ4 -- Rod3
- Dist (ExternalWrenchSpatial) -- TipPoint -- BJ4
+ BJ1 -- L2 (RevoluteLink3D: T -- J (Revolute3D, arm axis) -- Link -- BJ -- B (RigidBody3D))
+ L2.child -- L3 (RevoluteLink3D) ;  L3.child -- L4 (RevoluteLink3D)
+ Dist (ExternalWrenchSpatial) -- TipPoint -- L4.child
 ```
 
 | part | block | note |
 | --- | --- | --- |
 | arm joint | [J1](block:J1), `Revolute3D` | rotates about the world $z$ axis; the held directions are compliant ($k_t = k_r = 1e+08$ N/m, N·m/rad, damped near critically) so every state is integral |
 | arm | [Arm](block:Arm), `RigidBody3D` | bar of 21.59 cm and 0.2570 kg, centre of mass at the middle |
-| pendulum joints | [J2](block:J2), [J3](block:J3), [J4](block:J4) | `Revolute3D` about the arm axis: the joint frame of J2 is the arm frame rotated by $180^\circ$ about $(1,0,1)/\sqrt2$, so its $z$ axis is the arm axis and its $x$ axis is world up. Angle 0 is **upright**, $\pi$ hanging; J3 and J4 are relative to the link below |
+| pendulum links | [L2](block:L2), [L3](block:L3), [L4](block:L4) | instances of the library subsystem `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`, one link of a spatial serial chain): the offset `T` from the body below, the joint `J`, the offset `Link` to the centre of mass, the body `B` on its 1-junction `BJ` and the pose band `LN`, `CA`, `W`, `LC`, `P`; each instance pins every offset, the joint and the body. The bearings stay outside, on the instance's `drive` port |
+| pendulum joints | `L2/J`, `L3/J`, `L4/J` | `Revolute3D` about the arm axis: the joint frame of L2/J is the arm frame rotated by $180^\circ$ about $(1,0,1)/\sqrt2$, so its $z$ axis is the arm axis and its $x$ axis is world up. Angle 0 is **upright**, $\pi$ hanging; L3/J and L4/J are relative to the link below |
 | bearings | [Bearing2](block:Bearing2) ... | `RotationalDamper` on each pendulum joint's drive port, 3e-05 N·m·s/rad |
-| links | [Rod1](block:Rod1), [Rod2](block:Rod2), [Rod3](block:Rod3) | `RigidBody3D`, centre of mass at the rod middle, thin-bar inertias; link 1: $l = 20.00$ cm, $m = 0.097$ kg, link 2: $l = 20.00$ cm, $m = 0.097$ kg, link 3: $l = 33.65$ cm, $m = 0.127$ kg |
+| link bodies | `L2/B`, `L3/B`, `L4/B` | `RigidBody3D`, centre of mass at the rod middle, thin-bar inertias; link 1: $l = 20.00$ cm, $m = 0.097$ kg, link 2: $l = 20.00$ cm, $m = 0.097$ kg, link 3: $l = 33.65$ cm, $m = 0.127$ kg |
 | servo | [Motor](block:Motor) | `drives/ElectricDrive`: $R_m = 8.4\ \Omega$, $L_m = 1.16$ mH, $k_t = 0.0333$ N·m/A, rotor 3.87e-07 kg·m² |
 | gearbox | [Shaft](block:Shaft), [Gear](block:Gear) | `ElasticShaft` (1e+07 N·m/rad and 200 N·m·s/rad at the load) and `IdealGear` 70:1. The elastic shaft keeps the rotor inertia integral: a rotor rigidly on a rate-imposing joint is derivative causal (W201) |
 | poses | `ComposePose3D` chain | the body poses are composed from the joint poses and feed the gravity of every body |

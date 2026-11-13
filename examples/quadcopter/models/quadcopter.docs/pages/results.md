@@ -1,10 +1,10 @@
 # Results and checks
 
-![Mission: position against set-points, attitude, tracking error|900](assets/04771ff6275c.png)
+![Mission: position against set-points, attitude, tracking error|900](assets/738e4f28c997.png)
 
-![Rotor speeds, battery and landing-gear forces|900](assets/66574cc8c72a.png)
+![Rotor speeds, battery and landing-gear forces|900](assets/b25b8a219aec.png)
 
-![Navigation filter errors against the truth|900](assets/aa699400ddf9.png)
+![Navigation filter errors against the truth|900](assets/d384aee50cb2.png)
 
 ## Measured (README, real worker, `reltol` 1e-4)
 
@@ -26,6 +26,6 @@
 - waypoints: $x = 2.0$ at 7.9 s (0.03), $y = 2.0$ at 10.9 s (0.04), yaw 1.5707963 at 10.9 s (0.06); RMS differences to the set-points over $[5, 14.4]$ s at most 0.06 / 0.065 / 0.015 m; tracking distance at most 0.15 m;
 - attitude: tilt at most 0.3 rad (measured peak 0.247), roll and pitch at most 0.3 rad, quaternion norm error at most 1e-9;
 - landing: $z = 0.085$ m and `RW/fc` = 13.2435 N at 18 s;
-- actuators: rotor speeds at most 774.6 rad/s (peak 557.6, tolerance 25), `Esc1/u` at most 12.6 V, motor current at most 50 A, battery current at most 70 A, state of charge 0.9865 at 18 s;
+- actuators: rotor speeds at most 774.6 rad/s (peak 557.6, tolerance 25), `Rotor1/Esc/u` at most 12.6 V, motor current at most 50 A, battery current at most 70 A, state of charge 0.9865 at 18 s;
 - estimator: `Err/att` at most 0.03 (measured peak 0.0188), `Err/pos` at most 0.05 m, `Err/vel` at most 0.2 m/s, the gyro noise RMS against the truth at most 0.0075 rad/s, the attitude controller's rate set-point against the filter at most 0.07;
 - `scene_bindings`, and no E901, E106, E007, W201, W202, W205 or W206.

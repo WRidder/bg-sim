@@ -2,7 +2,7 @@
 
 The FDC Beaver with the bond-graph drivetrain on, cockpit controls and the FDC autopilot. Its inputs and outputs are export markers, so it exports as an FMU for a flight-simulator host.
 
-![The model canvas|900](assets/244e9c496a0f.png)
+![The model canvas|900](assets/6977c95e2878.png)
 
 | block | role |
 | --- | --- |
@@ -20,7 +20,7 @@ The FDC Beaver with the bond-graph drivetrain on, cockpit controls and the FDC a
 3. At 70 s: the altitude hold captures 150 m above the start.
 4. At 85 s: the power goes back to the trim setting.
 
-![The demo|900](assets/b041b2e42bf5.png)
+![The demo|900](assets/08fd2c50b3b8.png)
 
 ## What to try
 
@@ -30,4 +30,4 @@ The FDC Beaver with the bond-graph drivetrain on, cockpit controls and the FDC a
 
 The elevator, ailerons, flaps and rudder move in the 3D view, and the propeller turns at 1/20 of the shaft speed.
 
-![3D view at t = 45 s, in the turn|600](assets/43d963eb7e59.png)
+![3D view at t = 45 s, in the turn|600](assets/8fd49b166004.png)

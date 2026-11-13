@@ -214,7 +214,7 @@ Continue with [the 3D body](page:body), [the guideway](page:track) and [the resu
 | along the track | [Jx](block:Jx) on `drive4`: LSM thrust [Lsm](block:Lsm) (`MSe`, after a 50 ms lag), aerodynamic drag [Drag](block:Drag) (`MR` with $r = k_\mathrm{aero}\,\lvert v \rvert$, $k_\mathrm{aero} = \tfrac12\rho C_d A = 2.496$ N·s²/m²) and the speed detector [Speed](block:Speed) |
 | heave and pitch | [Jz](block:Jz) on `drive6` and [Jt](block:Jt) on `drive2`; the levers below |
 | guidance | [JLat](block:JLat), [JRoll](block:JRoll), [JYaw](block:JYaw) on `drive5`, `drive1`, `drive3`: stiff spring-dampers (guidance magnets) that hold the lateral, roll and yaw degrees of freedom |
-| modules | the subsystems [ModF](block:ModF) and [ModR](block:ModR) (front and rear, 9.5 m from the centre of mass) |
+| modules | [ModF](block:ModF) and [ModR](block:ModR) (front and rear, 9.5 m from the centre of mass), two instances of the library subsystem `LevitationModule` (`library/LevitationModule.bgsub.json`) |
 
 **Levers.** The velocity of the module point at $x = \pm 9.5$ m, in the world's vertical direction, is
 $$ v_\mathrm{pt} = v_z - x\,\omega_y + R_{31}\, v_x, \qquad R_{31} = -2\,q_y, $$

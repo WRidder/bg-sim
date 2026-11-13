@@ -113,6 +113,10 @@
           "title": "ModelDimension",
           "enum": [2, 3],
           "description": "Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12)."
+        },
+        "subsystem": {
+          "type": "boolean",
+          "description": "True for a drawn subsystem definition of the project library (library/<Name>.bgsub.json). The entry lists the definition's ports as its interface; source is empty, and its pinned parameters are read from the definition itself. Omitted for a block written as code."
         }
       },
       "additionalProperties": false

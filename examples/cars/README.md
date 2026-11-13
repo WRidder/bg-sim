@@ -20,7 +20,12 @@ Both vehicles are the same bond graph (`design/car.py`) with different parameter
 
 Chassis: a `RigidBody3D` at the sprung CG on a `PoseIntegrator3D`, with the aerodynamic wrench
 (drag and downforce, split front/rear by the aero balance) from the project block `Aero`. Each
-corner is a subsystem (`FL`, `FR`, `RL`, `RR`):
+corner (`FL`, `FR`, `RL`, `RR`) is an instance of a library subsystem, one per vehicle and axle:
+`RacecarFrontCorner`, `RacecarRearCorner`, `BuggyFrontCorner`, `BuggyRearCorner`
+(`library/*.bgsub.json`, written by `design/build_model.py`). An instance pins only the side of
+its corner (`Mount/y`, `MountPose/y`) and the start state (`Susp/q0`, `Strut/x`, the carrier,
+upright and wheel momenta), so the paths inside a corner (`FL/Tyre/Fz`) are the same as before.
+A corner holds:
 
 * `Mount` (a fixed transform to the corner) and `Susp`, a `Prismatic3D` along the chassis z: the
   suspension travel is its drive port on a 1-junction with the `Strut` (a C for the spring with
@@ -167,7 +172,7 @@ off its rest position leaves the rod ends by its travel.
 | `design/track.py` | the race track's centre line (a periodic spline through control points), written to `design/track.json` |
 | `design/build_model.py` | writes the models, `bgsim.project.json`, `design/hills.json` and `expected.json` |
 | `design/make_scenes.py` | writes `meshes/*.glb`, `meshes/*_suspension.json` and `scenes/*.sdf`; checks that every suspension rod ends on the body and on the upright |
-| `library/` | `TractionBattery`, `TractionMachine`, `EMotorControl`, `BrakeSystem`, `Strut`, `AntiRollBar`, `Steering`, `SteerServo`, `Aero`, `Telemetry`, `SpeedHold`, `CarView`, `PoseSplit`, `XYPose` |
+| `library/` | `TractionBattery`, `TractionMachine`, `EMotorControl`, `BrakeSystem`, `Strut`, `AntiRollBar`, `Steering`, `SteerServo`, `Aero`, `Telemetry`, `SpeedHold`, `CarView`, `PoseSplit`, `XYPose` (blocks); `RacecarFrontCorner`, `RacecarRearCorner`, `BuggyFrontCorner`, `BuggyRearCorner` (subsystems) |
 | `../export_cars.jl`, `../export_cars_check.py` | the two FMUs: export, references and the fmpy acceptance |
 
     uv run examples/cars/design/track.py

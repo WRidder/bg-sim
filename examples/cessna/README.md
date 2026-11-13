@@ -13,7 +13,7 @@ scripts work in SI too: `design/c172_si.py` converts JSBSim's ft, lb and slug.
 
 | model | what it shows |
 | --- | --- |
-| `cessna-open-loop` | Five aircraft trimmed in level flight at 100 KTAS and 5000 ft. Each is released along the eigenvector of one rigid-body mode: the short period (1 deg of alpha), the phugoid (2 m/s of speed), the dutch roll (1 deg of sideslip), the roll mode (2 deg of bank) and the spiral (5 deg of bank). Two `ModeRate` blocks read the live rate (dphi/dt)/phi of the roll and spiral modes. Every curve is checked against the scipy reference (`design/c172_ref.py`). |
+| `cessna-open-loop` | Five aircraft trimmed in level flight at 100 KTAS and 5000 ft. Each is released along the eigenvector of one rigid-body mode: the short period (1 deg of alpha), the phugoid (2 m/s of speed), the dutch roll (1 deg of sideslip), the roll mode (2 deg of bank) and the spiral (5 deg of bank). The five aircraft are instances of the library subsystem `C172Airframe` (`library/C172Airframe.bgsub.json`, the airframe without landing gear in calm air); each sets only its own start state. Two `ModeRate` blocks read the live rate (dphi/dt)/phi of the roll and spiral modes. Every curve is checked against the scipy reference (`design/c172_ref.py`). |
 | `cessna-sim` | The flyable Cessna, standing on runway 36 with the engine at idle and flaps 10. A scripted pilot (`DemoPilot`, smooth phase switches with no events) applies full power and rotates at 45 KCAS. It climbs at 75 KCAS, raises the flaps at 65 ft and turns right to east at 75 s. The 16 pilot inputs (yoke, pedals, throttle, mixture, flap detent, trim, toe brakes, the autopilot switches, the heading bug and altitude, and the wind) are `ExportInputPass` markers. The 38 outputs are `ExportOutput` markers. The start state is 20 globals. The dashboard has sliders for every control. The 3D scene shows the airfield, the moving control surfaces, the flaps, the steered nose wheel and the spinning propeller. |
 
 `expected.json` also runs `cessna-sim` with overrides as three more scenarios:
@@ -284,6 +284,7 @@ six-pack panel, and keyboard or joystick, pedal and throttle input.
 | `design/poh.py` | POH and TCDS reference values with sources |
 | `design/c172_ref.py`, `c172_lin.py` | the scipy reference: the full nonlinear model, the trim and the linearisation |
 | `design/perf.py`, `demo.py`, `design.py` | performance, the runway start and the demo, and all results into `design.json` |
-| `design/build_model.py` | writes both models, the scenes, `bgsim.project.json` and `expected.json` |
+| `design/build_model.py` | writes both models, the library subsystem `C172Airframe`, the scenes, `bgsim.project.json` and `expected.json` |
 | `design/make_meshes.py` | the Cessna meshes (`meshes/*.glb`): the body and the separate control surfaces, nose wheel and propeller |
 | `library/*.jl` | the project blocks |
+| `library/C172Airframe.bgsub.json` | the open-loop aircraft as a library subsystem (written by `design/build_model.py`) |

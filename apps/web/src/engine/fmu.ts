@@ -121,9 +121,13 @@ export class Fmu {
     into.set(this.values.subarray(0, refs.length));
   }
 
+  /** The fmi2Status of the last `fmi2DoStep`: 0 OK, 1 warning, 2 discard (the model stopped), 3 error, 4 fatal. */
+  lastStatus = 0;
+
   /** One communication step; false when the FMU stopped (a non-finite state, a model stop). */
   advance(): boolean {
     const status = this.x.sim_step(this.time, this.step);
+    this.lastStatus = status;
     this.time += this.step;
     return status === 0;
   }

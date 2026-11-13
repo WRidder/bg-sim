@@ -29,7 +29,9 @@ Cube (RigidBody3D) ◄── Pose (PoseIntegrator3D, floating base)
   `LocalPose3D` composed with the body pose by `ComposePose3D`, and a `ContactPoint`
   (`k = 2e4 N/m` at `x_ref = 1 mm`, Hertz exponent 3/2, `c = 5 s/m`, `μ = 0.8`, `v_s = 1 mm/s`).
   Vertex 1 = (−,−,−) is the corner, vertices 1 and 2 are the edge `y = z = −a/2`, vertices 1–4
-  are the bottom face.
+  are the bottom face. In `sequence-contact` and `edge-contact` the four contacts `C1`–`C4` are
+  instances of the library subsystem `library/ContactFoot.bgsub.json` (mount, vertex pose and
+  `ContactPoint`, pinned to the vertex offset), so the contact signals are `C<k>/Contact/f_n` etc.
 * **Wheels** exactly as in `reaction-wheel-3d` (X-MB4): axis `a_k = (sin β cos φ_k, sin β sin φ_k,
   cos β)`, `β = atan √2`, `φ_k = 0, 90, 180, 270 deg`, so `A Aᵀ = diag(2 sin²β, 2 sin²β, 4 cos²β) = 4/3 I`
   for `A = [a_1 … a_4]`. Each wheel is a `RigidBody3D` (`0.25 kg`, `J = (1e-3, 1e-3, 2e-3)`) at

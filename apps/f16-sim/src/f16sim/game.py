@@ -9,19 +9,29 @@ from pathlib import Path
 
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import ClockObject, Filename, KeyboardButton, PNMImage, Point2, Point3, Vec3
+from panda3d.core import (
+    ClockObject,
+    Filename,
+    KeyboardButton,
+    PNMImage,
+    Point2,
+    Point3,
+    Vec3,
+)
 
 from .aircraft import Aircraft
 from .core import IDX, Simulation
 from .fmu import OUTPUTS, Settings, Start, body_to_ned
 from .hud import Hud
 from .inputs import Joysticks, Keyboard, Mixer, load_config
+from .missile_view import DroneView, MissileView
 from .scripts import SCRIPTS, wrap180
+from .tactical import LockState
 from .world import HORIZON, World
 
 IX = {n: k for k, n in enumerate(OUTPUTS)}
 CHASE_BACK, CHASE_UP, CHASE_TAU = 26.0, 6.0, 0.35
-HELP = ("P pause   R reset   1-9 start   C view   G ring course   T turbulence   F1 help   Esc quit\n"
+HELP = ("P pause   R reset   1-9 start   C view   G ring course   T turbulence   M fire AIM-9X   Tab/N target   F1 help\n"
         "arrows or W/S, A/D stick   Q/E or Z/X pedals   PgUp/PgDn or +/- throttle   U gear   B brakes\n"
         "L limiter, V velocity-vector roll, Y yaw damper: on/off (restarts the flight)")
 
@@ -42,10 +52,20 @@ class Game(ShowBase):
         self.camLens.set_near_far(1.0, 100000.0)
         self.camLens.set_fov(65.0)
         starts = Start.load_all(args.starts)
-        self.sim = Simulation(args.fmu, starts, Settings())
+        missile_fmu = None if args.no_missiles else Path(args.missile_fmu)
+        if missile_fmu is not None and not missile_fmu.exists():
+            print(f"AIM-9X FMU {missile_fmu} not found: drones and missiles are disabled "
+                  f"(run `uv run build_fmu.py`)")
+            missile_fmu = None
+        self.sim = Simulation(args.fmu, starts, Settings(), missile_fmu=missile_fmu)
         self.sim.reset(args.start)
         self.world = World(self.render, self.camera)
         self.aircraft = Aircraft(self.render)
+        self.drone_views: dict[int, DroneView] = {}
+        self.missile_views: dict[int, MissileView] = {}
+        self.message = ""
+        self.message_until = 0.0
+        self._script_fired: set[float] = set()
         self.hud = Hud(self.aspect2d, self.camLens.get_vfov(), line_scale=self.win.get_y_size() / 720.0)
         maps, kb = load_config(args.config)
         self.joy = Joysticks(maps, enabled=not (args.no_joystick or args.headless or args.record))
@@ -80,6 +100,9 @@ class Game(ShowBase):
         self.accept("g", self.toggle_rings)
         self.accept("u", self.sim.toggle_gear)
         self.accept("t", self.toggle_turbulence)
+        self.accept("m", self.fire_missile)
+        self.accept("tab", self.cycle_target)
+        self.accept("n", self.cycle_target)
         self.accept("l", self.toggle_switch, ["limiter"])
         self.accept("v", self.toggle_switch, ["vv_roll"])
         self.accept("y", self.toggle_switch, ["yaw_damper"])
@@ -94,7 +117,10 @@ class Game(ShowBase):
     def reset(self, index=None):
         if index is not None and index >= len(self.sim.starts):
             return
+        self._clear_views()
         self.sim.reset(index)
+        self.message = ""
+        self._script_fired.clear()
         self.kb.throttle = self.sim.start.thtl0
         self.cam_yaw = self.sim.model["psi_deg"]
         if self.sim.rings:
@@ -122,6 +148,25 @@ class Game(ShowBase):
 
     def toggle_turbulence(self):
         self.sim.wind.intensity = 0.0 if self.sim.wind.intensity > 0 else 2.5
+
+    def _say(self, text: str, seconds: float = 2.2) -> None:
+        self.message = text
+        self.message_until = self.sim.model.time + seconds
+
+    def fire_missile(self):
+        self._say(self.sim.fire_missile())
+
+    def cycle_target(self):
+        self.sim.lock.cycle(self.sim.drones)
+        self._say("TARGET SELECTED", 1.0)
+
+    def _clear_views(self) -> None:
+        for v in self.missile_views.values():
+            v.destroy()
+        for v in self.drone_views.values():
+            v.destroy()
+        self.missile_views.clear()
+        self.drone_views.clear()
 
     def toggle_switch(self, name):
         sw = self.sim.settings.switches
@@ -170,6 +215,11 @@ class Game(ShowBase):
             self.caption = script.caption(sim.model.time)
         before = sim.model.time
         sim.advance(dt, control)
+        if script is not None:
+            for tf in script.fires:
+                if sim.model.time >= tf and tf not in self._script_fired:
+                    self._script_fired.add(tf)
+                    self.fire_missile()
         self._measure(dt, sim.model.time - before)
         self.draw(dt)
 
@@ -199,6 +249,7 @@ class Game(ShowBase):
         yd["psi_deg"] = float(y1[IX["psi_deg"]])
         yd["phi_deg"] = float(y1[IX["phi_deg"]])
         self.aircraft.update(R, n, e, h, yd)
+        self._sync_views(a)
         self.world.update(m.time, sim.rings)
         if self.view == "chase":
             self._chase(dt, n, e, h, R)
@@ -206,16 +257,56 @@ class Game(ShowBase):
         y["throttle"] = float(sim.u[3])
         y["agl"] = sim.agl()
         y["brakes"] = float(max(sim.u[IDX["brake_l"]], sim.u[IDX["brake_r"]]))
+        lock = sim.lock.state()
+        tr = sim.target_range()
         info = (f"{'REC' if self.recording else 'FPS'} {self.fps:3.0f}   RT {self.rt:4.2f}x   t {m.time:6.1f} s   "
                 f"{self.view}   {sim.start.label}" + (f"   behind {sim.pacer.behind}" if sim.pacer.behind else "")
                 + ("   turbulence" if sim.wind.intensity > 0 else ""))
+        if tr is not None:
+            info += f"   TGT #{lock.selected_id} {tr / 1000.0:4.1f} km   {lock.reason}"
+        if sim.missiles is not None:
+            info += f"   AIM-9X {sim.missiles.max_shots - len(sim.missiles.used)}"
         off = [k for k, v in sim.settings.switches.items() if v < 0.5]
         if off:
             info += "   OFF: " + ", ".join(off)
         self.hud.k = 1.0 / math.tan(math.radians(self.camLens.get_vfov()) / 2.0)
-        self.hud.update(y, cockpit=self.view == "cockpit", info=info, ring=self._ring_text(), caption=self.caption,
+        caption = self.message if m.time < self.message_until else self.caption
+        contacts = sim.drones.contacts()
+        for c in contacts:
+            c["selected"] = c["id"] == lock.selected_id
+            c["locked"] = c["id"] == lock.selected_id and lock.locked
+        own = (n, e, h, float(m["psi_deg"]))
+        self.hud.update(y, cockpit=self.view == "cockpit", info=info, ring=self._ring_text(), caption=caption,
                         t=m.time, crashed=sim.crashed, paused=sim.paused, help_text=self._help(),
-                        ring_cue=self._ring_cue())
+                        ring_cue=self._ring_cue(), lock=lock, lock_cue=self._lock_cue(lock), contacts=contacts,
+                        own=own)
+
+    def _sync_views(self, alpha: float) -> None:
+        for drone in self.sim.drones.drones:
+            view = self.drone_views.get(drone.id)
+            if view is None:
+                view = DroneView(self.render)
+                self.drone_views[drone.id] = view
+            view.update(drone, self.sim.model.time)
+        if self.sim.missiles is not None:
+            for missile in self.sim.missiles.missiles:
+                view = self.missile_views.get(missile.id)
+                if view is None:
+                    view = MissileView(self.render)
+                    self.missile_views[missile.id] = view
+                view.update(missile, alpha)
+
+    def _lock_cue(self, lock: LockState):
+        drone = self.sim.drones.by_id(lock.selected_id)
+        if drone is None or not drone.alive:
+            return None
+        p = self.cam.get_relative_point(self.render, Point3(drone.east, drone.north, drone.alt))
+        p2 = Point2()
+        ar = self.getAspectRatio()
+        if p.y > 0 and self.camLens.project(p, p2):
+            return (p2.x * ar, p2.y)
+        ang = math.atan2(p.z, p.x)
+        return (0.88 * ar * math.cos(ang), 0.88 * math.sin(ang))
 
     def _chase(self, dt, n, e, h, R) -> None:
         psi = self.sim.model["psi_deg"]
@@ -343,6 +434,7 @@ class Game(ShowBase):
 
     def close_game(self) -> None:
         try:
+            self._clear_views()
             self.sim.close()
         finally:
             self.destroy()

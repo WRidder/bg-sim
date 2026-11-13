@@ -270,7 +270,9 @@ sum of an element's ports with the trapezoid rule on the solver grid and groups 
 Classification comes from the model: the manifest names the model and each signal's owning
 instance path, `<project>/models/<model>.bgmodel.json` maps the path to a block ref, and
 composites are resolved through their `@components` in `julia/BGSim/stdlib` or the project
-`library/`. `--override GLOB=CLASS` (instance-path globs, first match wins) takes precedence.
+`library/`. An instance of a library subsystem (`project:<Name>` of `library/<Name>.bgsub.json`)
+is followed into the definition's diagram, nested instances included, so its elements are
+classified at the instance's own path (`Leg3/Hip/damper`). `--override GLOB=CLASS` (instance-path globs, first match wins) takes precedence.
 
 Checks (all relative to the throughput `1/2 sum integral |P| dt`):
 

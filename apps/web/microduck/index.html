@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Microduck</title>
+    <link rel="stylesheet" href="../src/engine/game.css" />
+    <link rel="stylesheet" href="../src/microduck/style.css" />
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+
+    <div id="overlay">
+      <p id="banner" class="banner"></p>
+
+      <section id="status" class="card" aria-live="polite">
+        <div class="row"><span>Policy</span><b id="policy">loading…</b></div>
+        <div class="row"><span>Network</span><b id="net">–</b></div>
+        <div class="row"><span>Sticks</span><b id="mode">Move</b></div>
+        <table id="twist">
+          <thead><tr><th></th><th>asked</th><th>trunk</th><th></th></tr></thead>
+          <tbody>
+            <tr><th>Forward</th><td id="cmd-0"></td><td id="act-0"></td><td><i class="meter"><b id="bar-0"></b><u id="mark-0"></u></i></td></tr>
+            <tr><th>Left</th><td id="cmd-1"></td><td id="act-1"></td><td><i class="meter"><b id="bar-1"></b><u id="mark-1"></u></i></td></tr>
+            <tr><th>Turn</th><td id="cmd-2"></td><td id="act-2"></td><td><i class="meter"><b id="bar-2"></b><u id="mark-2"></u></i></td></tr>
+          </tbody>
+        </table>
+        <p class="units">m/s, m/s, rad/s. Bar: asked; tick: trunk.</p>
+      </section>
+
+      <section id="pad" class="card">
+        <p id="pad-name">No gamepad. Connect a DualSense by USB or Bluetooth and press any button.</p>
+        <div class="pad-live">
+          <canvas id="sticks" width="240" height="112" aria-label="Sticks and triggers"></canvas>
+          <div id="buttons"></div>
+        </div>
+      </section>
+
+      <aside id="help" class="card">
+        <h2>Controls <small>H hides</small></h2>
+        <table class="map">
+          <thead><tr><th>Pad</th><th>Keys</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>D-pad ←</td><td>1</td><td>Sticks: move (left walks and strafes, right turns)</td></tr>
+            <tr><td>D-pad ↑</td><td>2</td><td>Sticks: head only, the body stands</td></tr>
+            <tr><td>D-pad →</td><td>3</td><td>Sticks: head + move (left walks and turns, right looks)</td></tr>
+            <tr><td>D-pad ↓</td><td>4</td><td>Sticks: body + head (left crouches and leans, right looks)</td></tr>
+            <tr><td>Left stick</td><td>W A S D</td><td>See the mode</td></tr>
+            <tr><td>Right stick</td><td>Arrows, Q E</td><td>See the mode</td></tr>
+            <tr><td>Cross</td><td>Space</td><td>Sit ↔ stand</td></tr>
+            <tr><td>Circle</td><td>G</td><td>Ground pick</td></tr>
+            <tr><td>Square, held</td><td>V</td><td>Roulade (held: again)</td></tr>
+            <tr><td>L1 / R1</td><td>Z / X</td><td>Kick left / right *</td></tr>
+            <tr><td>L2 / R2</td><td>B</td><td>Mouth</td></tr>
+            <tr><td>Options</td><td>Enter</td><td>Policy on / off (off: home pose)</td></tr>
+            <tr><td>Create</td><td>R</td><td>Back to the start *</td></tr>
+            <tr><td>Triangle</td><td>C</td><td>Camera *</td></tr>
+            <tr><td></td><td>T, Shift+T</td><td>Telemetry, other side</td></tr>
+            <tr><td></td><td>K</td><td>Stand-in: trunk at the asked speed, or round the stance foot</td></tr>
+            <tr><td></td><td>P</td><td>Pause</td></tr>
+            <tr><td></td><td>Drag, wheel</td><td>Look round, zoom</td></tr>
+          </tbody>
+        </table>
+        <p class="note">As on the robot (pollen-robotics/microduck <code>padd</code>), except *: there the bumpers are the yes/no emotions, Triangle is "excited", Create held rests the robot, and Options first stands it up.</p>
+      </aside>
+
+      <p id="toast" role="status"></p>
+      <p id="paused" class="banner" hidden>Paused. P resumes.</p>
+    </div>
+
+    <section id="loading" class="screen">
+      <h1>Microduck</h1>
+      <p id="loading-text">Loading the walking policy…</p>
+      <div class="bar"><div></div></div>
+    </section>
+
+    <section id="failed" class="screen" hidden>
+      <h1>Microduck</h1>
+      <p id="failed-text">This demo needs WebGL 2, and this browser could not start it.</p>
+    </section>
+
+    <script type="module" src="../src/microduck/game.ts"></script>
+  </body>
+</html>

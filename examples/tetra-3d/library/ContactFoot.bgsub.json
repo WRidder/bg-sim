@@ -1,0 +1,233 @@
+{
+  "format": "bgsim.subsystem",
+  "name": "ContactFoot",
+  "description": "One contact foot: a fixed mount from the body to the contact point and a compliant Hunt-Crossley ContactPoint on a ContactSurface outside the instance (o, fr). Pin the point with Local/x, Local/y, Local/z (body frame) and the mount with Mount/x, Mount/y, Mount/z (the negated offsets).",
+  "ports": [
+    {
+      "name": "p",
+      "kind": "power",
+      "domain": "Spatial",
+      "size": [
+        6
+      ],
+      "node": "Mount",
+      "port": "b"
+    },
+    {
+      "name": "pose",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        7
+      ],
+      "unit": null,
+      "node": "Compose",
+      "port": "gp"
+    },
+    {
+      "name": "o",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        3
+      ],
+      "unit": "m",
+      "node": "Contact",
+      "port": "o"
+    },
+    {
+      "name": "fr",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        9
+      ],
+      "unit": "1",
+      "node": "Contact",
+      "port": "fr"
+    },
+    {
+      "name": "f_n",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "N",
+      "node": "Contact",
+      "port": "f_n"
+    },
+    {
+      "name": "Pd",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "W",
+      "node": "Contact",
+      "port": "Pd"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Local",
+        "name": "Local",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0",
+          "y": "0",
+          "z": "0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Compose",
+        "name": "Compose",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 160,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Mount",
+        "name": "Mount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 0,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0",
+          "y": "0",
+          "z": "0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Contact",
+        "name": "Contact",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 320,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "20000.0",
+          "xref": "0.001",
+          "c": "5.0",
+          "mu": "0.8",
+          "vs": "0.001",
+          "eps": "1e-06"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "foot_b001",
+        "kind": "bond",
+        "from": {
+          "node": "Mount",
+          "port": "a"
+        },
+        "to": {
+          "node": "Contact",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "foot_s002",
+        "kind": "signal",
+        "from": {
+          "node": "Local",
+          "port": "g"
+        },
+        "to": {
+          "node": "Compose",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "foot_s003",
+        "kind": "signal",
+        "from": {
+          "node": "Compose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Contact",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "pins": {
+    "params": [
+      "Local/x",
+      "Local/y",
+      "Local/z",
+      "Mount/x",
+      "Mount/y",
+      "Mount/z"
+    ],
+    "starts": []
+  }
+}

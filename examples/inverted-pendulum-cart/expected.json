@@ -180,6 +180,153 @@
         },
         "note": "X-EX1 (examples/export_checks.py): the closed loop (plant and LQR) driven through the cart position setpoint `x_ref` by the gate's input trajectory, compared with the reference driven by the same zero-order-hold samples"
       }
+    },
+    "inverted-pendulum-cart-mpc": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "XInt/y",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 0.0001,
+          "note": "the 0.3 m step is reached; design/mpc.py reference 0.299999"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "XInt/y",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 0.3,
+          "abs": 0.01,
+          "note": "no cart overshoot beyond 0.31 m"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 0.224993,
+          "abs": 0.002,
+          "note": "peak 12.9 deg during the 0.3 m step (design/mpc.py 12.93 deg); the rate-limited LQR reaches 15.5 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "MSe1/p.e",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 20.0,
+          "note": "the MPC respects the 20 N actuator limit by construction"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "MSe1/p.e",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 18.5784,
+          "abs": 0.2,
+          "note": "peak 18.58 N (design 19.00 N); the rate-limited LQR hits the 20 N clamp"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 2.9,
+          "to_t": 3.0,
+          "value": 0.0101,
+          "abs": 0.0015,
+          "note": "about 0.52 deg around t = 3 s (measured 0.00911 rad; design 0.579 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 3.0,
+          "value": 0.298978,
+          "abs": 0.002,
+          "note": "cart tracking error 1 mm at t = 3 s (design 0.298978 m)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 4.5,
+          "to_t": 5.0,
+          "value": 0.0,
+          "abs": 0.0005,
+          "note": "the step settles: measured 1.7e-5 rad (0.001 deg) over [4.5, 5.0] s"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W202", "W206"],
+          "note": "no solver failure, causal conflict, algebraic loop or event-limit stop; W201/W205 are the plant's documented DAE warnings"
+        }
+      ]
+    },
+    "inverted-pendulum-cart-rate": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "XInt/y",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 0.0001,
+          "note": "the same 0.3 m step with the rate-limited LQR; design/mpc.py reference 0.299998"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "XInt/y",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 0.3,
+          "abs": 0.01,
+          "note": "no cart overshoot beyond 0.31 m"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 0.27114,
+          "abs": 0.002,
+          "note": "peak 15.5 deg: the rate-limited LQR is faster than the 20 N clamp but pays a larger angle excursion (design 15.71 deg); the MPC is 12.9 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "MSe1/p.e",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 20.0,
+          "note": "the force limit"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "MSe1/p.e",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 20.0,
+          "abs": 0.01,
+          "note": "the rate-limited LQR uses the full 20 N clamp during the step"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 2.9,
+          "to_t": 3.0,
+          "value": 0.011208,
+          "abs": 0.0015,
+          "note": "0.64 deg around t = 3 s (measured): the 200 N/s rate limit costs settling, still below 0.8 deg; the MPC is 0.52 deg"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 3.0,
+          "value": 0.298098,
+          "abs": 0.002,
+          "note": "cart tracking error 1.9 mm at t = 3 s (design 0.298098 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W202", "W206"],
+          "note": "no solver failure, causal conflict, algebraic loop or event-limit stop; W201/W205 are the plant's documented DAE warnings"
+        }
+      ]
     }
   }
 }
