@@ -1,0 +1,10 @@
+The mesh files in this folder (*.glb) are licensed under the Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0).
+
+  Licensor of the original work: Pollen Robotics (microduck_rl, assets/*.stl)
+  Summary:    https://creativecommons.org/licenses/by-nc-sa/4.0/
+  Legal code: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+They are an adaptation (converted, re-posed into link frames, decimated, recoloured per
+material); see NOTICE for the source, the changes and the attribution. Non-commercial use
+only. This licence applies to these files alone, not to the rest of the repository.

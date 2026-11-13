@@ -2,7 +2,7 @@
 
 One [XL330](block:Servo) swings the 100 g test arm of microduck_rl (the arm's centre of mass is 96.6 mm from the axis). The [goal](block:Goal) steps from 0 to 1 rad at 0.1 s and back at 0.9 s. The [supply](block:Supply) is 7.4 V. The arm is a `Revolute3D` joint `J` with a rigid body `B`, so gravity pulls it back to hanging.
 
-![Diagram|800](assets/665e9805857d.png)
+![Diagram|800](assets/0ad78df4a750.png)
 
 This instance pins the backlash to 0, because the BAM simulator it is checked against has a rigid gear.
 

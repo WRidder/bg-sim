@@ -261,6 +261,64 @@ def definition_rigid() -> dict:
     it every control tick (200 walking, 160 standing). Reads the globals `i_limit` and
     `t_latency`.
     """
+    d = _rigid_diagram(backlash=False)
+    return {
+        "format": "bgsim.subsystem",
+        "name": "XL330Rigid",
+        "description": (
+            "Dynamixel XL330-M288-T for a robot model that runs in real time: the firmware P law with "
+            "BAM's current limiter, the winding and the BAM M6 friction of XL330, with a rigid gear (the "
+            "joint carries the armature), the joint angle as the encoder, the gain as an input and the "
+            "friction's load torque sampled every 5 ms (no algebraic loop). Reads the globals k_motor, r_motor, "
+            "i_limit and t_latency."),
+        "ports": d.ports,
+        "diagram": d.document(),
+        "pins": {"params": PINS_PARAMS_RIGID, "starts": []},
+    }
+
+
+# ------------------------------------------------------------------ backlash as microduck_rl trains it
+
+# [RL] add_backlash.py (microduck_rl 0daab16): every servo joint gets a passive hinge in series,
+# range +-1 deg, armature 0.001, damping 0.01, frictionloss 0, solreflimit (0.01, 1),
+# solimplimit (0.95, 0.999, 0.0001, 0.5, 2); the encoder reads through it.
+PLAY = {"gap": math.radians(2.0), "jb": 0.001, "c": 0.01, "tc": 0.01, "zeta": 1.0,
+        "dmin": 0.95, "dmax": 0.999, "width": 1.0e-4, "mid": 0.5, "power": 2.0}
+PINS_PARAMS_BACKLASH = ["Friction/scale", "Friction/ws", "Latency/initial", "Backlash/gap", "Backlash/invw"]
+PINS_STARTS_BACKLASH = ["Backlash/phi"]
+
+
+def definition_backlash() -> dict:
+    """library/XL330Backlash.bgsub.json: XL330Rigid with the gear play of microduck_rl.
+
+    microduck_rl's backlash models (add_backlash.py, tasks/backlash.py, BacklashEncoderBamActuator)
+    put an unactuated hinge after each servo joint: the servo joint is the motor output (BAM
+    drives it, its armature is BAM's), the play hinge carries its own armature 0.001 kg m^2 and
+    damping 0.01 N m s/rad and stops at +-1 deg through MuJoCo's soft limit; the link angle is
+    the sum, and the firmware P law, the joint_pos and the joint_vel observations read the link.
+    BAM's back-EMF and friction use the motor-side speed.
+
+    Here: the motor junction carries the armature (`RotorInertia`, I = global `armature`), the
+    motor torque, the BAM friction and the back-EMF speed; `Backlash` (library/MjBacklash.jl) is
+    the play hinge with MuJoCo's limit law; the horn is the link. The joint (Revolute3DRigid) has
+    Ja = 0. `Backlash/invw` is the play hinge's dof_invweight0 in the MuJoCo model (per joint).
+    """
+    d = _rigid_diagram(backlash=True)
+    return {
+        "format": "bgsim.subsystem",
+        "name": "XL330Backlash",
+        "description": (
+            "XL330Rigid with the 2 deg gear play of microduck_rl's backlash models: the armature on the motor "
+            "side, a play hinge (armature 0.001 kg m^2, damping 0.01 N m s/rad) with MuJoCo's soft limit at "
+            "+-1 deg between the gear and the horn, the encoder on the horn. The joint carries no armature. "
+            "Reads the globals k_motor, r_motor, armature, i_limit and t_latency."),
+        "ports": d.ports,
+        "diagram": d.document(),
+        "pins": {"params": PINS_PARAMS_BACKLASH, "starts": PINS_STARTS_BACKLASH},
+    }
+
+
+def _rigid_diagram(backlash: bool):
     from diagram import Diagram
 
     d = Diagram()
@@ -311,9 +369,21 @@ def definition_rigid() -> dict:
     d.ref("Rw", "stdlib:bondgraph/R", 280, y2 + 110, params={"r": "r_motor"})
     d.ref("Current", "stdlib:bondgraph/Df", 360, y2 + 110)
     d.ref("Motor", "project:MotorGY", 440, y2, params={"k": "k_motor"})
-    d.junction("Horn", "1", 600, y2)
+    # backlash: the motor side (Gear: armature, friction, back-EMF speed), the play hinge, the horn
+    out = "Gear" if backlash else "Horn"
+    if backlash:
+        d.junction("Gear", "1", 600, y2)
+        d.ref("RotorInertia", "stdlib:bondgraph/I", 560, y2 + 360, params={"i": "armature"})
+        d.ref("GearSpeed", "stdlib:converters/SpeedSensor", 700, y2 + 130)
+        d.ref("Backlash", "project:MjBacklash", 820, y2, params={k: PLAY[k] for k in ("gap", "jb", "c", "tc", "zeta",
+                                                                                         "dmin", "dmax", "width", "mid", "power")})
+        d.junction("Horn", "1", 1000, y2)
+        d.ref("HornSpeed", "stdlib:converters/SpeedSensor", 1040, y2 + 130)
+    else:
+        d.junction("Horn", "1", 600, y2)
     d.ref("Friction", "project:BamFriction", 560, y2 + 130, params=friction_params())
-    d.ref("HornSpeed", "stdlib:converters/SpeedSensor", 660, y2 + 130)
+    if not backlash:
+        d.ref("HornSpeed", "stdlib:converters/SpeedSensor", 660, y2 + 130)
     d.ref("MotorTorque", "stdlib:continuous/Gain", 440, y2 + 200, params={"k": "k_motor"})
     d.ref("Transmit", "stdlib:continuous/Sum", 600, y2 + 280, params={"signs": "[1.0, -1.0]"})
     d.ref("TransmitMux", "stdlib:continuous/Mux2", 500, y2 + 280)
@@ -324,11 +394,16 @@ def definition_rigid() -> dict:
     d.bond("Winding", None, "Rw", "p")
     d.bond("Winding", None, "Current", "p")
     d.bond("Winding", None, "Motor", "e")
-    d.bond("Motor", "m", "Horn")
-    d.bond("Horn", None, "Friction", "p")
+    d.bond("Motor", "m", out)
+    d.bond(out, None, "Friction", "p")
+    if backlash:
+        d.bond("Gear", None, "RotorInertia", "p")
+        d.bond("Gear", None, "GearSpeed", "a")
+        d.bond("Gear", None, "Backlash", "a")
+        d.bond("Horn", None, "Backlash", "b")
     d.bond("Horn", None, "HornSpeed", "a")
     d.sig("PwmLimit", "y", "HBridge", "u")
-    d.sig("HornSpeed", "y", "Emf", "u")
+    d.sig("GearSpeed" if backlash else "HornSpeed", "y", "Emf", "u")
     d.sig("VbusSense", "y", "EmfDuty", "u2")
     d.sig("VbusSense", "y", "Span", "u2")
     d.sig("Current", "y", "MotorTorque", "u")
@@ -349,28 +424,25 @@ def definition_rigid() -> dict:
     d.signal_port("tau_m", "output", "MotorTorque", "y", "N*m")
     d.signal_port("tau_l", "output", "Transmit", "y", "N*m")
     d.signal_port("duty", "output", "PwmLimit", "y", "1")
+    if backlash:
+        d.signal_port("dq_gear", "output", "GearSpeed", "y", "rad/s")
     d.note("**Firmware (Position Control Mode).** duty = kp 4096/(2 pi)/(256 885) (goal - q), kp the "
            "Position P Gain register (an input: the robot changes it every tick); clamped to the "
            "current-limit window (kt w +- R i_limit)/V_bus [BAM] and to +-100 % PWM. The goal arrives "
            "t_latency late. q is the joint angle (the encoder).", 0, -170, 950, 110)
-    d.note("**Motor at the output, rigid gear (BAM in mjlab).** H-bridge MTF (duty) -> winding R -> "
-           "GY kt (output side) -> horn, with the BAM M6 friction. The armature is the joint's "
-           "(Revolute3DRigid Ja). The friction reads the torque delivered to the joint sampled every "
-           "5 ms (LoadSample), as BAM reads the previous physics step. No backlash.",
-           0, y2 + 380, 1100, 110)
-    return {
-        "format": "bgsim.subsystem",
-        "name": "XL330Rigid",
-        "description": (
-            "Dynamixel XL330-M288-T for a robot model that runs in real time: the firmware P law with "
-            "BAM's current limiter, the winding and the BAM M6 friction of XL330, with a rigid gear (the "
-            "joint carries the armature), the joint angle as the encoder, the gain as an input and the "
-            "friction's load torque sampled every 5 ms (no algebraic loop). Reads the globals k_motor, r_motor, "
-            "i_limit and t_latency."),
-        "ports": d.ports,
-        "diagram": d.document(),
-        "pins": {"params": PINS_PARAMS_RIGID, "starts": []},
-    }
+    if backlash:
+        d.note("**Motor side, play hinge, horn (microduck_rl backlash models).** H-bridge MTF (duty) -> winding R "
+               "-> GY kt -> gear (armature, BAM M6 friction, back-EMF speed) -> play hinge (2 deg, armature "
+               "0.001 kg m^2, damping 0.01 N m s/rad, MuJoCo's soft limit: library/MjBacklash.jl) -> horn. The "
+               "encoder q is the joint angle, after the play. The joint carries no armature. The friction reads "
+               "kt i - tau_f sampled every 5 ms (LoadSample).", 0, y2 + 450, 1100, 130)
+    else:
+        d.note("**Motor at the output, rigid gear (BAM in mjlab).** H-bridge MTF (duty) -> winding R -> "
+               "GY kt (output side) -> horn, with the BAM M6 friction. The armature is the joint's "
+               "(Revolute3DRigid Ja). The friction reads the torque delivered to the joint sampled every "
+               "5 ms (LoadSample), as BAM reads the previous physics step. No backlash.",
+               0, y2 + 380, 1100, 110)
+    return d
 
 
 def fmtf(x: float) -> str:

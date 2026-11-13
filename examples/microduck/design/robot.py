@@ -31,6 +31,8 @@ from diagram import Diagram, fmt, pose_params, vec
 
 HERE = Path(__file__).resolve().parent
 DATA = json.loads((HERE / "robot_data.json").read_text(encoding="utf-8"))
+# The play hinges of microduck_rl's backlash robot as MuJoCo compiles them (design/mjcf_play.py)
+PLAY_DATA = json.loads((HERE / "play_data.json").read_text(encoding="utf-8"))
 BODIES = DATA["bodies"]
 BY_NAME = {b["name"]: b for b in BODIES}
 JOINTS = [b["joint"] for b in BODIES if "joint" in b]  # MJCF order: left leg, head, right leg
@@ -233,7 +235,10 @@ def build_robot(d: Diagram, goal_nodes: dict, q0=HOME, floating=True, policy=Non
     capacitance, released 0.1 mm above the floor), or a dict for the robot a policy drives:
     rigid Revolute3DRigid joints that carry the servo armature, XL330Rigid servos whose gain is the
     signal `policy["kp"]` (node, port), an ideal supply at v_bat, the soles loaded at the start,
-    and with `policy["bumpers"]` the trunk, head and shin bumper points.
+    and with `policy["bumpers"]` the trunk, head and shin bumper points. With `policy["backlash"]`
+    the servos are XL330Backlash (microduck_rl's play hinge, the armature on the motor side, the
+    joints without it), each with its play hinge's MuJoCo dof_invweight0 and the play `gap`
+    (global `backlash`).
     """
     from build_model import actuator, rigid_actuator
 
@@ -303,7 +308,7 @@ def build_robot(d: Diagram, goal_nodes: dict, q0=HOME, floating=True, policy=Non
               params=pose_params(np.linalg.inv(t_pb) @ cp))
         if policy is not None:
             d.ref(n["joint"], "stdlib:spatial/Revolute3DRigid", x + 100, y,
-                  params={"q0": q0[joint], "Ja": "armature"})
+                  params={"q0": q0[joint], "Ja": "0.0" if policy.get("backlash") else "armature"})
         else:
             d.ref(n["joint"], "stdlib:spatial/Revolute3D", x + 100, y,
                   params={"kt": K_HELD, "kr": K_HELD, "bt": 2 * math.sqrt(K_HELD * 0.05),
@@ -324,7 +329,11 @@ def build_robot(d: Diagram, goal_nodes: dict, q0=HOME, floating=True, policy=Non
         world_pose[b["name"]] = (n["W"], "g")
         # the actuator
         if policy is not None:
-            rigid_actuator(d, joint, x + 100, y - 400, q0=q0[joint], ws=policy.get("ws"))
+            if policy.get("backlash"):
+                rigid_actuator(d, joint, x + 100, y - 400, q0=q0[joint], ws=policy.get("ws"),
+                               invw=PLAY_DATA["joints"][joint]["invweight0"], gap="backlash")
+            else:
+                rigid_actuator(d, joint, x + 100, y - 400, q0=q0[joint], ws=policy.get("ws"))
             d.sig(n["joint"], "qout", joint, "q")
             d.sig(*policy["kp"], joint, "kp")
         else:
@@ -339,11 +348,16 @@ def build_robot(d: Diagram, goal_nodes: dict, q0=HOME, floating=True, policy=Non
                 add_contact(d, n, cb, f"{side}{k}", pt, x + 600, y + 700 + 120 * k, CONTACT, "Foot")
 
 
-def robot_globals(policy=False):
+def robot_globals(policy=False, backlash=False):
     from build_model import firmware_globals
+    import xl330 as xl
 
     if policy:
-        return firmware_globals(7.4)
+        out = firmware_globals(7.4)
+        if backlash:
+            out.append({"name": "backlash", "value": fmt(xl.PLAY["gap"]), "unit": "rad",
+                        "description": "Gear play of every servo, total (microduck_rl add_backlash.py: 2 deg); 0 closes it"})
+        return out
     return firmware_globals(7.4) + [
         {"name": "r_bat", "value": fmt(R_BAT), "unit": "Ohm",
          "description": "Battery + wiring resistance (assumed; training randomises the sag 0..0.2 V per N m)"},
@@ -445,7 +459,7 @@ def policy_target_pose() -> dict:
     return squat_pose(SQUAT_DEPTH)
 
 
-def microduck_policy(bumpers=True) -> dict:
+def microduck_policy(bumpers=True, backlash=False) -> dict:
     """The microduck a walking policy drives, exported as an FMU for the browser demo.
 
     Inputs (ExportInputPass, so the model keeps its own scripted stimulus in simulation and the
@@ -471,7 +485,7 @@ def microduck_policy(bumpers=True) -> dict:
     d.ref("Gain", "stdlib:sources/Constant", -1500, -1700, params={"value": "kp_fw"})
     d.ref("kp", "stdlib:converters/ExportInputPass", -1350, -1700, params={"value": KP_WALK})
     d.sig("Gain", "y", "kp", "u")
-    build_robot(d, goals, policy={"kp": ("kp", "y"), "bumpers": bumpers, "ws": POLICY_WS})
+    build_robot(d, goals, policy={"kp": ("kp", "y"), "bumpers": bumpers, "ws": POLICY_WS, "backlash": backlash})
     # ---- outputs
     d.ref("Trunk", "project:TrunkSensors", -300, 300)
     d.sig("Free", "pose", "Trunk", "pose")
@@ -494,29 +508,47 @@ def microduck_policy(bumpers=True) -> dict:
         d.sig(f"Load{side}", "y", f"Sum{side}", "u")
         d.ref(name, "stdlib:converters/ExportOutput", -100, 1200 + (0 if side == "L" else 200))
         d.sig(f"Sum{side}", "y", name, "u")
-    d.note("**microduck for a policy.** 14 joint targets and the servo gain in (the export inputs), the "
-           "joint angles and rates, the trunk's gyro, orientation, position and projected gravity and the "
-           "sole loads out: what velstand.onnx reads and writes at 50 Hz. Rigid joints carry the servo "
-           "armature (XL330Rigid: rigid gear, no backlash), the soles start loaded at HOME, the trunk, head "
-           "and shins have bumper points. In simulation the targets hold HOME and step to a 15 mm squat at "
-           "0.3 s (no policy: HOME tips forward, as in microduck-stand); the FMU takes them from the host.", -1500, -2000, 1000, 180)
+    if backlash:
+        d.note("**microduck for a policy, with gear play.** As microduck-policy, but every servo is XL330Backlash: "
+               "the 2 deg play hinge of microduck_rl's backlash robots (the one velstand.onnx was trained on) "
+               "between the gear and the link, MuJoCo's soft limit at both ends, the encoder on the link. The "
+               "joints carry no armature (it is on the motor side). The global `backlash` is the play of every "
+               "servo (0 closes it); the play starts centred, as training resets it, so the robot settles into "
+               "it in the first milliseconds. In simulation the targets hold HOME and step to a 15 mm squat at "
+               "0.3 s; the FMU takes them from the host.", -1500, -2000, 1000, 200)
+    else:
+        d.note("**microduck for a policy.** 14 joint targets and the servo gain in (the export inputs), the "
+               "joint angles and rates, the trunk's gyro, orientation, position and projected gravity and the "
+               "sole loads out: what velstand.onnx reads and writes at 50 Hz. Rigid joints carry the servo "
+               "armature (XL330Rigid: rigid gear, no backlash), the soles start loaded at HOME, the trunk, head "
+               "and shins have bumper points. In simulation the targets hold HOME and step to a 15 mm squat at "
+               "0.3 s (no policy: HOME tips forward, as in microduck-stand); the FMU takes them from the host.", -1500, -2000, 1000, 180)
     return {
-        "format": "bgsim.model", "language": "0.1.0", "name": "microduck-policy",
-        "$comment": "The microduck with the policy interface (joint targets and gain in, sensors out), for the FMU export.",
+        "format": "bgsim.model", "language": "0.1.0", "name": "microduck-policy-backlash" if backlash else "microduck-policy",
+        "$comment": ("The microduck with the policy interface and microduck_rl's 2 deg gear play (XL330Backlash), for the FMU export."
+                     if backlash else
+                     "The microduck with the policy interface (joint targets and gain in, sensors out), for the FMU export."),
         "diagram": d.document(),
         "settings": settings(POLICY_T_END, reltol=1e-5, abstol=1e-7, points=401),
-        "parameters": robot_globals(policy=True),
-        "plots": policy_plots(),
+        "parameters": robot_globals(policy=True, backlash=backlash),
+        "plots": policy_plots(backlash),
     }
 
 
-def policy_plots():
-    return [
+def microduck_policy_backlash() -> dict:
+    return microduck_policy(backlash=True)
+
+
+def policy_plots(backlash=False):
+    out = [
         {"id": "p1", "title": "Trunk height and projected gravity", "signals": ["trunk_z/u", "gravity_x/u", "gravity_y/u", "gravity_z/u"]},
         {"id": "p2", "title": "Leg targets and joint angles", "signals": [s for j in LEGS[:3] for s in (f"{j}_target/y", f"{j}_q/u")]},
         {"id": "p3", "title": "Leg motor currents", "signals": [f"{j}/Current/y" for j in LEGS]},
         {"id": "p4", "title": "Sole loads", "signals": ["left_foot_contact/u", "right_foot_contact/u"]},
     ]
+    if backlash:
+        out.append({"id": "p5", "title": "Leg play angles (gear minus link)", "signals": [f"{j}/Backlash/phi" for j in LEGS]})
+    return out
 
 
 def p_stiffness(v=7.4, kp=None) -> float:
@@ -563,7 +595,7 @@ def hang_reference(goal: dict) -> dict:
     return out
 
 
-MODEL_BUILDERS = [microduck_stand, microduck_hang, microduck_policy]
+MODEL_BUILDERS = [microduck_stand, microduck_hang, microduck_policy, microduck_policy_backlash]
 
 
 def report() -> None:

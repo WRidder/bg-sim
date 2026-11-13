@@ -7572,5 +7572,205 @@
         ]
       }
     ]
-  }
+  },
+  "scene": {
+    "file": "scenes/microduck-hang.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:trunk_base",
+      "property": "pose",
+      "signal": [
+        "TrunkPose/g[1]",
+        "TrunkPose/g[2]",
+        "TrunkPose/g[3]",
+        "TrunkPose/g[4]",
+        "TrunkPose/g[5]",
+        "TrunkPose/g[6]",
+        "TrunkPose/g[7]"
+      ]
+    },
+    {
+      "target": "link:yaw2roll",
+      "property": "pose",
+      "signal": [
+        "left_hip_yaw_W/g[1]",
+        "left_hip_yaw_W/g[2]",
+        "left_hip_yaw_W/g[3]",
+        "left_hip_yaw_W/g[4]",
+        "left_hip_yaw_W/g[5]",
+        "left_hip_yaw_W/g[6]",
+        "left_hip_yaw_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:hip_l",
+      "property": "pose",
+      "signal": [
+        "left_hip_roll_W/g[1]",
+        "left_hip_roll_W/g[2]",
+        "left_hip_roll_W/g[3]",
+        "left_hip_roll_W/g[4]",
+        "left_hip_roll_W/g[5]",
+        "left_hip_roll_W/g[6]",
+        "left_hip_roll_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:upper_leg_left",
+      "property": "pose",
+      "signal": [
+        "left_hip_pitch_W/g[1]",
+        "left_hip_pitch_W/g[2]",
+        "left_hip_pitch_W/g[3]",
+        "left_hip_pitch_W/g[4]",
+        "left_hip_pitch_W/g[5]",
+        "left_hip_pitch_W/g[6]",
+        "left_hip_pitch_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:leg",
+      "property": "pose",
+      "signal": [
+        "left_knee_W/g[1]",
+        "left_knee_W/g[2]",
+        "left_knee_W/g[3]",
+        "left_knee_W/g[4]",
+        "left_knee_W/g[5]",
+        "left_knee_W/g[6]",
+        "left_knee_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:ankle_left",
+      "property": "pose",
+      "signal": [
+        "left_ankle_W/g[1]",
+        "left_ankle_W/g[2]",
+        "left_ankle_W/g[3]",
+        "left_ankle_W/g[4]",
+        "left_ankle_W/g[5]",
+        "left_ankle_W/g[6]",
+        "left_ankle_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:neck",
+      "property": "pose",
+      "signal": [
+        "neck_pitch_W/g[1]",
+        "neck_pitch_W/g[2]",
+        "neck_pitch_W/g[3]",
+        "neck_pitch_W/g[4]",
+        "neck_pitch_W/g[5]",
+        "neck_pitch_W/g[6]",
+        "neck_pitch_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:neck_pitch",
+      "property": "pose",
+      "signal": [
+        "head_pitch_W/g[1]",
+        "head_pitch_W/g[2]",
+        "head_pitch_W/g[3]",
+        "head_pitch_W/g[4]",
+        "head_pitch_W/g[5]",
+        "head_pitch_W/g[6]",
+        "head_pitch_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:yaw_roll_motion",
+      "property": "pose",
+      "signal": [
+        "head_yaw_W/g[1]",
+        "head_yaw_W/g[2]",
+        "head_yaw_W/g[3]",
+        "head_yaw_W/g[4]",
+        "head_yaw_W/g[5]",
+        "head_yaw_W/g[6]",
+        "head_yaw_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:jaw_soft",
+      "property": "pose",
+      "signal": [
+        "head_roll_W/g[1]",
+        "head_roll_W/g[2]",
+        "head_roll_W/g[3]",
+        "head_roll_W/g[4]",
+        "head_roll_W/g[5]",
+        "head_roll_W/g[6]",
+        "head_roll_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:bearing_roll",
+      "property": "pose",
+      "signal": [
+        "right_hip_yaw_W/g[1]",
+        "right_hip_yaw_W/g[2]",
+        "right_hip_yaw_W/g[3]",
+        "right_hip_yaw_W/g[4]",
+        "right_hip_yaw_W/g[5]",
+        "right_hip_yaw_W/g[6]",
+        "right_hip_yaw_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:hip_l_2",
+      "property": "pose",
+      "signal": [
+        "right_hip_roll_W/g[1]",
+        "right_hip_roll_W/g[2]",
+        "right_hip_roll_W/g[3]",
+        "right_hip_roll_W/g[4]",
+        "right_hip_roll_W/g[5]",
+        "right_hip_roll_W/g[6]",
+        "right_hip_roll_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:upper_leg_right",
+      "property": "pose",
+      "signal": [
+        "right_hip_pitch_W/g[1]",
+        "right_hip_pitch_W/g[2]",
+        "right_hip_pitch_W/g[3]",
+        "right_hip_pitch_W/g[4]",
+        "right_hip_pitch_W/g[5]",
+        "right_hip_pitch_W/g[6]",
+        "right_hip_pitch_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:leg_2",
+      "property": "pose",
+      "signal": [
+        "right_knee_W/g[1]",
+        "right_knee_W/g[2]",
+        "right_knee_W/g[3]",
+        "right_knee_W/g[4]",
+        "right_knee_W/g[5]",
+        "right_knee_W/g[6]",
+        "right_knee_W/g[7]"
+      ]
+    },
+    {
+      "target": "link:ankle_right",
+      "property": "pose",
+      "signal": [
+        "right_ankle_W/g[1]",
+        "right_ankle_W/g[2]",
+        "right_ankle_W/g[3]",
+        "right_ankle_W/g[4]",
+        "right_ankle_W/g[5]",
+        "right_ankle_W/g[6]",
+        "right_ankle_W/g[7]"
+      ]
+    }
+  ]
 }

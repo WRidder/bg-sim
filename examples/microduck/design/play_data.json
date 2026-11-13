@@ -1,0 +1,301 @@
+{
+ "source": "github.com/pollen-robotics/microduck_rl@0daab160d3fb1c2cbaba16a4a19052f36709dd9e:src/mjlab_microduck/robot/microduck/robot_allcollisions_backlash.xml",
+ "mujoco": "4.0.1",
+ "servo_armature": 0.0018077432831600838,
+ "joints": {
+  "left_hip_yaw": {
+   "invweight0": 891.909039869596,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "left_hip_roll": {
+   "invweight0": 822.3323011036957,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "left_hip_pitch": {
+   "invweight0": 855.4029723502656,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "left_knee": {
+   "invweight0": 932.6552502386148,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "left_ankle": {
+   "invweight0": 988.3338700476597,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "neck_pitch": {
+   "invweight0": 802.8222825313293,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "head_pitch": {
+   "invweight0": 866.6486766200392,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "head_yaw": {
+   "invweight0": 832.9104596534323,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "head_roll": {
+   "invweight0": 885.512743199618,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "right_hip_yaw": {
+   "invweight0": 891.8997791899077,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "right_hip_roll": {
+   "invweight0": 822.2523137839314,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "right_hip_pitch": {
+   "invweight0": 855.3992482328713,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "right_knee": {
+   "invweight0": 932.6589213354764,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  },
+  "right_ankle": {
+   "invweight0": 988.3344731755444,
+   "armature": 0.001,
+   "damping": 0.01,
+   "frictionloss": 0.0,
+   "range": [
+    -0.017453292519943295,
+    0.017453292519943295
+   ],
+   "solreflimit": [
+    0.01,
+    1.0
+   ],
+   "solimplimit": [
+    0.95,
+    0.999,
+    0.0001,
+    0.5,
+    2.0
+   ]
+  }
+ }
+}

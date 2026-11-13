@@ -16,8 +16,12 @@ The **microduck** of Pollen Robotics is a 25 cm, 0.74 kg biped with 15 Dynamixel
 | Rigid servo on the bench (`xl330-rigid-step`) | the bench with `XL330Rigid`, the servo of the policy robot |
 | Rigid servo torque-speed (`xl330-rigid-torque-speed`) | the torque-speed curve of `XL330Rigid` |
 | Robot for a policy (`microduck-policy`) | the robot the walking policy drives in the browser demo, exported as an FMU |
+| Servo with gear play on the bench (`xl330-backlash-step`, `xl330-backlash-reversal`) | `XL330Backlash`, the servo with the gear play of training, against MuJoCo running the same bench |
+| Robot for a policy with gear play (`microduck-policy-backlash`) | `microduck-policy` with `XL330Backlash` in every joint, as velstand was trained |
 
-The servo is the **library subsystem** `XL330` (`library/XL330.bgsub.json`). It is drawn once and placed once per joint: one instance on each bench and 14 in each robot, all on the battery bus. A second subsystem, `XL330Rigid`, keeps the firmware, the winding and the friction but drops the gear play, as the training simulation does; it is the servo of the robot that the published walking policy drives. Each instance can set its own P gain, friction scale, rotor inertia, backlash and initial angle (the subsystem's pins), as the domain randomisation of training does.
+The four robot models have a **3D view**: every body is drawn with Pollen Robotics' own CAD parts from microduck_rl, in the frames the model uses, and moves with its body. These meshes are licensed CC BY-NC-SA 4.0, for non-commercial use only (see `meshes/NOTICE`).
+
+The servo is the **library subsystem** `XL330` (`library/XL330.bgsub.json`). It is drawn once and placed once per joint: one instance on each bench and 14 in each robot, all on the battery bus. A second subsystem, `XL330Rigid`, keeps the firmware, the winding and the friction but drops the gear play, as the training simulation does; it is the servo of the robot that the published walking policy drives. A third, `XL330Backlash`, adds back the 2° of gear play that the policy was trained with, built as the training simulator builds it: a passive hinge after the gear with MuJoCo's soft joint limit at ±1°. Each instance can set its own P gain, friction scale, rotor inertia, backlash and initial angle (the subsystem's pins), as the domain randomisation of training does.
 
 ![The bench model: goal, supply, one XL330 instance and the pendulum arm|900](@fig:bench)
 
@@ -27,6 +31,12 @@ The servo is the **library subsystem** `XL330` (`library/XL330.bgsub.json`). It 
 - **Motor and gear.** An `MTF` H-bridge (modulus = duty) takes power from the bus. A winding `R` and an `EMConverter` drive the rotor `I`, and a gear `TF` of 1/288.4 leads to the output. Every value is the BAM M6 fit: $k_t$ and $R$ at the output, and the armature reflected to the rotor.
 - **Friction.** `BamFriction` is a nonlinear `R` with the M6 law: a load-dependent Coulomb budget that grows with the motor torque and the external torque, a Stribeck part near rest, and viscous friction.
 - **Backlash.** `SmoothBacklash` gives 2° of play between the gear output and the horn. The encoder reads the horn, so the P law sees the play, as on the real servo.
+
+## Gear play as the policy was trained with it
+
+`XL330Backlash` is `XL330Rigid` with microduck_rl's backlash hinge between the gear and the horn: 2° of play, its own armature 0.001 kg·m² and damping 0.01 N·m·s/rad, and at each end MuJoCo's soft joint limit (`MjBacklash`). Inside a stop the play angle follows MuJoCo's critically damped reference (10 ms): statically the stop is stiff (a load of 0.3 N·m sinks the play about 0.09 mrad into it), but a play that arrives fast overshoots the flank by a few mrad before it is brought back. The encoder reads the horn, through the play, as the policy's observations did. On the bench the play angle agrees with MuJoCo running the same bench to 0.35 mrad where it rests on a flank or overshoots it, and the encoder to 8.4 mrad.
+
+`microduck-policy-backlash` puts `XL330Backlash` in all 14 joints. In bg-sim it stands and squats as `microduck-policy` does, with each knee's play resting on its flank. Exported as an FMU it is not usable yet: at a fixed 1 ms step it drifts from bg-sim by more than the export gates allow (30 mrad in a hip joint during the squat), under the walking policy it falls within a second at every forward command, and it costs about four times the rigid robot per tick. The browser demo therefore keeps the robot without gear play.
 
 Continue with [parameters and sources](page:parameters) and [limits](page:limits).
 @@ page @project parameters robot | Parameters and sources
@@ -42,8 +52,8 @@ The README of the example has the full table, with a status (sourced, assumed or
 
 The goal is a model in which a policy behaves as it does on the real robot. **That transfer is not shown here.** The checks cover the actuator and the body without a policy. The limits, most important first:
 
-1. **No real robot.** Nothing here is checked against hardware. The published walking policy runs on the exported `microduck-policy` FMU in the browser demo; that shows what the policy does on this model, not that it would transfer. At zero command it stands (10 s, at most 2.24° of tilt). At half forward (0.2 m/s asked) it shifts its weight and stands. At full forward (0.4 m/s asked) it walks, at about half that speed and curving right (1.8 m in 10 s, heading turned 56°), without falling. One run each, in this model only.
-2. **Differences from the training simulator** (mjlab with BAM), each of which can change a gait: no backlash (velstand was trained with 2° of play in every joint, `XL330Rigid` has none, to keep the model real-time); a fixed 20 ms latency where training randomises 15 to 30 ms; an ideal supply; the deploy action scale 0.9 where training used 1.0; no one-step lag of the observed joint velocities; a flat floor; this model's contact law, four points per sole; friction smoothed instead of BAM's.
+1. **No real robot.** Nothing here is checked against hardware. The published walking policy runs on the exported `microduck-policy` FMU in the browser demo; that shows what the policy does on this model, not that it would transfer. The demo feeds the policy joint velocities one control tick old, as training does. At zero command it stands (10 s, at most 2.31° of tilt). Up to 0.24 m/s asked (half forward is 0.2 m/s) it shifts its weight and stands. From 0.28 m/s it walks, slower than asked and on a curve: at full forward (0.4 m/s asked) 1.85 m in 10 s, 0.195 m/s over the last 5 s, heading turned 38°, without falling. One run each, in this model only.
+2. **Differences from the training simulator** (mjlab with BAM), each of which can change a gait: no backlash in `microduck-policy` (velstand was trained with 2° of play in every joint; `microduck-policy-backlash` has it, `XL330Rigid` has none); a fixed 20 ms latency where training randomises 15 to 30 ms; an ideal supply; the deploy action scale 0.9 where training used 1.0; a flat floor; this model's contact law, four points per sole; friction smoothed instead of BAM's.
 3. **Current limit.** Training and this model use BAM's 1.75 A window. The robot's impact-guard firmware limits the current to 1.0 A, derates the PWM with speed and brakes; none of that is modelled.
 4. **Two BAM fits disagree**, by 6 % in $k_t$, 11 % in $R$ and 13 % in the armature. The newer fit is not the one the policies were trained with.
 5. **Latency** is assumed (20 ms). The newer BAM fit identifies 10 ms.
@@ -199,7 +209,7 @@ The robot is released 0.1 mm above the floor in the STAND pose, on a free joint 
 
 The robot first settles into its gear play and its P stiffness: the knees bend, and the weight moves from the heels to the toes. Then it tips forward. HOME at walking gain is balanced only by a policy that keeps balancing it. The microduck design notes report the same from their own simulation: "a robot holding it on the floor tips past 40° within a second or two". Here the trunk passes 40° at 1.14 s.
 
-Only the soles touch the ground, so the run ends at 1.3 s, before the head would hit the floor.
+Only the soles touch the ground, so the run ends at 1.3 s, before the head would hit the floor. Open the 3D view to watch the robot tip forward.
 
 Try a higher `kp_fw` and see how long the robot stays up. A run takes a few minutes.
 @@ page microduck-stand results overview | Results

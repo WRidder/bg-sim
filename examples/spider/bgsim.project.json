@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "spider",
+  "models": [
+    "spider-stand",
+    "spider-walk"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

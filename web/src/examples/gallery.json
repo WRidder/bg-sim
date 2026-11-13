@@ -16,6 +16,23 @@
       "aerial-contact"
     ]
   },
+  "aim9x": {
+    "title": "AIM-9X Sidewinder",
+    "description": "The AIM-9X as a six-degree-of-freedom bond graph: a burning solid rocket motor, a slender cruciform airframe with canard control, a two-axis thrust-vector…",
+    "hasScene": true,
+    "models": [
+      "aim9x-airframe",
+      "aim9x-control",
+      "aim9x-intercept"
+    ],
+    "capture": {
+      "model": "aim9x-airframe",
+      "run": true,
+      "time": 1,
+      "view": "iso",
+      "zoom": 2
+    }
+  },
   "ball-and-plate": {
     "title": "Ball and plate",
     "description": "A 2 DOF ball-and-plate lab rig: a steel ball rolling on a servo-tilted plate, camera feedback, cascaded PID against LQR with a Kalman filter.",
@@ -95,6 +112,20 @@
       "bridge-pier-static",
       "bridge-pier-modes"
     ]
+  },
+  "buck-converter": {
+    "title": "Buck converter",
+    "description": "A 12 V → 5 V buck with a PID voltage loop and feed-forward.",
+    "hasScene": true,
+    "models": [
+      "buck-averaged",
+      "buck-switched"
+    ],
+    "capture": {
+      "model": "buck-averaged",
+      "run": true,
+      "at": 0.5
+    }
   },
   "cantilever-modes": {
     "title": "Cantilever modes",
@@ -416,10 +447,12 @@
   },
   "inverted-pendulum-cart": {
     "title": "Inverted pendulum cart",
-    "description": "A bond-graph cart-pole with an LQR balance controller.",
+    "description": "A bond-graph cart-pole with LQR, rate-limited LQR and constrained MPC.",
     "hasScene": true,
     "models": [
-      "inverted-pendulum-cart"
+      "inverted-pendulum-cart",
+      "inverted-pendulum-cart-mpc",
+      "inverted-pendulum-cart-rate"
     ]
   },
   "lunar-module": {
@@ -461,7 +494,7 @@
   "microduck": {
     "title": "microduck biped",
     "description": "Pollen Robotics' 25 cm biped: the Dynamixel XL330 servo (Rhoban's BAM fit) drawn once as a library subsystem, checked on its bench, then 14 of them in the robot.",
-    "hasScene": false,
+    "hasScene": true,
     "models": [
       "xl330-step",
       "xl330-torque-speed",
@@ -722,6 +755,38 @@
       "model": "open-loop",
       "run": true,
       "time": 0.4,
+      "zoom": 1
+    }
+  },
+  "single-propeller-drone": {
+    "title": "Single-propeller drone",
+    "description": "One motor, no servos: a once-per-revolution motor torque makes the hub moment for roll and pitch; fins in the slipstream carry the motor reaction. No yaw actuator.",
+    "hasScene": true,
+    "models": [
+      "single-propeller-drone",
+      "single-propeller-drone-hover"
+    ],
+    "capture": {
+      "model": "single-propeller-drone",
+      "run": true,
+      "time": 3.5,
+      "view": "iso",
+      "zoom": 2
+    }
+  },
+  "spider": {
+    "title": "T8X spider robot",
+    "description": "An eight-legged T8X-class robot: 24 joint servos, foot contact, an alternating tetrapod gait with a constant-velocity stance and analytic leg IK.",
+    "hasScene": true,
+    "models": [
+      "spider-stand",
+      "spider-walk"
+    ],
+    "capture": {
+      "model": "spider-walk",
+      "run": true,
+      "time": 8,
+      "view": "iso",
       "zoom": 1
     }
   },

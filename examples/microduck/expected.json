@@ -219,6 +219,10 @@
     "microduck-hang": {
       "checks": [
         {
+          "kind": "scene_bindings",
+          "note": "every link of the scene follows the world pose of its body frame"
+        },
+        {
           "kind": "zero_crossing",
           "signal": "left_knee/Latency/y",
           "level": 0.28809556933373975,
@@ -390,6 +394,10 @@
     },
     "microduck-stand": {
       "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "every link of the scene follows the world pose of its body frame"
+        },
         {
           "kind": "zero_crossing",
           "signal": "Free/pose[1]",
@@ -627,6 +635,10 @@
     "microduck-policy": {
       "checks": [
         {
+          "kind": "scene_bindings",
+          "note": "every link of the scene follows the world pose of its body frame"
+        },
+        {
           "kind": "cursor_value",
           "signal": "left_foot_contact/u",
           "t": 0.25,
@@ -673,6 +685,449 @@
           "note": "no algebraic loop and no causality conflict: XL330Rigid reads the friction's load torque sampled every 5 ms. W201 is expected: the rigid joint's hard constraints put the link inertia in derivative causality (Revolute3DRigid)"
         }
       ]
+    },
+    "xl330-backlash-step": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.15,
+          "value": 0.0378783,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.2,
+          "value": 0.2779723,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.3,
+          "value": 0.765364,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.5,
+          "value": 0.9088026,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.85,
+          "value": 0.9086197,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.95,
+          "value": 0.86014,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.0,
+          "value": 0.6132814,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.1,
+          "value": 0.07419864,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.5,
+          "value": 0.003245186,
+          "abs": 0.02,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.02 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "final_value",
+          "signal": "J/qout",
+          "t": 1.6,
+          "value": 0.009658893,
+          "abs": 0.002,
+          "note": "rest angle after the return, MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.15,
+          "value": 0.02278163,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.3,
+          "value": 0.01749507,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.9,
+          "value": 0.01751699,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 1.05,
+          "value": 0.02253419,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 1.2,
+          "value": 0.01748129,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Servo/Backlash/phi",
+          "from_t": 0.13,
+          "to_t": 0.2,
+          "value": 0.02333306,
+          "note": "the first impact on the flank overshoots it by 5.4 mrad in MuJoCo (soft limit, time constant 10 ms), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); bg-sim may not overshoot by more than 0.5 mrad beyond that"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W202",
+            "E106"
+          ],
+          "note": "no algebraic loop and no causality conflict (XL330Backlash samples the friction's load torque as XL330Rigid does). W201 is expected: the joint's hard constraints put the link inertia in derivative causality"
+        }
+      ]
+    },
+    "xl330-backlash-reversal": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.2,
+          "value": 0.06989405,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.3,
+          "value": 0.2312752,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.4,
+          "value": 0.3100413,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.5,
+          "value": 0.3098878,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.65,
+          "value": 0.2941336,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.7,
+          "value": 0.2234662,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.8,
+          "value": 0.06316559,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 0.9,
+          "value": -0.01050233,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J/qout",
+          "t": 1.0,
+          "value": -0.01009834,
+          "abs": 0.01,
+          "note": "encoder angle (horn, through the play), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py). 0.01 rad: as xl330-rigid-step, the delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick a few mrad apart from bg-sim's friction law"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.175,
+          "value": 0.01969465,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.225,
+          "value": 0.01753368,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.375,
+          "value": -0.0191612,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.425,
+          "value": -0.01749869,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.7,
+          "value": -0.01747777,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.875,
+          "value": 0.01893355,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Servo/Backlash/phi",
+          "t": 0.925,
+          "value": 0.01747312,
+          "abs": 0.001,
+          "note": "play angle on or past a flank (the flanks are at +-0.01745 rad), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); 1 mrad, a twentieth of the play"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Servo/Backlash/phi",
+          "from_t": 0.15,
+          "to_t": 0.2,
+          "value": 0.02020488,
+          "note": "the first impact on the flank overshoots it by 2.3 mrad in MuJoCo (soft limit, time constant 10 ms), MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step (design/backlash_bench.py); bg-sim may not overshoot by more than 0.5 mrad beyond that"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W202",
+            "E106"
+          ],
+          "note": "no algebraic loop and no causality conflict (XL330Backlash samples the friction's load torque as XL330Rigid does). W201 is expected: the joint's hard constraints put the link inertia in derivative causality"
+        }
+      ]
+    },
+    "microduck-policy-backlash": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "every link of the scene follows the world pose of its body frame"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_foot_contact/u",
+          "t": 0.25,
+          "value": 3.6161777979000003,
+          "rtol": 0.01,
+          "note": "standing still at HOME, each sole carries half the weight m g = 7.2324 N (the robot is symmetric; the slow forward tip changes this by well under 1 %)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_foot_contact/u",
+          "t": 0.25,
+          "value": 3.6161777979000003,
+          "rtol": 0.01,
+          "note": "standing still at HOME, each sole carries half the weight m g = 7.2324 N (the robot is symmetric; the slow forward tip changes this by well under 1 %)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "gravity_y/u",
+          "value": 0.001,
+          "note": "left-right symmetry: the projected gravity has no sideways part while both legs do the same"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "left_knee/Latency/y",
+          "level": 0.28809556933373975,
+          "direction": "up",
+          "n": 1,
+          "value": 0.3175,
+          "abs": 0.0001,
+          "note": "the knee target steps at 0.3 s and reaches the firmware t_latency = 20 ms later, ramped over the 5 ms tick of the delay line"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_knee/Current/y",
+          "value": 1.750001,
+          "note": "BAM's current-limit window bounds the winding current by i_limit = 1.75 A"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_hip_yaw/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_hip_roll/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_hip_pitch/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_knee/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "left_ankle/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "neck_pitch/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "head_pitch/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "head_yaw/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "head_roll/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "right_hip_yaw/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "right_hip_roll/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "right_hip_pitch/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "right_knee/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "right_ankle/Backlash/phi",
+          "value": 0.023453,
+          "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "left_knee/Backlash/phi",
+          "t": 0.25,
+          "value": -0.017453292519943295,
+          "abs": 0.0005,
+          "note": "standing at HOME the knee carries the body and its play rests on a flank (MuJoCo's soft limit lets a load of a few tenths of a N m sink it by about 0.1 mrad); the knee axes are mirrored left to right"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "right_knee/Backlash/phi",
+          "t": 0.25,
+          "value": 0.017453292519943295,
+          "abs": 0.0005,
+          "note": "standing at HOME the knee carries the body and its play rests on a flank (MuJoCo's soft limit lets a load of a few tenths of a N m sink it by about 0.1 mrad); the knee axes are mirrored left to right"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W202",
+            "E106"
+          ],
+          "note": "no algebraic loop and no causality conflict (XL330Backlash samples the friction's load torque as XL330Rigid does). W201 is expected: the joint's hard constraints put the link inertia in derivative causality"
+        }
+      ],
+      "run_timeout": 1200
     }
   }
 }

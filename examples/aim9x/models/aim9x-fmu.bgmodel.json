@@ -1,0 +1,4948 @@
+{
+ "format": "bgsim.model",
+ "language": "0.1.0",
+ "name": "aim9x-fmu",
+ "$comment": "Host-interface AIM-9X for apps/f16-sim: launch-relative target inputs, missile pose/status outputs, no fuze stop. Generated from aim9x-intercept by design/build_fmu_model.py; do not edit by hand.",
+ "diagram": {
+  "nodes": [
+   {
+    "id": "n001",
+    "name": "World",
+    "block": {
+     "ref": "stdlib:multibond/GroundSpatial"
+    },
+    "position": {
+     "x": 40,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n002",
+    "name": "Free",
+    "block": {
+     "ref": "stdlib:spatial/Free3D"
+    },
+    "position": {
+     "x": 220,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {
+     "qw": "cos(alpha0*pi/360)",
+     "qy": "-sin(alpha0*pi/360)",
+     "px": "mx0",
+     "py": "my0",
+     "pz": "h0"
+    },
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n003",
+    "name": "Body",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 430,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n004",
+    "name": "Inertia",
+    "block": {
+     "ref": "project:VariableInertia3D"
+    },
+    "position": {
+     "x": 650,
+     "y": 200
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {
+     "P": "[0.0, 0.0, 0.0, 85.3*vt0*cos(alpha0*pi/180), 0.0, -85.3*vt0*sin(alpha0*pi/180)]"
+    },
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n005",
+    "name": "Coriolis",
+    "block": {
+     "ref": "stdlib:multibond/CoriolisSpatial"
+    },
+    "position": {
+     "x": 650,
+     "y": 320
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n006",
+    "name": "Twist",
+    "block": {
+     "ref": "stdlib:multibond/DfSpatial"
+    },
+    "position": {
+     "x": 650,
+     "y": 440
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n007",
+    "name": "AeroW",
+    "block": {
+     "ref": "stdlib:multibond/ExternalWrenchSpatial"
+    },
+    "position": {
+     "x": 430,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n008",
+    "name": "ThrustW",
+    "block": {
+     "ref": "stdlib:multibond/ExternalWrenchSpatial"
+    },
+    "position": {
+     "x": 430,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n009",
+    "name": "WeightW",
+    "block": {
+     "ref": "stdlib:multibond/ExternalWrenchSpatial"
+    },
+    "position": {
+     "x": 430,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n010",
+    "name": "Weight",
+    "block": {
+     "ref": "project:MissileWeight"
+    },
+    "position": {
+     "x": 220,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n011",
+    "name": "Motor",
+    "block": {
+     "ref": "project:MissileMotor"
+    },
+    "position": {
+     "x": 860,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n012",
+    "name": "Axis1",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 120,
+     "y": 995
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n013",
+    "name": "Out1",
+    "block": {
+     "ref": "stdlib:bondgraph/MR"
+    },
+    "position": {
+     "x": 250,
+     "y": 995
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n014",
+    "name": "Axis2",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 120,
+     "y": 1050
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n015",
+    "name": "Out2",
+    "block": {
+     "ref": "stdlib:bondgraph/MR"
+    },
+    "position": {
+     "x": 250,
+     "y": 1050
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n016",
+    "name": "Axis3",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 120,
+     "y": 1105
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n017",
+    "name": "Out3",
+    "block": {
+     "ref": "stdlib:bondgraph/MR"
+    },
+    "position": {
+     "x": 250,
+     "y": 1105
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n018",
+    "name": "Axis4",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 120,
+     "y": 1160
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n019",
+    "name": "Out4",
+    "block": {
+     "ref": "stdlib:bondgraph/MR"
+    },
+    "position": {
+     "x": 250,
+     "y": 1160
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n020",
+    "name": "Axis5",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 120,
+     "y": 1215
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n021",
+    "name": "Out5",
+    "block": {
+     "ref": "stdlib:bondgraph/MR"
+    },
+    "position": {
+     "x": 250,
+     "y": 1215
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n022",
+    "name": "Axis6",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 120,
+     "y": 1270
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n023",
+    "name": "Out6",
+    "block": {
+     "ref": "stdlib:bondgraph/MR"
+    },
+    "position": {
+     "x": 250,
+     "y": 1270
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n024",
+    "name": "ISA",
+    "block": {
+     "ref": "project:ISA1976"
+    },
+    "position": {
+     "x": 860,
+     "y": 40
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n025",
+    "name": "Air",
+    "block": {
+     "ref": "project:MissileAirData"
+    },
+    "position": {
+     "x": 1060,
+     "y": 160
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n026",
+    "name": "CNa",
+    "block": {
+     "ref": "stdlib:continuous/Lookup1D"
+    },
+    "position": {
+     "x": 860,
+     "y": 260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "[0.0, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0]",
+     "table": "[2.6, 2.6, 2.8, 3.2, 3.4, 3.2, 3.0, 2.8, 2.7]"
+    },
+    "constants": {
+     "N": "9"
+    },
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n027",
+    "name": "CD0",
+    "block": {
+     "ref": "stdlib:continuous/Lookup1D"
+    },
+    "position": {
+     "x": 860,
+     "y": 360
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "[0.0, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0]",
+     "table": "[0.18, 0.18, 0.21, 0.36, 0.38, 0.32, 0.26, 0.23, 0.22]"
+    },
+    "constants": {
+     "N": "9"
+    },
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n028",
+    "name": "Aero",
+    "block": {
+     "ref": "project:MissileAero"
+    },
+    "position": {
+     "x": 1260,
+     "y": 460
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n029",
+    "name": "Fin1Travel",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 1960,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n030",
+    "name": "Fin1Mx",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 2110,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n031",
+    "name": "Fin1Err",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 2260,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[1.0, -1.0]"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n032",
+    "name": "Fin1Bw",
+    "block": {
+     "ref": "stdlib:continuous/Gain"
+    },
+    "position": {
+     "x": 2410,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "30.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n033",
+    "name": "Fin1Rate",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 2560,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-200.0",
+     "upper": "200.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n034",
+    "name": "Fin1",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 2710,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n035",
+    "name": "Fin2Travel",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 1960,
+     "y": 210
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n036",
+    "name": "Fin2Mx",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 2110,
+     "y": 210
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n037",
+    "name": "Fin2Err",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 2260,
+     "y": 210
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[1.0, -1.0]"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n038",
+    "name": "Fin2Bw",
+    "block": {
+     "ref": "stdlib:continuous/Gain"
+    },
+    "position": {
+     "x": 2410,
+     "y": 210
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "30.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n039",
+    "name": "Fin2Rate",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 2560,
+     "y": 210
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-200.0",
+     "upper": "200.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n040",
+    "name": "Fin2",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 2710,
+     "y": 210
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n041",
+    "name": "Fin3Travel",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 1960,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n042",
+    "name": "Fin3Mx",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 2110,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n043",
+    "name": "Fin3Err",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 2260,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[1.0, -1.0]"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n044",
+    "name": "Fin3Bw",
+    "block": {
+     "ref": "stdlib:continuous/Gain"
+    },
+    "position": {
+     "x": 2410,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "30.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n045",
+    "name": "Fin3Rate",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 2560,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-200.0",
+     "upper": "200.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n046",
+    "name": "Fin3",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 2710,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n047",
+    "name": "Fin4Travel",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 1960,
+     "y": 470
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n048",
+    "name": "Fin4Mx",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 2110,
+     "y": 470
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n049",
+    "name": "Fin4Err",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 2260,
+     "y": 470
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[1.0, -1.0]"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n050",
+    "name": "Fin4Bw",
+    "block": {
+     "ref": "stdlib:continuous/Gain"
+    },
+    "position": {
+     "x": 2410,
+     "y": 470
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "30.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n051",
+    "name": "Fin4Rate",
+    "block": {
+     "ref": "stdlib:continuous/Saturation"
+    },
+    "position": {
+     "x": 2560,
+     "y": 470
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-200.0",
+     "upper": "200.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n052",
+    "name": "Fin4",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 2710,
+     "y": 470
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "lower": "-25.0",
+     "upper": "25.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n054",
+    "name": "Mixer",
+    "block": {
+     "ref": "project:FinMixer"
+    },
+    "position": {
+     "x": 1760,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n055",
+    "name": "AP",
+    "block": {
+     "ref": "project:MissileAutopilot"
+    },
+    "position": {
+     "x": 1480,
+     "y": 340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n056",
+    "name": "RollCmd",
+    "block": {
+     "ref": "stdlib:sources/Constant"
+    },
+    "position": {
+     "x": 1260,
+     "y": 700
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n057",
+    "name": "TvcOn",
+    "block": {
+     "ref": "stdlib:sources/Constant"
+    },
+    "position": {
+     "x": 1260,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "tvc_on"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n058",
+    "name": "Seeker",
+    "block": {
+     "ref": "project:MissileSeeker"
+    },
+    "position": {
+     "x": 1480,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n059",
+    "name": "Target",
+    "block": {
+     "ref": "project:ExternalTarget"
+    },
+    "position": {
+     "x": 1060,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n061",
+    "name": "Guide",
+    "block": {
+     "ref": "project:ProNav"
+    },
+    "position": {
+     "x": 1660,
+     "y": 80
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "N": "nav_N",
+     "a_max": "a_max_g*9.80665"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n062",
+    "name": "Status",
+    "block": {
+     "ref": "project:MissileStatus"
+    },
+    "position": {
+     "x": 1760,
+     "y": 520
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "fuze_radius": "15.0",
+     "kill_radius": "20.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h061",
+    "name": "target_north_m",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1570
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "2000.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h062",
+    "name": "target_east_m",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h063",
+    "name": "target_down_m",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1710
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "-6000.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h064",
+    "name": "target_vn_mps",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "150.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h065",
+    "name": "target_ve_mps",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1850
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h066",
+    "name": "target_vd_mps",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1920
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h067",
+    "name": "target_ir_w",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 1990
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "1000000.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h068",
+    "name": "seeker_on",
+    "block": {
+     "ref": "stdlib:converters/ExportInput"
+    },
+    "position": {
+     "x": 900,
+     "y": 2100
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "1.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h069",
+    "name": "north_m",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 60
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h070",
+    "name": "west_m",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 120
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h071",
+    "name": "alt_m",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h072",
+    "name": "q_w",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 240
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h073",
+    "name": "q_x",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h074",
+    "name": "q_y",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 360
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h075",
+    "name": "q_z",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h076",
+    "name": "phi_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 480
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h077",
+    "name": "theta_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 540
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h078",
+    "name": "psi_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 600
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h079",
+    "name": "gamma_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 660
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h080",
+    "name": "vt_mps",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h081",
+    "name": "alpha_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h082",
+    "name": "beta_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h083",
+    "name": "qbar_pa",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 900
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h084",
+    "name": "mach",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 960
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h085",
+    "name": "n_z_g",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1020
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h086",
+    "name": "n_y_g",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1080
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h087",
+    "name": "mass_kg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1140
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h088",
+    "name": "lock",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1200
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h089",
+    "name": "range_m",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h090",
+    "name": "range_rate_mps",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1320
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h091",
+    "name": "min_range_m",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1380
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h092",
+    "name": "t_go_s",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1440
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h093",
+    "name": "fuze",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1500
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h094",
+    "name": "hit",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h095",
+    "name": "thrust_n",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1620
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h096",
+    "name": "fin1_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h097",
+    "name": "fin2_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1740
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h098",
+    "name": "fin3_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h099",
+    "name": "fin4_deg",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1860
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h100",
+    "name": "p_dps",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1920
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h101",
+    "name": "q_dps",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 1980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "h102",
+    "name": "r_dps",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2700,
+     "y": 2040
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   }
+  ],
+  "connections": [
+   {
+    "id": "b001",
+    "kind": "bond",
+    "from": {
+     "node": "n001",
+     "port": "p"
+    },
+    "to": {
+     "node": "n002",
+     "port": "parent"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b002",
+    "kind": "bond",
+    "from": {
+     "node": "n002",
+     "port": "child"
+    },
+    "to": {
+     "node": "n003"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b003",
+    "kind": "bond",
+    "from": {
+     "node": "n003"
+    },
+    "to": {
+     "node": "n004",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b004",
+    "kind": "bond",
+    "from": {
+     "node": "n003"
+    },
+    "to": {
+     "node": "n005",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b005",
+    "kind": "bond",
+    "from": {
+     "node": "n003"
+    },
+    "to": {
+     "node": "n006",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b006",
+    "kind": "bond",
+    "from": {
+     "node": "n007",
+     "port": "p"
+    },
+    "to": {
+     "node": "n003"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b007",
+    "kind": "bond",
+    "from": {
+     "node": "n008",
+     "port": "p"
+    },
+    "to": {
+     "node": "n003"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b008",
+    "kind": "bond",
+    "from": {
+     "node": "n009",
+     "port": "p"
+    },
+    "to": {
+     "node": "n003"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s009",
+    "kind": "signal",
+    "from": {
+     "node": "n004",
+     "port": "Pm"
+    },
+    "to": {
+     "node": "n005",
+     "port": "P"
+    },
+    "route": [],
+    "label": "momentum"
+   },
+   {
+    "id": "b010",
+    "kind": "bond",
+    "from": {
+     "node": "n012"
+    },
+    "to": {
+     "node": "n002",
+     "port": "drive1"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b011",
+    "kind": "bond",
+    "from": {
+     "node": "n012"
+    },
+    "to": {
+     "node": "n013",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b012",
+    "kind": "bond",
+    "from": {
+     "node": "n014"
+    },
+    "to": {
+     "node": "n002",
+     "port": "drive2"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b013",
+    "kind": "bond",
+    "from": {
+     "node": "n014"
+    },
+    "to": {
+     "node": "n015",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b014",
+    "kind": "bond",
+    "from": {
+     "node": "n016"
+    },
+    "to": {
+     "node": "n002",
+     "port": "drive3"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b015",
+    "kind": "bond",
+    "from": {
+     "node": "n016"
+    },
+    "to": {
+     "node": "n017",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b016",
+    "kind": "bond",
+    "from": {
+     "node": "n018"
+    },
+    "to": {
+     "node": "n002",
+     "port": "drive4"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b017",
+    "kind": "bond",
+    "from": {
+     "node": "n018"
+    },
+    "to": {
+     "node": "n019",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b018",
+    "kind": "bond",
+    "from": {
+     "node": "n020"
+    },
+    "to": {
+     "node": "n002",
+     "port": "drive5"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b019",
+    "kind": "bond",
+    "from": {
+     "node": "n020"
+    },
+    "to": {
+     "node": "n021",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b020",
+    "kind": "bond",
+    "from": {
+     "node": "n022"
+    },
+    "to": {
+     "node": "n002",
+     "port": "drive6"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "b021",
+    "kind": "bond",
+    "from": {
+     "node": "n022"
+    },
+    "to": {
+     "node": "n023",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s022",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "m"
+    },
+    "to": {
+     "node": "n004",
+     "port": "m"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s023",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "J"
+    },
+    "to": {
+     "node": "n004",
+     "port": "J"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s024",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "r_ang1"
+    },
+    "to": {
+     "node": "n013",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s025",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "r_ang2"
+    },
+    "to": {
+     "node": "n015",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s026",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "r_ang3"
+    },
+    "to": {
+     "node": "n017",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s027",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "r_lin"
+    },
+    "to": {
+     "node": "n019",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s028",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "r_lin"
+    },
+    "to": {
+     "node": "n021",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s029",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "r_lin"
+    },
+    "to": {
+     "node": "n023",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s030",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "tx"
+    },
+    "to": {
+     "node": "n008",
+     "port": "tx"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s031",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "ty"
+    },
+    "to": {
+     "node": "n008",
+     "port": "ty"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s032",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "tz"
+    },
+    "to": {
+     "node": "n008",
+     "port": "tz"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s033",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "fx"
+    },
+    "to": {
+     "node": "n008",
+     "port": "fx"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s034",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "fy_out"
+    },
+    "to": {
+     "node": "n008",
+     "port": "fy"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s035",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "fz_out"
+    },
+    "to": {
+     "node": "n008",
+     "port": "fz"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s036",
+    "kind": "signal",
+    "from": {
+     "node": "n002",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n010",
+     "port": "g"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s037",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "m"
+    },
+    "to": {
+     "node": "n010",
+     "port": "m"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s038",
+    "kind": "signal",
+    "from": {
+     "node": "n010",
+     "port": "tx"
+    },
+    "to": {
+     "node": "n009",
+     "port": "tx"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s039",
+    "kind": "signal",
+    "from": {
+     "node": "n010",
+     "port": "ty"
+    },
+    "to": {
+     "node": "n009",
+     "port": "ty"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s040",
+    "kind": "signal",
+    "from": {
+     "node": "n010",
+     "port": "tz"
+    },
+    "to": {
+     "node": "n009",
+     "port": "tz"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s041",
+    "kind": "signal",
+    "from": {
+     "node": "n010",
+     "port": "fx"
+    },
+    "to": {
+     "node": "n009",
+     "port": "fx"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s042",
+    "kind": "signal",
+    "from": {
+     "node": "n010",
+     "port": "fy"
+    },
+    "to": {
+     "node": "n009",
+     "port": "fy"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s043",
+    "kind": "signal",
+    "from": {
+     "node": "n010",
+     "port": "fz"
+    },
+    "to": {
+     "node": "n009",
+     "port": "fz"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s044",
+    "kind": "signal",
+    "from": {
+     "node": "n002",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n025",
+     "port": "g"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s045",
+    "kind": "signal",
+    "from": {
+     "node": "n006",
+     "port": "y"
+    },
+    "to": {
+     "node": "n025",
+     "port": "V"
+    },
+    "route": [],
+    "label": "twist"
+   },
+   {
+    "id": "s046",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "h"
+    },
+    "to": {
+     "node": "n024",
+     "port": "h"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s047",
+    "kind": "signal",
+    "from": {
+     "node": "n024",
+     "port": "rho"
+    },
+    "to": {
+     "node": "n025",
+     "port": "rho"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s048",
+    "kind": "signal",
+    "from": {
+     "node": "n024",
+     "port": "a"
+    },
+    "to": {
+     "node": "n025",
+     "port": "a"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s049",
+    "kind": "signal",
+    "from": {
+     "node": "n024",
+     "port": "p"
+    },
+    "to": {
+     "node": "n011",
+     "port": "pa"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s050",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n026",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s051",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n027",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s052",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "va"
+    },
+    "to": {
+     "node": "n028",
+     "port": "va"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s053",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "alpha"
+    },
+    "to": {
+     "node": "n028",
+     "port": "alpha"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s054",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "beta"
+    },
+    "to": {
+     "node": "n028",
+     "port": "beta"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s055",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "q_up"
+    },
+    "to": {
+     "node": "n028",
+     "port": "q_up"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s056",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "r_right"
+    },
+    "to": {
+     "node": "n028",
+     "port": "r_right"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s057",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "p"
+    },
+    "to": {
+     "node": "n028",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s058",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "qbar"
+    },
+    "to": {
+     "node": "n028",
+     "port": "qbar"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s059",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "vt"
+    },
+    "to": {
+     "node": "n028",
+     "port": "vt"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s060",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "m"
+    },
+    "to": {
+     "node": "n028",
+     "port": "m"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s061",
+    "kind": "signal",
+    "from": {
+     "node": "n026",
+     "port": "y"
+    },
+    "to": {
+     "node": "n028",
+     "port": "cna"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s062",
+    "kind": "signal",
+    "from": {
+     "node": "n027",
+     "port": "y"
+    },
+    "to": {
+     "node": "n028",
+     "port": "cd0"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s063",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "tx"
+    },
+    "to": {
+     "node": "n007",
+     "port": "tx"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s064",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "ty"
+    },
+    "to": {
+     "node": "n007",
+     "port": "ty"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s065",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "tz"
+    },
+    "to": {
+     "node": "n007",
+     "port": "tz"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s066",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "fx"
+    },
+    "to": {
+     "node": "n007",
+     "port": "fx"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s067",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "fy"
+    },
+    "to": {
+     "node": "n007",
+     "port": "fy"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s068",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "fz"
+    },
+    "to": {
+     "node": "n007",
+     "port": "fz"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s069",
+    "kind": "signal",
+    "from": {
+     "node": "n029",
+     "port": "y"
+    },
+    "to": {
+     "node": "n030",
+     "port": "u1"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s070",
+    "kind": "signal",
+    "from": {
+     "node": "n034",
+     "port": "y"
+    },
+    "to": {
+     "node": "n030",
+     "port": "u2"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s071",
+    "kind": "signal",
+    "from": {
+     "node": "n030",
+     "port": "y"
+    },
+    "to": {
+     "node": "n031",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s072",
+    "kind": "signal",
+    "from": {
+     "node": "n031",
+     "port": "y"
+    },
+    "to": {
+     "node": "n032",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s073",
+    "kind": "signal",
+    "from": {
+     "node": "n032",
+     "port": "y"
+    },
+    "to": {
+     "node": "n033",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s074",
+    "kind": "signal",
+    "from": {
+     "node": "n033",
+     "port": "y"
+    },
+    "to": {
+     "node": "n034",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s075",
+    "kind": "signal",
+    "from": {
+     "node": "n034",
+     "port": "y"
+    },
+    "to": {
+     "node": "n028",
+     "port": "d1"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s076",
+    "kind": "signal",
+    "from": {
+     "node": "n035",
+     "port": "y"
+    },
+    "to": {
+     "node": "n036",
+     "port": "u1"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s077",
+    "kind": "signal",
+    "from": {
+     "node": "n040",
+     "port": "y"
+    },
+    "to": {
+     "node": "n036",
+     "port": "u2"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s078",
+    "kind": "signal",
+    "from": {
+     "node": "n036",
+     "port": "y"
+    },
+    "to": {
+     "node": "n037",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s079",
+    "kind": "signal",
+    "from": {
+     "node": "n037",
+     "port": "y"
+    },
+    "to": {
+     "node": "n038",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s080",
+    "kind": "signal",
+    "from": {
+     "node": "n038",
+     "port": "y"
+    },
+    "to": {
+     "node": "n039",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s081",
+    "kind": "signal",
+    "from": {
+     "node": "n039",
+     "port": "y"
+    },
+    "to": {
+     "node": "n040",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s082",
+    "kind": "signal",
+    "from": {
+     "node": "n040",
+     "port": "y"
+    },
+    "to": {
+     "node": "n028",
+     "port": "d2"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s083",
+    "kind": "signal",
+    "from": {
+     "node": "n041",
+     "port": "y"
+    },
+    "to": {
+     "node": "n042",
+     "port": "u1"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s084",
+    "kind": "signal",
+    "from": {
+     "node": "n046",
+     "port": "y"
+    },
+    "to": {
+     "node": "n042",
+     "port": "u2"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s085",
+    "kind": "signal",
+    "from": {
+     "node": "n042",
+     "port": "y"
+    },
+    "to": {
+     "node": "n043",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s086",
+    "kind": "signal",
+    "from": {
+     "node": "n043",
+     "port": "y"
+    },
+    "to": {
+     "node": "n044",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s087",
+    "kind": "signal",
+    "from": {
+     "node": "n044",
+     "port": "y"
+    },
+    "to": {
+     "node": "n045",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s088",
+    "kind": "signal",
+    "from": {
+     "node": "n045",
+     "port": "y"
+    },
+    "to": {
+     "node": "n046",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s089",
+    "kind": "signal",
+    "from": {
+     "node": "n046",
+     "port": "y"
+    },
+    "to": {
+     "node": "n028",
+     "port": "d3"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s090",
+    "kind": "signal",
+    "from": {
+     "node": "n047",
+     "port": "y"
+    },
+    "to": {
+     "node": "n048",
+     "port": "u1"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s091",
+    "kind": "signal",
+    "from": {
+     "node": "n052",
+     "port": "y"
+    },
+    "to": {
+     "node": "n048",
+     "port": "u2"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s092",
+    "kind": "signal",
+    "from": {
+     "node": "n048",
+     "port": "y"
+    },
+    "to": {
+     "node": "n049",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s093",
+    "kind": "signal",
+    "from": {
+     "node": "n049",
+     "port": "y"
+    },
+    "to": {
+     "node": "n050",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s094",
+    "kind": "signal",
+    "from": {
+     "node": "n050",
+     "port": "y"
+    },
+    "to": {
+     "node": "n051",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s095",
+    "kind": "signal",
+    "from": {
+     "node": "n051",
+     "port": "y"
+    },
+    "to": {
+     "node": "n052",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s096",
+    "kind": "signal",
+    "from": {
+     "node": "n052",
+     "port": "y"
+    },
+    "to": {
+     "node": "n028",
+     "port": "d4"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s099",
+    "kind": "signal",
+    "from": {
+     "node": "n054",
+     "port": "d1"
+    },
+    "to": {
+     "node": "n029",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s100",
+    "kind": "signal",
+    "from": {
+     "node": "n054",
+     "port": "d2"
+    },
+    "to": {
+     "node": "n035",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s101",
+    "kind": "signal",
+    "from": {
+     "node": "n054",
+     "port": "d3"
+    },
+    "to": {
+     "node": "n041",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s102",
+    "kind": "signal",
+    "from": {
+     "node": "n054",
+     "port": "d4"
+    },
+    "to": {
+     "node": "n047",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s103",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "qbar"
+    },
+    "to": {
+     "node": "n055",
+     "port": "qbar"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s104",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "vt"
+    },
+    "to": {
+     "node": "n055",
+     "port": "vt"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s105",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "p"
+    },
+    "to": {
+     "node": "n055",
+     "port": "p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s106",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "q_up"
+    },
+    "to": {
+     "node": "n055",
+     "port": "q_up"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s107",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "r_right"
+    },
+    "to": {
+     "node": "n055",
+     "port": "r_right"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s108",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "phi"
+    },
+    "to": {
+     "node": "n055",
+     "port": "phi"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s109",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "a_z"
+    },
+    "to": {
+     "node": "n055",
+     "port": "a_z"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s110",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "a_y"
+    },
+    "to": {
+     "node": "n055",
+     "port": "a_y"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s111",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "T"
+    },
+    "to": {
+     "node": "n055",
+     "port": "T"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s112",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "m"
+    },
+    "to": {
+     "node": "n055",
+     "port": "m"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s113",
+    "kind": "signal",
+    "from": {
+     "node": "n055",
+     "port": "dp"
+    },
+    "to": {
+     "node": "n054",
+     "port": "dp"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s114",
+    "kind": "signal",
+    "from": {
+     "node": "n055",
+     "port": "dy"
+    },
+    "to": {
+     "node": "n054",
+     "port": "dy"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s115",
+    "kind": "signal",
+    "from": {
+     "node": "n055",
+     "port": "dr"
+    },
+    "to": {
+     "node": "n054",
+     "port": "dr"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s116",
+    "kind": "signal",
+    "from": {
+     "node": "n055",
+     "port": "tvc_p"
+    },
+    "to": {
+     "node": "n011",
+     "port": "tvc_p"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s117",
+    "kind": "signal",
+    "from": {
+     "node": "n055",
+     "port": "tvc_y"
+    },
+    "to": {
+     "node": "n011",
+     "port": "tvc_y"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s118",
+    "kind": "signal",
+    "from": {
+     "node": "n056",
+     "port": "y"
+    },
+    "to": {
+     "node": "n055",
+     "port": "roll_cmd"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s119",
+    "kind": "signal",
+    "from": {
+     "node": "n057",
+     "port": "y"
+    },
+    "to": {
+     "node": "n055",
+     "port": "tvc_on"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s120",
+    "kind": "signal",
+    "from": {
+     "node": "n002",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n058",
+     "port": "gm"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s121",
+    "kind": "signal",
+    "from": {
+     "node": "n006",
+     "port": "y"
+    },
+    "to": {
+     "node": "n058",
+     "port": "Vm"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s122",
+    "kind": "signal",
+    "from": {
+     "node": "n059",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n058",
+     "port": "gt"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s123",
+    "kind": "signal",
+    "from": {
+     "node": "n059",
+     "port": "vw_out"
+    },
+    "to": {
+     "node": "n058",
+     "port": "Vt"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s124",
+    "kind": "signal",
+    "from": {
+     "node": "n059",
+     "port": "ir"
+    },
+    "to": {
+     "node": "n058",
+     "port": "I_t"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s127",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "los_pitch"
+    },
+    "to": {
+     "node": "n061",
+     "port": "los_pitch"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s128",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "los_yaw"
+    },
+    "to": {
+     "node": "n061",
+     "port": "los_yaw"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s129",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "range"
+    },
+    "to": {
+     "node": "n061",
+     "port": "range"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s130",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "range_rate"
+    },
+    "to": {
+     "node": "n061",
+     "port": "range_rate"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s131",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "gz_body"
+    },
+    "to": {
+     "node": "n061",
+     "port": "gz_body"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s132",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "qbar"
+    },
+    "to": {
+     "node": "n061",
+     "port": "qbar"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s133",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "m"
+    },
+    "to": {
+     "node": "n061",
+     "port": "m"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s134",
+    "kind": "signal",
+    "from": {
+     "node": "n061",
+     "port": "a_z_cmd"
+    },
+    "to": {
+     "node": "n055",
+     "port": "a_z_cmd"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s135",
+    "kind": "signal",
+    "from": {
+     "node": "n061",
+     "port": "a_y_cmd"
+    },
+    "to": {
+     "node": "n055",
+     "port": "a_y_cmd"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s136",
+    "kind": "signal",
+    "from": {
+     "node": "n002",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n062",
+     "port": "g"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s137",
+    "kind": "signal",
+    "from": {
+     "node": "n006",
+     "port": "y"
+    },
+    "to": {
+     "node": "n062",
+     "port": "V"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s138",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "alpha_deg"
+    },
+    "to": {
+     "node": "n062",
+     "port": "alpha_deg"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s139",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "beta_deg"
+    },
+    "to": {
+     "node": "n062",
+     "port": "beta_deg"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s140",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "qbar"
+    },
+    "to": {
+     "node": "n062",
+     "port": "qbar"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s141",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "mach"
+    },
+    "to": {
+     "node": "n062",
+     "port": "mach"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s142",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "vt"
+    },
+    "to": {
+     "node": "n062",
+     "port": "vt"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s143",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "n_z"
+    },
+    "to": {
+     "node": "n062",
+     "port": "n_z"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s144",
+    "kind": "signal",
+    "from": {
+     "node": "n028",
+     "port": "n_y"
+    },
+    "to": {
+     "node": "n062",
+     "port": "n_y"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s145",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "m"
+    },
+    "to": {
+     "node": "n062",
+     "port": "m"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s146",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "range"
+    },
+    "to": {
+     "node": "n062",
+     "port": "range"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s147",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "range_rate"
+    },
+    "to": {
+     "node": "n062",
+     "port": "range_rate"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "s148",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "lock"
+    },
+    "to": {
+     "node": "n062",
+     "port": "lock"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0145",
+    "kind": "signal",
+    "from": {
+     "node": "h061",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "pn"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0146",
+    "kind": "signal",
+    "from": {
+     "node": "h062",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "pe"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0147",
+    "kind": "signal",
+    "from": {
+     "node": "h063",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "pd"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0148",
+    "kind": "signal",
+    "from": {
+     "node": "h064",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "vn"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0149",
+    "kind": "signal",
+    "from": {
+     "node": "h065",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "ve"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0150",
+    "kind": "signal",
+    "from": {
+     "node": "h066",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "vd"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0151",
+    "kind": "signal",
+    "from": {
+     "node": "h067",
+     "port": "y"
+    },
+    "to": {
+     "node": "n059",
+     "port": "I"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0152",
+    "kind": "signal",
+    "from": {
+     "node": "h068",
+     "port": "y"
+    },
+    "to": {
+     "node": "n058",
+     "port": "seeker_on"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0153",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "x"
+    },
+    "to": {
+     "node": "h069",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0154",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "y"
+    },
+    "to": {
+     "node": "h070",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0155",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "z"
+    },
+    "to": {
+     "node": "h071",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0156",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "qw"
+    },
+    "to": {
+     "node": "h072",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0157",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "qx"
+    },
+    "to": {
+     "node": "h073",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0158",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "qy"
+    },
+    "to": {
+     "node": "h074",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0159",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "qz"
+    },
+    "to": {
+     "node": "h075",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0160",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "phi_deg"
+    },
+    "to": {
+     "node": "h076",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0161",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "theta_deg"
+    },
+    "to": {
+     "node": "h077",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0162",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "psi_deg"
+    },
+    "to": {
+     "node": "h078",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0163",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "gamma_deg"
+    },
+    "to": {
+     "node": "h079",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0164",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "vt_out"
+    },
+    "to": {
+     "node": "h080",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0165",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "alpha_deg_out"
+    },
+    "to": {
+     "node": "h081",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0166",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "beta_deg_out"
+    },
+    "to": {
+     "node": "h082",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0167",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "qbar_out"
+    },
+    "to": {
+     "node": "h083",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0168",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "mach_out"
+    },
+    "to": {
+     "node": "h084",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0169",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "n_z_out"
+    },
+    "to": {
+     "node": "h085",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0170",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "n_y_out"
+    },
+    "to": {
+     "node": "h086",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0171",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "mass"
+    },
+    "to": {
+     "node": "h087",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0172",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "lock_out"
+    },
+    "to": {
+     "node": "h088",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0173",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "range"
+    },
+    "to": {
+     "node": "h089",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0174",
+    "kind": "signal",
+    "from": {
+     "node": "n058",
+     "port": "range_rate"
+    },
+    "to": {
+     "node": "h090",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0175",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "min_range"
+    },
+    "to": {
+     "node": "h091",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0176",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "t_go"
+    },
+    "to": {
+     "node": "h092",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0177",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "fuze"
+    },
+    "to": {
+     "node": "h093",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0178",
+    "kind": "signal",
+    "from": {
+     "node": "n062",
+     "port": "hit"
+    },
+    "to": {
+     "node": "h094",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0179",
+    "kind": "signal",
+    "from": {
+     "node": "n011",
+     "port": "T"
+    },
+    "to": {
+     "node": "h095",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0180",
+    "kind": "signal",
+    "from": {
+     "node": "n034",
+     "port": "y"
+    },
+    "to": {
+     "node": "h096",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0181",
+    "kind": "signal",
+    "from": {
+     "node": "n040",
+     "port": "y"
+    },
+    "to": {
+     "node": "h097",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0182",
+    "kind": "signal",
+    "from": {
+     "node": "n046",
+     "port": "y"
+    },
+    "to": {
+     "node": "h098",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0183",
+    "kind": "signal",
+    "from": {
+     "node": "n052",
+     "port": "y"
+    },
+    "to": {
+     "node": "h099",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0184",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "p_deg"
+    },
+    "to": {
+     "node": "h100",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0185",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "q_deg"
+    },
+    "to": {
+     "node": "h101",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   },
+   {
+    "id": "hn0186",
+    "kind": "signal",
+    "from": {
+     "node": "n025",
+     "port": "r_deg"
+    },
+    "to": {
+     "node": "h102",
+     "port": "u"
+    },
+    "route": [],
+    "label": null
+   }
+  ],
+  "subsystemPorts": [],
+  "annotations": []
+ },
+ "settings": {
+  "t_start": 0.0,
+  "t_end": 10.0,
+  "solver": "auto",
+  "reltol": 1e-06,
+  "abstol": 1e-08,
+  "max_step": null,
+  "output": {
+   "mode": "points",
+   "points": 1001
+  },
+  "event_limit": 100000
+ },
+ "plots": [
+  {
+   "id": "p1",
+   "title": "Range to target and closest approach (m)",
+   "signals": [
+    "Seeker/range",
+    "Status/min_range"
+   ]
+  },
+  {
+   "id": "p2",
+   "title": "Line-of-sight rates (rad/s)",
+   "signals": [
+    "Seeker/los_pitch",
+    "Seeker/los_yaw"
+   ]
+  },
+  {
+   "id": "p3",
+   "title": "Commanded and achieved acceleration (g)",
+   "signals": [
+    "Guide/a_z_cmd",
+    "Aero/n_z",
+    "Aero/n_y"
+   ]
+  },
+  {
+   "id": "p4",
+   "title": "Angle of attack, sideslip and roll (deg)",
+   "signals": [
+    "Air/alpha_deg",
+    "Air/beta_deg",
+    "Air/phi_deg"
+   ]
+  },
+  {
+   "id": "p5",
+   "title": "Canard deflections (deg)",
+   "signals": [
+    "Fin1/y",
+    "Fin2/y",
+    "Fin3/y",
+    "Fin4/y"
+   ]
+  },
+  {
+   "id": "p6",
+   "title": "Speed, Mach and dynamic pressure",
+   "signals": [
+    "Air/vt",
+    "Air/mach",
+    "Air/qbar"
+   ]
+  }
+ ],
+ "parameters": [
+  {
+   "name": "vt0",
+   "value": "400.0",
+   "unit": "m/s",
+   "description": "Launch speed (the carrier aircraft's speed)"
+  },
+  {
+   "name": "h0",
+   "value": "6040.0",
+   "unit": "m",
+   "description": "Launch altitude"
+  },
+  {
+   "name": "mx0",
+   "value": "0.0",
+   "unit": "m",
+   "description": "Launch position, north"
+  },
+  {
+   "name": "my0",
+   "value": "0.0",
+   "unit": "m",
+   "description": "Launch position, west"
+  },
+  {
+   "name": "alpha0",
+   "value": "0.0",
+   "unit": "deg",
+   "description": "Launch angle of attack"
+  },
+  {
+   "name": "tvc_on",
+   "value": "1.0",
+   "unit": "1",
+   "description": "Thrust-vector control (1 on, 0 off)"
+  },
+  {
+   "name": "nav_N",
+   "value": "4.0",
+   "unit": "1",
+   "description": "Proportional-navigation constant"
+  },
+  {
+   "name": "a_max_g",
+   "value": "60.00000000000001",
+   "unit": "g",
+   "description": "Guidance acceleration limit"
+  },
+  {
+   "name": "dp_amp",
+   "value": "0.2",
+   "unit": "deg",
+   "description": "Airframe model: pitch-canard doublet amplitude"
+  },
+  {
+   "name": "dy_amp",
+   "value": "0.1",
+   "unit": "deg",
+   "description": "Airframe model: yaw-canard doublet amplitude"
+  },
+  {
+   "name": "dr_amp",
+   "value": "0.0",
+   "unit": "deg",
+   "description": "Airframe model: roll-canard doublet amplitude"
+  }
+ ],
+ "dashboard": {
+  "autoRerun": false,
+  "cards": [
+   {
+    "id": "intro",
+    "kind": "text",
+    "size": "2x1",
+    "title": "AIM-9X Sidewinder",
+    "options": {
+     "markdown": true,
+     "text": "A six-degree-of-freedom AIM-9X with **variable mass**, canards, **two-axis thrust-vector control**, an imaging IR seeker and **proportional navigation**."
+    }
+   },
+   {
+    "id": "v",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Speed",
+    "signals": [
+     "Air/vt"
+    ],
+    "options": {
+     "decimals": 0,
+     "unit": "m/s"
+    }
+   },
+   {
+    "id": "g",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Normal acceleration",
+    "signals": [
+     "Aero/n_z"
+    ],
+    "options": {
+     "decimals": 1,
+     "unit": "g"
+    }
+   },
+   {
+    "id": "r",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Range",
+    "signals": [
+     "Seeker/range"
+    ],
+    "options": {
+     "decimals": 0,
+     "unit": "m"
+    }
+   },
+   {
+    "id": "lock",
+    "kind": "indicator",
+    "size": "1x1",
+    "title": "Seeker lock",
+    "signals": [
+     "Seeker/lock"
+    ],
+    "options": {
+     "threshold": 0.5
+    }
+   },
+   {
+    "id": "n",
+    "kind": "number",
+    "size": "1x1",
+    "title": "PN constant",
+    "parameter": "global:nav_N",
+    "options": {
+     "decimals": 1,
+     "unit": ""
+    }
+   }
+  ]
+ }
+}

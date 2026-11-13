@@ -108,6 +108,64 @@ def rigid_torque_speed_checks() -> list[dict]:
     return out
 
 
+DIAG_BACKLASH = {"kind": "no_diagnostics", "codes": ["W202", "E106"],
+                 "note": "no algebraic loop and no causality conflict (XL330Backlash samples the friction's load "
+                         "torque as XL330Rigid does). W201 is expected: the joint's hard constraints put the link "
+                         "inertia in derivative causality"}
+
+# Times at which the play rests on a flank or overshoots it (|d play/dt| small or the stop's impact
+# well past), where the play angle is a property of the stop and not of the free-play phase.
+BACKLASH_PLAY_TIMES = {
+    "xl330-backlash-step": [0.15, 0.3, 0.9, 1.05, 1.2],
+    "xl330-backlash-reversal": [0.175, 0.225, 0.375, 0.425, 0.7, 0.875, 0.925],
+}
+BACKLASH_ENC_TIMES = {
+    "xl330-backlash-step": STEP_TIMES,
+    "xl330-backlash-reversal": [0.2, 0.3, 0.4, 0.5, 0.65, 0.7, 0.8, 0.9, 1.0],
+}
+BACKLASH_ENC_TOL = {"xl330-backlash-step": 0.02, "xl330-backlash-reversal": 0.01}
+BACKLASH_OVERTRAVEL = {"xl330-backlash-step": (0.13, 0.2), "xl330-backlash-reversal": (0.15, 0.2)}
+
+
+def backlash_checks(name: str) -> list[dict]:
+    """XL330Backlash (MjBacklash: microduck_rl's play hinge with MuJoCo's soft limit) on the bench
+    against MuJoCo itself running the same bench (design/backlash_bench.py, stored in
+    design/backlash_reference.json). bg-sim's play angle Servo/Backlash/phi is gear minus horn,
+    MuJoCo's play hinge horn minus gear."""
+    from backlash_bench import load_reference
+
+    r = load_reference()["models"][name]
+    t = r["t"]
+    src = ("MuJoCo running the microduck_rl play hinge (add_backlash.py: +-1 deg, armature 0.001, damping 0.01, "
+           "solreflimit 0.01 1, solimplimit 0.95 0.999 0.0001 0.5 2) with the BAM actuator each 0.5 ms step "
+           "(design/backlash_bench.py)")
+    out = []
+    tol = BACKLASH_ENC_TOL[name]
+    for tt in BACKLASH_ENC_TIMES[name]:
+        out.append({"kind": "cursor_value", "signal": "J/qout", "t": tt, "value": float(np.interp(tt, t, r["q"])),
+                    "abs": tol,
+                    "note": f"encoder angle (horn, through the play), {src}. {tol:g} rad: as xl330-rigid-step, the "
+                            "delay line ramps a goal step over its 5 ms tick and the friction rows of MuJoCo stick "
+                            "a few mrad apart from bg-sim's friction law"})
+    if name == "xl330-backlash-step":
+        out.append({"kind": "final_value", "signal": "J/qout", "t": float(t[-1]), "value": float(r["q"][-1]),
+                    "abs": 0.002, "note": f"rest angle after the return, {src}"})
+    for tt in BACKLASH_PLAY_TIMES[name]:
+        out.append({"kind": "cursor_value", "signal": "Servo/Backlash/phi", "t": tt,
+                    "value": -float(np.interp(tt, t, r["q_play"])), "abs": 1e-3,
+                    "note": f"play angle on or past a flank (the flanks are at +-{xl.PLAY['gap'] / 2:.5f} rad), {src}; "
+                            "1 mrad, a twentieth of the play"})
+    a, b = BACKLASH_OVERTRAVEL[name]
+    w = (t >= a) & (t <= b)
+    peak = float(np.max(np.abs(r["q_play"][w])))
+    out.append({"kind": "max_abs_le", "signal": "Servo/Backlash/phi", "from_t": a, "to_t": b, "value": peak + 5e-4,
+                "note": f"the first impact on the flank overshoots it by {(peak - xl.PLAY['gap'] / 2) * 1e3:.1f} mrad in "
+                        f"MuJoCo (soft limit, time constant 10 ms), {src}; bg-sim may not overshoot by more than 0.5 mrad "
+                        "beyond that"})
+    out.append(DIAG_BACKLASH)
+    return out
+
+
 def hang_checks() -> list[dict]:
     home = rb.HOME
     low = rb.hang_goal_pose()
@@ -168,7 +226,35 @@ def policy_checks() -> list[dict]:
     return out
 
 
+def policy_backlash_checks() -> list[dict]:
+    """microduck-policy-backlash by itself: the checks of microduck-policy (the play does not change
+    them) and the play: every joint's stays within its stops plus MuJoCo's impact overshoot, and the
+    loaded knees rest on a flank."""
+    gap2 = xl.PLAY["gap"] / 2
+    out = [c for c in policy_checks() if c["kind"] != "no_diagnostics"]
+    for j in rb.JOINTS:
+        out.append({"kind": "max_abs_le", "signal": f"{j}/Backlash/phi", "value": round(gap2 + 0.006, 6),
+                    "note": "the play stays within its stops (+-1 deg) plus the overshoot of MuJoCo's soft limit, about the "
+                            "arriving play rate times tc/e (5.3 mrad on the bench, design/backlash_bench.py); 6 mrad"})
+    for side, sign in (("left", -1.0), ("right", 1.0)):
+        out.append({"kind": "cursor_value", "signal": f"{side}_knee/Backlash/phi", "t": 0.25, "value": sign * gap2, "abs": 5e-4,
+                    "note": "standing at HOME the knee carries the body and its play rests on a flank (MuJoCo's soft limit "
+                            "lets a load of a few tenths of a N m sink it by about 0.1 mrad); the knee axes "
+                            "are mirrored left to right"})
+    out.append(DIAG_BACKLASH)
+    return out
+
+
 def expected() -> dict:
+    out = _expected()
+    import scene
+
+    for name in scene.SCENE_OF:  # every link of the robot's scene follows its body's pose band
+        out["models"][name]["checks"].insert(0, {"kind": "scene_bindings", "note": "every link of the scene follows the world pose of its body frame"})
+    return out
+
+
+def _expected() -> dict:
     return {
         "project": "microduck",
         "description": "The XL330 actuator on its bench against the BAM simulator and the analytic torque-speed "
@@ -182,6 +268,10 @@ def expected() -> dict:
             "xl330-rigid-step": {"checks": rigid_step_checks()},
             "xl330-rigid-torque-speed": {"checks": rigid_torque_speed_checks()},
             "microduck-policy": {"checks": policy_checks()},
+            "xl330-backlash-step": {"checks": backlash_checks("xl330-backlash-step")},
+            "xl330-backlash-reversal": {"checks": backlash_checks("xl330-backlash-reversal")},
+            # about 4.5 min of simulation for its 0.6 s (with other jobs running, 6.4 min)
+            "microduck-policy-backlash": {"checks": policy_backlash_checks(), "run_timeout": 1200},
         },
     }
 

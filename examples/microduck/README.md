@@ -6,6 +6,8 @@ with reinforcement-learning policies trained in MuJoCo (mjlab) against Rhoban's 
 The example is built around two **library subsystems**: `XL330` (`library/XL330.bgsub.json`, the
 servo with its gear play) and `XL330Rigid` (`library/XL330Rigid.bgsub.json`, the same firmware,
 winding and friction on a rigid gear, for the robot a policy drives and an FMU runs in real time).
+A third, `XL330Backlash` (`library/XL330Backlash.bgsub.json`), is `XL330Rigid` with the gear play
+the policy was trained with, built as the training simulator builds it.
 
 The aim is a model in which the actuator behaves the way the policies were trained to expect,
 so that a policy can move between this model and the real robot. **That transfer is not
@@ -39,6 +41,9 @@ Sources (read as data, Apache-2.0):
 | `xl330-rigid-step` | `xl330-step` with `XL330Rigid` (the joint carries the armature) | ~15 s |
 | `xl330-rigid-torque-speed` | `xl330-torque-speed` with `XL330Rigid` | ~20 s |
 | `microduck-policy` | the robot a policy drives and the FMU exports: rigid joints, 14 `XL330Rigid` on an ideal supply, soles loaded at HOME, bumper points on trunk, head and shins; 14 joint targets and the gain in, sensors out. By itself it holds HOME and steps to the squat at 0.3 s | ~4 min |
+| `xl330-backlash-step` | `xl330-rigid-step` with `XL330Backlash`, play centred at the start; checked against MuJoCo running the same bench | ~20 s |
+| `xl330-backlash-reversal` | `XL330Backlash` turning the bench arm in a horizontal plane (no gravity torque), goal 0 -> 0.3 rad at 0.1 s and back at 0.6 s, so each reversal crosses the play; checked against MuJoCo | ~20 s |
+| `microduck-policy-backlash` | `microduck-policy` with `XL330Backlash` in every joint (play pinned per joint from the training MJCF), 0.6 s | ~4 min |
 
 ## The XL330 subsystem
 
@@ -87,6 +92,105 @@ Against the BAM simulator on the bench (`xl330-rigid-step`) the largest encoder 
 10.4 mrad (`XL330`: 16 mrad), the rest angle -0.017339 vs -0.017357 rad and the holding torque
 0.0492 vs 0.0508 N m; the torque-speed curve (`xl330-rigid-torque-speed`) agrees with the
 analytic one plus the armature torque of the ramp within 0.42 mN m.
+
+## The XL330Backlash subsystem
+
+`library/XL330Backlash.bgsub.json`: `XL330Rigid` with the gear play of microduck_rl's backlash
+robots, which is what velstand was trained on (`Mjlab-VelStand-Rough-Backlash-MicroDuck`:
+`robot/microduck/add_backlash.py`, `tasks/backlash.py`, `actuator/friction_dr_bam.py`
+`BacklashEncoderBamActuator`, all at 0daab16).
+
+```
+... MotorGY kt -> gear 1 [armature, BAM M6 friction, back-EMF speed] -> MjBacklash (2 deg) -> horn 1 [encoder] -> port horn
+```
+
+What microduck_rl does, and what this subsystem does:
+
+* **A passive hinge after each servo joint.** `add_backlash.py` inserts `passive_<joint>_backlash`
+  on the same body and axis: range +-1 deg, armature 0.001 kg m^2, damping 0.01 N m s/rad, no
+  friction loss, `solreflimit` 0.01 1, `solimplimit` 0.95 0.999 0.0001 0.5 2. The servo joint is
+  the motor side: BAM drives it, its armature is BAM's, the back-EMF and the friction use its
+  speed. Here the gear junction carries the armature (`RotorInertia`, global `armature`), the
+  motor torque, the friction and the back-EMF speed (output `dq_gear`); the joint
+  (`Revolute3DRigid`) carries none.
+* **The encoder reads through the play.** The firmware P law and the `joint_pos`/`joint_vel`
+  observations read main + backlash (`BacklashEncoderBamActuator`, `mdp.py`
+  `joint_pos_rel_backlash`): `q` is the joint angle, after the play.
+* **The stop is MuJoCo's soft joint limit** (`library/MjBacklash.jl`). A MuJoCo limit row pushes
+  with f = max(0, aref - a)/R, aref = -b v - k d p (b = 2/(dmax tc), k = 1/(dmax tc zeta)^2, d the
+  solimp impedance, R = (1 - d)/d `invw`, `invw` the hinge's `dof_invweight0`). Inside a stop the
+  play follows the critically damped reference (10 ms), statically as a spring that stiffens from
+  about 200 to 1.1e4 N m/rad over the first 0.1 mrad (a load of 0.3 N m sinks it about 0.09 mrad),
+  and an arriving play overshoots the stop by about its speed times tc/e (5 mrad
+  in the step bench). Written literally, that law switches an inertia on and off with the contact,
+  which a linearly implicit solver cannot step through; `MjBacklash` carries the reference rate as
+  a state instead (it tracks the play rate while no stop pushes and follows aref while one
+  does), and a stop that pushes holds the play rate on it with the damper R^-1 b. The solimp
+  curve is clamped to [dmin, dmax] with min/max, because a fixed-step export holds a branch for
+  the whole step and an extrapolated d above 1 turns the damper negative. Statically and in the impact
+  this is MuJoCo's law. That damper is stiff (up to 2e5 1/s), so whether a stop pushes is a mode
+  held between the ticks of a 1 ms clock: it closes when the play is in the stop and the force it
+  would push with exceeds 1 mN m, and opens when that force falls below -1 mN m (MuJoCo's
+  max(0, .), with a hysteresis against chattering) or the play leaves the stop. The fixed-step
+  FMU then forms every step's Jacobian with the mode the step uses; with the contact switched
+  smoothly instead, the export at 1 ms (and at 0.5 and 0.25 ms) blew up at the first impact on
+  the bench, and only 0.1 ms got through. The cost of the clock: a play arriving between ticks goes
+  up to its speed times 1 ms deeper before the stop closes, and a stop the load pulls away from
+  holds for up to 1 ms.
+  `Backlash/invw` is pinned per joint from MuJoCo (`design/mjcf_play.py` ->
+  `design/play_data.json`: 802.8 to 988.3 1/(kg m^2) for the 14 play hinges of the training robot).
+* **The play starts centred**, as microduck_rl resets it (`BACKLASH_HOME_FRAME`).
+* **Pins**: `Friction/scale`, `Friction/ws`, `Latency/initial`, `Backlash/gap`, `Backlash/invw`;
+  start `Backlash/phi`.
+
+Against MuJoCo itself running the same bench (`design/backlash_bench.py`: the test arm on the two
+hinges of `add_backlash.py`, BAM applied each 0.5 ms step as `BacklashEncoderBamActuator` does,
+implicitfast; stored in `design/backlash_reference.json`):
+
+* `xl330-backlash-step` (the `xl330-step` goal, gravity on the arm): play angle within 0.26 mrad
+  at the times checked, where it rests on a flank or overshoots it, including the first impact's
+  overshoot at 0.15 s (22.74 vs 22.78 mrad, the flank at 17.45 mrad); largest play difference
+  2.75 mrad, at 0.97 s, while the return swings the play across; encoder within 8.4 mrad over the
+  whole run (the fast swings and the friction's rest angle, as for `xl330-rigid-step`), rest angle
+  8.44 vs 9.66 mrad.
+* `xl330-backlash-reversal` (0.3 rad out and back, the axis vertical, the play crossing under its
+  own momentum on each deceleration): play angle within 1.8 mrad throughout and 0.35 mrad at the
+  times checked, encoder within 4.3 mrad.
+
+The same two benches exported as FMUs (ROS34PW2, 1 ms) run through; the FMU and bg-sim differ by
+up to 28 mrad on the step bench, as much as `xl330-rigid-step` exported the same way does
+(already 3.7 vs 9.7 mrad at 0.13 s, before the play could matter; the cause, somewhere in how the
+bench's internal goal pulse reaches the export, is not traced), so the play adds no difference of
+its own there. The policy robot takes its goals as FMU inputs and is gated against bg-sim
+separately (*The FMU and the policy*).
+
+**In the policy robot** (`microduck-policy-backlash`: 14 `XL330Backlash`, `Backlash/invw` per
+joint from the training robot, the play centred at the start). In bg-sim (Rodas5P, adaptive) it
+passes the checks of `microduck-policy` (soles at half the weight at 0.25 s, the knee goal 20 ms
+late, the current limit) and its own: the knee play rests on its flanks at 0.25 s (-+17.52 mrad,
+the flank at 17.45 mrad), and no joint's play passes its flank by more than 6 mrad (the neck's
+goes furthest, 5.0 mrad). The run (0.6 s) takes about 4 min. As an FMU it is not usable yet:
+
+* **It does not match bg-sim.** `export_microduck_check.py --model microduck-policy-backlash`
+  (ROS34PW2, 1 ms): standing, every joint angle within 6e-4 rad and the trunk height within
+  7e-6 m, but `head_pitch_qd` 0.045 rad/s off (gate 0.025) and `trunk_wy` 0.011 rad/s (gate
+  0.003); in the squat `left_hip_roll_q` 30 mrad off (gate 2 mrad), the trunk height 1.1 mm
+  (gate 0.5 mm), `left_hip_roll_qd` 0.50 rad/s, `trunk_wz` 0.081 rad/s. The bg-sim references
+  are converged (the squat at rtol 1e-6 and 1e-8 agrees to 1e-10), so the difference is the
+  export's. At 0.5 ms it is not better: the squat passes the angle gates, but the standing run
+  blows up at 0.44 s (`trunk_wy` 19 rad/s).
+* **velstand on it** (Wasm in Node, the page's loop with the one-tick lag, 10 s per command, one
+  run each): at 1 ms it stands at zero command (tilt at most 3.6 deg) and at 0.1 m/s; at 0.2,
+  0.3 and 0.4 m/s it falls within a second (0.98, 0.58, 0.92 s), with launches no physical
+  robot makes (tilt from 0.10 to 1.30 rad in one 20 ms tick, both feet off), and the FMU stops
+  (fmi2Error) at 0.98, 4.44 and 1.30 s. At 0.5 ms it stands at zero command and falls at 0.2,
+  0.3 and 0.4 m/s (8.2, 1.6, 4.3 s), stopping at 6.78 s at 0.4 m/s.
+* **It costs 4 times the rigid robot**: 10.3 ms per 20 ms tick standing and 15 to 19 ms walking
+  (Node, 1 ms), against 2.6 and 7.2 ms; at 0.5 ms 21 to 23 ms walking, slower than real time.
+
+So the browser demo keeps `microduck-policy`, without gear play. What a fixed-step solver does
+wrong with the play (the contact modes are sampled every 1 ms in both; the smooth contact laws
+tried first blew up on the bench, see above) is not traced.
 
 ## Actuator parameters
 
@@ -201,28 +305,50 @@ Cost per simulated second (this machine, other jobs running; wall time / simulat
 | its FMU, native (build harness standing / fmpy, stand and squat) | ROS34PW2, 1 ms | 340 | | 0.20 s (4.1 ms per tick) / 0.50 to 0.53 s (fmpy's Python loop included) |
 | its FMU as WebAssembly, Node, velstand in the loop | ROS34PW2, 1 ms | 340 | | 0.11 to 0.13 s standing (2.2 to 2.7 ms per 20 ms tick), 0.25 to 0.29 s walking (5.0 to 5.7 ms) |
 | its FMU as WebAssembly, headless Chromium, page running | ROS34PW2, 1 ms | 340 | | 0.21 s standing (4.2 ms per tick), 5.0 ms mean after 4 s of walking |
+| the same in Node with the one-tick velocity lag (this branch, machine loaded) | ROS34PW2, 1 ms | 340 | | 0.13 s standing (2.6 ms per tick), 0.36 s walking at 0.4 m/s (7.2 ms) |
+| `microduck-policy-backlash`, 0.6 s from HOME | Rodas5P, adaptive | 385 (91 states as bg-sim counts them) | 102 us (smooth-contact variant) | about 175 s (smooth-contact variant, profiled) to 365 s (sampled modes, other jobs running) |
+| its FMU, native (build harness standing) | ROS34PW2, 1 ms / 0.5 ms | 385 | | 0.68 s (13.7 ms per tick) / 0.58 s (11.6 ms) |
+| its FMU as WebAssembly, Node, velstand in the loop | ROS34PW2, 1 ms / 0.5 ms | 385 | | 0.51 s standing (10.3 / 10.0 ms per tick); walking 0.77 to 0.96 s / 1.07 to 1.16 s, until it falls |
 
 What `velstand.onnx` does on it (`apps/web/tests/microduck.test.ts`, the page's own loop in Node,
 and `apps/web/tests/microduck-fmu.mjs` in a browser):
 
-One run per command, 10 s each, from standing at HOME. The FMU completes every step of all three.
-In this simulation only; it says nothing about the real robot:
+The loop feeds the policy joint velocities one control tick (20 ms) old, as training does
+(`TRAINING_VELOCITY_LAG` in `apps/web/src/microduck/loop.ts`; microduck_rl
+`microduck_velocity_env_cfg.py`, `joint_vel` with a delay of exactly one policy step, because the
+Dynamixel firmware averages `present_velocity` over its previous samples). The real robot needs
+no lag added; its servos report the old value themselves.
+
+One run per command, 10 s each, from standing at HOME, the stick held from the first tick
+(`MICRODUCK_SECONDS=10 MICRODUCK_COMMANDS=0,0.25,0.5,0.6,0.7,0.75,0.85,1`). The FMU completes
+every step of all eight. In this simulation only; it says nothing about the real robot:
 
 * **Zero command: it stands.** Trunk 115.6 mm high at the end (the start is 116.7 mm), tilt at most
-  2.24 deg (0.69 deg at the end), no drift (under 1 mm), both soles loaded throughout (at least
-  2.76 N each).
-* **Half forward (0.2 m/s asked): it does not walk.** It leans and shifts its weight (9 mm forward,
-  tilt at most 2.34 deg) and stands; no sole leaves the floor. A sweep of the stick shows the
-  same up to 0.24 m/s asked (0.3, 0.5 and 0.6 of full stick), and stepping from 0.28 m/s.
-* **Full forward (0.4 m/s asked): it walks, slower than asked and curving right.** 1.82 m from
-  the start in 10 s (x 1.41 m, y -1.14 m), heading turned to -56 deg; from 2 s to 10 s 0.24 m/s
-  along the path, 0.19 m/s straight-line, against 0.4 m/s asked. 20 left and 21 right
-  lift-offs, never both feet up, tilt at most 4.96 deg, no fall. Starting the command 0.02, 0.1,
-  0.5 or 1 s later gives 1.56 to 1.81 m and -46 to -56 deg, so the right-hand curve is not a fluke
-  of one start, but the gait is sensitive: the native FMU and the Wasm build, fed the same inputs
-  open loop, part by 1e-6 m at 0.48 s and fall apart within a second, as an unstable gait without
-  its feedback does. Between 0.28 and 0.36 m/s asked it walks 1.0 to 1.5 m with headings from
-  +59 to -45 deg.
+  2.31 deg, no drift (under 1 mm), no sole leaves the floor.
+* **Up to 0.24 m/s asked (0.1, 0.2, 0.24 m/s): it does not walk.** It leans and shifts its weight
+  (at most 11 mm forward, tilt at most 2.54 deg) and stands; no sole leaves the floor.
+* **From 0.28 m/s asked: it walks, slower than asked, on a curve.** Speeds and turn rates over
+  the second half of the run (5 to 10 s; speed = straight-line distance / 5 s):
+
+  | asked | distance in 10 s | heading at 10 s | speed, 5..10 s | turn rate, 5..10 s | lift-offs left / right | tilt at most |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 0.28 m/s | 1.06 m | +16 deg | 0.107 m/s | +0.022 rad/s | 18 / 18 | 4.99 deg |
+  | 0.30 m/s | 1.22 m | +18 deg | 0.126 m/s | +0.005 rad/s | 18 / 18 | 4.97 deg |
+  | 0.34 m/s | 1.46 m | -27 deg | 0.147 m/s | -0.087 rad/s | 18 / 19 | 5.40 deg |
+  | 0.40 m/s | 1.85 m (x 1.68, y -0.79) | -38 deg | 0.195 m/s (x 0.158) | -0.053 rad/s | 19 / 19 | 5.71 deg |
+
+  Never both feet up, no fall. microduck_rl's notes on velstand (`velstand_policy.md`, sim
+  evaluation on a flat floor with backlash) give 0.17 m/s achieved at 0.4 m/s asked and a
+  straight-walk yaw drift of 0.05 and 0.03 rad/s at 0.3 and 0.4 m/s; how they average is not
+  stated there, so the comparison is indicative only.
+* **Without the lag** (`MICRODUCK_LAG=0`, how the page ran before): the same standing up to
+  0.24 m/s; at 0.4 m/s 1.82 m (x 1.41, y -1.14), heading -56 deg, 0.195 m/s and -0.044 rad/s over
+  5 to 10 s; at 0.3 m/s 1.13 m, heading +45 deg, 0.119 m/s, +0.092 rad/s. The lag changes the
+  heading more than the speed. Starting the command 0.02, 0.1, 0.5 or 1 s later (without the lag)
+  gave 1.56 to 1.81 m and -46 to -56 deg, but the gait is sensitive: the native FMU and the Wasm
+  build, fed the same inputs open loop, part by 1e-6 m at 0.48 s and fall apart within a second,
+  as an unstable gait without its feedback does. One run per row: a heading is not a property of
+  the policy here, only of that run.
 * **No policy: HOME tips forward** (past 45 deg at 1.34 s) and lands on the trunk and head
   bumpers; the FMU runs on through the impact and settles face down (3 s, tilt 82 deg). The
   export with the old state selection stopped at that impact (1.44 s).
@@ -240,25 +366,28 @@ In this simulation only; it says nothing about the real robot:
 ## Limits to sim-to-real fidelity, most important first
 
 1. **No real robot.** Nothing is checked against hardware. `velstand.onnx` stands on the FMU and,
-   at full forward, walks at about half the asked speed on a curve (*The FMU and the policy*).
+   from 0.28 m/s asked, walks at about half the asked speed on a curve (*The FMU and the policy*).
    That is what the policy does on this model, not evidence about the robot, let alone transfer.
-2. **No backlash in the policy robot.** velstand was trained with 2 deg of play in every joint
-   (microduck_rl `add_backlash.py`); `XL330Rigid` has none. `XL330` has it, but with it a robot
-   runs at hundreds of seconds per simulated second.
+2. **No backlash in the robot the demo runs.** velstand was trained with 2 deg of play in every
+   joint (microduck_rl `add_backlash.py`); `XL330Rigid` has none. `microduck-policy-backlash`
+   has it as training has it, and matches MuJoCo on the bench, but its FMU disagrees with bg-sim
+   and falls apart under velstand when walking (*The XL330Backlash subsystem*).
    The other differences from the simulator velstand was trained in (mjlab, BAM): a fixed 20 ms
    actuator latency where training randomises 15 to 30 ms; an ideal supply (no battery sag); the
-   deploy action scale 0.9 (`robotd`, which the page uses) where training used 1.0; no one-step
-   lag of the observed joint velocities, which training applies; a flat floor where training
-   used rough terrain; four contact points per sole with this model's contact law instead of
-   MuJoCo's; the friction smoothed (`ws`) instead of BAM's. Each of these can change a gait.
+   deploy action scale 0.9 (`robotd`, which the page uses) where training used 1.0; a flat floor
+   where training used rough terrain; four contact points per sole with this model's contact
+   law instead of MuJoCo's; the friction smoothed (`ws`) instead of BAM's. Each of these can
+   change a gait. (The one-step lag of the observed joint velocities that training applies, the
+   page now applies too.)
 3. **Current limit.** Training (and this model) limit the current with BAM's 1.75 A duty window;
    the robot runs ROBOTIS impact-guard firmware with a 1.0 A current limit in position mode,
    speed-dependent PWM derating and a braking ramp, none of which BAM or this model contains.
 4. **Two BAM fits disagree** (kt 6 %, R 11 %, armature 13 %, base friction 2.5x): the actuator is
    only as good as the fit, and the newer fit is not the one the policies saw.
 5. **Latency** is assumed (20 ms of the 15..30 ms training range); BAM-B identifies 10 ms.
-6. **Backlash and gear compliance**: 2 deg is a training assumption, the tooth stiffness and
-   damping are guesses.
+6. **Backlash and gear compliance**: 2 deg is a training assumption; in `XL330` the tooth
+   stiffness and damping are guesses, and `XL330Backlash` copies MuJoCo's soft limit, which is
+   what training used, not a measured gear.
 7. **Firmware loop modelled as continuous**: the XL330 control period is not published; no
    encoder quantisation (4096 counts = 1.5 mrad), no PWM quantisation.
 8. **Friction**: regularised (creeps at `ws atanh(tau/F)` instead of sticking), and its external
@@ -271,10 +400,42 @@ In this simulation only; it says nothing about the real robot:
    the static load: a 1 ms settling transient).
 11. Mouth servo omitted; body masses as in the MJCF (no cable or battery placement check).
 
+## 3D view
+
+`microduck-stand`, `microduck-hang`, `microduck-policy` and `microduck-policy-backlash` carry a
+3D scene (`scenes/microduck.sdf`, `scenes/microduck-hang.sdf`, written by `design/scene.py`):
+one link per body, each bound to the pose of its body (`Free/pose` or `TrunkPose/g` for the
+trunk, `<joint>_W/g` for the others), on a floor of 10 cm tiles. The browser game
+(`apps/web/microduck`) draws the same parts from `apps/web/src/microduck/duck.glb`.
+
+The parts are Pollen Robotics' own CAD visual meshes from microduck_rl at 0daab16
+(`assets/*.stl`, placed by the visual geoms of `robot_groundcontact.xml`), the file
+`design/robot_data.json` was extracted from, so every part sits in exactly the frame the model
+uses: the 14 XL330 horn axes lie on the joint axes to 0.000 mm and 0.000 deg (printed by
+`design/build_visuals.py`). The script decimates the 796,844 source triangles to 77,066
+(quadric edge collapse, a budget per part), merges each body's parts per MJCF colour and writes
+`meshes/<body>.glb` (15 files, 2.75 MiB) and `duck.glb` (2.39 MiB, a node per body and the lower
+beak on the mouth servo's axis).
+
+**The meshes are CC BY-NC-SA 4.0, non-commercial only** (Pollen Robotics, microduck_rl
+`LICENSE-MODELS.md`); see `meshes/NOTICE`, `meshes/LICENSE` and
+`apps/web/src/microduck/duck.glb.NOTICE`. That licence covers these mesh files only.
+
+Two other CAD sources were looked at and not used. The MicroDuck replica
+(github.com/deanxizian/MicroDuck-Replica, `Print-Colors.blend` at 51c3673) is the same robot on
+HD1910 servos with modified parts; its assembly is the model's HOME pose (horn centres within
+0.11 mm of the joint axes, the head roll 0.97 mm, angles within 0.01 deg), but the modifications
+are under a personal non-commercial licence that needs written permission for any organisational
+use. github.com/fanhao375/microduck-replica-cad (XL330 SolidWorks release v1.1) rebuilds the
+same Pollen meshes as SolidWorks parts; using it would mean exporting the assembly
+(`00-microduck装配体 XL330-288舵机版本.SLDASM`) as STEP in assembly coordinates or as one STL per
+component.
+
 ## Rebuild
 
 ```
-uv run examples/microduck/design/build_model.py     # library, models, expected.json
+uv run examples/microduck/design/build_model.py     # library, models, scenes, expected.json
+uv run examples/microduck/design/build_visuals.py   # meshes/*.glb and the game's duck.glb (downloads 38 STL, pinned hashes)
 uv run examples/microduck/design/xl330.py           # actuator numbers
 uv run examples/microduck/design/robot.py           # body numbers and the hang reference
 julia --project=julia/BGSim examples/microduck/design/run_model.jl xl330-step <run_dir>
@@ -282,4 +443,7 @@ uv run examples/microduck/design/compare_bench.py <run_dir>
 uv run tools/example_docs/build.py --only microduck
 julia --project=julia/BGSim examples/microduck/design/profile_model.jl microduck-policy 0.1   # cost, spectrum
 uv run examples/export_microduck_check.py --out <dir>   # the FMU: export, references, build, fmpy comparison
+uv run examples/microduck/design/mjcf_play.py <microduck_rl>/src/mjlab_microduck/robot/microduck   # -> design/play_data.json
+uv run examples/microduck/design/backlash_bench.py --write   # MuJoCo on the play bench -> design/backlash_reference.json
+uv run examples/export_microduck_check.py --model microduck-policy-backlash --out <dir>   # the gear-play robot as an FMU
 ```

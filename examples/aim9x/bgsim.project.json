@@ -1,0 +1,13 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "aim9x",
+  "models": [
+    "aim9x-airframe",
+    "aim9x-control",
+    "aim9x-intercept",
+    "aim9x-fmu"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

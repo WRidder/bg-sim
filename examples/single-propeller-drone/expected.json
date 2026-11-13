@@ -1,0 +1,265 @@
+{
+  "project": "single-propeller-drone",
+  "description": "A swashplateless single-propeller drone: one motor makes both thrust and the roll/pitch moments by modulating its torque once per revolution; the lag-pitch hinges turn the rotor's acceleration within each turn into cyclic blade pitch, and PropRotor computes the hub moment from the rotor's own state (2 kM tau_net (cos psi, sin psi), tau_net = motor torque - drag). Throttle is rotor speed, and there is no yaw actuator: four fins, lifting surfaces inside the momentum-theory slipstream, carry the motor reaction and damp the yaw rate; nothing holds the heading. The plant is a 6-DOF multibond body, the PropRotor gyrostat on a 1-junction shaft with the motor's electrical bond graph (6S pack, inverter MTF, winding R and I, EM converter), the aerodynamic and fin loads as imposed wrenches, and four Leg subsystems (Hertz contacts with damped pads). The controller is a PX4-style cascade (position -> velocity -> attitude -> body rate with gyroscopic feed-forward -> allocation -> rotor speed -> current loop) on a biased, noisy IMU, a 100 Hz motion-capture fix and a 50 Hz IR-beacon heading. Each reference value comes from design/design.py (derived independently of the simulation), not from an earlier run; the notes give the measured value.",
+  "models": {
+    "single-propeller-drone-hover": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/yaw",
+          "t": 3.0,
+          "value": 0.67359,
+          "rtol": 0.05,
+          "note": "passive yaw: after the 0.8 rad/s kick the heading turns by r0 tau (1 - exp(-t/tau)) with tau = (Jz + Ja)/D = 0.870 s from the linearised fin law (design.py): 0.6736 rad at 3 s; measured 0.684 rad (+1.5 %)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Rotor/w",
+          "from_t": 6.0,
+          "to_t": 8.0,
+          "value": 539.106,
+          "rtol": 0.003,
+          "note": "hover rotor speed sqrt(T0/kT), T0 = m g + fin download 0.871 N from momentum theory: 539.11 rad/s; measured mean 539.04 rad/s"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Motor/Pbat/y",
+          "from_t": 6.0,
+          "to_t": 8.0,
+          "value": 187.936,
+          "rtol": 0.003,
+          "note": "power balance: shaft power Q0 w0 = 164.5 W through the winding loss and the 3 W avionics gives 187.94 W from the pack (design.py, at 7 s, the middle of the window); measured mean 188.01 W. The tolerance (0.56 W) allows the copper loss of the cyclic current ripple, which the steady operating point leaves out, up to a cyclic amplitude of 0.11 N m"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Motor/Ibat/y",
+          "from_t": 6.0,
+          "to_t": 8.0,
+          "value": 7.5618,
+          "rtol": 0.003,
+          "note": "pack current at hover 7.562 A at 24.853 V (design.py: settled RC branch, the charge at 7 s, 0.9951, puts the OCV 0.044 V below full); measured mean 7.565 A. Same tolerance argument as the power"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Motor/Imot/y",
+          "from_t": 6.0,
+          "to_t": 8.0,
+          "value": 10.837,
+          "rtol": 0.01,
+          "note": "motor current (Q0 + b_m w0)/k_t = 10.84 A (design.py); measured mean 10.840 A. In steady hover this is the shaft's torque balance, so with the rotor speed checked it tests only the EM converter's constant and that the bearing loss (6.1 % of the current) acts on the shaft between motor and rotor"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Nav/ba",
+          "from_t": 6.0,
+          "to_t": 8.0,
+          "value": 0.08,
+          "abs": 0.005,
+          "note": "the navigation filter estimates the IMU's vertical accelerometer bias (ImuSensor.bias_a z = 0.08 m/s^2); measured mean 0.0796"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Truth/x",
+          "from_t": 3.0,
+          "to_t": 8.0,
+          "value": 1.0,
+          "initial": 0.0,
+          "max_overshoot": 0.0242,
+          "note": "the 1 m smooth step: the linear one-axis model of design.py overshoots 1.27 cm, 2.42 cm with the unobservable horizontal accelerometer bias as a disturbance; measured 1.77 cm"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Truth/z",
+          "value": 1.31,
+          "note": "height held within 1 cm of the 1.32 m set-point through both kicks and the step (measured 1.3155 to 1.3228 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/z",
+          "value": 1.33,
+          "note": "upper side of the same band"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Truth/wb[3]",
+          "from_t": 6.0,
+          "to_t": 8.0,
+          "value": 0.0,
+          "abs": 0.05,
+          "note": "no yaw controller, yet no spin: this is the check of the fin law. In any steady state the fin torque equals the rotor drag Q whatever the fin law (so the fin torque itself is not checked); what the trim incidence (11.54 deg) sets is the yaw rate at which the two balance, zero by design.py. An imbalance dQ settles at dQ/D, so 0.05 rad/s is 0.2 mN m, 0.07 % of Q0; measured mean 0.029 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/att",
+          "from_t": 1.0,
+          "value": 0.02,
+          "note": "navigation-filter attitude error below 0.02 rad (measured peak 0.0099 rad; the horizontal accelerometer bias alone gives b/g = 0.0065 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/pos",
+          "from_t": 1.0,
+          "value": 0.02,
+          "note": "position estimate error below 2 cm (measured peak 0.0065 m; the motion-capture fix has 1 cm noise)"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "E007", "W201", "W202", "W205", "W206"],
+          "note": "no solver failure, causal conflict, frame mismatch, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "single-propeller-drone-free-nutation": {
+      "model": "single-propeller-drone-hover",
+      "run_timeout": 900,
+      "settings": {"t_end": 2.0, "output": {"points": 2001}},
+      "overrides": {"Rate/Kp": 0.0, "Rate/Ki": 0.0, "Rate/k_gyro": 0.0},
+      "checks": [
+        {
+          "kind": "fft_peak",
+          "signal": "Truth/wb[1]",
+          "from_t": 0.0,
+          "to_t": 2.0,
+          "min_hz": 0.5,
+          "max_hz": 5.0,
+          "value": 2.0597,
+          "rtol": 0.05,
+          "note": "with the rate loop off (no hub moment), the 0.3 rad/s roll kick nutates at h/sqrt(Jx Jy) = 12.94 rad/s = 2.060 Hz (design.py, h = Ja w0, the gyroscopic sign Jx p' = tau_x - h q); measured 2.020 Hz, the fin and drag moments about the CoM are not in the formula"
+        }
+      ]
+    },
+    "single-propeller-drone": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "Truth/x",
+          "from_t": 2.0,
+          "to_t": 6.0,
+          "value": 1.5,
+          "initial": 0.0,
+          "max_overshoot": 0.0212,
+          "note": "+1.5 m x leg in 3 s: design.py's one-axis model with the accelerometer-bias disturbance overshoots 3.17 cm (2.1 %); measured 1.88 cm"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Truth/y",
+          "from_t": 6.0,
+          "to_t": 10.0,
+          "value": 1.5,
+          "initial": 0.0,
+          "max_overshoot": 0.0212,
+          "note": "+1.5 m y leg, the same bound; measured 1.73 cm"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Truth/vw[3]",
+          "from_t": 12.0,
+          "to_t": 14.9,
+          "value": -0.25,
+          "rtol": 0.02,
+          "note": "the land mode descends at v_land = 0.25 m/s; measured mean -0.2491 m/s"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Truth/wb[3]",
+          "from_t": 13.0,
+          "to_t": 14.9,
+          "value": 0.85896,
+          "rtol": 0.06,
+          "note": "in the steady descent the mass flow through the disc drops (rho A (V_c + v_i)), the swirl and the fin torque rise, and the body yaws at 0.859 rad/s until the fin damping balances it (design.py); measured mean 0.827 rad/s. This compares the model with its Python twin, not with a physical prediction: the rate needs only D 0.859 = 3.5 mN m of imbalance (1.15 % of Q0), while T = kT W^2 and Q = kQ W^2 ignore the 1.5 % drop of the flow through the disc that changes a real propeller's coefficients by the same order"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Truth/z",
+          "level": 0.180833,
+          "n": 1,
+          "direction": "down",
+          "value": 15.0567,
+          "abs": 0.03,
+          "note": "the feet reach the ground at t_land + t_ramp + (1.32 - 0.1808 - v t_ramp/2)/v = 15.057 s (design.py); measured 15.061 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/fc_max",
+          "value": 109.8,
+          "note": "touchdown load: the vertical impact of the rigid body on four damped Hertz feet at 0.25 m/s peaks at 109.8 N (design.py impact simulation); measured peak hold 85.2 N, the feet touch one after another"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/wb[3]",
+          "from_t": 15.087,
+          "to_t": 20.0,
+          "value": 0.457,
+          "note": "landing yaw, from the latest first contact the zero-crossing check allows (15.057 + 0.03 s; the impact's friction stops the descent yaw within 5 ms) to rest. The fins carry the drag torque in any state, so the body can only gain yaw from rotor speed it loses while the feet do not hold it, Ja/Jz = 0.109 rad/s per rad/s. The drive brakes 3 % of the speed at 4000 rad/s^2 from its first tick after the impact; in design.py's impact simulation the feet hold the 1.525 N m braking reaction only from 0.32 to 5.59 ms, so at the latest tick 4.2 rad/s of the brake falls outside: at most 0.457 rad/s. The hold keeps the speed constant and the friction exceeds the unload's deceleration torque (ratio 0.53). Measured peak 0.127 rad/s (0.135 rad/s inside the impact; 3.27 rad/s before the touchdown brake)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/z",
+          "from_t": 15.087,
+          "to_t": 20.0,
+          "value": 0.18299,
+          "note": "hop after the touchdown: the CoM may rise above the contact height 0.180833 m by at most (e v)^2 / (2 g (1 - k_td^2)) = 2.16 mm, the rebound at the pads' design restitution e = 0.2 (the flat impact simulation gives 0.156) against the net downward acceleration once the drive has braked to k_td = 0.97 of the speed (design.py): 0.18299 m. Measured peak 0.182296 m (1.46 mm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/wb[3]",
+          "from_t": 16.41,
+          "to_t": 20.0,
+          "value": 0.01,
+          "note": "landed (the thrust is off t_hold + t_unload = 1.3 s after the touchdown latch, at the latest 15.057 + 0.03 + one 20 ms tick + 1.3 = 16.41 s): the feet carry the weight and their friction (1.33 N m) holds the rotor's run-down torque Ja * accel_max = 0.091 N m, so there is no spin on the ground (measured peak 0.00071 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 20.0,
+          "value": 0.180555,
+          "abs": 2e-05,
+          "note": "at rest on the feet: contact height minus the static Hertz penetration (m g / K4)^(2/3) = 0.279 mm, 0.18055 m (design.py); measured 0.180556 m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "value": 0.2,
+          "note": "the thrust vector stays inside the 0.20 rad tilt limit of the position loop (measured peak 0.145 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/att",
+          "from_t": 1.0,
+          "to_t": 15.0,
+          "value": 0.02,
+          "note": "navigation-filter attitude error in flight below 0.02 rad (measured peak 0.0126 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/pos",
+          "from_t": 1.0,
+          "to_t": 15.0,
+          "value": 0.02,
+          "note": "position estimate error in flight below 2 cm (measured peak 0.0081 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/vel",
+          "from_t": 1.0,
+          "to_t": 15.0,
+          "value": 0.03,
+          "note": "velocity estimate error in flight below 3 cm/s (measured peak 0.0157 m/s); the touchdown is excluded, the motion-capture fix lags the contact"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "E007", "W201", "W202", "W205", "W206"],
+          "note": "no solver failure, causal conflict, frame mismatch, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "mechanism",
+      "title": "The swashplateless mono-rotor",
+      "file": "pages/mechanism.md",
+      "children": []
+    }
+  ]
+}

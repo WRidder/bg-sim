@@ -1,0 +1,654 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "xl330-backlash-step",
+  "$comment": "One XL330Backlash instance (microduck_rl's 2 deg play hinge) on the microduck_rl XL330 test bench.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Goal",
+        "name": "Goal",
+        "block": {
+          "ref": "stdlib:sources/Pulse"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "1.0",
+          "period": "4.0",
+          "duty": "0.2",
+          "t_start": "0.1",
+          "offset": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Supply",
+        "name": "Supply",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 0,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "v_bat"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Servo",
+        "name": "Servo",
+        "block": {
+          "ref": "project:XL330Backlash"
+        },
+        "position": {
+          "x": 200,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Latency/initial": "0.0",
+          "Backlash/invw": "597.1303183939107"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Kp",
+        "name": "Kp",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 0,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "kp_fw"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "World",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 420,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Mount",
+        "name": "Mount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 540,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "-0.3",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "J",
+        "name": "J",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3DRigid"
+        },
+        "position": {
+          "x": 660,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Ja": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Arm",
+        "name": "Arm",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 780,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "-0.0965688",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "BJ",
+        "name": "BJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 900,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "B",
+        "name": "B",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 900,
+          "y": 170
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.1",
+          "J": "[8.6729e-05, 6.5566e-05, 0.000143854]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Base",
+        "name": "Base",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 660,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WJ",
+        "name": "WJ",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 780,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "LC",
+        "name": "LC",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 780,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "-0.0965688",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PB",
+        "name": "PB",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 900,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s0001",
+        "kind": "signal",
+        "from": {
+          "node": "Kp",
+          "port": "y"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "kp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0002",
+        "kind": "signal",
+        "from": {
+          "node": "Goal",
+          "port": "y"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "q_goal"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0003",
+        "kind": "bond",
+        "from": {
+          "node": "Supply",
+          "port": "p"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "vbus"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0004",
+        "kind": "bond",
+        "from": {
+          "node": "World",
+          "port": "p"
+        },
+        "to": {
+          "node": "Mount",
+          "port": "b"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0005",
+        "kind": "bond",
+        "from": {
+          "node": "Mount",
+          "port": "a"
+        },
+        "to": {
+          "node": "J",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0006",
+        "kind": "bond",
+        "from": {
+          "node": "J",
+          "port": "child"
+        },
+        "to": {
+          "node": "Arm",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0007",
+        "kind": "bond",
+        "from": {
+          "node": "Arm",
+          "port": "b"
+        },
+        "to": {
+          "node": "BJ"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0008",
+        "kind": "bond",
+        "from": {
+          "node": "B",
+          "port": "p"
+        },
+        "to": {
+          "node": "BJ"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0009",
+        "kind": "signal",
+        "from": {
+          "node": "Base",
+          "port": "g"
+        },
+        "to": {
+          "node": "WJ",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0010",
+        "kind": "signal",
+        "from": {
+          "node": "J",
+          "port": "pose"
+        },
+        "to": {
+          "node": "WJ",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0011",
+        "kind": "signal",
+        "from": {
+          "node": "WJ",
+          "port": "g"
+        },
+        "to": {
+          "node": "PB",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0012",
+        "kind": "signal",
+        "from": {
+          "node": "LC",
+          "port": "g"
+        },
+        "to": {
+          "node": "PB",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0013",
+        "kind": "signal",
+        "from": {
+          "node": "PB",
+          "port": "g"
+        },
+        "to": {
+          "node": "B",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b0014",
+        "kind": "bond",
+        "from": {
+          "node": "Servo",
+          "port": "horn"
+        },
+        "to": {
+          "node": "J",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0015",
+        "kind": "signal",
+        "from": {
+          "node": "J",
+          "port": "qout"
+        },
+        "to": {
+          "node": "Servo",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**XL330Backlash on the pendulum bench** of xl330-step: gravity keeps the play closed, so the encoder follows xl330-rigid-step except where the load reverses. Compare with MuJoCo running the same bench with microduck_rl's play hinge (design/backlash_bench.py).",
+        "x": 0,
+        "y": -160,
+        "w": 700,
+        "h": 100,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.6,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1601
+    },
+    "event_limit": 100000
+  },
+  "parameters": [
+    {
+      "name": "kp_fw",
+      "value": "200.0",
+      "unit": "1",
+      "description": "XL330 Position P Gain register (robotd gain 200; standing 0.8x, limp 50)"
+    },
+    {
+      "name": "i_limit",
+      "value": "1.75",
+      "unit": "A",
+      "description": "Firmware current limit (BAM/training 1.75 A; impact-guard firmware on the robot 1.0 A)"
+    },
+    {
+      "name": "t_latency",
+      "value": "0.02",
+      "unit": "s",
+      "description": "Command latency, goal written to goal applied (a multiple of 5 ms)"
+    },
+    {
+      "name": "v_bat",
+      "value": "7.4",
+      "unit": "V",
+      "description": "Supply voltage (2S Li-ion: 8.2 V full, 7.4 V nominal, 6.6 V empty under load)"
+    },
+    {
+      "name": "k_motor",
+      "value": "0.36601349688984386",
+      "unit": "N*m/A",
+      "description": "Torque constant at the horn, also the back-EMF constant (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "r_motor",
+      "value": "2.8113923539223227",
+      "unit": "Ohm",
+      "description": "Winding plus driver resistance (BAM XL330 M6 fit)"
+    },
+    {
+      "name": "armature",
+      "value": "0.0018077432831600838",
+      "unit": "kg*m^2",
+      "description": "Rotor and gears reflected to the horn (BAM XL330 M6 fit); the rotor inertia of XL330 is armature/288.4^2, the joint of XL330Rigid carries it as Ja"
+    }
+  ],
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Goal and encoder angle",
+      "signals": [
+        "Goal/y",
+        "J/qout"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Play angle (gear minus horn)",
+      "signals": [
+        "Servo/Backlash/phi"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Gear and horn speed",
+      "signals": [
+        "Servo/GearSpeed/y",
+        "Servo/HornSpeed/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Motor current and duty",
+      "signals": [
+        "Servo/Current/y",
+        "Servo/PwmLimit/y"
+      ]
+    }
+  ]
+}

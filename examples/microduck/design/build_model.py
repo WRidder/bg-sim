@@ -88,10 +88,20 @@ def bench_goal(t: float) -> float:
     return p["amplitude"] if p["t_start"] <= t < p["t_start"] + p["duty"] * p["period"] else 0.0
 
 
-def add_pendulum(d: Diagram, x0, y0, rigid=False) -> tuple[str, str]:
+def bench_invweight(inertia=BENCH_INERTIA) -> float:
+    """dof_invweight0 of the play hinge on the bench as MuJoCo computes it: the play hinge and the
+    servo hinge on one body (link inertia I about the axis), armatures Ja (servo) and jb (play):
+    (M^-1)_bb = (I + Ja) / (I (Ja + jb) + Ja jb)."""
+    ja, jb = xl.BAM["armature"], xl.PLAY["jb"]
+    return (inertia + ja) / (inertia * (ja + jb) + ja * jb)
+
+
+def add_pendulum(d: Diagram, x0, y0, rigid=False, ja="armature", vertical=False) -> tuple[str, str]:
     """World -> Mount -> J (Revolute3D, horizontal axis) -> Arm -> BJ -> B; q = 0 hangs down.
-    rigid: J is a Revolute3DRigid that carries the servo's armature (for XL330Rigid)."""
-    r_wj = np.array([[1.0, 0, 0], [0, 0, -1.0], [0, 1.0, 0]])
+    rigid: J is a Revolute3DRigid that carries the servo's armature `ja` (for XL330Rigid; "0.0"
+    for XL330Backlash, whose armature is on the motor side). vertical: the axis is vertical, so
+    gravity puts no torque on the joint (the reversal bench)."""
+    r_wj = np.eye(3) if vertical else np.array([[1.0, 0, 0], [0, 0, -1.0], [0, 1.0, 0]])
     t_wj = np.eye(4)
     t_wj[:3, :3] = r_wj
     t_wj[2, 3] = 0.3
@@ -100,7 +110,7 @@ def add_pendulum(d: Diagram, x0, y0, rigid=False) -> tuple[str, str]:
     d.ref("World", "stdlib:multibond/GroundSpatial", x0, y0)
     d.ref("Mount", "stdlib:multibond/FixedTransform3DNeutral", x0 + 120, y0, params=pose_params(np.linalg.inv(t_wj)))
     if rigid:
-        d.ref("J", "stdlib:spatial/Revolute3DRigid", x0 + 240, y0, params={"Ja": "armature"})
+        d.ref("J", "stdlib:spatial/Revolute3DRigid", x0 + 240, y0, params={"Ja": ja})
     else:
         d.ref("J", "stdlib:spatial/Revolute3D", x0 + 240, y0,
               params={"kt": K_HELD, "kr": K_HELD, "bt": 2 * math.sqrt(K_HELD * 0.1), "br": 2 * math.sqrt(K_HELD * 1e-4)})
@@ -125,14 +135,22 @@ def add_pendulum(d: Diagram, x0, y0, rigid=False) -> tuple[str, str]:
     return "J", "drive"
 
 
-def rigid_actuator(d: Diagram, name, x, y, q0=0.0, scale=1.0, ws=None):
-    """An XL330Rigid instance (the robot's servo): pins the latency's start to the joint's start."""
+def rigid_actuator(d: Diagram, name, x, y, q0=0.0, scale=1.0, ws=None, invw=None, gap=None):
+    """An XL330Rigid instance (the robot's servo): pins the latency's start to the joint's start.
+    invw given: an XL330Backlash instead, with the play hinge's MuJoCo dof_invweight0 pinned (and
+    the play `gap`, a global's name or a number, when given)."""
     params = {"Latency/initial": q0}
     if scale != 1.0:
         params["Friction/scale"] = scale
     if ws is not None:
         params["Friction/ws"] = ws
-    d.ref(name, "project:XL330Rigid", x, y, params=params)
+    if invw is None:
+        d.ref(name, "project:XL330Rigid", x, y, params=params)
+        return
+    params["Backlash/invw"] = invw
+    if gap is not None:
+        params["Backlash/gap"] = gap
+    d.ref(name, "project:XL330Backlash", x, y, params=params)
 
 
 def build_step(rigid=False) -> dict:
@@ -168,6 +186,53 @@ def build_step(rigid=False) -> dict:
             {"id": "p1", "title": "Goal and encoder angle", "signals": ["Goal/y", angle]},
             {"id": "p2", "title": "Motor current and duty", "signals": ["Servo/Current/y", "Servo/PwmLimit/y"]},
             {"id": "p3", "title": "Torques", "signals": ["Servo/MotorTorque/y", "Servo/Transmit/y", "Servo/Friction/tau_f"]},
+        ],
+    }
+
+
+REVERSAL = {"amplitude": 0.3, "period": 4.0, "duty": 0.125, "t_start": 0.1, "offset": 0.0}  # high 0.1..0.6 s
+REVERSAL_T_END = 1.0
+
+
+def build_backlash_bench(reversal=False) -> dict:
+    """XL330Backlash on the test bench. reversal=False: the pendulum and goal pulse of xl330-step
+    (gravity keeps the play closed on one flank, so the run should follow xl330-rigid-step);
+    reversal=True: the same arm turning in a horizontal plane (no gravity torque on the joint),
+    goal 0 -> 0.3 rad at 0.1 s and back at 0.6 s, so each reversal crosses the play."""
+    d = Diagram()
+    d.ref("Goal", "stdlib:sources/Pulse", 0, 0, params=REVERSAL if reversal else PULSE)
+    d.ref("Supply", "stdlib:bondgraph/Se", 0, 160, params={"e": "v_bat"})
+    invw = bench_invweight()
+    rigid_actuator(d, "Servo", 200, 60, invw=invw)
+    d.ref("Kp", "stdlib:sources/Constant", 0, 80, params={"value": "kp_fw"})
+    d.sig("Kp", "y", "Servo", "kp")
+    d.sig("Goal", "y", "Servo", "q_goal")
+    d.bond("Supply", "p", "Servo", "vbus")
+    drive = add_pendulum(d, 420, 60, rigid=True, ja="0.0", vertical=reversal)
+    d.bond("Servo", "horn", *drive)
+    d.sig("J", "qout", "Servo", "q")
+    name = "xl330-backlash-reversal" if reversal else "xl330-backlash-step"
+    if reversal:
+        d.note("**XL330Backlash, reversal through the play.** The bench arm turns in a horizontal plane (no "
+               "gravity torque), goal 0 -> 0.3 rad at 0.1 s and back at 0.6 s, kp 200, 7.4 V. On each reversal "
+               "the gear crosses the 2 deg play before the horn (and the encoder) moves. Compare with MuJoCo "
+               "running the same bench with microduck_rl's play hinge (design/backlash_bench.py).", 0, -160, 700, 120)
+    else:
+        d.note("**XL330Backlash on the pendulum bench** of xl330-step: gravity keeps the play closed, so the "
+               "encoder follows xl330-rigid-step except where the load reverses. Compare with MuJoCo running the "
+               "same bench with microduck_rl's play hinge (design/backlash_bench.py).", 0, -160, 700, 100)
+    return {
+        "format": "bgsim.model", "language": "0.1.0", "name": name,
+        "$comment": "One XL330Backlash instance (microduck_rl's 2 deg play hinge) on the microduck_rl XL330 test bench.",
+        "diagram": d.document(),
+        "settings": settings(REVERSAL_T_END if reversal else 1.6, reltol=1e-7, abstol=1e-9,
+                             points=2001 if reversal else 1601),
+        "parameters": firmware_globals(xl.V_NOMINAL),
+        "plots": [
+            {"id": "p1", "title": "Goal and encoder angle", "signals": ["Goal/y", "J/qout"]},
+            {"id": "p2", "title": "Play angle (gear minus horn)", "signals": ["Servo/Backlash/phi"]},
+            {"id": "p3", "title": "Gear and horn speed", "signals": ["Servo/GearSpeed/y", "Servo/HornSpeed/y"]},
+            {"id": "p4", "title": "Motor current and duty", "signals": ["Servo/Current/y", "Servo/PwmLimit/y"]},
         ],
     }
 
@@ -325,12 +390,18 @@ def main() -> None:
 
     write_json(LIBRARY / "XL330.bgsub.json", xl.definition())
     write_json(LIBRARY / "XL330Rigid.bgsub.json", xl.definition_rigid())
+    write_json(LIBRARY / "XL330Backlash.bgsub.json", xl.definition_backlash())
+    write_json(MODELS / "xl330-backlash-step.bgmodel.json", with_dashboard(build_backlash_bench()))
+    write_json(MODELS / "xl330-backlash-reversal.bgmodel.json", with_dashboard(build_backlash_bench(reversal=True)))
     write_json(MODELS / "xl330-step.bgmodel.json", with_dashboard(build_step()))
     write_json(MODELS / "xl330-torque-speed.bgmodel.json", with_dashboard(build_torque_speed()))
     write_json(MODELS / "xl330-rigid-step.bgmodel.json", with_dashboard(build_step(rigid=True)))
     write_json(MODELS / "xl330-rigid-torque-speed.bgmodel.json", with_dashboard(build_torque_speed(rigid=True)))
+    import scene  # the 3D scenes and link bindings (meshes: design/build_visuals.py)
+
+    scene.write_scenes()
     for build in rb.MODEL_BUILDERS:
-        doc = with_dashboard(build())
+        doc = scene.with_scene(with_dashboard(build()))
         write_json(MODELS / f"{doc['name']}.bgmodel.json", doc)
     write_json(ROOT / "expected.json", checks.expected())
 

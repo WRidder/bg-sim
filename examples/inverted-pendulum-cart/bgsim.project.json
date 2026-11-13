@@ -3,7 +3,9 @@
   "language": "0.1.0",
   "name": "inverted-pendulum-cart",
   "models": [
-    "inverted-pendulum-cart"
+    "inverted-pendulum-cart",
+    "inverted-pendulum-cart-mpc",
+    "inverted-pendulum-cart-rate"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"

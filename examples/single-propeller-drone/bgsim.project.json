@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "single-propeller-drone",
+  "models": [
+    "single-propeller-drone",
+    "single-propeller-drone-hover"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

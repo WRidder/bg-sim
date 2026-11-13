@@ -1,10 +1,11 @@
-# inverted-pendulum-cart — a bond-graph cart-pole with an LQR balance controller
+# inverted-pendulum-cart — a bond-graph cart-pole with LQR, rate-limited LQR and constrained MPC
 
 The classic cart–pole stabiliser (plan 9.6c): a cart on a rail balances a rod with a point
-mass at its tip, starting from a 0.1 rad tilt, and then follows a 0.2 m cart-position
-step at t = 1.5 s. The continuous plant is a **pure bond graph** (D28); the controller is a
+mass at its tip, starting from a 0.1 rad tilt, and then follows a cart-position step at
+t = 1.5 s. The continuous plant is a **pure bond graph** (D28); the controller is a
 linear-quadratic state feedback sampled at 1 ms (`@discrete Ts = 1e-3`), whose gains come
-from `design/design.py`.
+from `design/design.py`. Two variants add a real actuator rate limit and a constrained MPC
+on the same plant; see [Constrained MPC and the rate-limited LQR](#constrained-mpc-and-the-rate-limited-lqr).
 
 ## Plant (bond graph)
 
@@ -120,9 +121,72 @@ a controller on the target) is a pass-through marker between `LQR1.u` and `MSe1.
 not gated, because the open-loop pendulum is unstable and two correct runs part
 exponentially.
 
+## Constrained MPC and the rate-limited LQR
+
+Two variants put the same plant under a controller with a **real actuator limit**. Both
+run a 0.3 m cart step at 1.5 s, starting from the same 0.1 rad tilt:
+
+| model | controller | what it shows |
+| --- | --- | --- |
+| `inverted-pendulum-cart-mpc` | [MPC1](block:MPC1) (`library/MPC.jl`) | a 20 ms horizon with the ±20 N clamp and $\lvert\Delta u\rvert \le 0.2$ N per 1 ms tick in the QP |
+| `inverted-pendulum-cart-rate` | [RateLimitedLQR1](block:RateLimitedLQR1) (`library/RateLimitedLQR.jl`) | the same LQR gains with the same 200 N/s slew limit in the 1 ms firmware |
+
+The 0.3 m step is outside the **unconstrained** LQR's authority: `design/mpc.py` integrates
+it and finds a peak of **26.82 N**, so on the real ±20 N actuator the LQR must either
+saturate or slow down. The rate-limited LQR is the fair comparison: it clamps at 20 N and
+changes the force by at most 0.2 N per tick. The MPC solves the same problem as a
+box-constrained QP over the force increments.
+
+### The QP
+
+The prediction is the discrete linearisation at upright, condensed over $N = 20$ samples:
+
+$$x_{k+1} = A_d x_k + B_d u_k,\qquad
+X = \Phi e_0 + \Gamma U,\qquad
+U = u_{prev}\mathbf 1 + L\,\Delta U,$$
+
+with $e_0 = [x-x_{ref}, v, \theta, \omega]^T$ and $L$ the lower-triangular ones matrix. The
+cost uses the LQR weights and the terminal Riccati matrix $P$:
+
+$$J = \sum_{k=0}^{N-1}\left(x_k^T Q x_k + R u_k^2\right) + x_N^T P x_N
+   = \tfrac12 \Delta U^T H_d \Delta U + f_d^T \Delta U + \text{const},$$
+
+$$H_d = L^T(\Gamma^T \bar Q \Gamma + \bar R)L,\qquad
+f_d = L^T\left(\Gamma^T \bar Q \Phi e_0 + \Gamma^T \bar Q \Gamma \mathbf 1\,u_{prev}\right).$$
+
+The only constraint is the box $\lvert\Delta u_k\rvert \le 0.2$ N. The block solves it by
+ADMM,
+
+$$U_c = (H_d+\rho I)^{-1}\left(\rho(z-y)-f_d\right),\qquad
+z = \operatorname{clamp}(U_c+y,\pm\Delta u_{max}),\qquad
+y \leftarrow y+U_c-z,$$
+
+20 iterations per 1 ms tick, warm-started from the previous tick. The applied force is
+$u = \operatorname{clamp}(u_{prev}+z_1,\pm20)$ N. `design/mpc.py` writes the scaled
+matrices $H_d^{-1}$, the four columns of the linear term and $c_{prev}$ into
+`design/mpc.json`; `design/build_mpc.py` generates the block source and the two models.
+
+### Results
+
+| quantity | LQR, no limit | rate-limited LQR | MPC |
+| --- | --- | --- | --- |
+| peak force | 26.82 N (not realisable) | **20.00 N** (clamp) | **18.58 N** |
+| peak $\lvert\theta\rvert$ | 10.26° | 15.54° | **12.89°** |
+| $\lvert\theta\rvert$ over [2.9, 3.0] s | 0.65° | 0.64° | 0.52° |
+| final cart position | 0.3000 m | 0.3000 m | 0.3000 m |
+
+The MPC does not just clamp harder: because it plans the force increment over 20 ms, it
+starts braking earlier and keeps the pendulum 2.6° flatter than the rate-limited LQR while
+using 1.4 N less. The price is computation: the MPC run takes about 28 s in the check
+environment, against 16 s for the rate-limited LQR.
+
+The two variants share the plant, the scene and the 0.3 m `XRef` step with the original
+model; only the controller node and the run length change.
+
 ## Checks
 
-`expected.json` is the machine-readable acceptance (17 checks, plan 9.6c):
+`expected.json` is the machine-readable acceptance for the three models (plan 9.6c). The
+original model's checks are:
 
 - **`|θ| < 0.5°` and the cart inside 1 cm around t = 3 s.** The angle band is
   `max_abs` over [2.9, 3.0] s against 0.5° (0.0087266 rad), and the cart band is the tracking
@@ -138,6 +202,12 @@ exponentially.
 - Cursor values at t = 0.2, 1.45 and 2.0 s pin the shape of the recovery and of the step
   against the design reference. The 0.2 s angle cursor carries 2.5 mrad because that is the
   fastest part of the recovery and the 1 ms sample-and-hold is visible there (~4 %).
+
+The two variants add 17 checks: both reach 0.3 m (within 0.1 mm) and stay below 0.31 m; the
+rate-limited LQR peaks at 20.00 N and 15.5°, the MPC at 18.58 N and 12.9°; the MPC keeps
+`|θ|` at 0.52° around t = 3 s and the rate-limited LQR at 0.64°; both forbid `E901`,
+`E106`, `W202` and `W206`. The MPC's `library/MPC.jl` is generated by
+`design/build_mpc.py`, so its QP matrices are not hand-edited.
 
 ## One documented limitation
 
@@ -169,6 +239,13 @@ exponentially.
   clamp: the peak becomes exactly 20.0 N and the cart still settles at 0.2 m. A design that
   demands more than the clamp *for a long time* can make the nonsmooth `clamp` chatter and
   hit the `W206` event limit, which is why the sample's own weights stay 10 % below it.
+- Open `inverted-pendulum-cart-mpc` and `inverted-pendulum-cart-rate` side by side: both
+  move the cart 0.3 m, but the MPC's angle peak is 12.9° and the rate-limited LQR's is
+  15.5°. Set `MPC1.du_max` to 0.1 N (100 N/s) and the MPC gets slower; set it to 1 N and it
+  plans more aggressively.
+- In `inverted-pendulum-cart-mpc`, set `MPC1.iterations` in the block source to 5: the
+  ADMM solution is no longer converged and the force starts to chatter. The 20 iterations
+  are the design point.
 
 ## 3D view
 

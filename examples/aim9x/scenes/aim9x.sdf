@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!--
+  aim9x: the AIM-9X at the origin, x forward, y left, z up, metres. The body, the fixed tail
+  fins and the seeker window are one mesh; the four canards are separate links on their hinge
+  axes (joints canard1..4) and turn with Fin1..4/y. The nozzle plume scales with the motor
+  thrust. A cloud deck and a faint 16 m reference grid give the scene depth and scale. The
+  meshes are written by design/make_meshes.py.
+-->
+<sdf version="1.9">
+  <model name="aim9x">
+    <link name="missile">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="body">
+        <geometry><mesh><uri>meshes/aim9x_missile.glb</uri></mesh></geometry>
+      </visual>
+      <visual name="plume_glow">
+        <pose>-1.50 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.085</radius></sphere></geometry>
+        <material><diffuse>1 0.85 0.35 1</diffuse></material>
+      </visual>
+      <visual name="plume">
+        <pose>-1.02 0 0 0 0 0</pose>
+        <geometry><mesh><uri>meshes/aim9x_plume.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="canard1">
+      <pose>1.12 0.0449013 0.0449013 -0.785398 0 0</pose>
+      <visual name="canard1_fin">
+        <geometry><mesh><uri>meshes/aim9x_canard.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="canard2">
+      <pose>1.12 -0.0449013 0.0449013 0.785398 0 0</pose>
+      <visual name="canard2_fin">
+        <geometry><mesh><uri>meshes/aim9x_canard.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="canard3">
+      <pose>1.12 -0.0449013 -0.0449013 2.35619 0 0</pose>
+      <visual name="canard3_fin">
+        <geometry><mesh><uri>meshes/aim9x_canard.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="canard4">
+      <pose>1.12 0.0449013 -0.0449013 3.92699 0 0</pose>
+      <visual name="canard4_fin">
+        <geometry><mesh><uri>meshes/aim9x_canard.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="canard1_hinge" type="revolute">
+      <parent>missile</parent>
+      <child>canard1</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+    <joint name="canard2_hinge" type="revolute">
+      <parent>missile</parent>
+      <child>canard2</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+    <joint name="canard3_hinge" type="revolute">
+      <parent>missile</parent>
+      <child>canard3</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+    <joint name="canard4_hinge" type="revolute">
+      <parent>missile</parent>
+      <child>canard4</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+  </model>
+</sdf>

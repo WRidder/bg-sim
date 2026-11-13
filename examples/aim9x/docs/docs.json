@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "models",
+      "title": "Models and data",
+      "file": "pages/models.md",
+      "children": []
+    }
+  ]
+}

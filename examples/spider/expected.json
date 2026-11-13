@@ -1,0 +1,862 @@
+{
+  "project": "spider",
+  "description": "T8X spider robot: 6-DOF body, eight reduced three-joint legs (library subsystem SpiderLegUnit) with servos, foot contact, an alternating tetrapod gait and analytic IK. References from design/data.py and design/design.json.",
+  "models": {
+    "spider-stand": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "W218"
+          ],
+          "note": "no algebraic loop, causality conflict, event storm or unpinned instance key"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/IK/q1",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "Julia IK block against the Python IK of data.py, all eight hips"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970054,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273959,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "the nominal foot is inside the workspace"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/IK/q1",
+          "t": 0.0,
+          "value": -8.673617379884034e-17,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970054,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273957,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/IK/q1",
+          "t": 0.0,
+          "value": 4.336808689942018e-17,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970055,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273959,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/IK/q1",
+          "t": 0.0,
+          "value": 8.673617379884035e-17,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970055,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273959,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/IK/q1",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970054,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273959,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/IK/q1",
+          "t": 0.0,
+          "value": 8.673617379884034e-17,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970054,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273957,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/IK/q1",
+          "t": 0.0,
+          "value": -4.336808689942018e-17,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970055,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273959,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/IK/q1",
+          "t": 0.0,
+          "value": -8.673617379884035e-17,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/IK/q2",
+          "t": 0.0,
+          "value": 0.2734383693970055,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/IK/q3",
+          "t": 0.0,
+          "value": -1.7792839589273959,
+          "abs": 1e-09
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/IK/reach",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-09
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Status/load",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 10.002782999999999,
+          "rtol": 0.01,
+          "note": "starts in the static equilibrium (design.json): the load never overshoots the 10.003 N weight by more than 1 %"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/load",
+          "t": 3.0,
+          "value": 10.002782999999999,
+          "rtol": 0.001,
+          "note": "the eight foot forces carry the whole 1.020 kg weight (body + legs)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/height",
+          "t": 3.0,
+          "value": 0.10849338558143416,
+          "abs": 0.0005,
+          "note": "h_stand minus the static sag: 0.886 mm contact penetration + 0.621 mm servo compliance (design.json)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/Joints/pfoot[3]",
+          "t": 3.0,
+          "value": -0.0008857130988545047,
+          "abs": 5e-05,
+          "note": "the foot sinks by the Hertz penetration of W/8"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003,
+          "note": "standing servo torques: link-centre gravity Jacobian and the foot load W/8 through the leg Jacobian (design.json); 3e-3 N m covers the residual foot friction"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg2/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg3/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg4/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg5/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg6/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg7/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/Joints/tau1",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/Joints/tau2",
+          "t": 3.0,
+          "value": -0.1019252822292302,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg8/Joints/tau3",
+          "t": 3.0,
+          "value": -0.011180294167412846,
+          "abs": 0.003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/Joints/q2",
+          "t": 3.0,
+          "value": 0.27877367987787216,
+          "abs": 0.0002,
+          "note": "the joint deflects by tau/kp from the IK command (design.json)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Leg1/Joints/q3",
+          "t": 3.0,
+          "value": -1.7786987229648756,
+          "abs": 0.0002
+        }
+      ]
+    },
+    "spider-stand-roll-moment": {
+      "model": "spider-stand",
+      "settings": {
+        "t_end": 3.0,
+        "output": {
+          "points": 151
+        }
+      },
+      "overrides": [
+        {
+          "target": "FreeSe1/e",
+          "value": 0.3
+        }
+      ],
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "W218"
+          ],
+          "note": "no algebraic loop, causality conflict, event storm or unpinned instance key"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/roll_deg",
+          "t": 2.5,
+          "value": 0.05105706157238683,
+          "rtol": 0.1,
+          "note": "static roll under a 0.3 N m roll moment: M / K_roll with K_roll = (1 + k_att) k_foot sum(y^2) = 336.7 N m/rad (design.json; the old sign of the attitude loop gives K_roll = 0). 10 % covers the Hertz nonlinearity and the creep of the feet"
+        }
+      ]
+    },
+    "spider-stand-roll-start": {
+      "model": "spider-stand",
+      "settings": {
+        "t_end": 3.0,
+        "output": {
+          "points": 301
+        }
+      },
+      "overrides": [
+        {
+          "target": "global:roll0",
+          "value": 1.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "W218"
+          ],
+          "note": "no algebraic loop, causality conflict, event storm or unpinned instance key"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/roll_deg",
+          "from_t": 1.0,
+          "to_t": 3.0,
+          "value": 0.05,
+          "note": "from a 1 deg roll start the roll is below 5 % of the start after 1 s: the linear roll model decays at 9.9 1/s (design.json); with the old sign of the attitude loop the roll stiffness is zero and the tilt stays"
+        }
+      ]
+    },
+    "spider-walk": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "W218"
+          ],
+          "note": "no algebraic loop, causality conflict, event storm or unpinned instance key"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/x",
+          "t": 16.0,
+          "value": 0.3189032936365726,
+          "abs": 0.056711953656154585,
+          "note": "the integrated command path (design.json): x = 0.319 m; 5 % of the 1.13 m path for slip and servo compliance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/y",
+          "t": 16.0,
+          "value": 0.7006690048246419,
+          "abs": 0.056711953656154585,
+          "note": "y = 0.701 m, same tolerance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/yaw_deg",
+          "t": 16.0,
+          "value": 79.960683588197,
+          "abs": 3.99803417940985,
+          "note": "the integrated yaw-rate command, 5 %"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Status/v_fwd",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "value": 0.09999999934154581,
+          "rtol": 0.05,
+          "note": "two straight cycles at the 0.10 m/s command: the stance foot moves at exactly the command, so the body does too; 5 % for slip"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Status/v_fwd",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "measure": "pp",
+          "value": 0.03,
+          "note": "the constant-velocity stance implies a constant body speed; 0.3 v peak to peak allows for the servo compliance at the 8/4-foot hand-over (the old sinusoidal stance swung between 0.004 and 0.19 m/s)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Status/contact",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "value": 5.6,
+          "abs": 0.3,
+          "note": "8 x the 0.70 stance fraction: the hand-over ramps put touchdown and liftoff at zero load (design.json, z_unload); 0.3 for the tanh gate of the count, which reaches 1 only above about 0.15 N"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Status/contact",
+          "from_t": 4.0,
+          "to_t": 16.0,
+          "value": 3.8,
+          "note": "the profile always keeps one group of four feet loaded"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Leg1/Joints/pfoot[3]",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "value": 0.040486152936079475,
+          "abs": 0.0015,
+          "note": "swing apex 40.5 mm: the commanded 43.6 mm on the body at its four-foot height, the unloaded leg sagging under its weight (design.json); 1.5 mm for the 0.75 mm of the command filter, the servo lag and the body bounce"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Leg5/Joints/pfoot[3]",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "value": 0.040486152936079475,
+          "abs": 0.0015
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Status/height",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "value": 0.1077823937212115,
+          "abs": 0.001210991860222665,
+          "note": "no height loop (k_h = 0): the body rides between the eight-foot and the four-foot static sag (design.json)"
+        },
+        {
+          "kind": "mean_value",
+          "signal": "Status/load",
+          "from_t": 14.4,
+          "to_t": 16.0,
+          "value": 10.002782999999999,
+          "rtol": 0.02,
+          "note": "over whole gait cycles the floor carries the weight (vertical momentum balance); 2 % for the sampling of the load ripple"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Status/load",
+          "from_t": 2.0,
+          "to_t": 16.0,
+          "value": 5.0013914999999995,
+          "note": "the hand-over ramps keep at least half the weight on the floor at every instant"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/roll_deg",
+          "value": 3.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Status/pitch_deg",
+          "value": 3.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg1/Joints/q1",
+          "value": 1.2
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg1/Joints/q2",
+          "value": 1.8
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg1/Joints/q3",
+          "value": 2.6
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg1/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9,
+          "note": "the gait stays inside every leg's workspace"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg2/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg3/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg4/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg5/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg6/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg7/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Leg8/IK/reach",
+          "from_t": 0.0,
+          "to_t": 16.0,
+          "value": 0.9
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg1/Joints/tau1",
+          "value": 0.3334261,
+          "note": "every servo stays within the HS-82MG stall torque 0.333 N m (6.0 V datasheet)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg1/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg1/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg2/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg2/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg2/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg3/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg3/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg3/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg4/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg4/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg4/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg5/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg5/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg5/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg6/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg6/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg6/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg7/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg7/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg7/Joints/tau3",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg8/Joints/tau1",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg8/Joints/tau2",
+          "value": 0.3334261
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Leg8/Joints/tau3",
+          "value": 0.3334261
+        }
+      ]
+    }
+  }
+}
