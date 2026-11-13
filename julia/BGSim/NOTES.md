@@ -665,6 +665,20 @@ Everything below was probed on this machine (Julia 1.13.2) and is asserted by
   `done`, stats.events = the count, and a W206 warning in the manifest. A condition-only
   callback counts every crossing; a one-directional `@events` callback counts only its
   non-empty edge (a falling zero crossing is still saved by the solver but is not a firing).
+* **The generated code is not bit-identical between a fresh and a used process.** A sum is
+  a `SymbolicUtils` `AddMul` whose terms live in a `Dict`; `arguments` iterates it, and
+  hash consing hands back an equal expression built by an earlier compile (same variable
+  names, another model) with its own term order. The printed equations are identical, the
+  generated `(+)(a, b, c, d)` calls are not (examples/spider walk after a stand run: one
+  4-term phase sum in the RHS and in the conditions), so results differ in the last bits and
+  conditions that are equal on paper can cross an ulp apart. Event handling must therefore
+  never depend on equal conditions being bit-identical.
+* **Several conditions on one left root** (`_guard_nudge_reference!` in `sim/simulate.jl`):
+  DiffEqBase nudges the previous firing's conditions past `tprev` only when
+  `|min-abs value at tprev - last_event_error| <= abstol` (10 eps), and `last_event_error` is
+  the residual of the last condition of the tie. Conditions a few 1e-15 apart on the same
+  float fail that test and fire again at the same t until W206; the guarded affect sets
+  `last_event_error` to the value the test compares with.
 * The plan 9.2 ball reproduces 0.45152364098572856 s / 1.173961466562895 s and a 0.6399973 m
   peak; the relay switches at 1/12, 7/12, 13/12 s with a maximum error of 3.35e-13 s.
 

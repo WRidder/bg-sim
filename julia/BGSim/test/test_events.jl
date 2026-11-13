@@ -542,6 +542,66 @@ end
     end
 end
 
+# Four switching conditions of one gait clock whose phase sums are rounded differently (the
+# stance/swing `ifelse` of examples/spider: the order of the terms of `t/T + off - phi0 - ...`
+# is not fixed by the symbolic layer, so the four legs of one group cross within an ulp of
+# each other). When two of them share a left root with values more than 10 eps apart there,
+# DiffEqBase's repeat nudge is not made and both fire again at the same t with zero-length
+# steps until W206 (`_guard_nudge_reference!`). The offsets are in ulps of the phase; every
+# pattern reached the event limit before the fix, at t = 4.00984, 4.56984 or 4.80984.
+const _EV_GAIT = """
+@block Gait begin
+    @parameters begin
+        T::Real = 0.8, [unit = "s"]
+        w::Real = 40.0, [unit = "1/s"]
+        duty::Real = 0.7
+        phi0::Real = 0.0123
+        o1::Real = 0.0
+        o2::Real = 0.0
+        o3::Real = 0.0
+        o4::Real = 0.0
+    end
+    @variables begin
+        x::Real = 0.0
+        s1::Real = 0.0
+        s2::Real = 0.0
+        s3::Real = 0.0
+        s4::Real = 0.0
+    end
+    @outputs y::Real
+    @equations begin
+        s1 ~ ifelse(cos(2.0 * pi * (t / T + o1 - phi0 - 0.5 * duty)) > cos(pi * duty), 1.0, 0.0)
+        s2 ~ ifelse(cos(2.0 * pi * (t / T + o2 - phi0 - 0.5 * duty)) > cos(pi * duty), 1.0, 0.0)
+        s3 ~ ifelse(cos(2.0 * pi * (t / T + o3 - phi0 - 0.5 * duty)) > cos(pi * duty), 1.0, 0.0)
+        s4 ~ ifelse(cos(2.0 * pi * (t / T + o4 - phi0 - 0.5 * duty)) > cos(pi * duty), 1.0, 0.0)
+        ddt(x) ~ -3.0 * x + s1 + s2 + s3 + s4 + sin(w * t)
+        y ~ x
+    end
+end
+"""
+
+@testset "switches on one left root with different values do not fire again" begin
+    u = eps(4.0)
+    reference = nothing
+    for pattern in ([0, 0, 0, 0], [0, -3, 4, -1], [0, 0, 2, 1], [2, 2, 1, 1], [-1, -1, -2, 4])
+        doc = _ev_model("EvGait", _EV_GAIT; t_end = 5.0, points = 251, event_limit = 3000,
+            reltol = 1.0e-6, abstol = 1.0e-8)
+        for (k, o) in enumerate(pattern)
+            doc["diagram"]["nodes"][1]["params"]["o$k"] = o * u
+        end
+        result, _, columns = _ev_run(doc)
+        @test result.status == "done"
+        @test !any(d -> d.code == "W206", result.diagnostics)
+        @test columns["time"][end] == 5.0
+        # 13 switch instants (0.00984 + 0.8 k and 0.56984 + 0.8 k), four conditions each, once
+        @test result.stats.events == 52
+        # after the last switch (t = 4.80984) every leg is in stance
+        @test all(columns["Plant/s$k"][end] == 1.0 for k in 1:4)
+        reference === nothing && (reference = columns["Plant/x"][end])
+        @test isapprox(columns["Plant/x"][end], reference; atol = 1.0e-5)
+    end
+end
+
 const _EV_INPUT_LATCH = """
 @block InputLatch begin
     @inputs u::Real
