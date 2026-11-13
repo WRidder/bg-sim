@@ -22,6 +22,8 @@ APP = Path(__file__).resolve().parents[2]
 def parse_args(argv=None):
     p = argparse.ArgumentParser(prog="f16sim", description="Fly the bg-sim F-16 FMU in real time.")
     p.add_argument("--fmu", type=Path, default=APP / "build" / "f16_sim.fmu")
+    p.add_argument("--missile-fmu", type=Path, default=APP / "build" / "aim9x_fmu.fmu")
+    p.add_argument("--no-missiles", action="store_true", help="do not load the AIM-9X FMU (drones still fly)")
     p.add_argument("--starts", type=Path, default=APP / "build" / "starts.json")
     p.add_argument("--config", type=Path, default=APP / "config" / "devices.toml")
     p.add_argument("--start", type=int, default=0, help="index of the start condition (0-based)")

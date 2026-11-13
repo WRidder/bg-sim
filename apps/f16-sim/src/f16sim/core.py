@@ -15,9 +15,13 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from . import terrain
-from .fmu import INPUTS, FlightModel, Settings, Start
+from .fmu import INPUTS, FlightModel, Settings, Start, body_to_ned
+from .missile_model import Launch, MissileManager
+from .tactical import DroneManager, LockOn
 
 IDX = {n: k for k, n in enumerate(INPUTS)}
+# Wingtip rail stations in the aircraft's body frame (x forward, y left, z up), metres.
+STATIONS = ((-2.6, 4.72, 0.0), (-2.6, -4.72, 0.0))
 
 
 @dataclass
@@ -97,7 +101,8 @@ def ring_course(start_north: float, start_east: float, alt: float, heading_deg: 
 class Simulation:
     """The FMU plus the game state. ``inputs`` holds the pilot inputs (stick, pedals, throttle)."""
 
-    def __init__(self, fmu_path, starts: list[Start], settings: Settings | None = None):
+    def __init__(self, fmu_path, starts: list[Start], settings: Settings | None = None,
+                 missile_fmu=None):
         self.model = FlightModel(fmu_path)
         self.starts = starts
         self.settings = settings or Settings()
@@ -112,6 +117,10 @@ class Simulation:
         self.u = np.zeros(len(INPUTS))
         self.steps = 0
         self.crash_reason = ""
+        self.drones = DroneManager()
+        self.lock = LockOn()
+        self.missiles: MissileManager | None = MissileManager(missile_fmu) if missile_fmu else None
+        self.last_fire_message = ""
         self.reset(0)
 
     # ---- state
@@ -120,6 +129,12 @@ class Simulation:
             self.start_index = index % len(self.starts)
         start = self.starts[self.start_index]
         self.model.reset(start, self.settings)
+        if self.missiles is not None:
+            self.missiles.reset()
+        self.drones.reset(self.model["north_m"], self.model["east_m"], self.model["alt_m"],
+                          self.model["psi_deg"])
+        self.lock.reset()
+        self.last_fire_message = ""
         self.y_prev = self.model.y.copy()
         self.pacer.reset()
         self.crashed = False
@@ -194,6 +209,11 @@ class Simulation:
             self.crashed, self.crash_reason = True, "ground contact"
         self._rings(self.prev, pos)
         self.prev = pos
+        self.drones.step(m.step_size, pos[0], pos[1], pos[2], m["psi_deg"])
+        R = body_to_ned(m["q_w"], m["q_x"], m["q_y"], m["q_z"])
+        self.lock.update(m.step_size, (pos[0], pos[1], pos[2]), tuple(R[:, 0]), self.drones)
+        if self.missiles is not None:
+            self.missiles.step(self.drones)
 
     def _rings(self, a: np.ndarray, b: np.ndarray) -> None:
         if not self.rings or self.ring_done is not None:
@@ -224,5 +244,46 @@ class Simulation:
     def next_ring(self) -> Ring | None:
         return next((r for r in self.rings if not r.passed), None)
 
+    def fire_missile(self) -> str:
+        """Launch the next AIM-9X at the locked drone; returns a HUD message."""
+        if self.missiles is None:
+            return "AIM-9X FMU NOT LOADED"
+        m = self.model
+        if self.crashed:
+            return "CRASHED"
+        if m["on_ground"] > 0.5:
+            return "ON GROUND"
+        lock = self.lock.state()
+        if not lock.locked or lock.selected_id is None:
+            return "NO LOCK"
+        target = self.drones.by_id(lock.selected_id)
+        if target is None or not target.alive:
+            return "NO TARGET"
+        station = next((k for k in range(len(STATIONS)) if k not in self.missiles.used), None)
+        if station is None:
+            return "NO MISSILE LEFT"
+        q = (m["q_w"], m["q_x"], m["q_y"], m["q_z"])
+        R = body_to_ned(*q)
+        x, y, z = STATIONS[station]
+        d = R @ np.array([x, -y, -z])       # body FLU rail -> body FRD -> NED offset
+        launch = Launch(north=m["north_m"] + d[0], east=m["east_m"] + d[1],
+                        alt=m["alt_m"] - d[2], heading_deg=m["psi_deg"],
+                        speed=max(120.0, m["tas_mps"]), station=station)
+        try:
+            missile = self.missiles.fire(launch, target)
+        except Exception as exc:  # noqa: BLE001 - a parameter/input outside its FMU range
+            return f"MISSILE FMU: {exc}"
+        if missile is None:
+            return "NO MISSILE LEFT"
+        self.lock.consume()
+        self.last_fire_message = f"FOX 2  AIM-9X  target {target.id}"
+        return self.last_fire_message
+
+    def target_range(self) -> float | None:
+        state = self.lock.state()
+        return state.range_m if state.selected_id is not None else None
+
     def close(self) -> None:
+        if self.missiles is not None:
+            self.missiles.close()
         self.model.close()

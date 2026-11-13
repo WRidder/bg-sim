@@ -35,6 +35,7 @@ class Script:
     views: list[tuple[float, str]] = field(default_factory=lambda: [(0.0, "chase")])
     edge: float = 0.15               # s, ramp of each segment's edges
     captions: list[tuple[float, float, str]] = field(default_factory=list)
+    fires: list[float] = field(default_factory=list)   # s, fire the next AIM-9X
 
     def controls(self, t: float, throttle0: float, phi_deg: float = 0.0) -> tuple[float, float, float, float]:
         p = r = y = 0.0
@@ -68,6 +69,13 @@ SCRIPTS = {
         Segment(1.0, 2.0, roll=0.5), Segment(2.5, 4.0, bank=0.0, roll=0.5),
         Segment(5.0, 6.0, pitch=0.3), Segment(7.0, 7.5, yaw=0.5), Segment(8.0, 10.0, bank=0.0, roll=0.5),
     ], views=[(0.0, "chase"), (5.0, "cockpit")]),
+    # a short weapons demo: hold the target in the seeker and fire both wingtip missiles
+    "missile": Script("missile", 2, 14.0, [], views=[(0.0, "chase"), (5.0, "cockpit"), (9.0, "chase")],
+                      fires=[1.8, 2.8],
+                      captions=[(0.0, 1.8, "AIM-9X seeker: keep a drone inside the 45 deg cue"),
+                                (1.8, 2.8, "FOX 2: lock and launch"),
+                                (2.8, 8.0, "second AIM-9X away"),
+                                (8.0, 14.0, "target destroyed; a new drone enters the play area")]),
     # the video: a roll, a coordinated turn, a hard pull into the limiter, chase and cockpit views
     "demo": Script("demo", 2, 46.0, [
         Segment(3.0, 4.3, roll=1.0),                                   # a full-stick roll ...

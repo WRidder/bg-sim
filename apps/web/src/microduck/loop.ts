@@ -19,12 +19,21 @@ export interface Tick {
   step: Step | null;
 }
 
-export const sensorsOf = (plant: Plant): Sensors => ({
+export const sensorsOf = (plant: Plant, velocities: ArrayLike<number> = plant.state.qd): Sensors => ({
   gyro: plant.state.gyro,
   gravity: plant.state.gravity,
   positions: plant.state.q,
-  velocities: plant.state.qd,
+  velocities,
 });
+
+/**
+ * How many control ticks old the joint velocities the policy reads are. Training feeds them one
+ * tick late (microduck_rl `microduck_velocity_env_cfg.py`: `joint_vel` with `delay_min_lag =
+ * delay_max_lag = 1`, "the Dynamixel firmware computes present_velocity via a moving-average over
+ * the previous position-sample window"), and mjlab's delay buffer returns the current value until
+ * it holds enough ticks. The real robot needs no lag added: its servos report the old value.
+ */
+export const TRAINING_VELOCITY_LAG = 1;
 
 export class DuckLoop {
   /** Off, the joints go to the home pose and hold, as the robot does when its policy is toggled off. */
@@ -36,10 +45,17 @@ export class DuckLoop {
   readonly before = { q: Float64Array.from(DEFAULT_POSITION), position: new Float64Array(3), quaternion: Float64Array.of(1, 0, 0, 0) };
   ticks = 0;
   lastTick: Tick | null = null;
+  /** The joint velocities of the last `velocityLag` ticks, oldest first (what the policy reads). */
+  private readonly pastVelocities: Float64Array[] = [];
 
+  /**
+   * @param velocityLag joint-velocity lag in control ticks (`TRAINING_VELOCITY_LAG` by default, as
+   *   velstand was trained; 0 feeds the plant's present velocities).
+   */
   constructor(
     public plant: Plant,
     readonly controller: Controller,
+    readonly velocityLag: number = TRAINING_VELOCITY_LAG,
   ) {}
 
   reset(): void {
@@ -49,6 +65,17 @@ export class DuckLoop {
     this.actual.fill(0);
     this.keep();
     this.ticks = 0;
+    this.pastVelocities.length = 0;
+  }
+
+  /** The velocities the policy reads this tick, and this tick's into the lag line. */
+  private observedVelocities(): ArrayLike<number> {
+    const now = Float64Array.from(this.plant.state.qd);
+    if (this.velocityLag <= 0) return now;
+    this.pastVelocities.push(now);
+    // mjlab clamps the lag while its buffer fills: the oldest value it has
+    const seen = this.pastVelocities.length > this.velocityLag ? this.pastVelocities.shift()! : this.pastVelocities[0];
+    return seen;
   }
 
   setEnabled(on: boolean): void {
@@ -77,9 +104,10 @@ export class DuckLoop {
       this.lastTick = tick;
       return tick;
     }
+    const velocities = this.observedVelocities();
     if (this.enabled) {
       const command = this.filter.update(asked.command, asked.bodyActive);
-      const step = await this.controller.step(sensorsOf(this.plant), command, asked.bodyActive, dt);
+      const step = await this.controller.step(sensorsOf(this.plant, velocities), command, asked.bodyActive, dt);
       tick = { label: step.label, targets: step.targets, gain: step.gain, step };
       // Only a gait's twist is a speed: the sit-stand flag and the ground pick's phase ride in the
       // same slots, and a skill's is zero.

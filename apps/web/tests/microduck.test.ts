@@ -5,11 +5,13 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { type Brain, CommandFilter, Controller, DEFAULT_TUNING, lowPass, scaleTargets, willStand } from "../src/microduck/controller";
+import type { FmuModel } from "../src/engine/fmu";
 import { FMU_INTERFACE, FmuPlant, findModel, missingVariables, stopReason } from "../src/microduck/fmuPlant";
 import { Kinematics, SITES } from "../src/microduck/kinematics";
-import { DuckLoop } from "../src/microduck/loop";
+import { DuckLoop, TRAINING_VELOCITY_LAG } from "../src/microduck/loop";
 import { buildObservation, type Command, gatherAction, scatterAction, twistMagnitude, zeroCommand } from "../src/microduck/obs";
 import { BUTTON, evaluate, modeFromDpad, readPad, stickCommand } from "../src/microduck/pad";
 import { describeStop, projectedGravity, StandInPlant } from "../src/microduck/plant";
@@ -18,6 +20,8 @@ import { ACTION_LEN, COMMAND_LEN, DEFAULT_POSITION, JOINT_NAMES, MOUTH_INDEX, NU
 import * as THREE from "three";
 
 const POLICIES = resolve(import.meta.dirname, "../src/microduck/policies");
+/** The yaw of a trunk quaternion (w, x, y, z), rad. */
+const heading = ([w, x, y, z]: readonly number[] | Float64Array): number => Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
 const HAS_MODEL = existsSync(resolve(import.meta.dirname, "../src/microduck/model.gen.ts"));
 
 // ---- Observation (obs.rs) -----------------------------------------------------------------------
@@ -389,6 +393,50 @@ describe("velstand.onnx under ONNX Runtime", () => {
 
 // ---- The real policy on the bg-sim model (only when model.gen.ts has been built) ----------------
 
+describe("joint-velocity lag", () => {
+  // What the policy reads at slots 20..34 per tick, against what the plant reported at the start of
+  // the tick. The stand-in plant moves its joints, so its velocities change from tick to tick.
+  const observedVelocities = async (lag?: number) => {
+    const seen: number[][] = [];
+    const brain: Brain = {
+      has: (net) => net === "walk",
+      infer: async (_net, obs) => {
+        seen.push(Array.from(obs.slice(20, 34)));
+        return new Float32Array(ACTION_LEN).fill(0.3 * Math.sin(seen.length));
+      },
+    };
+    const plant = new StandInPlant();
+    const loop = lag === undefined ? new DuckLoop(plant, new Controller(brain)) : new DuckLoop(plant, new Controller(brain), lag);
+    loop.reset();
+    const reported: number[][] = [];
+    for (let i = 0; i < 6; i += 1) {
+      reported.push(Array.from(gatherAction(plant.state.qd)));
+      await loop.tick(stickCommand("drive", { lx: 0, ly: 1, rx: 0, ry: 0 }), 0);
+    }
+    return { seen, reported, loop };
+  };
+
+  it("defaults to training's one tick: the policy reads the previous tick's velocities", async () => {
+    const { seen, reported, loop } = await observedVelocities();
+    expect(loop.velocityLag).toBe(1);
+    expect(reported.slice(2).some((v) => v.some((x) => Math.abs(x) > 1e-3))).toBe(true);
+    expect(seen[0]).toEqual(reported[0].map((x) => Math.fround(x))); // mjlab: the current value until the line fills
+    for (let i = 1; i < seen.length; i += 1) {
+      expect(seen[i]).toEqual(reported[i - 1].map((x) => Math.fround(x)));
+    }
+  });
+
+  it("with lag 0 reads the present velocities, and reset empties the line", async () => {
+    const { seen, reported } = await observedVelocities(0);
+    for (let i = 0; i < seen.length; i += 1) expect(seen[i]).toEqual(reported[i].map((x) => Math.fround(x)));
+    const again = await observedVelocities(1);
+    again.loop.reset();
+    const before = Array.from(gatherAction(again.loop.plant.state.qd));
+    await again.loop.tick(stickCommand("drive", { lx: 0, ly: 1, rx: 0, ry: 0 }), 0);
+    expect(again.seen[again.seen.length - 1]).toEqual(before.map((x) => Math.fround(x)));
+  });
+});
+
 describe("a stopped plant", () => {
   it("is not stepped and its frozen state is not fed to the policy", async () => {
     let stepped = 0;
@@ -428,20 +476,28 @@ describe("a stopped plant", () => {
  * judged (a fall is a result). It checks that the loop runs, every value stays finite and the FMU
  * does not stop (no failed step in any run), and logs per command the trunk's height, tilt, travel
  * and speed against the commanded speed, and the FMU's wall time per 20 ms tick. MICRODUCK_SECONDS
- * sets the run length (default 3 s), MICRODUCK_TRACE a file for the per-tick trace (JSON).
+ * sets the run length (default 3 s), MICRODUCK_TRACE a file for the per-tick trace (JSON),
+ * MICRODUCK_COMMANDS the forward sticks (comma-separated, 0..1, full stick = 0.4 m/s; default
+ * 0,0.5,1), MICRODUCK_LAG the joint-velocity lag in ticks (default training's 1) and
+ * MICRODUCK_MODEL another generated model module (build_wasm.py microduck <fmu> <name>.gen.ts) in
+ * place of src/microduck/model.gen.ts.
  */
-describe.skipIf(!HAS_MODEL)("velstand.onnx on the bg-sim FMU", () => {
+const ALT_MODEL = process.env.MICRODUCK_MODEL;
+describe.skipIf(!HAS_MODEL && !ALT_MODEL)("velstand.onnx on the bg-sim FMU", () => {
   const seconds = Number(process.env.MICRODUCK_SECONDS ?? 3);
+  const sticks = (process.env.MICRODUCK_COMMANDS ?? "0,0.5,1").split(",").map(Number);
+  const lag = Number(process.env.MICRODUCK_LAG ?? TRAINING_VELOCITY_LAG);
+  const runName = (ly: number) => ({ 0: "zero", 0.5: "half-forward", 1: "full-forward" })[ly] ?? `ly=${ly}`;
   it(`runs ${seconds} s at zero command, half and full forward, and the FMU does not stop`, { timeout: 1_800_000 }, async () => {
     const ort = await import("onnxruntime-web");
     ort.env.wasm.numThreads = 1;
     const brain = new OnnxBrain(ort);
     await brain.load("walk", readFileSync(resolve(POLICIES, "velstand.onnx")));
-    const model = (await findModel())!;
+    const model = ALT_MODEL ? ((await import(pathToFileURL(resolve(ALT_MODEL)).href)) as { model: FmuModel }).model : (await findModel())!;
     const plant = await FmuPlant.create(model);
     const trace: Record<string, unknown[]> = {};
     const run = async (name: string, ly: number) => {
-      const loop = new DuckLoop(plant, new Controller(brain));
+      const loop = new DuckLoop(plant, new Controller(brain), lag);
       loop.reset();
       const rows: number[][] = [];
       // What the plant was given each tick (15 targets, the gain): enough to replay the run in fmpy.
@@ -455,7 +511,9 @@ describe.skipIf(!HAS_MODEL)("velstand.onnx on the bg-sim FMU", () => {
       // the forward speed over the second half of the run, from the trunk's travel
       const half = Math.round(seconds * 25);
       let xHalf = NaN;
+      let yHalf = NaN;
       let tHalf = NaN;
+      let headingHalf = NaN;
       const liftOffs = [0, 0];
       const down = [1, 1];
       for (let i = 0; i < Math.round(seconds * 50); i += 1) {
@@ -474,7 +532,9 @@ describe.skipIf(!HAS_MODEL)("velstand.onnx on the bg-sim FMU", () => {
         if (fellAt === null && (tilt > 0.8 || s.position[2] < 0.5 * z0)) fellAt = s.time;
         if (i === half) {
           xHalf = s.position[0];
+          yHalf = s.position[1];
           tHalf = s.time;
+          headingHalf = heading(s.quaternion);
         }
         // a sole leaving the floor, as the page sees it (CONTACT_FORCE_N)
         s.contact?.forEach((c, k) => {
@@ -486,9 +546,10 @@ describe.skipIf(!HAS_MODEL)("velstand.onnx on the bg-sim FMU", () => {
       const s = plant.state;
       trace[name] = rows;
       trace[`${name}:inputs`] = sent;
-      const [w, x, y, z] = s.quaternion;
       return {
         name,
+        model: model.name,
+        velocityLag: lag,
         seconds,
         tEnd: +s.time.toFixed(2),
         z0: +z0.toFixed(4),
@@ -499,17 +560,21 @@ describe.skipIf(!HAS_MODEL)("velstand.onnx on the bg-sim FMU", () => {
         stopped,
         travel: [+s.position[0].toFixed(3), +s.position[1].toFixed(3)],
         distance: +Math.hypot(s.position[0], s.position[1]).toFixed(3),
-        headingDeg: +((Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z)) * 180) / Math.PI).toFixed(1),
+        headingDeg: +((heading(s.quaternion) * 180) / Math.PI).toFixed(1),
+        // the turn rate over the second half (rad/s), from the heading (unwrapped once)
+        yawRateSecondHalf: +(Math.atan2(Math.sin(heading(s.quaternion) - headingHalf), Math.cos(heading(s.quaternion) - headingHalf)) / (s.time - tHalf)).toFixed(4),
         commandedVx: +commanded.toFixed(3),
         meanForward: +(s.position[0] / s.time).toFixed(3),
         forwardSecondHalf: +((s.position[0] - xHalf) / (s.time - tHalf)).toFixed(3),
+        speedSecondHalf: +(Math.hypot(s.position[0] - xHalf, s.position[1] - yHalf) / (s.time - tHalf)).toFixed(3),
         msPerTick: +plant.timing.meanMs.toFixed(2),
         maxMsPerTick: +plant.timing.maxMs.toFixed(2),
         liftOffs,
         realTimeFactor: +(plant.timing.meanMs / 20).toFixed(3),
       };
     };
-    const results = [await run("zero", 0), await run("half-forward", 0.5), await run("full-forward", 1)];
+    const results = [];
+    for (const ly of sticks) results.push(await run(runName(ly), ly));
     console.log(`velstand on the FMU:\n${results.map((r) => JSON.stringify(r)).join("\n")}`);
     if (process.env.MICRODUCK_TRACE) {
       writeFileSync(process.env.MICRODUCK_TRACE, JSON.stringify({ columns: ["t", "x", "y", "z", "tilt", "contactL", "contactR", "vxMeasured", "msTick", "forceL", "forceR"], ...trace }));

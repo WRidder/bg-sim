@@ -10,19 +10,30 @@ from __future__ import annotations
 import math
 
 from direct.gui.OnscreenText import OnscreenText
-from panda3d.core import LineSegs, NodePath, TextNode
+from panda3d.core import CardMaker, LineSegs, NodePath, TextNode, TransparencyAttrib
 
 GREEN = (0.35, 1.0, 0.45, 1.0)
 AMBER = (1.0, 0.75, 0.2, 1.0)
 RED = (1.0, 0.25, 0.2, 1.0)
 WHITE = (0.95, 0.95, 0.95, 1.0)
 KT, FT = 1.0 / 0.514444, 1.0 / 0.3048
+MAP_CX, MAP_CZ, MAP_HALF = -0.90, -0.62, 0.17
 
 
 class Hud:
     def __init__(self, aspect2d: NodePath, fov_v_deg: float, line_scale: float = 1.0):
         self.line_scale = line_scale
         self.root = aspect2d.attach_new_node("hud")
+        cm = CardMaker("minimap_bg")
+        cm.setFrame(-1, 1, -1, 1)
+        self.map_bg = self.root.attach_new_node(cm.generate())
+        self.map_bg.set_pos(MAP_CX, 0.0, MAP_CZ)
+        self.map_bg.set_scale(MAP_HALF, 1.0, MAP_HALF)
+        self.map_bg.set_color(0.02, 0.05, 0.08, 0.55)
+        self.map_bg.set_transparency(TransparencyAttrib.M_alpha)
+        self.map_bg.set_depth_test(False)
+        self.map_bg.set_depth_write(False)
+        self.map_bg.set_bin("fixed", 0)
         self.lines_np: NodePath | None = None
         self.k = 1.0 / math.tan(math.radians(fov_v_deg) / 2.0)
         self.texts = {}
@@ -49,6 +60,7 @@ class Hud:
         txt("ring", (1.30, 0.92), 0.045, TextNode.A_right, AMBER)
         txt("help", (-1.30, 0.80), 0.04, TextNode.A_left, WHITE)
         txt("caption", (0.0, -0.88), 0.06, TextNode.A_center, WHITE)
+        txt("lock", (0.0, -0.30), 0.055, TextNode.A_center, AMBER)
         self.show_help = False
 
     # ---- helpers
@@ -82,7 +94,10 @@ class Hud:
         return text
 
     def update(self, y: dict, *, cockpit: bool, info: str, ring: str, caption: str, t: float, crashed: bool,
-               paused: bool, help_text: str, ring_cue: tuple[float, float] | None) -> None:
+               paused: bool, help_text: str, ring_cue: tuple[float, float] | None,
+               lock=None, lock_cue: tuple[float, float] | None = None,
+               contacts: list[dict] | None = None,
+               own: tuple[float, float, float, float] | None = None) -> None:
         self._used = 0
         ls = LineSegs("hud")
         ls.set_thickness(2.0 * self.line_scale)
@@ -111,6 +126,10 @@ class Hud:
             cx, cz = ring_cue
             ls.set_color(*AMBER)
             self._circle(ls, cx, cz, 0.04, 12)
+        if lock_cue is not None and lock is not None:
+            self._lock_symbol(ls, lock_cue[0], lock_cue[1], lock)
+        if contacts is not None and own is not None:
+            self._minimap(ls, contacts, own)
         if self.lines_np is not None:
             self.lines_np.remove_node()
         self.lines_np = self.root.attach_new_node(ls.create())
@@ -145,8 +164,85 @@ class Hud:
         T["ring"].setText(ring)
         T["help"].setText(help_text if self.show_help else "F1: help")
         T["caption"].setText(caption)
+        if lock is not None and lock.selected_id is not None:
+            if lock.locked:
+                T["lock"].setText(f"LOCK  {lock.range_m / 1000.0:4.1f} km  —  M: FOX 2")
+                T["lock"].setFg(GREEN)
+            elif lock.in_fov:
+                T["lock"].setText(f"SEEKER  {100 * lock.progress:3.0f}%  {lock.range_m / 1000.0:4.1f} km")
+                T["lock"].setFg(AMBER)
+            else:
+                T["lock"].setText(f"{lock.reason}  {lock.angle_deg:3.0f}°")
+                T["lock"].setFg(AMBER if lock.range_m <= 7000.0 else RED)
+        else:
+            T["lock"].setText("")
         for t_ in self._pool[self._used:]:
             t_.hide()
+
+    def _lock_symbol(self, ls, x, z, lock) -> None:
+        ls.set_color(*(GREEN if lock.locked else AMBER))
+        s = 0.035
+        for a, b in (((x - s, z), (x, z + s)), ((x, z + s), (x + s, z)),
+                     ((x + s, z), (x, z - s)), ((x, z - s), (x - s, z))):
+            ls.move_to(a[0], 0, a[1])
+            ls.draw_to(b[0], 0, b[1])
+        if lock.locked:
+            self._circle(ls, x, z, 0.055, 20)
+        elif lock.progress > 0.0:
+            ls.move_to(x - 0.06, 0, z - 0.055)
+            ls.draw_to(x - 0.06 + 0.12 * lock.progress, 0, z - 0.055)
+
+    def _minimap(self, ls, contacts: list[dict], own: tuple[float, float, float, float]) -> None:
+        cx, cz, half = MAP_CX, MAP_CZ, MAP_HALF
+        rng = 8000.0
+        scale = half / rng
+        ls.set_color(0.55, 0.75, 0.65, 1.0)
+        for a, b in (((cx - half, cz - half), (cx + half, cz - half)),
+                     ((cx + half, cz - half), (cx + half, cz + half)),
+                     ((cx + half, cz + half), (cx - half, cz + half)),
+                     ((cx - half, cz + half), (cx - half, cz - half))):
+            ls.move_to(a[0], 0, a[1])
+            ls.draw_to(b[0], 0, b[1])
+        # cross and the 4 km ring
+        ls.move_to(cx - half, 0, cz)
+        ls.draw_to(cx + half, 0, cz)
+        ls.move_to(cx, 0, cz - half)
+        ls.draw_to(cx, 0, cz + half)
+        ls.set_color(0.30, 0.48, 0.40, 1.0)
+        self._circle(ls, cx, cz, half * 0.5, 24)
+        self._label("N", cx, cz + half + 0.022, 0.030, fg=WHITE)
+        self._label(f"DRONES {len(contacts)}", cx - half, cz + half + 0.022, 0.026, fg=WHITE,
+                    align=TextNode.A_left)
+        self._label("8 km", cx, cz - half - 0.030, 0.026, fg=WHITE)
+        # own ship, north-up: a triangle pointing along the heading
+        psi = math.radians(own[3])
+        fx, fz = math.sin(psi), math.cos(psi)
+        rx, rz = math.cos(psi), -math.sin(psi)
+        pts = ((cx + 0.030 * fx, cz + 0.030 * fz),
+               (cx - 0.014 * fx + 0.014 * rx, cz - 0.014 * fz + 0.014 * rz),
+               (cx - 0.014 * fx - 0.014 * rx, cz - 0.014 * fz - 0.014 * rz))
+        ls.set_color(*GREEN)
+        for a, b in zip(pts, pts[1:] + pts[:1]):
+            ls.move_to(a[0], 0, a[1])
+            ls.draw_to(b[0], 0, b[1])
+        for c in contacts:
+            dx = (c["east"] - own[1]) * scale
+            dz = (c["north"] - own[0]) * scale
+            d = math.hypot(dx, dz)
+            if d > half - 0.005:
+                dx, dz = dx * (half - 0.005) / d, dz * (half - 0.005) / d
+            x, z = cx + dx, cz + dz
+            s = 0.016
+            ls.set_color(*(RED if not c.get("selected") else AMBER))
+            for a, b in (((x - s, z), (x, z + s)), ((x, z + s), (x + s, z)),
+                         ((x + s, z), (x, z - s)), ((x, z - s), (x - s, z))):
+                ls.move_to(a[0], 0, a[1])
+                ls.draw_to(b[0], 0, b[1])
+            if c.get("selected"):
+                self._circle(ls, x, z, 0.030, 16)
+            if c.get("locked"):
+                ls.set_color(*GREEN)
+                self._circle(ls, x, z, 0.042, 20)
 
     def _circle(self, ls, x, z, r, n=16):
         ls.move_to(x + r, 0, z)

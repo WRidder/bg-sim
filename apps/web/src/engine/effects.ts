@@ -9,7 +9,9 @@ export class Trail {
   private readonly strength: Float32Array;
   private readonly position: THREE.BufferAttribute;
   private readonly alpha: THREE.BufferAttribute;
+  private readonly sideOf: THREE.BufferAttribute;
   private head = 0;
+  private seeded = false;
   private readonly side = new THREE.Vector3();
   private readonly along = new THREE.Vector3();
   private readonly toEye = new THREE.Vector3();
@@ -18,16 +20,23 @@ export class Trail {
     private readonly length = 90,
     private readonly width = 0.4,
     color = new THREE.Color(1.6, 1.65, 1.75),
+    private readonly opacity = 0.5,
   ) {
     this.points = Array.from({ length }, () => new THREE.Vector3());
     this.strength = new Float32Array(length);
     const geometry = new THREE.BufferGeometry();
     this.position = new THREE.BufferAttribute(new Float32Array(length * 6), 3);
     this.alpha = new THREE.BufferAttribute(new Float32Array(length * 2), 1);
+    this.sideOf = new THREE.BufferAttribute(new Float32Array(length * 2), 1);
+    for (let i = 0; i < length; i += 1) {
+      this.sideOf.setX(i * 2, -1);
+      this.sideOf.setX(i * 2 + 1, 1);
+    }
     this.position.setUsage(THREE.DynamicDrawUsage);
     this.alpha.setUsage(THREE.DynamicDrawUsage);
     geometry.setAttribute("position", this.position);
     geometry.setAttribute("aAlpha", this.alpha);
+    geometry.setAttribute("aSide", this.sideOf);
     const index: number[] = [];
     for (let i = 0; i < length - 1; i += 1) {
       const a = i * 2;
@@ -43,15 +52,22 @@ export class Trail {
         uniforms: { uColor: { value: color } },
         vertexShader: /* glsl */ `
           attribute float aAlpha;
+          attribute float aSide;
           varying float vAlpha;
+          varying float vSide;
           void main() {
             vAlpha = aAlpha;
+            vSide = aSide;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
           }`,
         fragmentShader: /* glsl */ `
           uniform vec3 uColor;
           varying float vAlpha;
-          void main() { gl_FragColor = vec4(uColor, vAlpha); }`,
+          varying float vSide;
+          void main() {
+            float edge = 1.0 - abs(vSide);
+            gl_FragColor = vec4(uColor, vAlpha * smoothstep(0.0, 0.55, edge));
+          }`,
       }),
     );
     this.mesh.frustumCulled = false;
@@ -59,6 +75,12 @@ export class Trail {
 
   /** Adds a point; `strength` 0 leaves a gap in the ribbon. */
   add(point: THREE.Vector3, strength: number): void {
+    if (!this.seeded) {
+      for (const p of this.points) {
+        p.copy(point);
+      }
+      this.seeded = true;
+    }
     this.head = (this.head + 1) % this.length;
     this.points[this.head].copy(point);
     this.strength[this.head] = strength;
@@ -66,6 +88,7 @@ export class Trail {
 
   clear(): void {
     this.strength.fill(0);
+    this.seeded = false;
   }
 
   update(eye: THREE.Vector3): void {
@@ -84,7 +107,7 @@ export class Trail {
       }
       this.position.setXYZ(i * 2, point.x - this.side.x, point.y - this.side.y, point.z - this.side.z);
       this.position.setXYZ(i * 2 + 1, point.x + this.side.x, point.y + this.side.y, point.z + this.side.z);
-      const fade = strength[at] * (1 - age) ** 1.6 * 0.5;
+      const fade = strength[at] * (1 - age) ** 1.6 * this.opacity;
       this.alpha.setX(i * 2, fade);
       this.alpha.setX(i * 2 + 1, fade);
     }

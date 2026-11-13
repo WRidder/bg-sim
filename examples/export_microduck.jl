@@ -1,7 +1,10 @@
 # The microduck-policy FMU and its references (examples/microduck/README.md, "The FMU").
 #
 #   julia --project=julia/BGSim examples/export_microduck.jl <out_dir> [--no-reference] [--dt S] [--method M]
-#                                                            [--reference RUN_DIR]
+#                                                            [--reference RUN_DIR] [--model NAME]
+#
+# NAME is microduck-policy (default) or microduck-policy-backlash (the same robot with microduck_rl's
+# 2 deg gear play, XL330Backlash); the FMU is named after it (microduck_policy[_backlash]).
 #
 # Writes, under <out_dir>:
 #   fmu/                  the export of microduck/models/microduck-policy with the policy interface:
@@ -27,6 +30,8 @@ const T_END = 3600.0        # s, the default stop time in the modelDescription (
 # FMU parameters (set before initialization): the supply (training randomises 6.5..8.2 V) and the
 # firmware current limit (BAM/training 1.75 A, the robot's impact-guard firmware 1.0 A).
 const TUNABLES = ["global:v_bat" => (6.5, 8.2), "global:i_limit" => (1.0, 1.75)]
+# The backlash model's play (total, rad): 0 closes it, training uses 2 deg; up to 4 deg.
+const PLAY_TUNABLE = "global:backlash" => (0.0, deg2rad(4.0))
 
 todict(x::AbstractDict) = Dict{String,Any}(String(k) => todict(v) for (k, v) in pairs(x))
 todict(x::AbstractVector) = Any[todict(v) for v in x]
@@ -68,22 +73,24 @@ function main(args)
     getarg(name, default) = (i = findfirst(==(name), args); i === nothing ? default : args[i + 1])
     dt = parse(Float64, getarg("--dt", "0.001"))
     method = getarg("--method", "ros34pw2")
+    model = getarg("--model", "microduck-policy")
     mkpath(out)
-    doc = todict(JSON3.read(read(joinpath(PROJECT, "models", "microduck-policy.bgmodel.json"), String)))
+    doc = todict(JSON3.read(read(joinpath(PROJECT, "models", model * ".bgmodel.json"), String)))
     flat = BGSim.Compile.flatten(BGSim.IR.parse_model(doc); project_dir = PROJECT)
     flat = BGSim.Export.host_inputs(flat)
+    tunables = any(g -> g["name"] == "backlash", doc["parameters"]) ? [TUNABLES; PLAY_TUNABLE] : TUNABLES
 
     settings = BGSim.Export.ExportSettings(Dict{String,Any}(
         "t_end" => T_END, "step" => STEP, "dt" => dt, "method" => method,
-        "tunables" => first.(TUNABLES), "ranges" => Dict{String,Any}(k => v for (k, v) in TUNABLES)))
+        "tunables" => first.(tunables), "ranges" => Dict{String,Any}(k => v for (k, v) in tunables)))
     t0 = time()
     # `--reference DIR`: a bg-sim run of this model (hosted inputs) whose states the export
     # scans besides the start: the spectrum, and the weights of the static LU's row matching
     # (a pivot chosen at the start alone can vanish once the policy moves the robot).
     reference = getarg("--reference", nothing)
-    res = BGSim.Export.export_model(flat, joinpath(out, "fmu"); settings, name = "microduck_policy",
+    res = BGSim.Export.export_model(flat, joinpath(out, "fmu"); settings, name = replace(model, "-" => "_"),
         reference_dir = reference)
-    rec = Dict{String,Any}("ok" => res.ok, "exportS" => time() - t0, "step" => STEP,
+    rec = Dict{String,Any}("ok" => res.ok, "exportS" => time() - t0, "step" => STEP, "model" => model,
         "diagnostics" => [Dict("code" => d.code, "severity" => d.severity, "message" => d.message, "hint" => d.hint)
                           for d in res.diagnostics])
     print(stderr, "export: ", res.ok ? "ok" : "refused", " (", round(rec["exportS"]; digits = 1), " s)\n")

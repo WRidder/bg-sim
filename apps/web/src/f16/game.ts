@@ -24,6 +24,10 @@ import { buildFighter } from "./aircraft";
 import { flyOrbit, flyTo, type Orbit } from "./autopilot";
 import { buildCockpit } from "./cockpit";
 import { FINAL_START, Flight, gateCourse, ORIGIN, RUNWAY_START, type Start } from "./flight";
+import { DroneManager, LockOn } from "./targets";
+import { MissileSystem } from "./missiles";
+import { DroneView, MissileView } from "./weapons";
+import { SeekerView } from "./seeker";
 import { F16_KNOBS, f16Panel } from "./telemetry";
 import { Hud, type HudView, warnings } from "./hud";
 import starts from "./starts.json";
@@ -40,6 +44,7 @@ const BOUND = { Water: "Into the sea.", Terrain: "Into the island." } as Record<
 const TITLE_ORBIT: Orbit = { north: 6000, east: 1500, radius: 30000, alt: 1500 };
 
 type Phase = "title" | "flying" | "paused" | "over";
+type Mode = "free" | "gates" | "intercept";
 
 async function main(): Promise<void> {
   const stage = await Stage.create({
@@ -96,6 +101,12 @@ async function main(): Promise<void> {
   );
 
   const flight = await Flight.create(ground, STARTS[0]);
+  const targets = new DroneManager(ground);
+  const lock = new LockOn();
+  const weapons = await MissileSystem.create();
+  const seeker = new SeekerView(renderer, $("seeker"), stage.world, stage.near);
+  const droneViews = new Map<number, DroneView>();
+  const missileViews = new Map<number, MissileView>();
   const side = new SideBar("f16", (left, right) => hud.room(left, right));
   const telemetry = new Telemetry(side, f16Panel(flight));
   new Setup(side).use(flight.tuning, "Aircraft setup", F16_KNOBS);
@@ -113,7 +124,7 @@ async function main(): Promise<void> {
 
   // ---- Menus ---------------------------------------------------------------------------------
   let phase: Phase = "title";
-  let mode: "free" | "gates" = "free";
+  let mode: Mode = "free";
   const select = $<HTMLSelectElement>("start");
   for (const [i, start] of STARTS.entries()) {
     select.add(new Option(start.label, String(i)));
@@ -125,7 +136,7 @@ async function main(): Promise<void> {
     $("best").textContent = record ? `Best ${clock(record)}.` : "";
   };
   showBest();
-  const setMode = choices<"free" | "gates">($("mode"), (value) => {
+  const setMode = choices<Mode>($("mode"), (value) => {
     mode = value;
     $("start-row").hidden = value === "gates";
   }, "free");
@@ -150,11 +161,24 @@ async function main(): Promise<void> {
     yaw_damper: $<HTMLInputElement>("yaw-damper").checked ? 1 : 0,
   });
 
+  const clearWeaponViews = (): void => {
+    for (const view of droneViews.values()) {
+      view.destroy();
+    }
+    for (const view of missileViews.values()) {
+      view.destroy();
+    }
+    droneViews.clear();
+    missileViews.clear();
+  };
+
   const fresh = (): void => {
     burst.clear();
     pipeline.flash = 0;
     trails.forEach((trail) => trail.clear());
     smoke.forEach((trail) => trail.clear());
+    clearWeaponViews();
+    fighter.stations.forEach((station) => (station.visible = true));
     rig.snap();
     crashedAt = -1;
     wasOnGround = flight.onGround;
@@ -175,6 +199,13 @@ async function main(): Promise<void> {
     flight.reset(start, switches());
     flight.gusts.intensity = $<HTMLInputElement>("turbulence").checked ? 2.5 : 0;
     controls.setThrottle(start.thtl0);
+    weapons.reset();
+    lock.reset();
+    if (mode === "intercept") {
+      targets.reset(flight.north(), flight.east(), flight.altitude(), flight.heading());
+    } else {
+      targets.clear();
+    }
     fresh();
     show("flying");
   };
@@ -187,6 +218,9 @@ async function main(): Promise<void> {
     flight.reset(GATE_START, {});
     flight.gusts.intensity = 0;
     rig.view = "chase";
+    targets.clear();
+    weapons.reset();
+    lock.reset();
     fresh();
   };
 
@@ -210,6 +244,28 @@ async function main(): Promise<void> {
   $("again").addEventListener("click", begin);
   $("over-quit").addEventListener("click", toMenu);
 
+  /** The launch: the selected drone, the next free wingtip and its world launch frame. */
+  const fireWeapon = (): void => {
+    if (mode !== "intercept" || phase !== "flying") {
+      return;
+    }
+    const state = lock.state();
+    const target = targets.byId(state.selectedId);
+    if (!state.locked || !target) {
+      return;
+    }
+    const side = weapons.freeSide();
+    if (side === null) {
+      return;
+    }
+    const station = flight.stationWorld(side);
+    const frame = { north: station.north, east: station.east, alt: station.alt, heading: flight.heading() };
+    if (weapons.fire(side, frame, target, flight.get("tas_mps"))) {
+      fighter.stations[side].visible = false;
+      lock.consume();
+    }
+  };
+
   const brakeKeys = new Set<string>();
   addEventListener("keydown", (event) => {
     if (event.code === "KeyB" || event.code === "Space") {
@@ -230,8 +286,15 @@ async function main(): Promise<void> {
     } else if (event.code === "KeyC") {
       rig.view = VIEWS[(VIEWS.indexOf(rig.view) + 1) % VIEWS.length];
       rig.snap();
-    } else if (event.code === "KeyM") {
+    } else if (event.code === "Tab" || event.code === "KeyN") {
+      if (phase === "flying" && mode === "intercept") {
+        event.preventDefault();
+        lock.cycle(targets);
+      }
+    } else if (event.code === "KeyM" && event.shiftKey) {
       sound.muted = !sound.muted;
+    } else if (event.code === "KeyM") {
+      fireWeapon();
     }
   });
   addEventListener("keyup", (event) => {
@@ -328,6 +391,23 @@ async function main(): Promise<void> {
     if (phase !== "paused") {
       time += dt;
       flight.advance(dt);
+      if (mode === "intercept" && phase === "flying" && !flight.crashed) {
+        targets.step(dt, flight.north(), flight.east(), flight.altitude(), flight.heading());
+        lock.update(dt, [flight.north(), flight.east(), flight.altitude()], flight.noseNed(), targets);
+        weapons.advance(dt);
+        fighter.stations[0].visible = weapons.slotFree(0);
+        fighter.stations[1].visible = weapons.slotFree(1);
+        for (const missile of weapons.live) {
+          if (missile.justHit) {
+            missile.justHit = false;
+            const target = targets.byId(missile.targetId);
+            if (target) {
+              targets.kill(missile.targetId);
+              burst.fire(new THREE.Vector3(target.east, target.alt, -target.north));
+            }
+          }
+        }
+      }
     }
 
     const i = flight.previous;
@@ -420,16 +500,48 @@ async function main(): Promise<void> {
       });
     }
 
+    if (mode === "intercept" && phase !== "title") {
+      for (const drone of targets.drones) {
+        let view = droneViews.get(drone.id);
+        if (!view) {
+          view = new DroneView(near);
+          droneViews.set(drone.id, view);
+        }
+        view.update(drone);
+      }
+      for (const missile of weapons.live) {
+        let view = missileViews.get(missile.id);
+        if (!view) {
+          view = new MissileView(near);
+          missileViews.set(missile.id, view);
+        }
+        view.update(missile, time, camera.position);
+      }
+    }
+
     telemetry.update(dt, phase === "flying" && !flight.crashed ? "running" : phase === "title" ? "hidden" : "frozen");
     stage.render(position, time);
+    const live = mode === "intercept" ? weapons.active().filter((missile) => !missile.done) : [];
+    seeker.render(live.length > 0 ? live[live.length - 1] : null);
+    const seekerMissile = live.length > 0 ? live[live.length - 1] : null;
+    const seekerDrone = seekerMissile ? targets.byId(seekerMissile.targetId) : null;
+    const seekerMark = seekerMissile && seekerDrone ? seeker.project(seekerDrone) : null;
 
     if (phase === "flying") {
       const gate = run.next();
+      const selected = targets.byId(lock.selectedId);
       const view: HudView = {
         cockpit: rig.view === "cockpit",
         fov: camera.fov,
         gateOnScreen: gate ? screen(tip.set(gate.east, gate.alt, -gate.north)) : null,
         velocityOnScreen: screen(tip.copy(position).addScaledVector(velocity, 3)),
+        targetOnScreen: selected ? screen(tip.set(selected.east, selected.alt, -selected.north)) : null,
+        targetRange: lock.rangeM,
+        lock: mode === "intercept" ? lock.state() : null,
+        contacts: mode === "intercept" ? targets.contacts(lock.selectedId, lock.locked) : [],
+        seeker: live.length > 0,
+        seekerMark,
+        reload: weapons.reloading ? weapons.reloadLeft : null,
       };
       if (flight.crashed) {
         hud.clear();
@@ -470,7 +582,8 @@ async function main(): Promise<void> {
     fighter,
     begin,
     setMode,
-    state: () => ({ phase, tier: stage.tier, view: rig.view, crashed: flight.crashed, time: flight.time, gates: run.gates.length }),
+    state: () => ({ phase, tier: stage.tier, view: rig.view, crashed: flight.crashed, time: flight.time, gates: run.gates.length,
+                    mode, drones: targets.alive().length, lock: lock.state(), missiles: weapons.free }),
   });
 }
 

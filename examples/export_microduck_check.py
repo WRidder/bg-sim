@@ -4,9 +4,10 @@
 # ///
 """Acceptance of the microduck-policy FMU (the plant of the browser demo, apps/web/microduck).
 
-    uv run examples/export_microduck_check.py [--out DIR] [--skip-julia] [--dt S] [--method M]
+    uv run examples/export_microduck_check.py [--out DIR] [--skip-julia] [--dt S] [--method M] [--model NAME]
 
-1. ``examples/export_microduck.jl`` exports ``microduck/models/microduck-policy`` with the policy
+1. ``examples/export_microduck.jl`` exports ``microduck/models/microduck-policy`` (or ``--model``
+   ``microduck-policy-backlash``, which also exposes the gear play ``backlash`` as a parameter) with the policy
    interface (14 ``<joint>_target`` inputs and ``kp``; the joint, trunk and sole outputs; ``v_bat``
    and ``i_limit`` as FMU parameters with ranges; 20 ms communication step, the internal step and
    method set) and runs bg-sim references of two scripted runs driven through the same inputs:
@@ -102,11 +103,12 @@ def main() -> int:
     parser.add_argument("--skip-julia", action="store_true")
     parser.add_argument("--dt", default="0.001")
     parser.add_argument("--method", default="ros34pw2")
+    parser.add_argument("--model", default="microduck-policy")
     args = parser.parse_args()
     out = args.out.resolve()
     if not args.skip_julia:
         cmd = ["julia", f"--project={ROOT / 'julia' / 'BGSim'}", str(ROOT / "examples" / "export_microduck.jl"), str(out),
-               "--dt", args.dt, "--method", args.method]
+               "--dt", args.dt, "--method", args.method, "--model", args.model]
         print("+", " ".join(cmd), flush=True)
         if subprocess.run(cmd).returncode != 0:
             print("FAIL: the export or the reference run failed")
@@ -137,6 +139,10 @@ def main() -> int:
     why = refused(built.fmu, "v_bat", 9.0)
     if why is None or "outside its declared range" not in why:
         failures.append(f"v_bat = 9 V (range 6.5..8.2) was not refused ({why})")
+    if "backlash" in report.get("tunables", {}).get("globals", []):
+        why = refused(built.fmu, "backlash", 0.1)
+        if why is None or "outside its declared range" not in why:
+            failures.append(f"backlash = 0.1 rad (range 0..4 deg) was not refused ({why})")
 
     names = [o["name"] for o in report["outputs"]]
     rows = []
@@ -196,7 +202,7 @@ def main() -> int:
     for f in failures:
         print("FAIL:", f)
     if not failures:
-        print("PASS: the microduck-policy FMU matches bg-sim on both runs")
+        print(f"PASS: the {args.model} FMU matches bg-sim on both runs")
     return 1 if failures else 0
 
 
