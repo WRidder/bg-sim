@@ -6,7 +6,7 @@
 | [Att](block:Att) `AttitudeCtrl` | 250 Hz | quaternion-error P (PX4 `AttitudeControl`), rate limits |
 | [Rate](block:Rate) `RateCtrl` | 500 Hz | PID with D on the filtered measurement, conditional-integration anti-windup, torque limits; the yaw axis has a first-order torque low-pass |
 | [Mix](block:Mix) `QuadMixer` | 500 Hz | the pseudo-inverse of the allocation matrix; attitude has priority over collective thrust when a rotor would saturate (scale the torque part, then shift the collective part); speed command $\omega = \sqrt{T/k_T}$ |
-| `Esc` in [Rotor1](block:Rotor1) to `Rotor4` | 500 Hz | rotor speed PI plus the steady-state voltage of the motor model as feed-forward, limited to $0.98\,V_{bat}$ and to $k_e\omega + R\,i_{lim}$ ($i_{lim}$ = 25 A, the current limit of the spin-up) |
+| [Esc](block:Rotor1/Esc) in [Rotor1](block:Rotor1) to `Rotor4` | 500 Hz | rotor speed PI plus the steady-state voltage of the motor model as feed-forward, limited to $0.98\,V_{bat}$ and to $k_e\omega + R\,i_{lim}$ ($i_{lim}$ = 25 A, the current limit of the spin-up) |
 
 The mixer's `Minv` is the pseudo-inverse of the matrix with rows $(1,\ r_y,\ -r_x,\ -\mathrm{spin}\,k_Q/k_T)$ (`design.py` asserts $M\,M^{-1} = I$).
 

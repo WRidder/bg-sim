@@ -6,7 +6,7 @@ The same three-joint arm as `rrr-torque`, built from the M3 spatial stdlib follo
 
 ## Construction
 
-- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; `L1/B`) on a compliant `Revolute3D` about world $z$ (`L1/J`);
+- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; [L1/B](block:L1/B)) on a compliant `Revolute3D` about world $z$ ([L1/J](block:L1/J));
 - joints 2 and 3 about world $-y$: the joint frame is $R_x(90^\circ)$ (local $z = -y$), so a positive $q$ raises the arm; `L2/LN` places joint 2 at the shoulder, `L3/LN` places joint 3 $l_2$ along the upper arm, `L2/T` and `L3/T` are $LN^{-1}\circ LC$;
 - point masses as `RigidBody3D` bodies ($m_2$ at the elbow, $m_3$ at the tip, $10^{-8}$ kg·m² principal moments because a point has none), links $l_2$ and $l_3$ as `FixedTransform3DNeutral`; the body poses for gravity come from a `ComposePose3D` chain as in the six-axis arm;
 - held directions $k_t = k_r = 10^7$ with 0.7-critical damping, released on their **static deflections** (`dth`, `dl` from the weight of everything distal; `design/build_models.py`);

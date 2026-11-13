@@ -47,7 +47,7 @@ Continue with [the construction](page:construction), [the controller](page:contr
 @@ page arm construction overview | Construction
 # Construction
 
-- **Joints** (`J` in [L1](block:L1) to `L6`). `Revolute3D` rotates exactly about the local $z$ of its joint frame; the other five directions are compliant ($k_t = k_r = 10^7$ N/m and N·m/rad), so every state stays integral (no W201). The held-direction damping is 0.7 of critical for the distal mass (translations) and for a 0.3 kg·m² reference inertia (rotations), so the stiff modes die in milliseconds.
+- **Joints** ([J](block:L1/J) in [L1](block:L1) to `L6`). `Revolute3D` rotates exactly about the local $z$ of its joint frame; the other five directions are compliant ($k_t = k_r = 10^7$ N/m and N·m/rad), so every state stays integral (no W201). The held-direction damping is 0.7 of critical for the distal mass (translations) and for a 0.3 kg·m² reference inertia (rotations), so the stiff modes die in milliseconds.
 - **Geometry.** Joint $i+1$ sits at the standard-DH fixed part $T_z(d)\,T_x(a)\,R_x(\alpha)$ of link $i$ (UR5-like):
 
 | link | 1 | 2 | 3 | 4 | 5 | 6 |
@@ -57,7 +57,7 @@ Continue with [the construction](page:construction), [the controller](page:contr
 | $\alpha$ | $\pi/2$ | 0 | 0 | $\pi/2$ | $-\pi/2$ | 0 |
 | mass (kg) | 3.7 | 8.4 | 2.3 | 1.2 | 1.2 | 0.74 |
 
-  The body 1-junction frame is the link's centre of mass (`L1/B` has $m = 3.7$ kg, $J = (0.0103, 0.0103, 0.0067)$ kg·m²), so the next joint offset is $N - c_i$ in that frame (`L2/T` to `L6/T`).
+  The body 1-junction frame is the link's centre of mass ([L1/B](block:L1/B) has $m = 3.7$ kg, $J = (0.0103, 0.0103, 0.0067)$ kg·m²), so the next joint offset is $N - c_i$ in that frame ([L2/T](block:L2/T) to `L6/T`).
 - **Drives.** One `MSe` torque source per joint ([D1](block:D1) to `D6`) on the joint's `Rotation` drive port (the instance port `drive`), fed by the controller. A flow source cannot impose the joint motion (derivative causality, W201), so the joints are torque driven.
 - **Poses** are composed, never integrated: $W_i = W_{i-1} \circ LN_i \circ J_i.\text{pose}$, the body pose is $W_i \circ LC_i$ (it feeds `B_i.g`, which gravity reads), and the tool centre point is $W_6 \circ L_{tool}$ with a $0.0823 + 0.1 = 0.1823$ m flange-plus-tool offset along the flange $z$.
 - **Start.** The arm is released at rest at the home pose $q = (0, -1.2, 1.2, -1.5, -1.5, 0)$ on its **consistent deflections** (the `starts` of `dth`, `dl` from the independent Newton-Euler reference), so the held directions carry the static gravity load from $t = 0$ and the start does not excite the stiff modes.
@@ -260,7 +260,7 @@ The same three-joint arm as `rrr-torque`, built from the M3 spatial stdlib follo
 
 ## Construction
 
-- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; `L1/B`) on a compliant `Revolute3D` about world $z$ (`L1/J`);
+- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; [L1/B](block:L1/B)) on a compliant `Revolute3D` about world $z$ ([L1/J](block:L1/J));
 - joints 2 and 3 about world $-y$: the joint frame is $R_x(90^\circ)$ (local $z = -y$), so a positive $q$ raises the arm; `L2/LN` places joint 2 at the shoulder, `L3/LN` places joint 3 $l_2$ along the upper arm, `L2/T` and `L3/T` are $LN^{-1}\circ LC$;
 - point masses as `RigidBody3D` bodies ($m_2$ at the elbow, $m_3$ at the tip, $10^{-8}$ kg·m² principal moments because a point has none), links $l_2$ and $l_3$ as `FixedTransform3DNeutral`; the body poses for gravity come from a `ComposePose3D` chain as in the six-axis arm;
 - held directions $k_t = k_r = 10^7$ with 0.7-critical damping, released on their **static deflections** (`dth`, `dl` from the weight of everything distal; `design/build_models.py`);
@@ -291,7 +291,7 @@ The run times in the README (loaded machine, including the first compile) are 22
 @@ page rrr-multibond-soft overview - | Overview
 # Soft held directions ($k = 10^6$)
 
-The `rrr-multibond` arm with all held directions ten times softer: $k_t = k_r = 10^6$ (N/m and N·m/rad), damping scaled with it (for example `bt` = 2800 for the joint of [L1](block:L1) against 8854 at $10^7$) and the static deflection starts scaled by ten. Everything else is as in `rrr-multibond`. It exists for the error-scaling measurement: the maximum joint-angle difference to the `rrr-torque` arm is 1.11e-4, 4.4e-5 and 2.7e-5 rad for joints 1 to 3 (see the table of the `rrr-multibond` model), ten times the stiff-case order. Plot [L1/J/qout](signal:L1/J/qout) and compare with the other stiffnesses.
+The `rrr-multibond` arm with all held directions ten times softer: $k_t = k_r = 10^6$ (N/m and N·m/rad), damping scaled with it (for example `bt` = 2800 for [L1/J](block:L1/J) against 8854 at $10^7$) and the static deflection starts scaled by ten. Everything else is as in `rrr-multibond`. It exists for the error-scaling measurement: the maximum joint-angle difference to the `rrr-torque` arm is 1.11e-4, 4.4e-5 and 2.7e-5 rad for joints 1 to 3 (see the table of the `rrr-multibond` model), ten times the stiff-case order. Plot [L1/J/qout](signal:L1/J/qout) and compare with the other stiffnesses.
 
 ![The model canvas|900](@fig:diagram)
 @@ figures rrr-multibond-stiff
@@ -301,6 +301,6 @@ The `rrr-multibond` arm with all held directions ten times softer: $k_t = k_r = 
 @@ page rrr-multibond-stiff overview - | Overview
 # Stiff held directions ($k = 10^8$)
 
-The `rrr-multibond` arm with all held directions ten times stiffer: $k_t = k_r = 10^8$, damping scaled with it (for example `bt` = 28000 for the joint of [L1](block:L1)) and the static deflection starts scaled by a tenth. Everything else is as in `rrr-multibond`. The maximum joint-angle difference to the `rrr-torque` arm is 1.81e-6, 1.32e-6 and 6.7e-7 rad for joints 1 to 3 (see the table of the `rrr-multibond` model). Plot [L1/J/qout](signal:L1/J/qout) and compare.
+The `rrr-multibond` arm with all held directions ten times stiffer: $k_t = k_r = 10^8$, damping scaled with it (for example `bt` = 28000 for [L1/J](block:L1/J)) and the static deflection starts scaled by a tenth. Everything else is as in `rrr-multibond`. The maximum joint-angle difference to the `rrr-torque` arm is 1.81e-6, 1.32e-6 and 6.7e-7 rad for joints 1 to 3 (see the table of the `rrr-multibond` model). Plot [L1/J/qout](signal:L1/J/qout) and compare.
 
 ![The model canvas|900](@fig:diagram)

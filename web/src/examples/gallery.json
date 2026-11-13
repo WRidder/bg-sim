@@ -535,7 +535,9 @@
     "hasScene": true,
     "models": [
       "panda",
-      "panda-free"
+      "panda-free",
+      "panda-free-rigid",
+      "panda-rigid"
     ]
   },
   "pendulum-double-cart": {
@@ -649,7 +651,8 @@
     "hasScene": true,
     "models": [
       "quadcopter",
-      "quadcopter-repeat"
+      "quadcopter-repeat",
+      "quadcopter-wind-hover"
     ]
   },
   "quarter-car": {

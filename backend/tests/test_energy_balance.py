@@ -313,6 +313,67 @@ def test_composite_paths_resolve_through_components(tool):
     assert cls == "unclassified" and "no component" in why
 
 
+def test_library_subsystem_instances_are_followed_into_the_definition(tool, tmp_path):
+    """A node ``project:<Name>`` of ``library/<Name>.bgsub.json`` is an instance: its elements
+    are classified at the instance's own path, like the compiler flattens them."""
+    library = tmp_path / "library"
+    library.mkdir()
+    leg = {"format": "bgsim.subsystem", "name": "Leg", "ports": [], "diagram": {"nodes": [
+        {"name": "Hip", "block": {"ref": "project:Joint"}},
+        {"name": "mass", "block": {"ref": "stdlib:bondgraph/I"}},
+        {"name": "Inner", "block": {"subsystem": {"diagram": {"nodes": [
+            {"name": "body", "block": {"ref": "stdlib:planar/RigidBody2D"}}]}}}},
+    ]}}
+    joint = {"format": "bgsim.subsystem", "name": "Joint", "ports": [], "diagram": {"nodes": [
+        {"name": "damper", "block": {"ref": "stdlib:bondgraph/R"}},
+        {"name": "drive", "block": {"ref": "stdlib:bondgraph/Se"}},
+        {"name": "node", "block": {"junction": "1"}},
+    ]}}
+    loop = {"format": "bgsim.subsystem", "name": "Loop", "ports": [], "diagram": {"nodes": [
+        {"name": "again", "block": {"ref": "project:Loop"}}]}}
+    for definition in (leg, joint, loop):
+        (library / f"{definition['name']}.bgsub.json").write_text(json.dumps(definition), encoding="utf-8")
+    # A name that is also a code block is the block, as in the compiler.
+    (library / "Coded.bgsub.json").write_text(json.dumps({**joint, "name": "Coded"}), encoding="utf-8")
+    (library / "Coded.jl").write_text("@components begin\n    spring = C()\nend\n", encoding="utf-8")
+    model = {"diagram": {"nodes": [
+        {"name": "Leg1", "block": {"ref": "project:Leg"}},
+        {"name": "Leg2", "block": {"ref": "project:Leg"}},
+        {"name": "Sub", "block": {"subsystem": {"diagram": {"nodes": [
+            {"name": "J", "block": {"ref": "project:Joint"}}]}}}},
+        {"name": "Self", "block": {"ref": "project:Loop"}},
+        {"name": "Code", "block": {"ref": "project:Coded"}},
+    ]}}
+    classifier = tool.Classifier(model, tmp_path)
+    expected = {
+        "Leg1/mass": "storage",
+        "Leg2/mass": "storage",
+        "Leg1/Hip/damper": "dissipation",
+        "Leg2/Hip/drive": "source",
+        "Leg2/Hip/node": "conversion",
+        "Leg1/Inner/body/inertia": "storage",
+        "Sub/J/damper": "dissipation",
+        "Code/spring": "storage",
+    }
+    assert {path: classifier.classify(path)[0] for path in expected} == expected
+    for path, reason in (
+        ("Leg1/ghost", "no node 'ghost'"),
+        ("Leg1/Hip/ghost", "no node 'ghost'"),
+        ("Leg1/damper", "no node 'damper'"),
+        ("Self/again/again", "contains itself"),
+        ("Code/damper", "no component"),
+    ):
+        cls, why = classifier.classify(path)
+        assert cls == "unclassified" and reason in why, (path, why)
+    # Without the project folder the instance cannot be opened; the definitions a document
+    # carries (the editor's copies) are enough, and win over the library file.
+    assert tool.Classifier(model).classify("Leg1/mass")[0] == "unclassified"
+    carried = {**model, "definitions": {"Leg": {**leg, "diagram": {"nodes": [
+        {"name": "mass", "block": {"ref": "stdlib:bondgraph/R"}}]}}}}
+    assert tool.Classifier(carried).classify("Leg1/mass")[0] == "dissipation"
+    assert tool.Classifier(carried, tmp_path).classify("Leg1/mass")[0] == "dissipation"
+
+
 def test_expected_trapezoid_order(tool, tmp_path):
     """The balance error of the trapezoid on the solver grid is O(dt^2)."""
     errors = []

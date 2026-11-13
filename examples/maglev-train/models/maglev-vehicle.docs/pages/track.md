@@ -4,7 +4,7 @@ The block [GwF](block:GwF) (and [GwR](block:GwR)), `Guideway` in `library/`, giv
 
 $$ z(s) = A_\mathrm{sag}\sin^2\!\frac{\pi s}{L_\mathrm{span}} + \frac{A_b}{2}\Bigl(1 - \cos\frac{2\pi (s - s_b)}{\lambda_b}\Bigr)\ \ (s_b \le s \le s_b + \lambda_b), $$
 
-positive towards the vehicle, and the rail velocity $-v\,\mathrm{d}z/\mathrm{d}s$ that drives the flow source `Rail` inside the module [ModF](block:ModF). A guideway with $z(s)$ at a joint is a lookup law, which is why this one block is a library block. The same function is in `design/design.py`.
+positive towards the vehicle, and the rail velocity $-v\,\mathrm{d}z/\mathrm{d}s$ that drives the flow source [ModF/Rail](block:ModF/Rail) of the module. A guideway with $z(s)$ at a joint is a lookup law, which is why this one block is a library block. The same function is in `design/design.py`.
 
 The speed profile is the stdlib `TrapezoidalProfile` [Profile](block:Profile); the block [LsmCtl](block:LsmCtl) (`LsmController`) adds the acceleration and the drag as feedforward to a PI on the speed error and limits the thrust to 150 kN.
 

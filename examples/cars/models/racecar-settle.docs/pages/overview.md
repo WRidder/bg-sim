@@ -4,7 +4,7 @@ The electric race car of the **cars** example, released 3 cm above its static ri
 
 ![The model canvas|900](assets/81c4ad97e1d1.png)
 
-The canvas is the whole vehicle: the chassis [Chassis](block:Chassis) on its pose integrator, the four corners [FL](block:FL), [FR](block:FR), [RL](block:RL), [RR](block:RR), instances of the library subsystems `RacecarFrontCorner` and `RacecarRearCorner` (suspension slider, strut, carrier, wheel spin, tyre, brake), the steering, the brake system, the aero wrench and the electric driveline from the [Battery](block:Battery) through the motor [MachineR](block:MachineR) to the rear differential.
+The canvas is the whole vehicle: the chassis [Chassis](block:Chassis) on its pose integrator, the four corners [FL](block:FL), [FR](block:FR), [RL](block:RL), [RR](block:RR), instances of the library subsystems `RacecarFrontCorner` and `RacecarRearCorner` (suspension slider, strut, carrier, wheel spin, [Tyre](block:FL/Tyre), brake), the steering, the brake system, the aero wrench and the electric driveline from the [Battery](block:Battery) through the motor [MachineR](block:MachineR) to the rear differential.
 
 ![3D view at t = 1 s|600](assets/60ff7f4709ec.png)
 

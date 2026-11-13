@@ -6,7 +6,8 @@
  * - `model:<name>/<id>`    opens a page of the docs of model `<name>`; `model:<name>` opens its
  *                          first page,
  * - `block:<Name>`         switches to the Diagram tab and selects the node (`block:Sub/Name`
- *                          reaches a node inside subsystem `Sub`); model docs only,
+ *                          reaches a node inside subsystem `Sub`, drawn in place or an instance
+ *                          of a library subsystem); model docs only,
  * - `signal:<signal id>`   plots the signal; model docs only.
  *
  * A target that does not exist resolves to a broken link whose `reason` says what to fix.
@@ -44,7 +45,19 @@ export interface LinkContext {
 
 type Nodes = readonly ModelNode[];
 
-/** Resolve `A/B/C`: names of subsystems down to the node. Returns the subsystem path and node. */
+const PROJECT_PREFIX = "project:";
+
+/**
+ * Resolve `A/B/C`: names of subsystems down to the node. Returns the subsystem path (node
+ * ids, what `selectNodeAt` opens) and the node to select.
+ *
+ * A subsystem on the way may be drawn in place or be an instance of a library subsystem. The
+ * open document holds an instance as a working copy (a subsystem node with the definition's
+ * diagram, see `linkedSubsystems.ts`), so both are followed the same way and the link opens the
+ * instance. A model that is not hydrated still has the instance as a reference
+ * (`project:<Name>`); the path is then checked against `model.definitions`, and because such an
+ * instance cannot be opened the link shows the instance node itself.
+ */
 export function findBlock(
   model: Model,
   reference: string,
@@ -55,6 +68,8 @@ export function findBlock(
   }
   let nodes: Nodes = model.diagram.nodes;
   const path: string[] = [];
+  /** The outermost instance that is still a reference: the last node the editor can show. */
+  let closed: { path: string[]; nodeId: string } | null = null;
   for (let depth = 0; depth < names.length; depth += 1) {
     const name = names[depth];
     const node = nodes.find((candidate) => candidate.name === name);
@@ -62,13 +77,24 @@ export function findBlock(
       return null;
     }
     if (depth === names.length - 1) {
-      return { path, nodeId: node.id, name: node.name };
+      return closed === null
+        ? { path, nodeId: node.id, name: node.name }
+        : { ...closed, name: node.name };
     }
-    if (!("subsystem" in node.block)) {
+    if ("subsystem" in node.block) {
+      path.push(node.id);
+      nodes = node.block.subsystem.diagram.nodes;
+      continue;
+    }
+    const definition =
+      "ref" in node.block && node.block.ref.startsWith(PROJECT_PREFIX)
+        ? model.definitions?.[node.block.ref.slice(PROJECT_PREFIX.length)]
+        : undefined;
+    if (definition === undefined) {
       return null;
     }
-    path.push(node.id);
-    nodes = node.block.subsystem.diagram.nodes;
+    closed ??= { path: [...path], nodeId: node.id };
+    nodes = definition.diagram.nodes;
   }
   return null;
 }
@@ -184,7 +210,7 @@ export function resolveLink(href: string | undefined, context: LinkContext): Lin
       if (found === null) {
         return {
           kind: "broken",
-          reason: `The model has no block "${rest}"; check the block name (use Sub/Name for a block inside a subsystem).`,
+          reason: `The model has no block "${rest}"; check the block name (use Sub/Name for a block inside a subsystem or an instance of a library subsystem).`,
         };
       }
       return { kind: "block", ...found };

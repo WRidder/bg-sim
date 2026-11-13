@@ -199,7 +199,7 @@ along the arm, so the links swing in the vertical plane tangent to the arm circl
 - The plant is a spatial multibond bond graph, a chain of five instances of the library subsystem
   `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`: offset, `Revolute3D` joint `J`, offset to the
   centre of mass, `RigidBody3D` body `B` on its junction, and the pose band). [L1](block:L1) is the arm
-  (joint `L1/J` about world z, the hub/rotor inertia lumped into its body `L1/B`) with
+  (joint [L1/J](block:L1/J) about world z, the hub/rotor inertia lumped into its body [L1/B](block:L1/B)) with
   [Motor](block:Motor) (ideal torque source) and [ArmBearing](block:ArmBearing) on its drive;
   [L2](block:L2) .. [L5](block:L5) are the four links, with viscous bearing friction on their drive ports.
 - [Ctrl](block:Ctrl) (`QuadRotaryCtrl`), [Traj](block:Traj) and [Mon](block:Mon) follow the cart version.

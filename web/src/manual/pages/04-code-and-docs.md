@@ -161,7 +161,7 @@ Links can point into the model and to the other docs of the project:
 | `[text](project:<id>)` | opens a page of the project docs, from any page |
 | `[text](model:<name>/<id>)` | opens a page of another model's docs (the model opens on its Docs tab) |
 | `[text](model:<name>)` | opens the first page of that model's docs |
-| `[text](block:Motor)` | opens the Diagram, selects the block and centres it (`block:Sub/Motor` inside a subsystem); model docs only |
+| `[text](block:Motor)` | opens the Diagram, selects the block and centres it (`block:Sub/Motor` inside a subsystem, and `block:Leg3/Hip` inside an instance of a [library subsystem](page:projects-and-library): the Diagram opens that instance); model docs only |
 | `[text](signal:Motor/w)` | plots the signal; model docs only |
 | `[text](https://…)` | opens a website in a new tab |
 

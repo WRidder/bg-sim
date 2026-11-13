@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import modelJson from "../../contracts/fixtures/model/valid/model.dcmotor.bondgraph.json";
+import linkedJson from "../../contracts/fixtures/model/valid/model.linked-subsystem.json";
 import type { Model } from "../src/contracts/model";
 import {
   describeLink,
@@ -11,6 +12,8 @@ import {
   resolveLink,
   type LinkContext,
 } from "../src/docs/docsLinks";
+import { hydrateModel } from "../src/library/linkedSubsystems";
+import { resetDocumentStore, useDocumentStore } from "../src/state/documentStore";
 
 const model = modelJson as unknown as Model;
 const first = model.diagram.nodes[0]!;
@@ -67,6 +70,65 @@ describe("resolveLink", () => {
     expect(findBlock(nested, "Sub/Inner")).toEqual({ path: ["sub1"], nodeId: "inner1", name: "Inner" });
     expect(findBlock(nested, "Inner")).toBeNull();
     expect(findBlock(nested, `${first.name}/Inner`)).toBeNull();
+  });
+
+  describe("blocks inside an instance of a library subsystem", () => {
+    // The saved form: `A` and `B` are `project:Branch` references, the definition alongside.
+    const saved = linkedJson as unknown as Model;
+    // What the editor holds: every instance as a working copy of the definition.
+    const open = hydrateModel({ ...saved, definitions: undefined }, saved.definitions ?? {});
+    const linked: LinkContext = { ...context, model: open };
+
+    it("resolves into the instance's own copy of the definition", () => {
+      expect(resolveLink("block:A/R1", linked)).toEqual({ kind: "block", path: ["i1"], nodeId: "r", name: "R1" });
+      expect(resolveLink("block:B/C1", linked)).toEqual({ kind: "block", path: ["i2"], nodeId: "c", name: "C1" });
+      expect(resolveLink("block:A", linked)).toEqual({ kind: "block", path: [], nodeId: "i1", name: "A" });
+    });
+
+    it("rejects a name the definition does not have, and a path through a plain block", () => {
+      for (const href of ["block:A/Ghost", "block:A/R1/x", "block:Se1/R1", "block:Branch/R1", "block:R1"]) {
+        const broken = resolveLink(href, linked);
+        expect(broken.kind, href).toBe("broken");
+        expect(describeLink(broken)).toContain("instance of a library subsystem");
+      }
+    });
+
+    it("opens the instance and selects the node, as the breadcrumb does", () => {
+      resetDocumentStore();
+      useDocumentStore.getState().openDocument("p", "Linked", open);
+      const target = findBlock(open, "B/R1")!;
+      expect(useDocumentStore.getState().selectNodeAt(target.path, target.nodeId)).toBe(true);
+      expect(useDocumentStore.getState().activePath).toEqual(["i2"]);
+      expect(useDocumentStore.getState().selection.nodes).toEqual(["r"]);
+    });
+
+    it("checks a reference that is not hydrated against the definitions and shows the instance", () => {
+      // `saved` keeps the instances as references: they cannot be opened, the path can be checked.
+      expect(findBlock(saved, "A/R1")).toEqual({ path: [], nodeId: "i1", name: "R1" });
+      expect(findBlock(saved, "A/Ghost")).toBeNull();
+      expect(findBlock({ ...saved, definitions: undefined }, "A/R1")).toBeNull();
+    });
+
+    it("follows an instance inside another definition", () => {
+      const outer = structuredClone(saved.definitions!.Branch!);
+      outer.name = "Pair";
+      outer.diagram.nodes = [
+        { id: "p1", name: "Left", block: { ref: "project:Branch" }, position: { x: 0, y: 0 } },
+      ] as Model["diagram"]["nodes"];
+      outer.diagram.connections = [];
+      const files = { ...saved.definitions, Pair: outer };
+      const doc = structuredClone(saved);
+      doc.definitions = undefined;
+      doc.diagram.nodes.push({
+        id: "i3",
+        name: "P",
+        block: { ref: "project:Pair" },
+        position: { x: 0, y: 0 },
+      } as Model["diagram"]["nodes"][number]);
+      expect(findBlock(hydrateModel(doc, files), "P/Left/C1")).toEqual({ path: ["i3", "p1"], nodeId: "c", name: "C1" });
+      expect(findBlock(hydrateModel(doc, files), "P/Left/Ghost")).toBeNull();
+      expect(findBlock({ ...doc, definitions: files }, "P/Left/C1")).toEqual({ path: [], nodeId: "i3", name: "C1" });
+    });
   });
 
   it("checks signals against the latest run when there is one", () => {

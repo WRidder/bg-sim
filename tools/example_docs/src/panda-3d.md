@@ -58,8 +58,8 @@ Continue with [the Robot subsystem](page:robot), [the outer layer](page:control)
 
   The flange is 0.107 m along $z_7$ ([TCP](block:Robot/TCP)).
 - **Links** ([L1](block:Robot/L1) to `L7`). Each link is an instance of the library subsystem `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`): the offset `T` from the previous body (for `L1` the base mount), the joint `J`, the offset `Link` to the body's centre of mass, the body `B` on its 1-junction `BJ` and the pose band `CA`, `W`, `P`. Every value is pinned per instance, so joint 4 is `Robot/L4/J` and its angle `Robot/L4/J/qout`.
-- **Bodies** (`B` in `L1` to `L7`). Masses, centres of mass and inertia tensors are the physically feasible set of Gaz et al. 2019. `RigidBody3D` takes principal moments, so each tensor is diagonalised and the body 1-junction frame is the centre of mass turned to the principal axes (`LC` of each link).
-- **Joints** (`J` in `L1` to `L7`). `Revolute3D` with the five other directions compliant ($k = 10^7$), damped at 0.7 of critical. The arm starts at rest at the ready pose on the consistent deflections of the joint reactions, so nothing rings at $t = 0$.
+- **Bodies** ([B](block:Robot/L1/B) in `L1` to `L7`). Masses, centres of mass and inertia tensors are the physically feasible set of Gaz et al. 2019. `RigidBody3D` takes principal moments, so each tensor is diagonalised and the body 1-junction frame is the centre of mass turned to the principal axes (`LC` of each link).
+- **Joints** ([J](block:Robot/L1/J) in `L1` to `L7`). `Revolute3D` with the five other directions compliant ($k = 10^7$), damped at 0.7 of critical. The arm starts at rest at the ready pose on the consistent deflections of the joint reactions, so nothing rings at $t = 0$.
 
 ## Drives (per joint)
 
