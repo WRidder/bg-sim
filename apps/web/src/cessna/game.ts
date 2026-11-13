@@ -6,7 +6,7 @@
 import * as THREE from "three";
 import { Rig, VIEWS } from "../engine/camera";
 import { Burst, Trail } from "../engine/effects";
-import { Controls, STANDARD_PAD } from "../engine/input";
+import { ACE_BUTTONS, ACE_PAD, Controls, LOOK_EASE, PAD, PadState } from "../engine/input";
 import type { ScreenPoint } from "../engine/overlay";
 import { Stage } from "../engine/stage";
 import { SideBar } from "../engine/side";
@@ -97,6 +97,7 @@ async function main(): Promise<void> {
   stage.resize();
   const chart = bakeChart(field.heights, field.size);
   const sound = new PistonVoice();
+  const pad = new PadState();
   const controls = new Controls(
     {
       pull: ["ArrowDown", "KeyS"],
@@ -108,8 +109,11 @@ async function main(): Promise<void> {
       throttleUp: ["PageUp", "Equal", "NumpadAdd"],
       throttleDown: ["PageDown", "Minus", "NumpadSubtract"],
     },
-    STANDARD_PAD,
+    // `soften` below is the stick's curve, for keys and pad alike: the pad's own stays linear.
+    { roll: { ...ACE_PAD.roll!, expo: 0 }, pitch: { ...ACE_PAD.pitch!, expo: 0 }, yaw: { ...ACE_PAD.yaw!, expo: 0 } },
     { stick: 1.8, spring: 3.2, throttle: 0.42 },
+    pad,
+    ACE_BUTTONS,
   );
 
   const flight = await Flight.create(ground, RUNWAY_START);
@@ -327,43 +331,68 @@ async function main(): Promise<void> {
     rig.distance = clamp(rig.distance * Math.exp(event.deltaY * 0.0009), 9, 70);
   }, { passive: true });
 
-  // A pad has no keys for levers, so its buttons get read here: triggers for power, bumpers for flaps.
-  const padWas: boolean[] = [];
-  const padEdge = (pad: Gamepad, button: number): boolean => {
-    const down = pad.buttons[button]?.pressed ?? false;
-    const edge = down && !padWas[button];
-    padWas[button] = down;
-    return edge;
-  };
-  const gamepad = (dt: number): number => {
-    const pad = navigator.getGamepads?.().find((p) => p);
-    if (!pad) {
-      return 0;
+  /**
+   * The buttons of a gamepad, laid out as the F-16's are, after Ace Combat 7: the sticks, bumpers
+   * and triggers are the engine's (`ACE_PAD`, `ACE_BUTTONS`), R3 changes the view and Options
+   * (Start) pauses; Cross (A) also answers a menu. That game has no flaps and no trim: they are on
+   * the D-pad, right and left for the flaps, up and down for the trim.
+   */
+  const padButtons = (dt: number): void => {
+    pad.update();
+    if (!pad.connected) {
+      return;
     }
-    const up = pad.buttons[7]?.value ?? 0;
-    const down = pad.buttons[6]?.value ?? 0;
-    if (up > 0.05 || down > 0.05) {
-      controls.setThrottle(clamp(controls.value.throttle + (up - down) * 0.5 * dt, 0, 1));
+    const start = pad.pressed(PAD.START);
+    if (phase === "title" || phase === "over") {
+      if (start || pad.pressed(PAD.A)) {
+        sound.start();
+        begin();
+      }
+      return;
     }
-    if (padEdge(pad, 5)) {
-      flapsBy(1);
+    if (phase === "paused") {
+      if (start || pad.pressed(PAD.A)) {
+        show("flying");
+      }
+      return;
     }
-    if (padEdge(pad, 4)) {
-      flapsBy(-1);
+    if (start) {
+      show("paused");
+      return;
     }
-    if (padEdge(pad, 3)) {
+    if (pad.pressed(PAD.R3)) {
       nextView();
     }
-    if (padEdge(pad, 9)) {
-      show(phase === "flying" ? "paused" : "flying");
+    if (pad.pressed(PAD.RIGHT)) {
+      flapsBy(1);
     }
-    if (pad.buttons[12]?.pressed) {
+    if (pad.pressed(PAD.LEFT)) {
+      flapsBy(-1);
+    }
+    // The D-pad is the trim wheel: up rolls it forward, nose down.
+    if (pad.held(PAD.UP)) {
       flight.trim -= 0.25 * dt;
     }
-    if (pad.buttons[13]?.pressed) {
+    if (pad.held(PAD.DOWN)) {
       flight.trim += 0.25 * dt;
     }
-    return pad.buttons[0]?.value ?? 0;
+  };
+
+  /** The right stick looks round: the pilot's head in the cockpit, the camera outside it. */
+  const padLook = (dt: number): void => {
+    const x = pad.axis(2);
+    const y = pad.axis(3);
+    if (x === 0 && y === 0) {
+      return;
+    }
+    const follow = 1 - Math.exp(-dt / LOOK_EASE);
+    if (rig.view === "cockpit") {
+      lookYaw += (-x * 2.4 - lookYaw) * follow;
+      lookPitch += (clamp(-y * 0.9, -0.8, 1) - lookPitch) * follow;
+    } else {
+      rig.azimuth += (-x * 2.8 - rig.azimuth) * follow;
+      rig.elevation += (clamp(-y * 1.1, -1.3, 1.3) - rig.elevation) * follow;
+    }
   };
 
   // ---- The frame -----------------------------------------------------------------------------
@@ -482,13 +511,16 @@ async function main(): Promise<void> {
     const dt = Math.min(interval / 1000, 0.1);
     stage.judge(interval);
     requestAnimationFrame(frame);
+    padButtons(dt);
 
     const autopilot = phase === "title" || DEMO;
     flight.autopilot = autopilot ? scripted : null;
     if (phase === "flying" && !autopilot && !flight.crashed) {
       controls.update(dt);
       const v = controls.value;
-      const padBrake = gamepad(dt);
+      // The left trigger takes the power off, and on the ground it is the brakes as well.
+      const padBrake = pad.value(PAD.LT);
+      padLook(dt);
       const pedalsIn = soften(v.yaw);
       const turn = flight.get("turn_dps");
       let pedals = pedalsIn;
@@ -507,12 +539,20 @@ async function main(): Promise<void> {
           pedals = pedalsIn - 0.01 * turn;
         }
       }
-      // The FMU's yoke is a direct elevator: its bite grows with the square of the speed, and at
-      // full travel it would stand the aeroplane on its tail. This is what the force in a real
-      // yoke does for a pilot: the same pull gives about the same pitch rate at any speed.
+      // The FMU's yoke is a direct elevator, and at full travel it would stand the aeroplane on its
+      // tail. This is what the force in a real yoke does for a pilot: a full pull is about 3 g at
+      // any speed. The pitch rate a pull gives hardly changes with speed (65 deg/s per unit of
+      // yoke), so the load factor grows with the speed and the share falls as 1/speed. Below 73 kt
+      // the wing gives out first and the share stays at 0.45. On the runway that much would drag
+      // the tail at rotation, so the share there is the smaller (28/kias)^2, and the rest comes
+      // in over the first 40 ft.
+      // The roll rate grows with the speed (62 deg/s at 100 kt for the full aileron, 36 at 65), so
+      // the same share keeps a full throw near 48 deg/s above 78 kt.
       const kias = Math.max(flight.get("kias"), 28);
-      const pitchFeel = (28 / kias) ** 2;
-      const rollFeel = Math.min((44 / kias) ** 2, 1);
+      const pitchAir = Math.min(33 / kias, 0.45);
+      const pitchGround = Math.min(pitchAir, (28 / kias) ** 2);
+      const pitchFeel = pitchGround + (pitchAir - pitchGround) * clamp(flight.get("agl_ft") / 40, 0, 1);
+      const rollFeel = Math.min(78 / kias, 1);
       let roll = soften(v.roll) * rollFeel;
       if (assisted && flight.get("on_ground") < 0.5 && Math.abs(v.roll) < 0.02 && Math.abs(flight.get("phi_deg")) < 12) {
         // Hands off, shallow banks ease back to level: the model rolls off slowly on its own.

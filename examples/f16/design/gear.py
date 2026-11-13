@@ -188,7 +188,7 @@ class Plane:
         return out
 
     def rhs(self, t, X):
-        x, h, th, vx, vz, q, power, el, xi, pos = X
+        x, h, th, vx, vz, q, power, el, xi, pos, cy, cf = X
         stick, thr, brake, cmd = self.controls(t)
         st, ct = math.sin(th), math.cos(th)
         ub, wb = vx * ct + vz * st, vx * st - vz * ct
@@ -238,9 +238,10 @@ class Plane:
         u_g = -fbw.ACT_POS * stick
         y = (1.0 - w) * u + w * u_g
         dxi = (1.0 - w) * (ki * (q_deg - q_cmd) + (u - u_raw) / fbw.T_AW) + w * (u_g - u_raw) / T_TRACK
-        del_ = sim3.servo("el", y, el)
+        dcy, dcf = sim3.stab_comp(y, cy, cf, w)          # the phase-compensated rate limiter
+        del_ = sim3.servo("el", cy, el)
         dpow = F.pdot(power, F.tgear(thr))
-        return np.array([vx, vz, q, ax, az, dq, dpow, del_, dxi, dpos]), {
+        return np.array([vx, vz, q, ax, az, dq, dpow, del_, dxi, dpos, dcy, dcf]), {
             "w": w, "fn": [l[0] for l in legs], "q": [l[4] for l in legs], "vt": vt, "alpha": a_deg, "nz": nz,
             "thrust": thrust}
 
@@ -253,7 +254,7 @@ class Plane:
         th = (s.alpha0 + s.gamma0) / RTOD
         gam = s.gamma0 / RTOD
         X = np.array([0.0, s.h0, th, s.vt0 * math.cos(gam), s.vt0 * math.sin(gam), 0.0, 64.94 * s.thtl0, s.el0, s.el0,
-                      s.gear0])
+                      s.gear0, s.el0, s.el0])
         return X
 
     def run(self, dt=1e-3, every=10):

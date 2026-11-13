@@ -72,7 +72,7 @@ The electric driveline is a 1-D bond graph between the battery and the four spin
 | `racecar-straight` | 10 s flat out at the top speed, then the accelerator released and the brake pedal at 50 %: regeneration within the motor's limits, the friction brakes for the rest. Sliders for the pedal and the regen power. |
 | `buggy-grade` | 5 m/s up a 25 % grade (14 deg) with both motors. |
 | `buggy-hills` | 30 s over rolling hills (an analytic height field, wavelengths 25..140 m) with a few steering inputs. A second `TerrainSurface` checks that the FL contact point lies on the terrain. Slider for the speed. |
-| `racecar-sim`, `buggy-sim` | The FMU sources of `apps/car-sim` (below). In bg-sim a short test drive feeds the inputs. |
+| `racecar-sim`, `buggy-sim` | The FMU sources of `apps/web` (below). In bg-sim a short test drive feeds the inputs. |
 
 Every model has a 3D scene (`design/make_scenes.py`): the car stays near the origin and the
 ground moves under it (block `CarView`). There are four scenes: a test pad with a 2 km straight,
@@ -123,12 +123,13 @@ moves, while the 1-D reference uses steady-state slip. After that the two accele
 | `buggy_sim` (9 inputs, 98 outputs) | RK4, 100 us (50 substeps) | 604 us mean, 2.0 ms max | 10 s over the hills, steering, braking, handbrake | 7.7e-4 (FL slip); speed 1.4e-5 m/s |
 
 Both: no allocation after instantiate, no forbidden symbol, fmpy validation clean, a parameter
-outside its range refused. The doStep times come from `apps/car-sim/build_fmu.py` on an idle
+outside its range refused. The doStep times come from `apps/web/build_fmu.py` on an idle
 machine (Windows 11, gcc -O2); under load they rise by about half and stay below the 1 ms gate.
 The export reports many W203 notes: the switching conditions (clamps, stops, the motor envelope)
 are evaluated once per internal step, which the fixed step resolves.
 
-`apps/car-sim` is the host (Panda3D, fmpy, wheel/pedal/gamepad input): see its README.
+The host is the browser game Apex & Dust (`apps/web`, the FMUs compiled to WebAssembly): see
+`apps/web/README.md`.
 
 The suspension rods (wishbones, push rods or dampers, tie rods, drive shafts) join the chassis to a
 wheel carrier, so they belong to neither the body mesh nor the hub mesh.

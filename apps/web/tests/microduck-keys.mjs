@@ -72,9 +72,9 @@ await page.evaluate(() => {
 await padSet([0, -1, 0, 0]);
 const padWalk = await until((s) => s.command[0] > 0.35, 4000);
 check("the pad's left stick up walks forward at up to 0.4 m/s", padWalk.pad.startsWith("DualSense") && padWalk.command[0] > 0.35 && padWalk.command[0] <= 0.4, brief(padWalk));
-await padSet([0, 0, 1, 0]);
+await padSet([1, 0, 0, 0]);
 const padTurn = await until((s) => s.command[2] < -0.9, 4000);
-check("the right stick right turns right (negative yaw rate)", padTurn.command[2] < -0.9, brief(padTurn));
+check("in head + move, the start mode, the left stick right turns right (negative yaw rate)", padTurn.command[2] < -0.9, brief(padTurn));
 await padSet([0, 0, 0, 0], [12]);
 await page.waitForTimeout(100);
 await padSet([0, 0, 0, 0]);

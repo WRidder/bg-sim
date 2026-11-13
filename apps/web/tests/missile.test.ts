@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localToWorld, MissileSystem, targetInput } from "../src/f16/missiles";
+import { localToWorld, LOST_LIMIT, MissileSystem, targetInput } from "../src/f16/missiles";
 import type { Drone } from "../src/f16/targets";
 
 function drone(north: number, east: number, alt: number, heading: number, speed: number): Drone {
@@ -30,8 +30,26 @@ describe("the AIM-9X Wasm", () => {
       system.advance(0.005);
     }
     expect(missile?.done).toBe(true);
+    expect(missile?.justDestroyed).toBe(false);
     expect(missile?.get("north_m")).toBeGreaterThan(1000);
     expect(missile?.time).toBeLessThan(6);
+  }, 30000);
+
+  it("destroys itself when the seeker has been without the target for the limit", async () => {
+    const system = await MissileSystem.create();
+    // The target is behind the launcher: the seeker never sees it.
+    const missile = system.fire(0, { north: 0, east: 0, alt: 3000, heading: 0 }, drone(-6000, 0, 3000, 180, 150), 400);
+    for (let i = 0; i < 4000 && missile && !missile.done; i += 1) {
+      system.advance(0.005);
+    }
+    expect(missile?.done).toBe(true);
+    expect(missile?.justDestroyed).toBe(true);
+    expect(missile?.justHit).toBe(false);
+    expect(missile?.time).toBeGreaterThan(LOST_LIMIT);
+    expect(missile?.time).toBeLessThan(LOST_LIMIT + 1);
+    // Its instance is free for the next round.
+    system.shots[0] = null;
+    expect(system.fire(0, { north: 0, east: 0, alt: 3000, heading: 0 }, drone(2000, 0, 3000, 0, 150), 400)).not.toBeNull();
   }, 30000);
 
   it("keeps two instances independent", async () => {

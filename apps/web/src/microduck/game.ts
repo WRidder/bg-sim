@@ -239,6 +239,8 @@ async function main(): Promise<void> {
   let dragging = false;
   const target = new THREE.Vector3();
   let heading = 0;
+  /** The heading the camera follows: the trunk's, held while the trunk is far from upright. */
+  let cameraHeading = 0;
   canvas.addEventListener("pointerdown", (e) => {
     dragging = true;
     canvas.setPointerCapture(e.pointerId);
@@ -289,7 +291,7 @@ async function main(): Promise<void> {
         return reset();
       case "camera":
         view = VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length];
-        freeAngle = heading + Math.PI + offset;
+        freeAngle = cameraHeading + Math.PI + offset;
         return toast(`Camera: ${view}`, 1.2);
     }
   };
@@ -458,6 +460,9 @@ async function main(): Promise<void> {
     duck.update(joints, position, [before.w, before.x, before.y, before.z]);
     const [w, x, y, z] = s.quaternion;
     heading = Math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
+    // Tipped more than 45 degrees (a roulade, a fall) the yaw angle means little and jumps by half a
+    // turn as the trunk goes over, so the camera keeps the heading it had.
+    if (snap || 1 - 2 * (x * x + y * y) > Math.SQRT1_2) cameraHeading = heading;
 
     // A footprint where a sole comes down.
     if (s.contact) {
@@ -478,7 +483,7 @@ async function main(): Promise<void> {
     const goal = eye.set(position[0], position[2] * 0.75, -position[1]);
     if (snap) target.copy(goal);
     target.lerp(goal, 1 - Math.exp(-dt * 6));
-    const angle = view === "follow" ? heading + Math.PI + offset : view === "side" ? heading + Math.PI / 2 : freeAngle;
+    const angle = view === "follow" ? cameraHeading + Math.PI + offset : view === "side" ? cameraHeading + Math.PI / 2 : freeAngle;
     const cam = new THREE.Vector3(Math.cos(angle) * Math.cos(elevation), Math.sin(elevation), -Math.sin(angle) * Math.cos(elevation)).multiplyScalar(distance).add(target);
     if (snap) camera.position.copy(cam);
     camera.position.lerp(cam, 1 - Math.exp(-dt * 4));
@@ -525,6 +530,7 @@ async function main(): Promise<void> {
       // The FMU's wall time per 20 ms control tick (the model's real-time factor is meanMs / 20).
       timing: loop.plant instanceof FmuPlant ? { ...loop.plant.timing } : null,
       heading,
+      cameraHeading,
       action: Array.from(loop.lastTick?.step?.action ?? []),
       failure,
       stop: loop.plant.stop ?? null,

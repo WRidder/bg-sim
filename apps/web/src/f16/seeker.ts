@@ -1,10 +1,11 @@
 /**
- * The small seeker view: a second WebGL camera at the nose of the newest live AIM-9X, drawn into
- * the `#seeker` picture-in-picture canvas. It looks along the missile's body x, so the target and
+ * The small seeker view: a second camera at the nose of the newest live AIM-9X, drawn under
+ * the `#seeker` picture-in-picture frame. It looks along the missile's body x, so the target and
  * the world ahead appear exactly where the FMU's seeker is pointed.
  */
 
 import * as THREE from "three";
+import type { Pipeline } from "../engine/pipeline";
 import type { Missile } from "./missiles";
 
 const FORWARD = new THREE.Vector3(1, 0, 0);
@@ -19,19 +20,30 @@ export interface SeekerMark {
 }
 
 export class SeekerView {
-  private readonly camera = new THREE.PerspectiveCamera(46, 1.625, 0.5, 50000);
+  private readonly camera = new THREE.PerspectiveCamera(46, 1.625, 2, 400_000);
   private readonly q = new THREE.Quaternion();
   private readonly nose = new THREE.Vector3();
   private readonly point = new THREE.Vector3();
+  /**
+   * The picture is drawn here and then put on the screen by the pipeline's last pass. Drawing the
+   * scenes straight to the screen would need every material's shader a second time (three.js
+   * builds one per output colour space), all compiled in the frame of the first launch.
+   */
+  private readonly target = new THREE.WebGLRenderTarget(4, 4, {
+    type: THREE.HalfFloatType,
+    format: THREE.RGBAFormat,
+    samples: 4,
+    depthBuffer: true,
+    resolveDepthBuffer: false,
+  });
 
   constructor(
     private readonly renderer: THREE.WebGLRenderer,
+    private readonly pipeline: Pipeline,
     private readonly panel: HTMLElement,
     private readonly world: THREE.Scene,
     private readonly near: THREE.Scene,
   ) {
-    this.camera.aspect = 1.625;
-    this.camera.updateProjectionMatrix();
     panel.hidden = true;
   }
 
@@ -44,32 +56,49 @@ export class SeekerView {
     this.panel.hidden = false;
     missile.worldQuaternion(this.q);
     this.nose.copy(FORWARD).applyQuaternion(this.q).multiplyScalar(1.5);
-    this.camera.position.copy(missile.worldPosition()).add(this.nose);
+    this.camera.position.copy(missile.worldPosition(this.point)).add(this.nose);
     this.camera.quaternion.copy(this.q).multiply(MESH_TO_CAMERA);
     this.camera.updateMatrixWorld();
+    this.draw(true);
+  }
 
-    const canvas = this.renderer.domElement;
+  /**
+   * One draw nobody sees, from where `from` is: the picture's buffers exist and have been drawn
+   * into before the first launch, which would otherwise pay for both in its own frame.
+   */
+  prepare(from: THREE.Camera): void {
+    this.camera.position.copy(from.position);
+    this.camera.quaternion.copy(from.quaternion);
+    this.camera.updateMatrixWorld();
+    this.draw(false);
+  }
+
+  private draw(show: boolean): void {
+    const { renderer, target } = this;
+    const canvas = renderer.domElement;
     const scaleX = canvas.width / Math.max(1, canvas.clientWidth);
     const scaleY = canvas.height / Math.max(1, canvas.clientHeight);
-    const width = Math.round(this.panel.clientWidth * scaleX);
-    const height = Math.round(this.panel.clientHeight * scaleY);
-    const x = Math.round((canvas.width - width) / 2);
-    const y = Math.round(18 * scaleY);
-    const previous = this.renderer.getRenderTarget();
-    this.renderer.setRenderTarget(null);
-    this.renderer.setViewport(x, y, width, height);
-    this.renderer.setScissor(x, y, width, height);
-    this.renderer.setScissorTest(true);
-    this.renderer.setClearColor(0x8db6d8, 1);
-    this.renderer.autoClear = true;
-    this.renderer.clear();
-    this.renderer.autoClear = false;
-    this.renderer.render(this.world, this.camera);
-    this.renderer.render(this.near, this.camera);
-    this.renderer.autoClear = true;
-    this.renderer.setScissorTest(false);
-    this.renderer.setRenderTarget(previous);
-    this.renderer.setViewport(0, 0, canvas.width, canvas.height);
+    // The panel has no size while it is hidden; these are its CSS width and height.
+    const width = Math.max(2, Math.round((this.panel.clientWidth || 260) * scaleX));
+    const height = Math.max(2, Math.round((this.panel.clientHeight || 160) * scaleY));
+    if (target.width !== width || target.height !== height) {
+      target.setSize(width, height);
+    }
+    // The sun's shadow map is already drawn for this frame.
+    const shadows = renderer.shadowMap.autoUpdate;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.setRenderTarget(target);
+    renderer.clear();
+    renderer.autoClear = false;
+    renderer.render(this.world, this.camera);
+    renderer.render(this.near, this.camera);
+    renderer.autoClear = true;
+    renderer.shadowMap.autoUpdate = shadows;
+    renderer.setRenderTarget(null);
+    if (!show) {
+      return;
+    }
+    this.pipeline.inset(target, Math.round((canvas.width - width) / 2), Math.round(18 * scaleY), width, height);
   }
 
   /** Where the target appears inside the seeker panel, in CSS pixels on the HUD canvas. */

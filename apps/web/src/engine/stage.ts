@@ -151,8 +151,41 @@ export class Stage {
     this.onResize(width, height);
   }
 
-  /** Feeds in the time between two frames; a run of slow ones lowers the quality. */
+  /**
+   * Builds the shaders of everything in the two scenes, shown or not. A game calls it behind its
+   * loading screen once its objects are in: what is first drawn later (an effect, a weapon) then
+   * costs no frame. The compile runs beside the page; one hidden draw of every object then makes
+   * the browser finish what it leaves until a shader is first used.
+   */
+  async warm(): Promise<void> {
+    const { camera, pipeline, renderer } = this;
+    // The programs depend on where they draw to; this is where the pipeline draws the scenes.
+    renderer.setRenderTarget(pipeline.scene);
+    await Promise.all([renderer.compileAsync(this.world, camera), renderer.compileAsync(this.near, camera)]);
+    const kept: [THREE.Object3D, boolean, boolean][] = [];
+    for (const scene of [this.world, this.near]) {
+      scene.traverse((object) => {
+        kept.push([object, object.visible, object.frustumCulled]);
+        object.visible = true;
+        object.frustumCulled = false;
+      });
+    }
+    renderer.setRenderTarget(pipeline.scene);
+    renderer.render(this.world, camera);
+    renderer.render(this.near, camera);
+    renderer.setRenderTarget(null);
+    for (const [object, visible, culled] of kept) {
+      object.visible = visible;
+      object.frustumCulled = culled;
+    }
+  }
+
+  /**
+   * Feeds in the time between two frames; a run of slow ones lowers the quality. One frame counts
+   * for at most 100 ms: a single long stop (a tab switch, a compile) says nothing about the speed.
+   */
   judge(milliseconds: number): void {
+    milliseconds = Math.min(milliseconds, 100);
     this.slow = milliseconds > 24 ? this.slow + milliseconds : Math.max(0, this.slow - milliseconds * 0.5);
     if (this.slow > 1800 && this.tier < TIERS.length - 1 && !this.fixedTier) {
       this.tier += 1;

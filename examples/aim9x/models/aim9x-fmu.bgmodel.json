@@ -2,7 +2,7 @@
  "format": "bgsim.model",
  "language": "0.1.0",
  "name": "aim9x-fmu",
- "$comment": "Host-interface AIM-9X for apps/f16-sim: launch-relative target inputs, missile pose/status outputs, no fuze stop. Generated from aim9x-intercept by design/build_fmu_model.py; do not edit by hand.",
+ "$comment": "Host-interface AIM-9X for apps/web: launch-relative target inputs, missile pose/status outputs, no fuze stop. Generated from aim9x-intercept by design/build_fmu_model.py; do not edit by hand.",
  "diagram": {
   "nodes": [
    {
@@ -1147,7 +1147,10 @@
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "K_acc": "20.0",
+     "K_q": "60.0"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -1211,7 +1214,9 @@
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "t_lock": "0.3"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -1253,7 +1258,10 @@
     "flipX": false,
     "params": {
      "N": "nav_N",
-     "a_max": "a_max_g*9.80665"
+     "a_max": "a_max_g*9.80665",
+     "t_lock": "0.3",
+     "tau_g": "0.05",
+     "a_frac": "0.8"
     },
     "constants": {},
     "starts": {},

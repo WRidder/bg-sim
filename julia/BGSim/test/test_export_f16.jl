@@ -1,4 +1,4 @@
-# The f16-sim FMU of examples/f16 (the FMU of the apps/f16-sim host): the export with the host's
+# The f16-sim FMU of examples/f16 (the FMU of the apps/web host): the export with the host's
 # interface and settings (examples/export_f16.jl) is accepted, RK4 at the 5 ms communication step
 # with one substep, the ExportInputPass markers are the FMU inputs and the ExportOutput markers its
 # outputs, the trim globals, CG, mass and law switches are FMU parameters (every start computed

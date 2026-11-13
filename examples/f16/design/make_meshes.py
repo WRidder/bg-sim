@@ -16,7 +16,7 @@ pivot axis (`STAB_PIVOT`), so the scene can turn them with a revolute joint.
 
 Three paint schemes (grey, sand, blue) tell the aircraft of one model apart.
 
-The f16-sim model (and the f16-sim host, apps/f16-sim) also moves the ailerons and the rudder:
+The f16-sim model (and the f16-sim host, apps/web) also moves the ailerons and the rudder:
 `f16sim_body.glb` (grey) has the wing cut out for the flaperons and the fin cut out for the
 rudder, and `f16sim_flap_l.glb`, `f16sim_flap_r.glb`, `f16sim_rudder.glb` are those surfaces with
 their origin on their hinge line (`SIM_PIVOTS`, the same numbers as in build_model.py).

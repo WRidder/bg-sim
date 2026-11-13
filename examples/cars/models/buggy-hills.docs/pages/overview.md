@@ -4,7 +4,7 @@ The buggy at 8 m/s over rolling hills: an analytic height field $h(x, y) = \sum_
 
 ![The model canvas|900](assets/c78e28daa1d4.png)
 
-A second `TerrainSurface`, [TerrainProbe](block:TerrainProbe), evaluates the terrain at the point where the FL tyre says it touches ([FL/Tyre/zc](signal:FL/Tyre/zc)): the two heights agree to a few micrometres. The same table (`design/hills.json`) draws the hills in the 3D view and in the `apps/car-sim` host.
+A second `TerrainSurface`, [TerrainProbe](block:TerrainProbe), evaluates the terrain at the point where the FL tyre says it touches ([FL/Tyre/zc](signal:FL/Tyre/zc)): the two heights agree to a few micrometres. The same table (`design/hills.json`) draws the hills in the 3D view and in the `apps/web` host.
 
 ![3D view at t = 12 s|600](assets/3f41d531b7a2.png)
 

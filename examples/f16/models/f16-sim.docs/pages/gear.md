@@ -19,7 +19,7 @@ The globals `gear0` and `gear_set` default to 0, gear up: then the ground is a c
 | at rest, idle, brakes set | CG height | 1.6228 m | 1.6228 m |
 | | nose / main wheel load | 22.38 / 34.39 kN | 22.38 / 34.39 kN |
 | taxi, then brakes | where it stops | 324.7 m | 324.7 m |
-| take-off, full afterburner | height at 26 s | 516.6 m | 516.6 m |
+| take-off, full afterburner | height at 20 s | 220.8 m | 220.8 m |
 | landing, 2.13 m/s of sink, no flare | peak main wheel | 113.9 kN | 115.3 kN |
 | | peak nose wheel | 57.4 kN | 57.4 kN |
 | | where it stops | 2205.5 m | 2205.5 m |

@@ -21,6 +21,18 @@ export class Trail {
     private readonly width = 0.4,
     color = new THREE.Color(1.6, 1.65, 1.75),
     private readonly opacity = 0.5,
+    /**
+     * The least width the ribbon shows, as an angle from the eye in radians: 0 for none. Smoke a
+     * few kilometres off is thinner than a pixel and would flicker in and out; with a floor of
+     * about a pixel it stays a fine line, the way a rocket's trail reads against the sky.
+     */
+    private readonly minAngle = 0,
+    /**
+     * The colour of the ribbon's other edge; the same as `color` when left out. Smoke in the sun
+     * has a lit side and a side in its own shade. Drawn with both, a pale trail still shows
+     * against a pale sky (by its dark edge) and against dark land (by its light one).
+     */
+    shade: THREE.Color = color,
   ) {
     this.points = Array.from({ length }, () => new THREE.Vector3());
     this.strength = new Float32Array(length);
@@ -49,7 +61,7 @@ export class Trail {
         transparent: true,
         depthWrite: false,
         side: THREE.DoubleSide,
-        uniforms: { uColor: { value: color } },
+        uniforms: { uColor: { value: color }, uShade: { value: shade } },
         vertexShader: /* glsl */ `
           attribute float aAlpha;
           attribute float aSide;
@@ -62,11 +74,13 @@ export class Trail {
           }`,
         fragmentShader: /* glsl */ `
           uniform vec3 uColor;
+          uniform vec3 uShade;
           varying float vAlpha;
           varying float vSide;
           void main() {
             float edge = 1.0 - abs(vSide);
-            gl_FragColor = vec4(uColor, vAlpha * smoothstep(0.0, 0.55, edge));
+            vec3 color = mix(uShade, uColor, smoothstep(-0.45, 0.35, vSide));
+            gl_FragColor = vec4(color, vAlpha * smoothstep(0.0, 0.55, edge));
           }`,
       }),
     );
@@ -86,6 +100,13 @@ export class Trail {
     this.strength[this.head] = strength;
   }
 
+  /** Moves the newest point: the ribbon stays on its source between two added points. */
+  move(point: THREE.Vector3): void {
+    if (this.seeded) {
+      this.points[this.head].copy(point);
+    }
+  }
+
   clear(): void {
     this.strength.fill(0);
     this.seeded = false;
@@ -103,7 +124,8 @@ export class Trail {
       this.side.crossVectors(this.along, this.toEye);
       const n = this.side.length();
       if (n > 1e-6) {
-        this.side.multiplyScalar(((1 + 4 * age) * this.width) / n);
+        const half = Math.max((1 + 4 * age) * this.width, this.minAngle * this.toEye.length());
+        this.side.multiplyScalar(half / n);
       }
       this.position.setXYZ(i * 2, point.x - this.side.x, point.y - this.side.y, point.z - this.side.z);
       this.position.setXYZ(i * 2 + 1, point.x + this.side.x, point.y + this.side.y, point.z + this.side.z);

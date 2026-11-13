@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["numpy>=2.0", "fmpy>=0.3.20"]
 # ///
-"""Acceptance of the cessna-sim FMU (the FMU of the cessna-sim host, apps/cessna-sim).
+"""Acceptance of the cessna-sim FMU (the FMU of the cessna-sim host, apps/web).
 
     uv run examples/export_cessna_check.py [--out DIR] [--skip-julia]
 

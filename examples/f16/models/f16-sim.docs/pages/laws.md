@@ -10,6 +10,14 @@ $$n_{cmd} = 1 + 10\,\delta_{stick} + tc, \qquad q_{stick} = \frac{g_0}{V_t}\Big(
 
 where $\Delta n_{cmd} = n_{cmd} - \cos\gamma\cos\phi$ and $\Delta n = n_z - \cos\theta\cos\phi$ (zero in steady straight flight and in a steady level turn). The first term is the pitch rate of the steady manoeuvre. The g-error term builds the load factor in about half a second instead of the airframe's path time constant. In the 60 deg turn below it cuts the altitude loss over 30 s from about 160 m to 45 m. The clamp keeps a full-stick pull from overdriving the alpha limiter. The limiter of `f16-envelope` follows, with a −3 g floor: $q_{cmd} = \max(\min(q_{stick}, q_\alpha, q_g), q_{neg})$. The law is the scheduled `PitchFBW` of `f16-fbw`.
 
+### The stabilator's rate limit
+
+The pitch gains fall as $1/\bar q$, so they are large at the low end of the schedule: below about 150 KEAS a small pitch rate already asks for more than the servo's 60 deg/s. A plain rate limit only turns round when the command crosses its output, so it lags, and the loop settles in a limit cycle: after a tap on the stick the stabilator keeps swinging ±20 deg at 60 deg/s. [StabComp](block:StabComp), the compensator of `f16-pio`, sits between the law and the servo. With $e = u - y$:
+
+$$\dot y = \mathrm{clamp}\Big(\dot u_f + (0.5 + 20\,w)\,e + 6\,\big(e - \mathrm{clamp}(e, \pm 12)\big),\ \pm 60\Big)$$
+
+The output turns round as soon as the command does ($\dot u_f$, the command's filtered derivative), and a slow pull-back brings it onto the command again. The pull-back must stay slow, or the limit cycle returns. A stick reversal at full rate can leave the output 20 deg off the command, so the part of the error beyond 12 deg is pulled back at 6 1/s. On the wheels ($w$) it is a plain rate limit, because the stick commands the stabilator directly there.
+
 ## Roll
 
 The stick commands the stability-axis roll rate $p_s = p\cos\alpha + r\sin\alpha$, a roll about the velocity vector:

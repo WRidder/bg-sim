@@ -100,7 +100,7 @@ Its model **f16-sim** is a full three-axis fly-by-wire on the same airframe. Fiv
 - Yaw: a yaw damper on the washed-out yaw rate, and the pedals command a sideslip.
 - On the ground: a weight-on-wheels signal fades the three laws to direct commands, and a `Lookup1D` over the ground speed limits the nose-wheel steering. The landing gear is the Cessna's, with a retraction added.
 
-The model's inputs and outputs are export markers, and its trim, CG, mass and law switches are globals. It exports as the FMU of a flight-simulator host (`apps/f16-sim`). The dashboard has sliders for the sticks, the pedals, the throttle and the law switches, and cards for the wheel loads and the gear position.
+The model's inputs and outputs are export markers, and its trim, CG, mass and law switches are globals. It exports as the FMU of a flight-simulator host (the browser game in `apps/web`). The dashboard has sliders for the sticks, the pedals, the throttle and the law switches, and cards for the wheel loads and the gear position.
 
 The **beaver** example (the DHC-2 Beaver of the TU Delft FDC toolbox) schedules its gains differently: the autopilot's gains are polynomials in the airspeed, written inside the control-law blocks. Its model **beaver-sim** flies that autopilot:
 

@@ -20,8 +20,11 @@ const pages = (): Record<string, string> => {
   return found;
 };
 
-/** Puts the bundle inside the HTML: a page opened from file:// cannot load modules or fetch. */
-const inlineEverything = (): Plugin => ({
+/**
+ * Puts the bundle inside the HTML: a page opened from file:// cannot load modules or fetch. The page
+ * is written as `<game>.html`, next to the other games' files.
+ */
+const inlineEverything = (game: string): Plugin => ({
   name: "bgsim-inline",
   enforce: "post",
   generateBundle(_, bundle) {
@@ -47,23 +50,28 @@ const inlineEverything = (): Plugin => ({
         }
       }
       html.source = text;
+      html.fileName = `${game}.html`;
     }
   },
 });
 
 export default defineConfig(({ mode }) => {
   const single = mode === "single";
+  const game = process.env.GAME ?? "f16";
   return {
     base: "./",
-    plugins: single ? [inlineEverything()] : [],
+    plugins: single ? [inlineEverything(game)] : [],
+    // One file per game and nothing else: no covers, and the other games' files stay.
+    publicDir: single ? false : "public",
     build: {
       target: "es2022",
       chunkSizeWarningLimit: 4000,
       outDir: single ? "dist-single" : "dist",
+      emptyOutDir: !single,
       assetsInlineLimit: single ? 100_000_000 : 4096,
       cssCodeSplit: !single,
       rollupOptions: {
-        input: single ? { [process.env.GAME ?? "f16"]: resolve(import.meta.dirname, process.env.GAME ?? "f16", "index.html") } : pages(),
+        input: single ? { [game]: resolve(import.meta.dirname, game, "index.html") } : pages(),
         output: single ? { inlineDynamicImports: true } : {},
       },
     },

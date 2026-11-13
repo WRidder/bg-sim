@@ -6,22 +6,23 @@ The bg-sim FMU apps as web games: the flight or vehicle model compiled to WebAss
 
 ```
 npm ci
-uv run build_wasm.py f16 ../f16-sim/build/f16_sim.fmu
-uv run build_wasm.py f16 ../f16-sim/build/aim9x_fmu.fmu missile.gen.ts
-uv run build_wasm.py cessna ../cessna-sim/build/cessna_sim.fmu
-uv run build_wasm.py a109 ../a109-sim/build/a109_sim.fmu
-uv run build_wasm.py cars ../car-sim/build/racecar_sim.fmu racecar.gen.ts
-uv run build_wasm.py cars ../car-sim/build/buggy_sim.fmu buggy.gen.ts
+uv run build_fmu.py
 npm run dev -- --host 127.0.0.1 --port 8831
 ```
 
 Then open http://127.0.0.1:8831/.
 
+`build_fmu.py` builds the models of the games, once after cloning and again when a model changes. For each of `f16`, `missile`, `cessna`, `a109`, `racecar` and `buggy` (name some to build only those) it exports the example's model from bg-sim (`examples/export_*.jl`, needs Julia), compiles and checks the FMU with gcc into `build/`, and has `build_wasm.py` turn it into `src/<game>/*.gen.ts`, the module the game imports. Neither `build/` nor the generated modules are committed. `uv run build_wasm.py <game> <fmu> [<name>.gen.ts]` does the last step alone, for an FMU built elsewhere.
+
+The start lists of the F-16, the Cessna and the A109 (`src/<game>/starts.json`) are committed. They are trims from the design scripts of the examples; `uv run build_fmu.py --starts` writes them again, which is needed only when a model's trim changes.
+
 - `npm run build` writes a static site to `dist/`.
-- `GAME=f16 npm run build:single` writes one self-contained file to `dist-single/f16/index.html`. Also for `cessna`, `a109` and `cars`.
+- `npm run build:single` writes each game as one self-contained file: `dist-single/f16.html`, `cessna.html`, `a109.html` and `cars.html`. `node build_single.mjs f16` builds one.
 - `npx vitest run` runs the unit tests and the scripted pilots.
 - `node tests/keys.mjs out.png` flies with real key presses against the dev server.
 - `node tests/weapons-keys.mjs out.png` selects Intercept, waits for the lock and fires.
+- `node tests/weapons-perf.mjs` does the same with the frame rate uncapped and prints the frame times round each launch, the long frames and the shader programs built (`PERF_TIER=0` fixes the quality tier, `PERF_SIZE=1920x1080` the window).
+- `node tests/f16-pad.mjs` flies the F-16 with a synthetic gamepad: sticks, bumpers, triggers and buttons.
 - `node tests/cessna-keys.mjs`, `tests/a109-keys.mjs` and `tests/cars-keys.mjs` do the same for the other games.
 
 ## In the game
@@ -32,7 +33,15 @@ Then open http://127.0.0.1:8831/.
 
 In the F-16, `G` works the gear and `B` or `Space` holds the brakes. Start on the runway or on final from the Start list, or come back from anywhere: a landing that stops on the airfield gets a marked sheet. Anywhere else, the ground is still a crash, and so is the runway with the gear up.
 
-The F-16's Intercept mode puts up to three target drones in the play area. `Tab` or `N` selects one; the seeker cue builds a lock in about one second when the target is within 45 degrees of the nose and about 7 km. `M` fires the next AIM-9X (two per sortie), and `Shift+M` toggles the sound. The tactical scope at the top left shows the drones, the selected target and the lock; a hit removes the drone and a replacement enters after four seconds.
+The F-16's Intercept mode puts up to three target drones in the play area. `Tab` or `N` selects one; the seeker cue builds a lock in about one second when the target is within 45 degrees of the nose and about 7 km. `M` fires the next AIM-9X (two per sortie), and `Shift+M` toggles the sound. The tactical scope at the top left shows the drones, the selected target and the lock; a hit removes the drone and a replacement enters after four seconds. A round in flight leaves smoke with a lit and a shaded edge, never thinner than about a pixel, and its motor shows as a point of light while it burns; the HUD puts a caret on each round with its seconds to go (amber and `LOST` once the seeker has lost the target), and the scope shows it as a dot. Not every shot can hit: a target far off the nose at short range, or one that crosses fast, is outside what the round can turn. A round that has lost the target for 7 seconds on end destroys itself, and so does any round after 30 seconds of flight: a small burst where it was.
+
+The F-16 takes a gamepad with the browser's standard mapping, laid out as in Ace Combat 7 (expert handling): left stick pitch and roll (back is nose up), LB and RB (L1, R1) rudder, RT and LT (R2, L2) throttle up and down with LT also the wheel brakes, right stick to look round, B (Circle) fires, Y (Triangle) takes the next target, R3 changes the view, Start (Options) pauses, and Start or A (Cross) answers a menu. The gear, which that game does not have, is on D-pad down. A flight started from the pad is silent until a key or a click, because a browser does not let a pad button start the sound.
+
+The Cessna has the same layout: left stick for the yoke (back is nose up), LB and RB rudder, RT and LT throttle up and down with LT also the wheel brakes, right stick to look round (the pilot's head in the cockpit), R3 for the view, Start to pause, and Start or A from a menu. Ace Combat has no flaps or trim, so they are on the D-pad: right and left for the flaps, up and down for the trim (up is nose down).
+
+The A109 follows them, which is also how console games fly a helicopter: left stick cyclic, RT and LT lever up and down, LB and RB pedals, right stick to look round, A (Cross) as the space bar (brake to a hover with the aid, cyclic trim without), Y (Triangle) stability on and off, R3 for the view, Start to pause, and Start or A from a menu. A flight stick without the standard mapping keeps its twist for the pedals and its fourth axis for the lever.
+
+The car games are laid out as in Gran Turismo: left stick or D-pad to steer, RT (R2) accelerator, LT (L2) brake, B (Circle) handbrake, Y (Triangle) reverse, LB (L1) look behind, RB (R1) change the view, right stick to look round, Start (Options) pause, A (Cross) to start from a menu or drive on from a pause, Back (Create) restart.
 
 The Cessna and the A109 export only start values, so they have no setup until their exports expose parameters.
 
@@ -60,11 +69,11 @@ The velstand run in `tests/microduck.test.ts` reads `MICRODUCK_SECONDS` (run len
 
 `?standin` keeps the stand-in even with an FMU built; `?carry=foot` starts it round the stance foot.
 
-- **Gamepad.** Any pad the browser reports with the standard mapping; a PS5 DualSense does in Chrome and Edge, by USB or Bluetooth (press a button once for the browser to show it). The mapping is the robot's (`padd`): the D-pad picks what the sticks mean (left: walk, strafe, turn; up: head; right: head + walk; down: body + head), Cross sits and stands, Circle picks from the ground, L2/R2 open the beak, Options turns the policy on and off. Where the robot has no equivalent here the demo differs, and the screen says so: Square (held) rolls, L1/R1 kick, Create starts again, Triangle changes the camera. Keyboard: W A S D left stick, arrows (and Q E) right stick, 1 to 4 the modes, Space, G, V, Z, X, B, Enter, R, C. H hides the controls, T the telemetry, P pauses.
+- **Gamepad.** Any pad the browser reports with the standard mapping; a PS5 DualSense does in Chrome and Edge, by USB or Bluetooth (press a button once for the browser to show it). The mapping is the robot's (`padd`): the D-pad picks what the sticks mean (left: walk, strafe, turn; up: head; right: head + walk; down: body + head), and the page starts in head + walk (left stick walks and turns, right stick moves the head), Cross sits and stands, Circle picks from the ground, L2/R2 open the beak, Options turns the policy on and off. Where the robot has no equivalent here the demo differs, and the screen says so: Square (held) rolls, L1/R1 kick, Create starts again, Triangle changes the camera. The camera follows the duck's heading and stays level; while the trunk is tipped more than 45 degrees (a roulade, a fall) it keeps the heading it had. Keyboard: W A S D left stick, arrows (and Q E) right stick, 1 to 4 the modes, Space, G, V, Z, X, B, Enter, R, C. H hides the controls, T the telemetry, P pauses.
 - **Policies** are in `src/microduck/policies/`, at a pinned revision of https://huggingface.co/pollen-robotics/microduck-policies (Apache-2.0); their README has the revision, the hashes and how to fetch them again. The walk policy loads first; the sit-stand, ground pick, roulade and kicks follow in the background.
 - **The duck** is drawn with Pollen Robotics' CAD parts from microduck_rl (`src/microduck/duck.glb`, 77k triangles, 2.4 MB: a node per body and the lower beak on the mouth servo's axis), written by `examples/microduck/design/build_visuals.py`. **These meshes are CC BY-NC-SA 4.0, non-commercial only** (`src/microduck/duck.glb.NOTICE`). If the file does not load, the page draws the procedural duck (shapes sized to the joints) and logs a warning.
 - **ONNX Runtime Web** (`onnxruntime-web`, the plain WebAssembly backend, one thread, so no cross-origin isolation is needed) is imported only by this page and only when it starts: 75 kB of script and a 14.8 MB Wasm (3.9 MB gzipped), which no other game loads. A recurrent export (`h_in`/`c_in`) works too.
-- **Single file: not supported.** `GAME=microduck npm run build:single` makes a 66 MB file (the runtime's Wasm and the six policies as base64), and in it the runtime does not even start (Vite's preload helper is missing once dynamic imports are inlined): the page runs with the policy off and says so. Serve `dist/` instead.
+- **Single file: not supported.** A single-file build of it (`GAME=microduck npx vite build --mode single`) makes a 66 MB file (the runtime's Wasm and the six policies as base64), and in it the runtime does not even start (Vite's preload helper is missing once dynamic imports are inlined): the page runs with the policy off and says so. Serve `dist/` instead.
 
 ### The FMU the page expects
 

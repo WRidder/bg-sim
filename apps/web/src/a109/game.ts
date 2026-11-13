@@ -9,6 +9,7 @@ import { Rig, VIEWS } from "../engine/camera";
 import { Burst } from "../engine/effects";
 import { attitude } from "../engine/frames";
 import { coastOutline, type ScreenPoint } from "../engine/overlay";
+import { LOOK_EASE, PAD } from "../engine/input";
 import { Stage } from "../engine/stage";
 import { SideBar } from "../engine/side";
 import { Telemetry } from "../engine/telemetry";
@@ -300,14 +301,37 @@ async function main(): Promise<void> {
       controls.trimSide = 0;
     }
   });
+  /**
+   * A pad's buttons, as in the aeroplanes: R3 changes the view, Options (Start) pauses, and Start
+   * or Cross (A) answers a menu. In flight A is the space bar: it brakes to a hover with the aid on
+   * (read as a held button in `Controls`), and sets the cyclic's trim without it. Triangle (Y)
+   * switches the stability on and off.
+   */
   controls.onButton = (button) => {
-    if (button === 9) {
+    if (phase === "title" || phase === "over") {
+      if (button === PAD.START || button === PAD.A) {
+        sound.start();
+        begin();
+      }
+    } else if (button === PAD.START || (button === PAD.A && phase === "paused")) {
       togglePause();
-    } else if (button === 5) {
+    } else if (button === PAD.R3) {
       nextView();
-    } else if (button === 3 && phase === "flying" && aid !== "assist") {
+    } else if (button === PAD.A && phase === "flying" && aid !== "assist") {
       controls.forceTrim();
+    } else if (button === PAD.Y && phase === "flying" && aid !== "assist") {
+      flight.scas = !flight.scas;
     }
+  };
+  /** The right stick looks round, and lets go like the mouse does. */
+  const padLook = (dt: number): void => {
+    const { x, y } = controls.look;
+    if (x === 0 && y === 0) {
+      return;
+    }
+    const follow = 1 - Math.exp(-dt / LOOK_EASE);
+    rig.azimuth += (-x * 2.8 - rig.azimuth) * follow;
+    rig.elevation += (THREE.MathUtils.clamp(-y * 1.1, -1.3, 1.3) - rig.elevation) * follow;
   };
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && phase === "flying") {
@@ -440,6 +464,7 @@ async function main(): Promise<void> {
     } else {
       flight.setControls(controls.lever, s.fore, s.side, s.pedals);
     }
+    padLook(dt);
   };
 
   const frame = (now: number): void => {
@@ -449,6 +474,7 @@ async function main(): Promise<void> {
     stage.judge(interval);
     requestAnimationFrame(frame);
 
+    controls.poll();
     if (phase === "flying" && !DEMO) {
       fly(dt);
     }

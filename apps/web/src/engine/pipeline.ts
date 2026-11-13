@@ -155,6 +155,8 @@ export class Pipeline {
       format: THREE.RGBAFormat,
       samples,
       depthBuffer: true,
+      // Nothing reads this depth once the frame is drawn, and resolving it costs a third of a frame.
+      resolveDepthBuffer: false,
     });
     for (let i = 0; i < CHAIN; i += 1) {
       this.chain.push(
@@ -252,5 +254,26 @@ export class Pipeline {
     u.uFlash.value = this.flash;
     u.uTime.value = time % 1;
     this.blit(this.final, null);
+  }
+
+  /**
+   * Puts a small picture drawn elsewhere (in the same linear light as `scene`) on the screen, in
+   * the rectangle given in canvas pixels from the bottom left, with the frame's tone mapping.
+   */
+  inset(source: THREE.WebGLRenderTarget, x: number, y: number, width: number, height: number): void {
+    const { renderer } = this;
+    const u = this.final.uniforms;
+    const bloom = u.uBloomAmount.value as number;
+    u.uScene.value = source.texture;
+    u.uBloomAmount.value = 0;
+    renderer.setViewport(x, y, width, height);
+    renderer.setScissor(x, y, width, height);
+    renderer.setScissorTest(true);
+    this.blit(this.final, null);
+    renderer.setScissorTest(false);
+    const canvas = renderer.domElement;
+    renderer.setViewport(0, 0, canvas.width, canvas.height);
+    u.uScene.value = this.scene.texture;
+    u.uBloomAmount.value = bloom;
   }
 }

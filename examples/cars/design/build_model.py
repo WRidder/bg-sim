@@ -10,7 +10,7 @@
 Every model is the same vehicle bond graph (`car.py`) with different drivers, grounds and start
 states: the race car on flat ground (drop test, skid pad, top speed and braking) and the buggy
 (drop test, a 25 % grade, rolling hills). The `*-sim` models are the FMU sources of the
-host applications (apps/car-sim): their driver inputs are export inputs. The four suspension
+host applications (apps/web): their driver inputs are export inputs. The four suspension
 corners FL, FR, RL, RR are instances of the library subsystems RacecarFrontCorner,
 RacecarRearCorner, BuggyFrontCorner and BuggyRearCorner (library/*.bgsub.json, also written here).
 """
@@ -344,7 +344,7 @@ def hills() -> dict:
                  params=[g("v_set", 8.0, "m/s", "Speed set point of the speed hold")])
 
 
-# The FMU interface of the sim models (apps/car-sim): export inputs (marker, role, start) and
+# The FMU interface of the sim models (apps/web): export inputs (marker, role, start) and
 # outputs (marker, node, port). The roles are the vehicle's driver signals (car.vehicle).
 SIM_INPUTS = [
     ("steer", "Steer", 0.0, "steering, -1 full left .. +1 full right"),
