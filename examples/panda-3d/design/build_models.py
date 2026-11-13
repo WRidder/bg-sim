@@ -16,6 +16,10 @@
                 (hard held directions, reduced by `mtkcompile`'s index reduction to two
                 states per joint; plan/MULTIBOND_PLAN.md section 5.7).
 
+Every link of the arm is an instance of a library subsystem: `RevoluteLink3D` (compliant joint)
+or `RevoluteLink3DRigid`, whose definitions (`library/*.bgsub.json`) this script writes from
+`serial_link.py`.
+
 Every number comes from `panda.py` (parameters, kinematics, drives) and `design.py` (gains,
 waypoints, start state).
 """
@@ -30,6 +34,7 @@ import numpy as np
 
 import design as dz
 import panda as pz
+import serial_link as sl
 from diagram import Diagram, fmt, pose_params, vec
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,7 +45,6 @@ SCENE = {"file": "scenes/panda.sdf"}
 
 STAIR_X, STAIR_Y = 300, 300  # first column of the chain
 STAIR_DX = 520  # column pitch per joint
-BAND_Y = 760  # the composed-pose band
 
 
 def held_damping(k: float, i: int) -> tuple[float, float]:
@@ -51,78 +55,66 @@ def held_damping(k: float, i: int) -> tuple[float, float]:
 
 def add_chain(d: Diagram, q0, k_joint: float, qdd0=None, y0: int = STAIR_Y,
               rigid: bool = False) -> list[tuple[str, str]]:
-    """World -> Mount -> J1 -> Link1 -> BJ1 -> B1, T2 -> J2 -> ... -> B7 and the pose band.
+    """World -> L1 -> L2 -> ... -> L7, instances of the library subsystem RevoluteLink3D (or
+    RevoluteLink3DRigid), and the flange pose TCP = L7.g o LFlange.
 
-    Returns the seven joint drive ports. Body i sits at its principal centre-of-mass frame
-    (LC_i), so RigidBody3D gets the diagonal principal inertia. The held directions start on
-    the deflections of the joint loads at the start (`qdd0`: the rigid-body acceleration there,
-    None for rest). With `rigid` the joints are `Revolute3DRigid`: no held-direction parameters
-    and no deflection starts.
+    Link i (design/serial_link.py): T (L1: the base mount; else the offset from body i-1's
+    principal centre-of-mass frame to joint i) -> J -> Link -> BJ <- B, and the pose band
+    W_i = W_{i-1} o LN_i o J_i.pose, P_i = W_i o LC_i. Body i sits at its principal
+    centre-of-mass frame (LC_i), so RigidBody3D gets the diagonal principal inertia. The held
+    directions start on the deflections of the joint loads at the start (`qdd0`: the rigid-body
+    acceleration there, None for rest). With `rigid` the joints are `Revolute3DRigid`: no
+    held-direction parameters and no deflection starts.
+
+    Returns the seven joint drive ports.
     """
     wrench = pz.joint_wrenches(q0, qdd0)
     bx = [STAIR_X + STAIR_DX * i for i in range(pz.NJ)]
-    band = y0 + BAND_Y - STAIR_Y
-    d.ref("world", "World", "stdlib:multibond/GroundSpatial", bx[0] - 200, y0)
-    d.ref("mount", "Mount", "stdlib:multibond/FixedTransform3DNeutral", bx[0] - 80, y0,
-          params=pose_params(np.linalg.inv(pz.joint_frame(0))))  # fmt: skip
-    d.ref("mpose", "Base", "stdlib:spatial/LocalPose3D", bx[0] - 200, band, params=pose_params(np.eye(4)))
-    d.connect("bond", ("world", "p"), ("mount", "b"))
-    prev_world = "mpose"
+    d.ref("world", "World", "stdlib:multibond/GroundSpatial", bx[0] - 160, y0 + 100)
+    d.ref("mpose", "Base", "stdlib:spatial/LocalPose3D", bx[0] - 160, y0, params=pose_params(np.eye(4)))
     drives = []
     for i in range(pz.NJ):
         k = i + 1
-        x0 = bx[i]
-        bt, br = held_damping(k_joint, i)
         force, moment = wrench[i]
         if rigid:
-            d.ref(f"j{k}", f"J{k}", "stdlib:spatial/Revolute3DRigid", x0 + 80, y0, params={"q0": fmt(q0[i])})
+            joint, starts = {"q0": fmt(q0[i])}, {}
         else:
-            d.ref(
-                f"j{k}", f"J{k}", "stdlib:spatial/Revolute3D", x0 + 80, y0,
-                params={"kt": fmt(k_joint), "kr": fmt(k_joint), "bt": fmt(bt), "br": fmt(br), "q0": fmt(q0[i])},
-                starts={"dth": vec(moment[:2] / k_joint), "dl": vec(force / k_joint)},
-            )  # fmt: skip
-        d.ref(f"link{k}", f"Link{k}", "stdlib:multibond/FixedTransform3DNeutral", x0 + 200, y0,
-              params=pose_params(pz.com_frame(i)))  # fmt: skip
-        d.junction(f"bj{k}", f"BJ{k}", "1", x0 + 320, y0 + 10)
+            bt, br = held_damping(k_joint, i)
+            joint = {"kt": fmt(k_joint), "kr": fmt(k_joint), "bt": fmt(bt), "br": fmt(br), "q0": fmt(q0[i])}
+            starts = {"dth": vec(moment[:2] / k_joint), "dl": vec(force / k_joint)}
+        # T: the mount for joint 1, else body i-1's centre-of-mass frame seen from joint i
+        t_pose = np.linalg.inv(pz.joint_frame(0)) if i == 0 else np.linalg.inv(pz.joint_frame(i)) @ pz.com_frame(i - 1)
         jp, _ = pz.principal(i)
-        d.ref(f"b{k}", f"B{k}", "stdlib:spatial/RigidBody3D", x0 + 310, y0 + 100,
-              params={"m": fmt(pz.MASS[i]), "J": vec(jp), "g0": fmt(pz.G0)})  # fmt: skip
+        params, pin_starts = sl.pins(
+            pose_params(t_pose), joint, pose_params(pz.com_frame(i)),
+            {"m": fmt(pz.MASS[i]), "J": vec(jp), "g0": fmt(pz.G0)},
+            pose_params(pz.joint_frame(i)), pose_params(pz.com_frame(i)), starts,
+        )  # fmt: skip
+        d.ref(f"l{k}", f"L{k}", f"project:{sl.name(rigid)}", bx[i] + 80, y0, params=params, starts=pin_starts)
         if i == 0:
-            d.connect("bond", ("mount", "a"), ("j1", "parent"))
+            d.connect("bond", ("world", "p"), ("l1", "parent"))
+            d.connect("signal", ("mpose", "g"), ("l1", "gp"))
         else:
-            t_pose = np.linalg.inv(pz.joint_frame(i)) @ pz.com_frame(i - 1)
-            d.ref(f"t{k}", f"T{k}", "stdlib:multibond/FixedTransform3DNeutral", x0 - 40, y0,
-                  params=pose_params(t_pose))  # fmt: skip
-            d.connect("bond", (f"t{k}", "a"), (f"j{k}", "parent"))
-            d.connect("bond", (f"bj{k - 1}", None), (f"t{k}", "b"))
-        d.connect("bond", (f"j{k}", "child"), (f"link{k}", "a"))
-        d.connect("bond", (f"link{k}", "b"), (f"bj{k}", None))
-        d.connect("bond", (f"b{k}", "p"), (f"bj{k}", None))
-        # pose band: W_k = W_{k-1} o LN_k o J_k.pose ; body pose P_k = W_k o LC_k
-        d.ref(f"ln{k}", f"LN{k}", "stdlib:spatial/LocalPose3D", x0 - 40, band + 100,
-              params=pose_params(pz.joint_frame(i)))  # fmt: skip
-        d.ref(f"ca{k}", f"CA{k}", "stdlib:multibond/ComposePose3D", x0 - 40, band)
-        d.ref(f"w{k}", f"W{k}", "stdlib:multibond/ComposePose3D", x0 + 80, band)
-        d.ref(f"lc{k}", f"LC{k}", "stdlib:spatial/LocalPose3D", x0 + 310, band + 220, params=pose_params(pz.com_frame(i)))
-        d.ref(f"pb{k}", f"P{k}", "stdlib:multibond/ComposePose3D", x0 + 310, band + 110)
-        d.connect("signal", (prev_world, "g"), (f"ca{k}", "gp"))
-        d.connect("signal", (f"ln{k}", "g"), (f"ca{k}", "gl"))
-        d.connect("signal", (f"ca{k}", "g"), (f"w{k}", "gp"))
-        d.connect("signal", (f"j{k}", "pose"), (f"w{k}", "gl"))
-        d.connect("signal", (f"w{k}", "g"), (f"pb{k}", "gp"))
-        d.connect("signal", (f"lc{k}", "g"), (f"pb{k}", "gl"))
-        d.connect("signal", (f"pb{k}", "g"), (f"b{k}", "g"))
-        prev_world = f"w{k}"
-        drives.append((f"j{k}", "drive"))
+            d.connect("bond", (f"l{i}", "child"), (f"l{k}", "parent"))
+            d.connect("signal", (f"l{i}", "g"), (f"l{k}", "gp"))
+        drives.append((f"l{k}", "drive"))
     # flange (TCP of the bare arm): W7 o Tz(0.107)
-    xf = bx[-1] + 200
-    d.ref("lf", "LFlange", "stdlib:spatial/LocalPose3D", xf, band + 100,
+    xf = bx[-1] + 360
+    d.ref("lf", "LFlange", "stdlib:spatial/LocalPose3D", xf, y0 + 140,
           params=pose_params(pz.hom(np.eye(3), [0.0, 0.0, pz.D_FLANGE])))  # fmt: skip
-    d.ref("tcp", "TCP", "stdlib:multibond/ComposePose3D", xf + 120, band)
-    d.connect("signal", ("w7", "g"), ("tcp", "gp"))
+    d.ref("tcp", "TCP", "stdlib:multibond/ComposePose3D", xf + 140, y0)
+    d.connect("signal", ("l7", "g"), ("tcp", "gp"))
     d.connect("signal", ("lf", "g"), ("tcp", "gl"))
     return drives
+
+
+def write_definitions() -> None:
+    """library/RevoluteLink3D.bgsub.json and library/RevoluteLink3DRigid.bgsub.json."""
+    for rigid in (False, True):
+        definition = sl.definition(rigid)
+        path = ROOT / "library" / f"{definition['name']}.bgsub.json"
+        path.write_text(json.dumps(definition, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"wrote {path.relative_to(ROOT.parent.parent)}")
 
 
 def settings(solver: str, reltol: float, abstol: float, points: int, t_end: float) -> dict:
@@ -140,7 +132,7 @@ def settings(solver: str, reltol: float, abstol: float, points: int, t_end: floa
 
 def joint_bindings(prefix: str) -> list[dict]:
     return [
-        {"target": f"joint:panda_joint{k}", "property": "position", "signal": f"{prefix}J{k}/qout"}
+        {"target": f"joint:panda_joint{k}", "property": "position", "signal": f"{prefix}L{k}/J/qout"}
         for k in range(1, 8)
     ]
 
@@ -166,7 +158,7 @@ def build_free(rigid: bool = False) -> dict:
     drives = add_chain(d, dz.Q_FREE, dz.K_HELD, qdd0, rigid=rigid)
     for i, port in enumerate(drives):
         x = STAIR_X + STAIR_DX * i + 80
-        d.ref(f"se{i + 1}", f"Free{i + 1}", "stdlib:bondgraph/Se", x, STAIR_Y + 130, params={"e": "0.0"})
+        d.ref(f"se{i + 1}", f"Free{i + 1}", "stdlib:bondgraph/Se", x - 120, STAIR_Y + 260, params={"e": "0.0"})
         d.connect("bond", (f"se{i + 1}", "p"), port)
     return {
         "format": "bgsim.model",
@@ -183,8 +175,8 @@ def build_free(rigid: bool = False) -> dict:
         "diagram": d.document(),
         "settings": settings("Rodas5P", 1e-8, 1e-10, 1001, dz.T_FREE),
         "plots": [
-            {"id": "p1", "title": "Joint angles (free swing)", "signals": [f"J{k}/qout" for k in range(1, 8)]},
-            {"id": "p2", "title": "Joint rates", "signals": [f"J{k}/qdout" for k in range(1, 8)]},
+            {"id": "p1", "title": "Joint angles (free swing)", "signals": [f"L{k}/J/qout" for k in range(1, 8)]},
+            {"id": "p2", "title": "Joint rates", "signals": [f"L{k}/J/qdout" for k in range(1, 8)]},
             {"id": "p3", "title": "Flange position", "signals": ["TCP/g[5]", "TCP/g[6]", "TCP/g[7]"]},
         ],
         "scene": {"file": "scenes/panda-free.sdf"},
@@ -194,7 +186,7 @@ def build_free(rigid: bool = False) -> dict:
 
 # ------------------------------------------------------------------ panda (Robot + firmware)
 
-DRIVE_Y = 1300  # first row of the drive band inside Robot
+DRIVE_Y = 760  # first row of the drive band inside Robot
 
 
 def add_drives(d: Diagram, drives: list[tuple[str, str]], q0) -> None:
@@ -237,10 +229,10 @@ def add_drives(d: Diagram, drives: list[tuple[str, str]], q0) -> None:
         d.connect("bond", (f"s0{k}", None), (f"jl{k}", None))
         d.connect("bond", (f"jl{k}", None), (f"fr{k}", "p"))
         d.connect("bond", (f"jl{k}", None), port)
-        d.connect("signal", (f"j{k}", "qout"), (f"enc{k}", "u"))
+        d.connect("signal", (f"l{k}", "q"), (f"enc{k}", "u"))
         d.signal_port(f"tau{k}", "input", f"sat{k}", "u", "N*m")
         d.signal_port(f"q{k}", "output", f"enc{k}", "y", "rad")
-        d.signal_port(f"dq{k}", "output", f"j{k}", "qdout", "rad/s")
+        d.signal_port(f"dq{k}", "output", f"l{k}", "qd", "rad/s")
         d.signal_port(f"tauJ{k}", "output", f"tq{k}", "y", "N*m")
 
 
@@ -270,7 +262,7 @@ def build_panda(rigid: bool = False) -> dict:
         d.connect("signal", ("robot", f"q{k}"), ("pd", f"q{k}"))
         d.connect("signal", ("robot", f"dq{k}"), ("pd", f"dq{k}"))
         d.connect("signal", ("pd", f"u{k}"), ("robot", f"tau{k}"))
-    joints = [f"Robot/J{k}/qout" for k in range(1, 8)]
+    joints = [f"Robot/L{k}/J/qout" for k in range(1, 8)]
     return {
         "format": "bgsim.model",
         "language": "0.1.0",
@@ -314,6 +306,7 @@ def write(model: dict) -> None:
 
 
 def main() -> None:
+    write_definitions()
     write(build_free())
     write(build_panda())
     write(build_free(rigid=True))

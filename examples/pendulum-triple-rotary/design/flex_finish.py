@@ -48,7 +48,7 @@ T_TAP = 0.05  # start of the push of the tap test [s]
 
 def tap_overrides(fz: dict) -> dict:
     return {
-        "J1/q0": 0.0, "J2/q0": math.pi, "J3/q0": 0.0, "J4/q0": 0.0,
+        "J1/q0": 0.0, "L2/J/q0": math.pi, "L3/J/q0": 0.0, "L4/J/q0": 0.0,
         "Motor/J_m": 1.0e3,
         "DistPulse/amplitude": 1.0, "DistPulse/t_start": T_TAP, "DistPulse/duty": 0.002 / 1000.0,
     }

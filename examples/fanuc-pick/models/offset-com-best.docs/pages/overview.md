@@ -4,4 +4,4 @@ The same carton with its CoM 60 mm and 30 mm off centre (`cx`, `cy`), now grippe
 
 So for an off-centre parcel the grip point is worth far more than the trajectory.
 
-![Cup utilisation, holding margin and robot limits|900](assets/83dbf585c2fc.png)
+![Cup utilisation, holding margin and robot limits|900](assets/b53a0aff7ff5.png)

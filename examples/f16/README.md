@@ -18,6 +18,8 @@ bg-sim; the design scripts work in the book's ft/slug units and convert.
 | `f16-sim` | The flyable F-16: a three-axis fly-by-wire at 500 ft/s, 10 000 ft (CG 0.35). Pitch: g command with turn compensation and the alpha/g limiter. Roll: roll-rate command about the velocity vector, with a limit that falls with nz and at low qbar. Yaw: yaw damper, aileron-rudder interconnect and a pedal sideslip command. All gains are scheduled on qbar and Mach. Its inputs, outputs, trim, CG, mass and law switches are the FMU interface of `apps/f16-sim`. The default run is a coordinated 60 deg turn. Sliders for the sticks, pedals, throttle and switches; the flaperons and the rudder move in 3D. It has a landing gear: it rests, taxis, takes off and lands. |
 | `f16-pio` | An aggressive pilot (gain 3/s on the pitch-attitude error, 0.25 s delay) captures a 7 deg attitude change through the 60 deg/s rate-limited stabilator. Plain rate limit: a growing, rate-saturated oscillation (attitude error 29 -> 36 -> 41 deg peak-to-peak per 2 s). With a phase-compensated rate limiter: damped (7 -> 2.2 -> 0.45 -> 0.14 deg). |
 
+The aircraft of `f16-open-loop`, `f16-fbw`, `f16-envelope` and `f16-pio` are instances of the library subsystem `F16Airframe` (`library/F16Airframe.bgsub.json`: the airframe in calm air, without gear), and their stabilator servos (`SchedAct`, `PlainAct`, ...) instances of `F16Servo`; each instance sets only its CG and start state, or its start deflection. A30's energy ledger (`EnergyA30`, `WorkA30`) sits beside it, on the airframe's audit outputs `gP`, `VP` and `P_ext`. `f16-sim` draws its own airframe (wind, gear) and servos, because the FMU's variable names come from them.
+
 Every model has a 3D scene: an F-16 built from simple solids (`design/make_meshes.py`: lofted
 fuselage, chin intake, bubble canopy, cropped-delta wing with the leading-edge extension, wingtip
 missiles, single fin, ventral fins) whose stabilators turn with the servo, a scrolling reference
@@ -290,9 +292,9 @@ way, so the check holds it to its own bound. `apps/f16-sim` is the host: see its
 | `design/lateral.py`, `sim3.py`, `simscen.py` | f16-sim: the lateral gain design, the three-axis reference and its scenarios |
 | `design/gear.py` | the gear's data and its pitch-plane reference; writes `design/gear.json` |
 | `design/design.py` | runs everything and writes `design/design.json` |
-| `design/build_model.py` | writes the models, scenes, `library/F16Trail.jl`, the copied gear blocks and `expected.json` |
+| `design/build_model.py` | writes the models, scenes, `library/F16Trail.jl`, the library subsystems `library/F16Airframe.bgsub.json` and `library/F16Servo.bgsub.json`, the copied gear blocks and `expected.json` |
 | `design/make_meshes.py` | writes `meshes/*.glb` |
-| `library/` | `F16AirData` (with wind inputs), `F16Forces`, `F16Engine`, `F16Energy`, `GrowthRate`, `GCommand`, `PitchFBW`, `F16View`, `F16Trail`; for f16-sim `PitchCommand`, `LateralFBW`, `F16Status`; for its gear `GearLogic`, `GearActuator`, `GearDrag`, and `GearContact`, `StrutSpring`, `StrutDamper`, `WheelFriction`, `WheelSide` (copies of the Cessna's, written by `build_model.py`) |
+| `library/` | the subsystems `F16Airframe` and `F16Servo`; the blocks `F16AirData` (with wind inputs), `F16Forces`, `F16Engine`, `F16Energy`, `GrowthRate`, `GCommand`, `PitchFBW`, `F16View`, `F16Trail`; for f16-sim `PitchCommand`, `LateralFBW`, `F16Status`; for its gear `GearLogic`, `GearActuator`, `GearDrag`, and `GearContact`, `StrutSpring`, `StrutDamper`, `WheelFriction`, `WheelSide` (copies of the Cessna's, written by `build_model.py`) |
 | `../export_f16.jl`, `../export_f16_check.py` | the f16-sim FMU: export, references and the fmpy acceptance |
 
     uv run examples/f16/design/design.py

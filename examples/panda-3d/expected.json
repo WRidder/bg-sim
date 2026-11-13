@@ -10,7 +10,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -18,7 +18,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.0,
           "value": -0.7853981633974483,
           "abs": 1e-09,
@@ -26,7 +26,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -34,7 +34,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.0,
           "value": -2.356194490192345,
           "abs": 1e-09,
@@ -42,7 +42,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -50,7 +50,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.0,
           "value": 1.5707963267948966,
           "abs": 1e-09,
@@ -58,7 +58,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.0,
           "value": 0.7853981633974483,
           "abs": 1e-09,
@@ -66,7 +66,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.1,
           "value": -0.0045080118794017235,
           "abs": 1e-06,
@@ -74,7 +74,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.1,
           "value": -0.8496758587030956,
           "abs": 2.4e-05,
@@ -82,7 +82,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.1,
           "value": 0.0011970218039899843,
           "abs": 2.1e-06,
@@ -90,7 +90,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.1,
           "value": -2.5451674394829595,
           "abs": 7.3e-06,
@@ -98,7 +98,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.1,
           "value": 0.017546820344816028,
           "abs": 3e-06,
@@ -106,7 +106,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.1,
           "value": 1.7733706248686727,
           "abs": 4.2e-05,
@@ -114,7 +114,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.1,
           "value": 0.7979349223245799,
           "abs": 2.7e-06,
@@ -122,7 +122,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.25,
           "value": -0.008833829918733715,
           "abs": 1.4e-05,
@@ -130,7 +130,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.25,
           "value": -1.0994016260373465,
           "abs": 0.00043,
@@ -138,7 +138,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.25,
           "value": 0.05561124434932642,
           "abs": 0.00066,
@@ -146,7 +146,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.25,
           "value": -3.434718172925233,
           "abs": 0.0001,
@@ -154,7 +154,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.25,
           "value": 0.21983626825753683,
           "abs": 0.00054,
@@ -162,7 +162,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.25,
           "value": 2.7474628210429133,
           "abs": 0.00052,
@@ -170,7 +170,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.25,
           "value": 0.6818937759733782,
           "abs": 0.00021,
@@ -178,7 +178,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.5,
           "value": 0.5127948754621026,
           "abs": 0.011,
@@ -186,7 +186,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.5,
           "value": -2.603714546339681,
           "abs": 0.0011,
@@ -194,7 +194,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.5,
           "value": 1.0743244403001602,
           "abs": 0.016,
@@ -202,7 +202,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.5,
           "value": -6.527109567429518,
           "abs": 0.0074,
@@ -210,7 +210,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.5,
           "value": -1.194663330117666,
           "abs": 0.02,
@@ -218,7 +218,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.5,
           "value": 2.3577273932871465,
           "abs": 0.017,
@@ -226,7 +226,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.5,
           "value": 0.9608555954796406,
           "abs": 0.017,
@@ -282,7 +282,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J1/qout",
+          "signal": "Robot/L1/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -290,7 +290,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J2/qout",
+          "signal": "Robot/L2/J/qout",
           "t": 0.0,
           "value": -0.7853981633974483,
           "abs": 1e-09,
@@ -298,7 +298,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J3/qout",
+          "signal": "Robot/L3/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -306,7 +306,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J4/qout",
+          "signal": "Robot/L4/J/qout",
           "t": 0.0,
           "value": -2.356194490192345,
           "abs": 1e-09,
@@ -314,7 +314,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J5/qout",
+          "signal": "Robot/L5/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -322,7 +322,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J6/qout",
+          "signal": "Robot/L6/J/qout",
           "t": 0.0,
           "value": 1.5707963267948966,
           "abs": 1e-09,
@@ -330,7 +330,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J7/qout",
+          "signal": "Robot/L7/J/qout",
           "t": 0.0,
           "value": 0.7853981633974483,
           "abs": 1e-09,
@@ -338,7 +338,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J1/qout",
+          "signal": "Robot/L1/J/qout",
           "t": 5.1499999999999995,
           "value": 0.0,
           "abs": 6.2e-05,
@@ -346,7 +346,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J2/qout",
+          "signal": "Robot/L2/J/qout",
           "t": 5.1499999999999995,
           "value": -0.7853981633974483,
           "abs": 7.7e-05,
@@ -354,7 +354,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J3/qout",
+          "signal": "Robot/L3/J/qout",
           "t": 5.1499999999999995,
           "value": 0.0,
           "abs": 1.5e-05,
@@ -362,7 +362,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J4/qout",
+          "signal": "Robot/L4/J/qout",
           "t": 5.1499999999999995,
           "value": -2.356194490192345,
           "abs": 9e-05,
@@ -370,7 +370,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J5/qout",
+          "signal": "Robot/L5/J/qout",
           "t": 5.1499999999999995,
           "value": 0.0,
           "abs": 1e-05,
@@ -378,7 +378,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J6/qout",
+          "signal": "Robot/L6/J/qout",
           "t": 5.1499999999999995,
           "value": 1.5707963267948966,
           "abs": 3.8e-05,
@@ -386,7 +386,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J7/qout",
+          "signal": "Robot/L7/J/qout",
           "t": 5.1499999999999995,
           "value": 0.7853981633974483,
           "abs": 1.3e-05,
@@ -863,43 +863,43 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J1/qdout",
+          "signal": "Robot/L1/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 1.48 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J2/qdout",
+          "signal": "Robot/L2/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 1.53 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J3/qdout",
+          "signal": "Robot/L3/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 0.565 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J4/qdout",
+          "signal": "Robot/L4/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 0.715 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J5/qdout",
+          "signal": "Robot/L5/J/qdout",
           "value": 2.61,
           "note": "joint rate within the Franka limit 2.61 rad/s; measured peak 0.24 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J6/qdout",
+          "signal": "Robot/L6/J/qdout",
           "value": 2.61,
           "note": "joint rate within the Franka limit 2.61 rad/s; measured peak 1.35 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J7/qdout",
+          "signal": "Robot/L7/J/qdout",
           "value": 2.61,
           "note": "joint rate within the Franka limit 2.61 rad/s; measured peak 0.00648 rad/s"
         },
@@ -929,7 +929,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -937,7 +937,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.0,
           "value": -0.7853981633974483,
           "abs": 1e-09,
@@ -945,7 +945,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -953,7 +953,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.0,
           "value": -2.356194490192345,
           "abs": 1e-09,
@@ -961,7 +961,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -969,7 +969,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.0,
           "value": 1.5707963267948966,
           "abs": 1e-09,
@@ -977,7 +977,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.0,
           "value": 0.7853981633974483,
           "abs": 1e-09,
@@ -985,7 +985,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.1,
           "value": -0.0045080118794017235,
           "abs": 1e-08,
@@ -993,7 +993,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.1,
           "value": -0.8496758587030956,
           "abs": 1e-08,
@@ -1001,7 +1001,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.1,
           "value": 0.0011970218039899843,
           "abs": 1e-08,
@@ -1009,7 +1009,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.1,
           "value": -2.5451674394829595,
           "abs": 1e-08,
@@ -1017,7 +1017,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.1,
           "value": 0.017546820344816028,
           "abs": 1e-08,
@@ -1025,7 +1025,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.1,
           "value": 1.7733706248686727,
           "abs": 1e-08,
@@ -1033,7 +1033,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.1,
           "value": 0.7979349223245799,
           "abs": 1e-08,
@@ -1041,7 +1041,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.25,
           "value": -0.008833829918733715,
           "abs": 1e-08,
@@ -1049,7 +1049,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.25,
           "value": -1.0994016260373465,
           "abs": 1e-08,
@@ -1057,7 +1057,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.25,
           "value": 0.05561124434932642,
           "abs": 1e-08,
@@ -1065,7 +1065,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.25,
           "value": -3.434718172925233,
           "abs": 1e-08,
@@ -1073,7 +1073,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.25,
           "value": 0.21983626825753683,
           "abs": 1e-08,
@@ -1081,7 +1081,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.25,
           "value": 2.7474628210429133,
           "abs": 1e-08,
@@ -1089,7 +1089,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.25,
           "value": 0.6818937759733782,
           "abs": 1e-08,
@@ -1097,7 +1097,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.5,
           "value": 0.5127948754621152,
           "abs": 1e-08,
@@ -1105,7 +1105,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 0.5,
           "value": -2.603714546339837,
           "abs": 1e-08,
@@ -1113,7 +1113,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 0.5,
           "value": 1.0743244403003487,
           "abs": 1e-08,
@@ -1121,7 +1121,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 0.5,
           "value": -6.527109567429564,
           "abs": 1e-08,
@@ -1129,7 +1129,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 0.5,
           "value": -1.19466333011775,
           "abs": 1e-08,
@@ -1137,7 +1137,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 0.5,
           "value": 2.3577273932874547,
           "abs": 1e-08,
@@ -1145,7 +1145,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 0.5,
           "value": 0.9608555954795596,
           "abs": 1e-08,
@@ -1153,7 +1153,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 1.0,
           "value": 3.3903640318769472,
           "abs": 1e-08,
@@ -1161,7 +1161,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J2/qout",
+          "signal": "L2/J/qout",
           "t": 1.0,
           "value": -2.019727699402344,
           "abs": 1e-08,
@@ -1169,7 +1169,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J3/qout",
+          "signal": "L3/J/qout",
           "t": 1.0,
           "value": 2.1483698053896965,
           "abs": 1e-08,
@@ -1177,7 +1177,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J4/qout",
+          "signal": "L4/J/qout",
           "t": 1.0,
           "value": -5.195239553932179,
           "abs": 1e-08,
@@ -1185,7 +1185,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J5/qout",
+          "signal": "L5/J/qout",
           "t": 1.0,
           "value": 10.964399482717837,
           "abs": 1e-08,
@@ -1193,7 +1193,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J6/qout",
+          "signal": "L6/J/qout",
           "t": 1.0,
           "value": 2.9225306852752593,
           "abs": 1e-08,
@@ -1201,7 +1201,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J7/qout",
+          "signal": "L7/J/qout",
           "t": 1.0,
           "value": 8.650630515155697,
           "abs": 1e-08,
@@ -1256,7 +1256,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J1/qout",
+          "signal": "Robot/L1/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -1264,7 +1264,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J2/qout",
+          "signal": "Robot/L2/J/qout",
           "t": 0.0,
           "value": -0.7853981633974483,
           "abs": 1e-09,
@@ -1272,7 +1272,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J3/qout",
+          "signal": "Robot/L3/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -1280,7 +1280,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J4/qout",
+          "signal": "Robot/L4/J/qout",
           "t": 0.0,
           "value": -2.356194490192345,
           "abs": 1e-09,
@@ -1288,7 +1288,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J5/qout",
+          "signal": "Robot/L5/J/qout",
           "t": 0.0,
           "value": 0.0,
           "abs": 1e-09,
@@ -1296,7 +1296,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J6/qout",
+          "signal": "Robot/L6/J/qout",
           "t": 0.0,
           "value": 1.5707963267948966,
           "abs": 1e-09,
@@ -1304,7 +1304,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J7/qout",
+          "signal": "Robot/L7/J/qout",
           "t": 0.0,
           "value": 0.7853981633974483,
           "abs": 1e-09,
@@ -1312,7 +1312,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J1/qout",
+          "signal": "Robot/L1/J/qout",
           "t": 5.1499999999999995,
           "value": 0.0,
           "abs": 6.2e-05,
@@ -1320,7 +1320,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J2/qout",
+          "signal": "Robot/L2/J/qout",
           "t": 5.1499999999999995,
           "value": -0.7853981633974483,
           "abs": 7.8e-05,
@@ -1328,7 +1328,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J3/qout",
+          "signal": "Robot/L3/J/qout",
           "t": 5.1499999999999995,
           "value": 0.0,
           "abs": 1.5e-05,
@@ -1336,7 +1336,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J4/qout",
+          "signal": "Robot/L4/J/qout",
           "t": 5.1499999999999995,
           "value": -2.356194490192345,
           "abs": 9e-05,
@@ -1344,7 +1344,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J5/qout",
+          "signal": "Robot/L5/J/qout",
           "t": 5.1499999999999995,
           "value": 0.0,
           "abs": 1e-05,
@@ -1352,7 +1352,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J6/qout",
+          "signal": "Robot/L6/J/qout",
           "t": 5.1499999999999995,
           "value": 1.5707963267948966,
           "abs": 3.8e-05,
@@ -1360,7 +1360,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "Robot/J7/qout",
+          "signal": "Robot/L7/J/qout",
           "t": 5.1499999999999995,
           "value": 0.7853981633974483,
           "abs": 1.3e-05,
@@ -1837,43 +1837,43 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J1/qdout",
+          "signal": "Robot/L1/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 1.48 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J2/qdout",
+          "signal": "Robot/L2/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 1.53 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J3/qdout",
+          "signal": "Robot/L3/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 0.565 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J4/qdout",
+          "signal": "Robot/L4/J/qdout",
           "value": 2.175,
           "note": "joint rate within the Franka limit 2.175 rad/s; measured peak 0.715 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J5/qdout",
+          "signal": "Robot/L5/J/qdout",
           "value": 2.61,
           "note": "joint rate within the Franka limit 2.61 rad/s; measured peak 0.24 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J6/qdout",
+          "signal": "Robot/L6/J/qdout",
           "value": 2.61,
           "note": "joint rate within the Franka limit 2.61 rad/s; measured peak 1.35 rad/s"
         },
         {
           "kind": "max_abs_le",
-          "signal": "Robot/J7/qdout",
+          "signal": "Robot/L7/J/qdout",
           "value": 2.61,
           "note": "joint rate within the Franka limit 2.61 rad/s; measured peak 0.00648 rad/s"
         },

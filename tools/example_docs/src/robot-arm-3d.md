@@ -5,7 +5,7 @@
   "run": {
     "kind": "plot", "model": "arm", "xlim": [0, 2],
     "rows": [
-      {"ylabel": "joint angle [rad]", "series": [{"signal": "J1/qout", "label": "q1"}, {"signal": "J2/qout", "label": "q2"}, {"signal": "J3/qout", "label": "q3"}, {"signal": "J4/qout", "label": "q4"}, {"signal": "J5/qout", "label": "q5"}, {"signal": "J6/qout", "label": "q6"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "joint angle [rad]", "series": [{"signal": "L1/J/qout", "label": "q1"}, {"signal": "L2/J/qout", "label": "q2"}, {"signal": "L3/J/qout", "label": "q3"}, {"signal": "L4/J/qout", "label": "q4"}, {"signal": "L5/J/qout", "label": "q5"}, {"signal": "L6/J/qout", "label": "q6"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "joint torque [N m]", "series": [{"signal": "Ctrl/u1", "label": "u1"}, {"signal": "Ctrl/u2", "label": "u2"}, {"signal": "Ctrl/u3", "label": "u3"}, {"signal": "Ctrl/u4", "label": "u4"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "TCP position [m]", "series": [{"signal": "TCP/g[5]", "label": "x"}, {"signal": "TCP/g[6]", "label": "y"}, {"signal": "TCP/g[7]", "label": "z"}], "legend": true}
     ]
@@ -21,23 +21,25 @@ This example folder also holds the X5.3 RRR arm models (`rrr`, `rrr-free`, `rrr-
 ![The model canvas (three-stroke spatial bonds)|900](@fig:diagram)
 
 ```
-World - Mount - J1 - Link1 - BJ1 -+- B1 (RigidBody3D)
-               (Revolute3D)  (CoM) '- T2 - J2 - Link2 - BJ2 -+- B2
-                                        (standard-DH offset)  '- T3 - J3 - ... - J6 - Link6 - BJ6 - B6
-D1..D6 (MSe torque sources) -> J1..J6.drive          Ctrl (ArmPD6, 1 ms) -> D1..D6
+World - L1 - L2 - L3 - L4 - L5 - L6        (RevoluteLink3D instances: child -> parent bonds)
+inside each L<i>:  parent - T - J - Link - BJ -+- B (RigidBody3D) ;  BJ = child
+                           (offset) (Revolute3D) (CoM)
+D1..D6 (MSe torque sources) -> L1..L6.drive          Ctrl (ArmPD6, 1 ms) -> D1..D6
 ```
+
+Each link is an instance of the library subsystem `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`): the offset `T` from the parent body to the joint, the joint `J`, the offset `Link` to the centre of mass, the body `B` on its junction `BJ`, and the pose band. Every value is pinned per instance, so `L2/J/qout` is the angle of joint 2; the first link's `T` is the identity base mount.
 
 The run: 2 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 201 output points; the solver is set explicitly because `auto` fails here (see [the notes](page:notes)). Expect about two minutes of solve time on first run.
 
 ## What to look at
 
-- the joint angles [J1/qout](signal:J1/qout) to `J6/qout` settling on the target;
+- the joint angles [L1/J/qout](signal:L1/J/qout) to `L6/J/qout` settling on the target;
 - the controller torques [Ctrl/u2](signal:Ctrl/u2) (about -45.9 N·m settled: the gravity torque of the shoulder) and the tracking errors `Ctrl/e1..6`;
 - the tool centre point [TCP/g[5]](signal:TCP/g[5]), [TCP/g[6]](signal:TCP/g[6]), [TCP/g[7]](signal:TCP/g[7]) (pose is quaternion first, so entries 5 to 7 are x, y, z).
 
 ## 3D view
 
-`scenes/arm.sdf` draws the six-axis arm: every link is bound by its world pose to the model's composed body pose `P<i>/g[1..7]` (quaternion first), so the viewer needs no joint axes or kinematics of its own. A hub cylinder marks each joint axis and the bars run to the next joint; the red sphere is the tool centre point.
+`scenes/arm.sdf` draws the six-axis arm: every link is bound by its world pose to the model's composed body pose `L<i>/P/g[1..7]` (quaternion first), so the viewer needs no joint axes or kinematics of its own. A hub cylinder marks each joint axis and the bars run to the next joint; the red sphere is the tool centre point.
 
 ![3D view at t = 0.6 s|500](@fig:scene)
 
@@ -45,7 +47,7 @@ Continue with [the construction](page:construction), [the controller](page:contr
 @@ page arm construction overview | Construction
 # Construction
 
-- **Joints** ([J1](block:J1) to `J6`). `Revolute3D` rotates exactly about the local $z$ of its joint frame; the other five directions are compliant ($k_t = k_r = 10^7$ N/m and N·m/rad), so every state stays integral (no W201). The held-direction damping is 0.7 of critical for the distal mass (translations) and for a 0.3 kg·m² reference inertia (rotations), so the stiff modes die in milliseconds.
+- **Joints** (`J` in [L1](block:L1) to `L6`). `Revolute3D` rotates exactly about the local $z$ of its joint frame; the other five directions are compliant ($k_t = k_r = 10^7$ N/m and N·m/rad), so every state stays integral (no W201). The held-direction damping is 0.7 of critical for the distal mass (translations) and for a 0.3 kg·m² reference inertia (rotations), so the stiff modes die in milliseconds.
 - **Geometry.** Joint $i+1$ sits at the standard-DH fixed part $T_z(d)\,T_x(a)\,R_x(\alpha)$ of link $i$ (UR5-like):
 
 | link | 1 | 2 | 3 | 4 | 5 | 6 |
@@ -55,8 +57,8 @@ Continue with [the construction](page:construction), [the controller](page:contr
 | $\alpha$ | $\pi/2$ | 0 | 0 | $\pi/2$ | $-\pi/2$ | 0 |
 | mass (kg) | 3.7 | 8.4 | 2.3 | 1.2 | 1.2 | 0.74 |
 
-  The body 1-junction frame is the link's centre of mass ([B1](block:B1) has $m = 3.7$ kg, $J = (0.0103, 0.0103, 0.0067)$ kg·m²), so the next joint offset is $N - c_i$ in that frame ([T2](block:T2) to `T6`).
-- **Drives.** One `MSe` torque source per joint ([D1](block:D1) to `D6`) on the joint's `Rotation` drive port, fed by the controller. A flow source cannot impose the joint motion (derivative causality, W201), so the joints are torque driven.
+  The body 1-junction frame is the link's centre of mass (`L1/B` has $m = 3.7$ kg, $J = (0.0103, 0.0103, 0.0067)$ kg·m²), so the next joint offset is $N - c_i$ in that frame (`L2/T` to `L6/T`).
+- **Drives.** One `MSe` torque source per joint ([D1](block:D1) to `D6`) on the joint's `Rotation` drive port (the instance port `drive`), fed by the controller. A flow source cannot impose the joint motion (derivative causality, W201), so the joints are torque driven.
 - **Poses** are composed, never integrated: $W_i = W_{i-1} \circ LN_i \circ J_i.\text{pose}$, the body pose is $W_i \circ LC_i$ (it feeds `B_i.g`, which gravity reads), and the tool centre point is $W_6 \circ L_{tool}$ with a $0.0823 + 0.1 = 0.1823$ m flange-plus-tool offset along the flange $z$.
 - **Start.** The arm is released at rest at the home pose $q = (0, -1.2, 1.2, -1.5, -1.5, 0)$ on its **consistent deflections** (the `starts` of `dth`, `dl` from the independent Newton-Euler reference), so the held directions carry the static gravity load from $t = 0$ and the start does not excite the stiff modes.
 @@ page arm controller overview | Controller
@@ -244,7 +246,7 @@ The closed loop pulls both arms to the same references, so the comparison is of 
   "run": {
     "kind": "plot", "model": "rrr-multibond", "xlim": [0, 5],
     "rows": [
-      {"ylabel": "joint angle [rad]", "series": [{"signal": "J1/qout", "label": "q1"}, {"signal": "J2/qout", "label": "q2"}, {"signal": "J3/qout", "label": "q3"}], "legend": true},
+      {"ylabel": "joint angle [rad]", "series": [{"signal": "L1/J/qout", "label": "q1"}, {"signal": "L2/J/qout", "label": "q2"}, {"signal": "L3/J/qout", "label": "q3"}], "legend": true},
       {"ylabel": "tracking error [rad]", "series": [{"signal": "Ctrl/e1", "label": "e1"}, {"signal": "Ctrl/e2", "label": "e2"}, {"signal": "Ctrl/e3", "label": "e3"}], "legend": true}
     ]
   }
@@ -258,13 +260,14 @@ The same three-joint arm as `rrr-torque`, built from the M3 spatial stdlib follo
 
 ## Construction
 
-- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; [B1](block:B1)) on a compliant `Revolute3D` about world $z$ ([J1](block:J1));
-- joints 2 and 3 about world $-y$: the joint frame is $R_x(90^\circ)$ (local $z = -y$), so a positive $q$ raises the arm; `LN2` places joint 2 at the shoulder, `LN3` places joint 3 $l_2$ along the upper arm, `T2` and `T3` are $LN^{-1}\circ LC$;
+- a base body (1 kg at the pivot, isotropic inertia $J_b$ = 0.05 kg·m², so its yaw inertia is the plan's $J_b$; `L1/B`) on a compliant `Revolute3D` about world $z$ (`L1/J`);
+- joints 2 and 3 about world $-y$: the joint frame is $R_x(90^\circ)$ (local $z = -y$), so a positive $q$ raises the arm; `L2/LN` places joint 2 at the shoulder, `L3/LN` places joint 3 $l_2$ along the upper arm, `L2/T` and `L3/T` are $LN^{-1}\circ LC$;
 - point masses as `RigidBody3D` bodies ($m_2$ at the elbow, $m_3$ at the tip, $10^{-8}$ kg·m² principal moments because a point has none), links $l_2$ and $l_3$ as `FixedTransform3DNeutral`; the body poses for gravity come from a `ComposePose3D` chain as in the six-axis arm;
 - held directions $k_t = k_r = 10^7$ with 0.7-critical damping, released on their **static deflections** (`dth`, `dl` from the weight of everything distal; `design/build_models.py`);
+- each link is an instance of the library subsystem `RevoluteLink3D` ([L1](block:L1), [L2](block:L2), [L3](block:L3)), the same definition as the six-axis arm's links;
 - the settings: 5 s with `Rodas5P`, `reltol` 1e-8, `abstol` 1e-10, 2001 points.
 
-The joint angles are [J1/qout](signal:J1/qout), [J2/qout](signal:J2/qout), [J3/qout](signal:J3/qout); the controller [Ctrl](block:Ctrl) is the `ArmCtrl3R` of `rrr` (gains 354/334/46 and 35.4/33.4/4.6).
+The joint angles are [L1/J/qout](signal:L1/J/qout), [L2/J/qout](signal:L2/J/qout), [L3/J/qout](signal:L3/J/qout); the controller [Ctrl](block:Ctrl) is the `ArmCtrl3R` of `rrr` (gains 354/334/46 and 35.4/33.4/4.6).
 
 ![Joint angles and tracking errors of the multibond arm|900](@fig:run)
 
@@ -288,7 +291,7 @@ The run times in the README (loaded machine, including the first compile) are 22
 @@ page rrr-multibond-soft overview - | Overview
 # Soft held directions ($k = 10^6$)
 
-The `rrr-multibond` arm with all held directions ten times softer: $k_t = k_r = 10^6$ (N/m and N·m/rad), damping scaled with it (for example `bt` = 2800 for [J1](block:J1) against 8854 at $10^7$) and the static deflection starts scaled by ten. Everything else is as in `rrr-multibond`. It exists for the error-scaling measurement: the maximum joint-angle difference to the `rrr-torque` arm is 1.11e-4, 4.4e-5 and 2.7e-5 rad for joints 1 to 3 (see the table of the `rrr-multibond` model), ten times the stiff-case order. Plot [J1/qout](signal:J1/qout) and compare with the other stiffnesses.
+The `rrr-multibond` arm with all held directions ten times softer: $k_t = k_r = 10^6$ (N/m and N·m/rad), damping scaled with it (for example `bt` = 2800 for the joint of [L1](block:L1) against 8854 at $10^7$) and the static deflection starts scaled by ten. Everything else is as in `rrr-multibond`. It exists for the error-scaling measurement: the maximum joint-angle difference to the `rrr-torque` arm is 1.11e-4, 4.4e-5 and 2.7e-5 rad for joints 1 to 3 (see the table of the `rrr-multibond` model), ten times the stiff-case order. Plot [L1/J/qout](signal:L1/J/qout) and compare with the other stiffnesses.
 
 ![The model canvas|900](@fig:diagram)
 @@ figures rrr-multibond-stiff
@@ -298,6 +301,6 @@ The `rrr-multibond` arm with all held directions ten times softer: $k_t = k_r = 
 @@ page rrr-multibond-stiff overview - | Overview
 # Stiff held directions ($k = 10^8$)
 
-The `rrr-multibond` arm with all held directions ten times stiffer: $k_t = k_r = 10^8$, damping scaled with it (for example `bt` = 28000 for [J1](block:J1)) and the static deflection starts scaled by a tenth. Everything else is as in `rrr-multibond`. The maximum joint-angle difference to the `rrr-torque` arm is 1.81e-6, 1.32e-6 and 6.7e-7 rad for joints 1 to 3 (see the table of the `rrr-multibond` model). Plot [J1/qout](signal:J1/qout) and compare.
+The `rrr-multibond` arm with all held directions ten times stiffer: $k_t = k_r = 10^8$, damping scaled with it (for example `bt` = 28000 for the joint of [L1](block:L1)) and the static deflection starts scaled by a tenth. Everything else is as in `rrr-multibond`. The maximum joint-angle difference to the `rrr-torque` arm is 1.81e-6, 1.32e-6 and 6.7e-7 rad for joints 1 to 3 (see the table of the `rrr-multibond` model). Plot [L1/J/qout](signal:L1/J/qout) and compare.
 
 ![The model canvas|900](@fig:diagram)

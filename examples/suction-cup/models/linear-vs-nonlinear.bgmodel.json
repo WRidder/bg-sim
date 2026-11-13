@@ -336,136 +336,25 @@
         }
       },
       {
-        "id": "FMount1",
-        "name": "FMount1",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1400,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(1*L_p/2 - cx)",
-          "y": "-(1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal1",
-        "name": "FLocal1",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 460
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "1*L_p/2 - cx",
-          "y": "1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose1",
-        "name": "FPose1",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 460
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {}
-      },
-      {
         "id": "Floor1",
         "name": "Floor1",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 1820,
+          "x": 1400,
           "y": 420
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "1*L_p/2 - cx",
+          "Local/y": "1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(1*L_p/2 - cx)",
+          "Mount/y": "-(1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMount2",
-        "name": "FMount2",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1400,
-          "y": 530
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(1*L_p/2 - cx)",
-          "y": "-(-1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal2",
-        "name": "FLocal2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 570
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "1*L_p/2 - cx",
-          "y": "-1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose2",
-        "name": "FPose2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 570
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -473,77 +362,22 @@
         "id": "Floor2",
         "name": "Floor2",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 1820,
-          "y": 530
+          "x": 1600,
+          "y": 420
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "1*L_p/2 - cx",
+          "Local/y": "-1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(1*L_p/2 - cx)",
+          "Mount/y": "-(-1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMount3",
-        "name": "FMount3",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1400,
-          "y": 640
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(-1*L_p/2 - cx)",
-          "y": "-(1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal3",
-        "name": "FLocal3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 680
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-1*L_p/2 - cx",
-          "y": "1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose3",
-        "name": "FPose3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 680
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -551,77 +385,22 @@
         "id": "Floor3",
         "name": "Floor3",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
-        },
-        "position": {
-          "x": 1820,
-          "y": 640
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMount4",
-        "name": "FMount4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+          "ref": "project:ContactFoot"
         },
         "position": {
           "x": 1400,
-          "y": 750
+          "y": 620
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "x": "-(-1*L_p/2 - cx)",
-          "y": "-(-1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
+          "Local/x": "-1*L_p/2 - cx",
+          "Local/y": "1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(-1*L_p/2 - cx)",
+          "Mount/y": "-(1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocal4",
-        "name": "FLocal4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 790
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-1*L_p/2 - cx",
-          "y": "-1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPose4",
-        "name": "FPose4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 790
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -629,20 +408,21 @@
         "id": "Floor4",
         "name": "Floor4",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 1820,
-          "y": 750
+          "x": 1600,
+          "y": 620
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "-1*L_p/2 - cx",
+          "Local/y": "-1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(-1*L_p/2 - cx)",
+          "Mount/y": "-(-1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
         "constants": {},
         "starts": {}
@@ -839,136 +619,25 @@
         }
       },
       {
-        "id": "FMountL1",
-        "name": "FMountL1",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1400,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(1*L_p/2 - cx)",
-          "y": "-(1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocalL1",
-        "name": "FLocalL1",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 1360
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "1*L_p/2 - cx",
-          "y": "1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPoseL1",
-        "name": "FPoseL1",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 1360
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {}
-      },
-      {
         "id": "FloorL1",
         "name": "FloorL1",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 1820,
+          "x": 1400,
           "y": 1320
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "1*L_p/2 - cx",
+          "Local/y": "1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(1*L_p/2 - cx)",
+          "Mount/y": "-(1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMountL2",
-        "name": "FMountL2",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1400,
-          "y": 1430
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(1*L_p/2 - cx)",
-          "y": "-(-1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocalL2",
-        "name": "FLocalL2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 1470
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "1*L_p/2 - cx",
-          "y": "-1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPoseL2",
-        "name": "FPoseL2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 1470
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -976,77 +645,22 @@
         "id": "FloorL2",
         "name": "FloorL2",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 1820,
-          "y": 1430
+          "x": 1600,
+          "y": 1320
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "1*L_p/2 - cx",
+          "Local/y": "-1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(1*L_p/2 - cx)",
+          "Mount/y": "-(-1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMountL3",
-        "name": "FMountL3",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1400,
-          "y": 1540
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-(-1*L_p/2 - cx)",
-          "y": "-(1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocalL3",
-        "name": "FLocalL3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 1580
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-1*L_p/2 - cx",
-          "y": "1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPoseL3",
-        "name": "FPoseL3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 1580
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -1054,77 +668,22 @@
         "id": "FloorL3",
         "name": "FloorL3",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
-        },
-        "position": {
-          "x": 1820,
-          "y": 1540
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FMountL4",
-        "name": "FMountL4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+          "ref": "project:ContactFoot"
         },
         "position": {
           "x": 1400,
-          "y": 1650
+          "y": 1520
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "x": "-(-1*L_p/2 - cx)",
-          "y": "-(-1*W_p/2 - cy)",
-          "z": "-(-H_p/2 - cz)"
+          "Local/x": "-1*L_p/2 - cx",
+          "Local/y": "1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(-1*L_p/2 - cx)",
+          "Mount/y": "-(1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FLocalL4",
-        "name": "FLocalL4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1540,
-          "y": 1690
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-1*L_p/2 - cx",
-          "y": "-1*W_p/2 - cy",
-          "z": "-H_p/2 - cz"
-        },
-        "constants": {},
-        "starts": {}
-      },
-      {
-        "id": "FPoseL4",
-        "name": "FPoseL4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1680,
-          "y": 1690
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
         "constants": {},
         "starts": {}
       },
@@ -1132,20 +691,21 @@
         "id": "FloorL4",
         "name": "FloorL4",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 1820,
-          "y": 1650
+          "x": 1600,
+          "y": 1520
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "200000",
-          "xref": "0.001",
-          "c": "5",
-          "mu": "0.5",
-          "vs": "0.001"
+          "Local/x": "-1*L_p/2 - cx",
+          "Local/y": "-1*W_p/2 - cy",
+          "Local/z": "-H_p/2 - cz",
+          "Mount/x": "-(-1*L_p/2 - cx)",
+          "Mount/y": "-(-1*W_p/2 - cy)",
+          "Mount/z": "-(-H_p/2 - cz)"
         },
         "constants": {},
         "starts": {}
@@ -1392,60 +952,24 @@
           "port": "p"
         },
         "to": {
-          "node": "FMount1",
-          "port": "b"
-        }
-      },
-      {
-        "id": "c018",
-        "kind": "bond",
-        "from": {
-          "node": "FMount1",
-          "port": "a"
-        },
-        "to": {
           "node": "Floor1",
           "port": "p"
         }
       },
       {
-        "id": "c019",
+        "id": "c018",
         "kind": "signal",
         "from": {
           "node": "Pose",
           "port": "g"
         },
         "to": {
-          "node": "FPose1",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "c020",
-        "kind": "signal",
-        "from": {
-          "node": "FLocal1",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPose1",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "c021",
-        "kind": "signal",
-        "from": {
-          "node": "FPose1",
-          "port": "g"
-        },
-        "to": {
           "node": "Floor1",
-          "port": "g"
+          "port": "pose"
         }
       },
       {
-        "id": "c022",
+        "id": "c019",
         "kind": "signal",
         "from": {
           "node": "Table",
@@ -1454,6 +978,42 @@
         "to": {
           "node": "Floor1",
           "port": "o"
+        }
+      },
+      {
+        "id": "c020",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c021",
+        "kind": "bond",
+        "from": {
+          "node": "Box",
+          "port": "p"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c022",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "pose"
         }
       },
       {
@@ -1461,34 +1021,34 @@
         "kind": "signal",
         "from": {
           "node": "Table",
-          "port": "fr"
+          "port": "o"
         },
         "to": {
-          "node": "Floor1",
-          "port": "fr"
+          "node": "Floor2",
+          "port": "o"
         }
       },
       {
         "id": "c024",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "Box",
-          "port": "p"
+          "node": "Table",
+          "port": "fr"
         },
         "to": {
-          "node": "FMount2",
-          "port": "b"
+          "node": "Floor2",
+          "port": "fr"
         }
       },
       {
         "id": "c025",
         "kind": "bond",
         "from": {
-          "node": "FMount2",
-          "port": "a"
+          "node": "Box",
+          "port": "p"
         },
         "to": {
-          "node": "Floor2",
+          "node": "Floor3",
           "port": "p"
         }
       },
@@ -1500,372 +1060,228 @@
           "port": "g"
         },
         "to": {
-          "node": "FPose2",
-          "port": "gp"
+          "node": "Floor3",
+          "port": "pose"
         }
       },
       {
         "id": "c027",
         "kind": "signal",
         "from": {
-          "node": "FLocal2",
-          "port": "g"
+          "node": "Table",
+          "port": "o"
         },
         "to": {
-          "node": "FPose2",
-          "port": "gl"
+          "node": "Floor3",
+          "port": "o"
         }
       },
       {
         "id": "c028",
         "kind": "signal",
         "from": {
-          "node": "FPose2",
-          "port": "g"
+          "node": "Table",
+          "port": "fr"
         },
         "to": {
-          "node": "Floor2",
-          "port": "g"
+          "node": "Floor3",
+          "port": "fr"
         }
       },
       {
         "id": "c029",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "Table",
-          "port": "o"
+          "node": "Box",
+          "port": "p"
         },
         "to": {
-          "node": "Floor2",
-          "port": "o"
+          "node": "Floor4",
+          "port": "p"
         }
       },
       {
         "id": "c030",
         "kind": "signal",
         "from": {
-          "node": "Table",
-          "port": "fr"
+          "node": "Pose",
+          "port": "g"
         },
         "to": {
-          "node": "Floor2",
-          "port": "fr"
+          "node": "Floor4",
+          "port": "pose"
         }
       },
       {
         "id": "c031",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "Box",
-          "port": "p"
+          "node": "Table",
+          "port": "o"
         },
         "to": {
-          "node": "FMount3",
-          "port": "b"
+          "node": "Floor4",
+          "port": "o"
         }
       },
       {
         "id": "c032",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "FMount3",
-          "port": "a"
+          "node": "Table",
+          "port": "fr"
         },
         "to": {
-          "node": "Floor3",
-          "port": "p"
+          "node": "Floor4",
+          "port": "fr"
         }
       },
       {
         "id": "c033",
         "kind": "signal",
         "from": {
-          "node": "Pose",
+          "node": "Tool",
           "port": "g"
         },
         "to": {
-          "node": "FPose3",
-          "port": "gp"
+          "node": "Mon",
+          "port": "gt"
         }
       },
       {
         "id": "c034",
         "kind": "signal",
         "from": {
-          "node": "FLocal3",
+          "node": "Pose",
           "port": "g"
         },
         "to": {
-          "node": "FPose3",
-          "port": "gl"
+          "node": "Mon",
+          "port": "gp"
         }
       },
       {
         "id": "c035",
         "kind": "signal",
         "from": {
-          "node": "FPose3",
-          "port": "g"
+          "node": "Cup",
+          "port": "sealed"
         },
         "to": {
-          "node": "Floor3",
-          "port": "g"
+          "node": "Mon",
+          "port": "sealed"
         }
       },
       {
         "id": "c036",
         "kind": "signal",
         "from": {
-          "node": "Table",
-          "port": "o"
+          "node": "Cup",
+          "port": "ext"
         },
         "to": {
-          "node": "Floor3",
-          "port": "o"
+          "node": "Mon",
+          "port": "ext"
         }
       },
       {
         "id": "c037",
         "kind": "signal",
         "from": {
-          "node": "Table",
-          "port": "fr"
+          "node": "Cup",
+          "port": "T"
         },
         "to": {
-          "node": "Floor3",
-          "port": "fr"
+          "node": "Mon",
+          "port": "T"
         }
       },
       {
         "id": "c038",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "Box",
-          "port": "p"
+          "node": "Pose",
+          "port": "g"
         },
         "to": {
-          "node": "FMount4",
-          "port": "b"
+          "node": "Trans",
+          "port": "gp"
         }
       },
       {
         "id": "c039",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "FMount4",
-          "port": "a"
+          "node": "Tool",
+          "port": "xc"
         },
         "to": {
-          "node": "Floor4",
-          "port": "p"
+          "node": "Trans",
+          "port": "xc"
         }
       },
       {
         "id": "c040",
         "kind": "signal",
         "from": {
-          "node": "Pose",
-          "port": "g"
+          "node": "Tool",
+          "port": "sp"
         },
         "to": {
-          "node": "FPose4",
-          "port": "gp"
+          "node": "Trans",
+          "port": "sp"
         }
       },
       {
         "id": "c041",
         "kind": "signal",
         "from": {
-          "node": "FLocal4",
-          "port": "g"
+          "node": "Tool",
+          "port": "cp"
         },
         "to": {
-          "node": "FPose4",
-          "port": "gl"
+          "node": "Trans",
+          "port": "cp"
         }
       },
       {
         "id": "c042",
         "kind": "signal",
         "from": {
-          "node": "FPose4",
-          "port": "g"
+          "node": "Tool",
+          "port": "A"
         },
         "to": {
-          "node": "Floor4",
-          "port": "g"
+          "node": "Trans",
+          "port": "A"
         }
       },
       {
         "id": "c043",
         "kind": "signal",
         "from": {
-          "node": "Table",
-          "port": "o"
+          "node": "Tool",
+          "port": "f"
         },
         "to": {
-          "node": "Floor4",
-          "port": "o"
+          "node": "Trans",
+          "port": "f"
         }
       },
       {
         "id": "c044",
         "kind": "signal",
         "from": {
-          "node": "Table",
-          "port": "fr"
+          "node": "Tool",
+          "port": "g"
         },
         "to": {
-          "node": "Floor4",
-          "port": "fr"
+          "node": "Trans",
+          "port": "gt"
         }
       },
       {
         "id": "c045",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "g"
-        },
-        "to": {
-          "node": "Mon",
-          "port": "gt"
-        }
-      },
-      {
-        "id": "c046",
-        "kind": "signal",
-        "from": {
-          "node": "Pose",
-          "port": "g"
-        },
-        "to": {
-          "node": "Mon",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "c047",
-        "kind": "signal",
-        "from": {
-          "node": "Cup",
-          "port": "sealed"
-        },
-        "to": {
-          "node": "Mon",
-          "port": "sealed"
-        }
-      },
-      {
-        "id": "c048",
-        "kind": "signal",
-        "from": {
-          "node": "Cup",
-          "port": "ext"
-        },
-        "to": {
-          "node": "Mon",
-          "port": "ext"
-        }
-      },
-      {
-        "id": "c049",
-        "kind": "signal",
-        "from": {
-          "node": "Cup",
-          "port": "T"
-        },
-        "to": {
-          "node": "Mon",
-          "port": "T"
-        }
-      },
-      {
-        "id": "c050",
-        "kind": "signal",
-        "from": {
-          "node": "Pose",
-          "port": "g"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "c051",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "xc"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "xc"
-        }
-      },
-      {
-        "id": "c052",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "sp"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "sp"
-        }
-      },
-      {
-        "id": "c053",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "cp"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "cp"
-        }
-      },
-      {
-        "id": "c054",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "A"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "A"
-        }
-      },
-      {
-        "id": "c055",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "f"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "f"
-        }
-      },
-      {
-        "id": "c056",
-        "kind": "signal",
-        "from": {
-          "node": "Tool",
-          "port": "g"
-        },
-        "to": {
-          "node": "Trans",
-          "port": "gt"
-        }
-      },
-      {
-        "id": "c057",
         "kind": "bond",
         "from": {
           "node": "TJ"
@@ -1876,7 +1292,7 @@
         }
       },
       {
-        "id": "c058",
+        "id": "c046",
         "kind": "bond",
         "from": {
           "node": "GMountL",
@@ -1888,7 +1304,7 @@
         }
       },
       {
-        "id": "c059",
+        "id": "c047",
         "kind": "wire",
         "from": {
           "node": "GenL",
@@ -1900,7 +1316,7 @@
         }
       },
       {
-        "id": "c060",
+        "id": "c048",
         "kind": "signal",
         "from": {
           "node": "Valve",
@@ -1912,7 +1328,7 @@
         }
       },
       {
-        "id": "c061",
+        "id": "c049",
         "kind": "signal",
         "from": {
           "node": "BoxL",
@@ -1924,7 +1340,7 @@
         }
       },
       {
-        "id": "c062",
+        "id": "c050",
         "kind": "signal",
         "from": {
           "node": "PoseL",
@@ -1936,7 +1352,7 @@
         }
       },
       {
-        "id": "c063",
+        "id": "c051",
         "kind": "bond",
         "from": {
           "node": "BoxL",
@@ -1948,7 +1364,7 @@
         }
       },
       {
-        "id": "c064",
+        "id": "c052",
         "kind": "bond",
         "from": {
           "node": "PMountL",
@@ -1960,6 +1376,150 @@
         }
       },
       {
+        "id": "c053",
+        "kind": "bond",
+        "from": {
+          "node": "BoxL",
+          "port": "p"
+        },
+        "to": {
+          "node": "FloorL1",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c054",
+        "kind": "signal",
+        "from": {
+          "node": "PoseL",
+          "port": "g"
+        },
+        "to": {
+          "node": "FloorL1",
+          "port": "pose"
+        }
+      },
+      {
+        "id": "c055",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "FloorL1",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c056",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FloorL1",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c057",
+        "kind": "bond",
+        "from": {
+          "node": "BoxL",
+          "port": "p"
+        },
+        "to": {
+          "node": "FloorL2",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c058",
+        "kind": "signal",
+        "from": {
+          "node": "PoseL",
+          "port": "g"
+        },
+        "to": {
+          "node": "FloorL2",
+          "port": "pose"
+        }
+      },
+      {
+        "id": "c059",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "FloorL2",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c060",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FloorL2",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c061",
+        "kind": "bond",
+        "from": {
+          "node": "BoxL",
+          "port": "p"
+        },
+        "to": {
+          "node": "FloorL3",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c062",
+        "kind": "signal",
+        "from": {
+          "node": "PoseL",
+          "port": "g"
+        },
+        "to": {
+          "node": "FloorL3",
+          "port": "pose"
+        }
+      },
+      {
+        "id": "c063",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "FloorL3",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c064",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "FloorL3",
+          "port": "fr"
+        }
+      },
+      {
         "id": "c065",
         "kind": "bond",
         "from": {
@@ -1967,336 +1527,48 @@
           "port": "p"
         },
         "to": {
-          "node": "FMountL1",
-          "port": "b"
+          "node": "FloorL4",
+          "port": "p"
         }
       },
       {
         "id": "c066",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "FMountL1",
-          "port": "a"
+          "node": "PoseL",
+          "port": "g"
         },
         "to": {
-          "node": "FloorL1",
-          "port": "p"
+          "node": "FloorL4",
+          "port": "pose"
         }
       },
       {
         "id": "c067",
         "kind": "signal",
         "from": {
-          "node": "PoseL",
-          "port": "g"
+          "node": "Table",
+          "port": "o"
         },
         "to": {
-          "node": "FPoseL1",
-          "port": "gp"
+          "node": "FloorL4",
+          "port": "o"
         }
       },
       {
         "id": "c068",
         "kind": "signal",
         "from": {
-          "node": "FLocalL1",
-          "port": "g"
+          "node": "Table",
+          "port": "fr"
         },
         "to": {
-          "node": "FPoseL1",
-          "port": "gl"
+          "node": "FloorL4",
+          "port": "fr"
         }
       },
       {
         "id": "c069",
-        "kind": "signal",
-        "from": {
-          "node": "FPoseL1",
-          "port": "g"
-        },
-        "to": {
-          "node": "FloorL1",
-          "port": "g"
-        }
-      },
-      {
-        "id": "c070",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "o"
-        },
-        "to": {
-          "node": "FloorL1",
-          "port": "o"
-        }
-      },
-      {
-        "id": "c071",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "fr"
-        },
-        "to": {
-          "node": "FloorL1",
-          "port": "fr"
-        }
-      },
-      {
-        "id": "c072",
-        "kind": "bond",
-        "from": {
-          "node": "BoxL",
-          "port": "p"
-        },
-        "to": {
-          "node": "FMountL2",
-          "port": "b"
-        }
-      },
-      {
-        "id": "c073",
-        "kind": "bond",
-        "from": {
-          "node": "FMountL2",
-          "port": "a"
-        },
-        "to": {
-          "node": "FloorL2",
-          "port": "p"
-        }
-      },
-      {
-        "id": "c074",
-        "kind": "signal",
-        "from": {
-          "node": "PoseL",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPoseL2",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "c075",
-        "kind": "signal",
-        "from": {
-          "node": "FLocalL2",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPoseL2",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "c076",
-        "kind": "signal",
-        "from": {
-          "node": "FPoseL2",
-          "port": "g"
-        },
-        "to": {
-          "node": "FloorL2",
-          "port": "g"
-        }
-      },
-      {
-        "id": "c077",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "o"
-        },
-        "to": {
-          "node": "FloorL2",
-          "port": "o"
-        }
-      },
-      {
-        "id": "c078",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "fr"
-        },
-        "to": {
-          "node": "FloorL2",
-          "port": "fr"
-        }
-      },
-      {
-        "id": "c079",
-        "kind": "bond",
-        "from": {
-          "node": "BoxL",
-          "port": "p"
-        },
-        "to": {
-          "node": "FMountL3",
-          "port": "b"
-        }
-      },
-      {
-        "id": "c080",
-        "kind": "bond",
-        "from": {
-          "node": "FMountL3",
-          "port": "a"
-        },
-        "to": {
-          "node": "FloorL3",
-          "port": "p"
-        }
-      },
-      {
-        "id": "c081",
-        "kind": "signal",
-        "from": {
-          "node": "PoseL",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPoseL3",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "c082",
-        "kind": "signal",
-        "from": {
-          "node": "FLocalL3",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPoseL3",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "c083",
-        "kind": "signal",
-        "from": {
-          "node": "FPoseL3",
-          "port": "g"
-        },
-        "to": {
-          "node": "FloorL3",
-          "port": "g"
-        }
-      },
-      {
-        "id": "c084",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "o"
-        },
-        "to": {
-          "node": "FloorL3",
-          "port": "o"
-        }
-      },
-      {
-        "id": "c085",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "fr"
-        },
-        "to": {
-          "node": "FloorL3",
-          "port": "fr"
-        }
-      },
-      {
-        "id": "c086",
-        "kind": "bond",
-        "from": {
-          "node": "BoxL",
-          "port": "p"
-        },
-        "to": {
-          "node": "FMountL4",
-          "port": "b"
-        }
-      },
-      {
-        "id": "c087",
-        "kind": "bond",
-        "from": {
-          "node": "FMountL4",
-          "port": "a"
-        },
-        "to": {
-          "node": "FloorL4",
-          "port": "p"
-        }
-      },
-      {
-        "id": "c088",
-        "kind": "signal",
-        "from": {
-          "node": "PoseL",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPoseL4",
-          "port": "gp"
-        }
-      },
-      {
-        "id": "c089",
-        "kind": "signal",
-        "from": {
-          "node": "FLocalL4",
-          "port": "g"
-        },
-        "to": {
-          "node": "FPoseL4",
-          "port": "gl"
-        }
-      },
-      {
-        "id": "c090",
-        "kind": "signal",
-        "from": {
-          "node": "FPoseL4",
-          "port": "g"
-        },
-        "to": {
-          "node": "FloorL4",
-          "port": "g"
-        }
-      },
-      {
-        "id": "c091",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "o"
-        },
-        "to": {
-          "node": "FloorL4",
-          "port": "o"
-        }
-      },
-      {
-        "id": "c092",
-        "kind": "signal",
-        "from": {
-          "node": "Table",
-          "port": "fr"
-        },
-        "to": {
-          "node": "FloorL4",
-          "port": "fr"
-        }
-      },
-      {
-        "id": "c093",
         "kind": "signal",
         "from": {
           "node": "Tool",
@@ -2308,7 +1580,7 @@
         }
       },
       {
-        "id": "c094",
+        "id": "c070",
         "kind": "signal",
         "from": {
           "node": "PoseL",
@@ -2320,7 +1592,7 @@
         }
       },
       {
-        "id": "c095",
+        "id": "c071",
         "kind": "signal",
         "from": {
           "node": "CupL",
@@ -2332,7 +1604,7 @@
         }
       },
       {
-        "id": "c096",
+        "id": "c072",
         "kind": "signal",
         "from": {
           "node": "CupL",
@@ -2344,7 +1616,7 @@
         }
       },
       {
-        "id": "c097",
+        "id": "c073",
         "kind": "signal",
         "from": {
           "node": "CupL",
@@ -2356,7 +1628,7 @@
         }
       },
       {
-        "id": "c098",
+        "id": "c074",
         "kind": "signal",
         "from": {
           "node": "PoseL",
@@ -2368,7 +1640,7 @@
         }
       },
       {
-        "id": "c099",
+        "id": "c075",
         "kind": "signal",
         "from": {
           "node": "Tool",
@@ -2380,7 +1652,7 @@
         }
       },
       {
-        "id": "c100",
+        "id": "c076",
         "kind": "signal",
         "from": {
           "node": "Tool",
@@ -2392,7 +1664,7 @@
         }
       },
       {
-        "id": "c101",
+        "id": "c077",
         "kind": "signal",
         "from": {
           "node": "Tool",
@@ -2404,7 +1676,7 @@
         }
       },
       {
-        "id": "c102",
+        "id": "c078",
         "kind": "signal",
         "from": {
           "node": "Tool",
@@ -2416,7 +1688,7 @@
         }
       },
       {
-        "id": "c103",
+        "id": "c079",
         "kind": "signal",
         "from": {
           "node": "Tool",
@@ -2428,7 +1700,7 @@
         }
       },
       {
-        "id": "c104",
+        "id": "c080",
         "kind": "signal",
         "from": {
           "node": "Tool",

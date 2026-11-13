@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "pendulum-triple-rotary-flex-lowpass",
-  "$comment": "Flexible-arm variant of pendulum-triple-rotary: the arm is a FlexibleBeam3D (Arm), a 3 x 50 mm stainless-steel strip on edge, 0.2159 m, 0.257 kg (the rigid arm's mass), clamped-free modes ny = 2, nz = 2, nt = 1, zeta = 0.01. End A on J1.child, end B on J2 through T2 (a pure rotation), gA from W1, the chain composed on from Arm/poseB. Ctrl is RotaryCtrlLP: the same weights, the LQR/TVLQR designed with a 12 Hz second-order low-pass in the feedback path; it catches and recovers.",
+  "$comment": "Flexible-arm variant of pendulum-triple-rotary: the arm is a FlexibleBeam3D (Arm), a 3 x 50 mm stainless-steel strip on edge, 0.2159 m, 0.257 kg (the rigid arm's mass), clamped-free modes ny = 2, nz = 2, nt = 1, zeta = 0.01. End A on J1.child, end B on J2 through L2's T (a pure rotation), gA from W1, the chain composed on from Arm/poseB. Ctrl is RotaryCtrlLP: the same weights, the LQR/TVLQR designed with a 12 Hz second-order low-pass in the feedback path; it catches and recovers.",
   "diagram": {
     "nodes": [
       {
@@ -179,10 +179,10 @@
         }
       },
       {
-        "id": "j2",
-        "name": "J2",
+        "id": "l2",
+        "name": "L2",
         "block": {
-          "ref": "stdlib:spatial/Revolute3D"
+          "ref": "project:RevoluteLink3D"
         },
         "position": {
           "x": 960,
@@ -191,16 +191,47 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "kt": "100000000.0",
-          "kr": "100000000.0",
-          "bt": "7931.960665560564",
-          "br": "7578.362891113753",
-          "q0": "3.141592653589793"
+          "T/qw": "0.0",
+          "T/qx": "-0.7071067811865476",
+          "T/qy": "0.0",
+          "T/qz": "-0.7071067811865476",
+          "T/x": "0.0",
+          "T/y": "0.0",
+          "T/z": "0.0",
+          "J/kt": "100000000.0",
+          "J/kr": "100000000.0",
+          "J/bt": "7931.960665560564",
+          "J/br": "7578.362891113753",
+          "J/q0": "3.141592653589793",
+          "Link/qw": "1.0",
+          "Link/qx": "0.0",
+          "Link/qy": "0.0",
+          "Link/qz": "0.0",
+          "Link/x": "0.1",
+          "Link/y": "0.0",
+          "Link/z": "0.0",
+          "B/m": "0.097",
+          "B/J": "[3.104e-06, 0.0003248853333333334, 0.0003248853333333334]",
+          "B/g0": "9.81",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.0",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.0",
+          "LN/y": "0.0",
+          "LN/z": "0.0",
+          "LC/qw": "1.0",
+          "LC/qx": "0.0",
+          "LC/qy": "0.0",
+          "LC/qz": "0.0",
+          "LC/x": "0.1",
+          "LC/y": "0.0",
+          "LC/z": "0.0"
         },
         "constants": {},
         "starts": {
-          "dth": "[-2.9601714446105406e-40, 0.0]",
-          "dl": "[3.149010000000001e-08, 3.856425016983008e-24, 6.992206813549728e-24]"
+          "J/dth": "[-2.9601714446105406e-40, 0.0]",
+          "J/dl": "[3.149010000000001e-08, 3.856425016983008e-24, 6.992206813549728e-24]"
         },
         "ui": {
           "showLabel": true,
@@ -208,226 +239,10 @@
         }
       },
       {
-        "id": "link2",
-        "name": "Link2",
+        "id": "l3",
+        "name": "L3",
         "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1080,
-          "y": 540
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.1",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "bj2",
-        "name": "BJ2",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 1200,
-          "y": 550
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "b2",
-        "name": "Rod1",
-        "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
-        },
-        "position": {
-          "x": 1190,
-          "y": 640
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.097",
-          "J": "[3.104e-06, 0.0003248853333333334, 0.0003248853333333334]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "t2",
-        "name": "T2",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 840,
-          "y": 540
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "-0.7071067811865476",
-          "qy": "0.0",
-          "qz": "-0.7071067811865476",
-          "x": "0.0",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "ln2",
-        "name": "LN2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.7071067811865476",
-          "qy": "0.0",
-          "qz": "0.7071067811865476",
-          "x": "0.0",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "ca2",
-        "name": "CA2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "w2",
-        "name": "W2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 960,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "lc2",
-        "name": "LC2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1190,
-          "y": 1560
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.1",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "pb2",
-        "name": "P2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1190,
-          "y": 1440
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "j3",
-        "name": "J3",
-        "block": {
-          "ref": "stdlib:spatial/Revolute3D"
+          "ref": "project:RevoluteLink3D"
         },
         "position": {
           "x": 1420,
@@ -436,16 +251,47 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "kt": "100000000.0",
-          "kr": "100000000.0",
-          "bt": "6626.00935707157",
-          "br": "6334.253890945379",
-          "q0": "0.0"
+          "T/qw": "1.0",
+          "T/qx": "0.0",
+          "T/qy": "0.0",
+          "T/qz": "0.0",
+          "T/x": "-0.1",
+          "T/y": "0.0",
+          "T/z": "0.0",
+          "J/kt": "100000000.0",
+          "J/kr": "100000000.0",
+          "J/bt": "6626.00935707157",
+          "J/br": "6334.253890945379",
+          "J/q0": "0.0",
+          "Link/qw": "1.0",
+          "Link/qx": "0.0",
+          "Link/qy": "0.0",
+          "Link/qz": "0.0",
+          "Link/x": "0.1",
+          "Link/y": "0.0",
+          "Link/z": "0.0",
+          "B/m": "0.097",
+          "B/J": "[3.104e-06, 0.0003248853333333334, 0.0003248853333333334]",
+          "B/g0": "9.81",
+          "LN/qw": "1.0",
+          "LN/qx": "0.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.2",
+          "LN/y": "0.0",
+          "LN/z": "0.0",
+          "LC/qw": "1.0",
+          "LC/qx": "0.0",
+          "LC/qy": "0.0",
+          "LC/qz": "0.0",
+          "LC/x": "0.1",
+          "LC/y": "0.0",
+          "LC/z": "0.0"
         },
         "constants": {},
         "starts": {
-          "dth": "[-1.5063315340845145e-40, 0.0]",
-          "dl": "[2.1974400000000007e-08, 2.6910878623183604e-24, 4.879296966464609e-24]"
+          "J/dth": "[-1.5063315340845145e-40, 0.0]",
+          "J/dl": "[2.1974400000000007e-08, 2.6910878623183604e-24, 4.879296966464609e-24]"
         },
         "ui": {
           "showLabel": true,
@@ -453,226 +299,10 @@
         }
       },
       {
-        "id": "link3",
-        "name": "Link3",
+        "id": "l4",
+        "name": "L4",
         "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1540,
-          "y": 760
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.1",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "bj3",
-        "name": "BJ3",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 1660,
-          "y": 770
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "b3",
-        "name": "Rod2",
-        "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
-        },
-        "position": {
-          "x": 1650,
-          "y": 860
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.097",
-          "J": "[3.104e-06, 0.0003248853333333334, 0.0003248853333333334]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "t3",
-        "name": "T3",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1300,
-          "y": 760
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "-0.1",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "ln3",
-        "name": "LN3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1300,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.2",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "ca3",
-        "name": "CA3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1300,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "w3",
-        "name": "W3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1420,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "lc3",
-        "name": "LC3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1650,
-          "y": 1560
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.1",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "pb3",
-        "name": "P3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1650,
-          "y": 1440
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "j4",
-        "name": "J4",
-        "block": {
-          "ref": "stdlib:spatial/Revolute3D"
+          "ref": "project:RevoluteLink3D"
         },
         "position": {
           "x": 1880,
@@ -681,233 +311,48 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "kt": "100000000.0",
-          "kr": "100000000.0",
-          "bt": "4989.188310737529",
-          "br": "4776.396193837288",
-          "q0": "0.0"
+          "T/qw": "1.0",
+          "T/qx": "0.0",
+          "T/qy": "0.0",
+          "T/qz": "0.0",
+          "T/x": "-0.1",
+          "T/y": "0.0",
+          "T/z": "0.0",
+          "J/kt": "100000000.0",
+          "J/kr": "100000000.0",
+          "J/bt": "4989.188310737529",
+          "J/br": "4776.396193837288",
+          "J/q0": "0.0",
+          "Link/qw": "1.0",
+          "Link/qx": "0.0",
+          "Link/qy": "0.0",
+          "Link/qz": "0.0",
+          "Link/x": "0.16825",
+          "Link/y": "0.0",
+          "Link/z": "0.0",
+          "B/m": "0.127",
+          "B/J": "[4.064e-06, 0.0012004066458333336, 0.0012004066458333336]",
+          "B/g0": "9.81",
+          "LN/qw": "1.0",
+          "LN/qx": "0.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.2",
+          "LN/y": "0.0",
+          "LN/z": "0.0",
+          "LC/qw": "1.0",
+          "LC/qx": "0.0",
+          "LC/qy": "0.0",
+          "LC/qz": "0.0",
+          "LC/x": "0.16825",
+          "LC/y": "0.0",
+          "LC/z": "0.0"
         },
         "constants": {},
         "starts": {
-          "dth": "[-5.700052797824313e-41, 0.0]",
-          "dl": "[1.2458700000000003e-08, 1.5257507076537133e-24, 2.7663871193794875e-24]"
+          "J/dth": "[-5.700052797824313e-41, 0.0]",
+          "J/dl": "[1.2458700000000003e-08, 1.5257507076537133e-24, 2.7663871193794875e-24]"
         },
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "link4",
-        "name": "Link4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2000,
-          "y": 980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.16825",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "bj4",
-        "name": "BJ4",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 2120,
-          "y": 990
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "b4",
-        "name": "Rod3",
-        "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
-        },
-        "position": {
-          "x": 2110,
-          "y": 1080
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.127",
-          "J": "[4.064e-06, 0.0012004066458333336, 0.0012004066458333336]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "t4",
-        "name": "T4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1760,
-          "y": 980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "-0.1",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "ln4",
-        "name": "LN4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1760,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.2",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "ca4",
-        "name": "CA4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1760,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "w4",
-        "name": "W4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1880,
-          "y": 1320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "lc4",
-        "name": "LC4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2110,
-          "y": 1560
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.0",
-          "qx": "0.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.16825",
-          "y": "0.0",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "pb4",
-        "name": "P4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2110,
-          "y": 1440
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
         "ui": {
           "showLabel": true,
           "color": null
@@ -1397,42 +842,29 @@
         "label": null
       },
       {
-        "id": "b013",
+        "id": "b015",
         "kind": "bond",
         "from": {
-          "node": "t2",
-          "port": "a"
+          "node": "l2",
+          "port": "child"
         },
         "to": {
-          "node": "j2",
+          "node": "l3",
           "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b015",
-        "kind": "bond",
+        "id": "s016",
+        "kind": "signal",
         "from": {
-          "node": "j2",
-          "port": "child"
+          "node": "l2",
+          "port": "g"
         },
         "to": {
-          "node": "link2",
-          "port": "a"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b016",
-        "kind": "bond",
-        "from": {
-          "node": "link2",
-          "port": "b"
-        },
-        "to": {
-          "node": "bj2"
+          "node": "l3",
+          "port": "gp"
         },
         "route": [],
         "label": null
@@ -1441,434 +873,35 @@
         "id": "b017",
         "kind": "bond",
         "from": {
-          "node": "b2",
-          "port": "p"
+          "node": "l3",
+          "port": "child"
         },
         "to": {
-          "node": "bj2"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s019",
-        "kind": "signal",
-        "from": {
-          "node": "ln2",
-          "port": "g"
-        },
-        "to": {
-          "node": "ca2",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s020",
-        "kind": "signal",
-        "from": {
-          "node": "ca2",
-          "port": "g"
-        },
-        "to": {
-          "node": "w2",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s021",
-        "kind": "signal",
-        "from": {
-          "node": "j2",
-          "port": "pose"
-        },
-        "to": {
-          "node": "w2",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s022",
-        "kind": "signal",
-        "from": {
-          "node": "w2",
-          "port": "g"
-        },
-        "to": {
-          "node": "pb2",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s023",
-        "kind": "signal",
-        "from": {
-          "node": "lc2",
-          "port": "g"
-        },
-        "to": {
-          "node": "pb2",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s024",
-        "kind": "signal",
-        "from": {
-          "node": "pb2",
-          "port": "g"
-        },
-        "to": {
-          "node": "b2",
-          "port": "g"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b025",
-        "kind": "bond",
-        "from": {
-          "node": "t3",
-          "port": "a"
-        },
-        "to": {
-          "node": "j3",
+          "node": "l4",
           "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b026",
-        "kind": "bond",
-        "from": {
-          "node": "bj2"
-        },
-        "to": {
-          "node": "t3",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b027",
-        "kind": "bond",
-        "from": {
-          "node": "j3",
-          "port": "child"
-        },
-        "to": {
-          "node": "link3",
-          "port": "a"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b028",
-        "kind": "bond",
-        "from": {
-          "node": "link3",
-          "port": "b"
-        },
-        "to": {
-          "node": "bj3"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b029",
-        "kind": "bond",
-        "from": {
-          "node": "b3",
-          "port": "p"
-        },
-        "to": {
-          "node": "bj3"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s030",
+        "id": "s018",
         "kind": "signal",
         "from": {
-          "node": "w2",
+          "node": "l3",
           "port": "g"
         },
         "to": {
-          "node": "ca3",
+          "node": "l4",
           "port": "gp"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s031",
-        "kind": "signal",
-        "from": {
-          "node": "ln3",
-          "port": "g"
-        },
-        "to": {
-          "node": "ca3",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s032",
-        "kind": "signal",
-        "from": {
-          "node": "ca3",
-          "port": "g"
-        },
-        "to": {
-          "node": "w3",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s033",
-        "kind": "signal",
-        "from": {
-          "node": "j3",
-          "port": "pose"
-        },
-        "to": {
-          "node": "w3",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s034",
-        "kind": "signal",
-        "from": {
-          "node": "w3",
-          "port": "g"
-        },
-        "to": {
-          "node": "pb3",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s035",
-        "kind": "signal",
-        "from": {
-          "node": "lc3",
-          "port": "g"
-        },
-        "to": {
-          "node": "pb3",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s036",
-        "kind": "signal",
-        "from": {
-          "node": "pb3",
-          "port": "g"
-        },
-        "to": {
-          "node": "b3",
-          "port": "g"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b037",
-        "kind": "bond",
-        "from": {
-          "node": "t4",
-          "port": "a"
-        },
-        "to": {
-          "node": "j4",
-          "port": "parent"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b038",
-        "kind": "bond",
-        "from": {
-          "node": "bj3"
-        },
-        "to": {
-          "node": "t4",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b039",
-        "kind": "bond",
-        "from": {
-          "node": "j4",
-          "port": "child"
-        },
-        "to": {
-          "node": "link4",
-          "port": "a"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b040",
-        "kind": "bond",
-        "from": {
-          "node": "link4",
-          "port": "b"
-        },
-        "to": {
-          "node": "bj4"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b041",
-        "kind": "bond",
-        "from": {
-          "node": "b4",
-          "port": "p"
-        },
-        "to": {
-          "node": "bj4"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s042",
-        "kind": "signal",
-        "from": {
-          "node": "w3",
-          "port": "g"
-        },
-        "to": {
-          "node": "ca4",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s043",
-        "kind": "signal",
-        "from": {
-          "node": "ln4",
-          "port": "g"
-        },
-        "to": {
-          "node": "ca4",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s044",
-        "kind": "signal",
-        "from": {
-          "node": "ca4",
-          "port": "g"
-        },
-        "to": {
-          "node": "w4",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s045",
-        "kind": "signal",
-        "from": {
-          "node": "j4",
-          "port": "pose"
-        },
-        "to": {
-          "node": "w4",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s046",
-        "kind": "signal",
-        "from": {
-          "node": "w4",
-          "port": "g"
-        },
-        "to": {
-          "node": "pb4",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s047",
-        "kind": "signal",
-        "from": {
-          "node": "lc4",
-          "port": "g"
-        },
-        "to": {
-          "node": "pb4",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s048",
-        "kind": "signal",
-        "from": {
-          "node": "pb4",
-          "port": "g"
-        },
-        "to": {
-          "node": "b4",
-          "port": "g"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "w049",
+        "id": "w019",
         "kind": "wire",
         "from": {
-          "node": "j2",
+          "node": "l2",
           "port": "drive"
         },
         "to": {
@@ -1879,7 +912,7 @@
         "label": null
       },
       {
-        "id": "w050",
+        "id": "w020",
         "kind": "wire",
         "from": {
           "node": "fric2",
@@ -1893,10 +926,10 @@
         "label": null
       },
       {
-        "id": "w051",
+        "id": "w021",
         "kind": "wire",
         "from": {
-          "node": "j3",
+          "node": "l3",
           "port": "drive"
         },
         "to": {
@@ -1907,7 +940,7 @@
         "label": null
       },
       {
-        "id": "w052",
+        "id": "w022",
         "kind": "wire",
         "from": {
           "node": "fric3",
@@ -1921,10 +954,10 @@
         "label": null
       },
       {
-        "id": "w053",
+        "id": "w023",
         "kind": "wire",
         "from": {
-          "node": "j4",
+          "node": "l4",
           "port": "drive"
         },
         "to": {
@@ -1935,7 +968,7 @@
         "label": null
       },
       {
-        "id": "w054",
+        "id": "w024",
         "kind": "wire",
         "from": {
           "node": "fric4",
@@ -1949,7 +982,7 @@
         "label": null
       },
       {
-        "id": "w055",
+        "id": "w025",
         "kind": "wire",
         "from": {
           "node": "motor",
@@ -1963,7 +996,7 @@
         "label": null
       },
       {
-        "id": "w056",
+        "id": "w026",
         "kind": "wire",
         "from": {
           "node": "shaft",
@@ -1977,7 +1010,7 @@
         "label": null
       },
       {
-        "id": "w057",
+        "id": "w027",
         "kind": "wire",
         "from": {
           "node": "gear",
@@ -1991,7 +1024,7 @@
         "label": null
       },
       {
-        "id": "s058",
+        "id": "s028",
         "kind": "signal",
         "from": {
           "node": "clock",
@@ -2005,7 +1038,7 @@
         "label": null
       },
       {
-        "id": "s059",
+        "id": "s029",
         "kind": "signal",
         "from": {
           "node": "ctrl",
@@ -2019,7 +1052,7 @@
         "label": null
       },
       {
-        "id": "s060",
+        "id": "s030",
         "kind": "signal",
         "from": {
           "node": "j1",
@@ -2033,7 +1066,7 @@
         "label": null
       },
       {
-        "id": "s061",
+        "id": "s031",
         "kind": "signal",
         "from": {
           "node": "j1",
@@ -2047,11 +1080,11 @@
         "label": null
       },
       {
-        "id": "s062",
+        "id": "s032",
         "kind": "signal",
         "from": {
-          "node": "j2",
-          "port": "qout"
+          "node": "l2",
+          "port": "q"
         },
         "to": {
           "node": "ctrl",
@@ -2061,11 +1094,11 @@
         "label": null
       },
       {
-        "id": "s063",
+        "id": "s033",
         "kind": "signal",
         "from": {
-          "node": "j2",
-          "port": "qdout"
+          "node": "l2",
+          "port": "qd"
         },
         "to": {
           "node": "ctrl",
@@ -2075,11 +1108,11 @@
         "label": null
       },
       {
-        "id": "s064",
+        "id": "s034",
         "kind": "signal",
         "from": {
-          "node": "j3",
-          "port": "qout"
+          "node": "l3",
+          "port": "q"
         },
         "to": {
           "node": "ctrl",
@@ -2089,11 +1122,11 @@
         "label": null
       },
       {
-        "id": "s065",
+        "id": "s035",
         "kind": "signal",
         "from": {
-          "node": "j3",
-          "port": "qdout"
+          "node": "l3",
+          "port": "qd"
         },
         "to": {
           "node": "ctrl",
@@ -2103,11 +1136,11 @@
         "label": null
       },
       {
-        "id": "s066",
+        "id": "s036",
         "kind": "signal",
         "from": {
-          "node": "j4",
-          "port": "qout"
+          "node": "l4",
+          "port": "q"
         },
         "to": {
           "node": "ctrl",
@@ -2117,11 +1150,11 @@
         "label": null
       },
       {
-        "id": "s067",
+        "id": "s037",
         "kind": "signal",
         "from": {
-          "node": "j4",
-          "port": "qdout"
+          "node": "l4",
+          "port": "qd"
         },
         "to": {
           "node": "ctrl",
@@ -2131,11 +1164,11 @@
         "label": null
       },
       {
-        "id": "s068",
+        "id": "s038",
         "kind": "signal",
         "from": {
-          "node": "j2",
-          "port": "qout"
+          "node": "l2",
+          "port": "q"
         },
         "to": {
           "node": "angles",
@@ -2145,11 +1178,11 @@
         "label": null
       },
       {
-        "id": "s069",
+        "id": "s039",
         "kind": "signal",
         "from": {
-          "node": "j3",
-          "port": "qout"
+          "node": "l3",
+          "port": "q"
         },
         "to": {
           "node": "angles",
@@ -2159,11 +1192,11 @@
         "label": null
       },
       {
-        "id": "s070",
+        "id": "s040",
         "kind": "signal",
         "from": {
-          "node": "j4",
-          "port": "qout"
+          "node": "l4",
+          "port": "q"
         },
         "to": {
           "node": "angles",
@@ -2173,7 +1206,7 @@
         "label": null
       },
       {
-        "id": "b071",
+        "id": "b041",
         "kind": "bond",
         "from": {
           "node": "dist",
@@ -2187,20 +1220,21 @@
         "label": null
       },
       {
-        "id": "b072",
+        "id": "b042",
         "kind": "bond",
         "from": {
           "node": "tipt",
           "port": "b"
         },
         "to": {
-          "node": "bj4"
+          "node": "l4",
+          "port": "child"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s073",
+        "id": "s043",
         "kind": "signal",
         "from": {
           "node": "zero",
@@ -2214,7 +1248,7 @@
         "label": null
       },
       {
-        "id": "s074",
+        "id": "s044",
         "kind": "signal",
         "from": {
           "node": "zero",
@@ -2228,7 +1262,7 @@
         "label": null
       },
       {
-        "id": "s075",
+        "id": "s045",
         "kind": "signal",
         "from": {
           "node": "zero",
@@ -2242,7 +1276,7 @@
         "label": null
       },
       {
-        "id": "s076",
+        "id": "s046",
         "kind": "signal",
         "from": {
           "node": "zero",
@@ -2256,7 +1290,7 @@
         "label": null
       },
       {
-        "id": "s077",
+        "id": "s047",
         "kind": "signal",
         "from": {
           "node": "zero",
@@ -2270,7 +1304,7 @@
         "label": null
       },
       {
-        "id": "s078",
+        "id": "s048",
         "kind": "signal",
         "from": {
           "node": "pulse",
@@ -2284,7 +1318,7 @@
         "label": null
       },
       {
-        "id": "bf071",
+        "id": "bf041",
         "kind": "bond",
         "from": {
           "node": "j1",
@@ -2298,21 +1332,21 @@
         "label": null
       },
       {
-        "id": "bf072",
+        "id": "bf042",
         "kind": "bond",
         "from": {
           "node": "arm",
           "port": "B"
         },
         "to": {
-          "node": "t2",
-          "port": "b"
+          "node": "l2",
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "sf073",
+        "id": "sf043",
         "kind": "signal",
         "from": {
           "node": "w1",
@@ -2326,14 +1360,14 @@
         "label": null
       },
       {
-        "id": "sf074",
+        "id": "sf044",
         "kind": "signal",
         "from": {
           "node": "arm",
           "port": "poseB"
         },
         "to": {
-          "node": "ca2",
+          "node": "l2",
           "port": "gp"
         },
         "route": [],
@@ -2447,39 +1481,39 @@
       "target": "link:rod1",
       "property": "pose",
       "signal": [
-        "W2/g[1]",
-        "W2/g[2]",
-        "W2/g[3]",
-        "W2/g[4]",
-        "W2/g[5]",
-        "W2/g[6]",
-        "W2/g[7]"
+        "L2/W/g[1]",
+        "L2/W/g[2]",
+        "L2/W/g[3]",
+        "L2/W/g[4]",
+        "L2/W/g[5]",
+        "L2/W/g[6]",
+        "L2/W/g[7]"
       ]
     },
     {
       "target": "link:rod2",
       "property": "pose",
       "signal": [
-        "W3/g[1]",
-        "W3/g[2]",
-        "W3/g[3]",
-        "W3/g[4]",
-        "W3/g[5]",
-        "W3/g[6]",
-        "W3/g[7]"
+        "L3/W/g[1]",
+        "L3/W/g[2]",
+        "L3/W/g[3]",
+        "L3/W/g[4]",
+        "L3/W/g[5]",
+        "L3/W/g[6]",
+        "L3/W/g[7]"
       ]
     },
     {
       "target": "link:rod3",
       "property": "pose",
       "signal": [
-        "W4/g[1]",
-        "W4/g[2]",
-        "W4/g[3]",
-        "W4/g[4]",
-        "W4/g[5]",
-        "W4/g[6]",
-        "W4/g[7]"
+        "L4/W/g[1]",
+        "L4/W/g[2]",
+        "L4/W/g[3]",
+        "L4/W/g[4]",
+        "L4/W/g[5]",
+        "L4/W/g[6]",
+        "L4/W/g[7]"
       ]
     },
     {

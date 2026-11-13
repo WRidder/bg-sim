@@ -630,7 +630,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "J1/qdout",
+          "signal": "L1/J/qdout",
           "from_t": 0.02,
           "to_t": 0.99,
           "value": 0.0001,
@@ -755,13 +755,13 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "value": 3.0,
           "note": "the arm stays inside the +-3 rad cable limit (measured max 2.500 rad)"
         },
         {
           "kind": "max_abs",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "value": 2.5,
           "abs": 0.12500071076252858,
           "note": "peak travel 2.500 rad (design closed loop 2.500; collocation bound 2.5)"
@@ -866,7 +866,7 @@
         },
         {
           "kind": "max_abs_le",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "value": 3.0,
           "note": "inside the travel limit (measured 0.496 rad)"
         },
@@ -915,7 +915,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.25,
           "value": 0.098075955,
           "abs": 2e-05,
@@ -955,7 +955,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.5,
           "value": -0.25758048,
           "abs": 2e-05,
@@ -995,7 +995,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 0.75,
           "value": -0.23549022,
           "abs": 2e-05,
@@ -1035,7 +1035,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 1.0,
           "value": 0.208075088,
           "abs": 2e-05,
@@ -1075,7 +1075,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 1.25,
           "value": 0.431206778,
           "abs": 2e-05,
@@ -1115,7 +1115,7 @@
         },
         {
           "kind": "cursor_value",
-          "signal": "J1/qout",
+          "signal": "L1/J/qout",
           "t": 1.5,
           "value": 0.165520367,
           "abs": 2e-05,

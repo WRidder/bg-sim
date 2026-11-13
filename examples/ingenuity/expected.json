@@ -7,7 +7,7 @@
       "checks": [
         {
           "kind": "cursor_value",
-          "signal": "Foot1/f_n",
+          "signal": "Foot1/Contact/f_n",
           "t": 0.5,
           "value": 1.50255,
           "rtol": 0.01,

@@ -40,7 +40,10 @@ airframe is bonded to the body's 1-junction:
 * the airframe drag (`DragWrench` at the fuselage centre, from `Air`);
 * four landing-gear feet (`Foot1..4`, Hertz `ContactPoint` with friction on the `Ground`
   `ContactSurface`) through mounts at the feet. They carry the vehicle before take-off and after
-  touchdown, so the same model rests, takes off and lands.
+  touchdown, so the same model rests, takes off and lands. The feet are instances of the library
+  subsystem `ContactFoot` (`library/ContactFoot.bgsub.json`, generated: foot pose `Local` +
+  `Compose`, the body-to-foot `Mount` and the `ContactPoint` named `Contact`; each instance pins its
+  foot position), so a foot's normal force is `Foot<k>/Contact/f_n`.
 
 **Propulsion (one chain per rotor).** Electrical 1-junction: the winding voltage `Supply` (`MSe`,
 set by the rotor-speed governor), the winding and drive losses `Rw` (`R`), a current detector `Amp`

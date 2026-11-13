@@ -3,4 +3,4 @@
 The rotary model in the balance phase from the start: the chain leans 2° per link, the LQR catches it and a
 50 ms tip push at 3 s tests the recovery.
 
-![Link angles, arm angle and torque|900](assets/b6b480a08cd1.png)
+![Link angles, arm angle and torque|900](assets/ce257305523e.png)

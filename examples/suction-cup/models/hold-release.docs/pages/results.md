@@ -1,10 +1,10 @@
 # Results
 
-![The hold-release run: heights, vacuum, stroke and utilisation|900](assets/98a0f8916bb4.png)
+![The hold-release run: heights, vacuum, stroke and utilisation|900](assets/613d9640e4f2.png)
 
 The vacuum builds up in about 0.1 s. While the box still rests on the table, the lift stroke pulls it up:
 
-![Vacuum build-up and lift-off|900](assets/22dd9eefa80c.png)
+![Vacuum build-up and lift-off|900](assets/85b752d5c263.png)
 
 ## Simulation against the hand calculation
 

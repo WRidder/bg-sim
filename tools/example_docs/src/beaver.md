@@ -21,7 +21,7 @@ The de Havilland DHC-2 'Beaver' of the TU Delft *Flight Dynamics and Control* to
 
 | block | role |
 | --- | --- |
-| [Phugoid](block:Phugoid), [ShortPeriod](block:ShortPeriod), [DutchRoll](block:DutchRoll), [Roll](block:Roll), [Spiral](block:Spiral) | one airframe each (a subsystem): rigid body, air data, aerodynamics, propulsion, wrench, drivetrain |
+| [Phugoid](block:Phugoid), [ShortPeriod](block:ShortPeriod), [DutchRoll](block:DutchRoll), [Roll](block:Roll), [Spiral](block:Spiral) | one airframe each, an instance of the library subsystem `BeaverAirframe`: rigid body, air data, aerodynamics, propulsion, wrench, drivetrain |
 | [Trim_de](block:Trim_de) ... [Trim_pz](block:Trim_pz) | the FDC trim: elevator, ailerons, rudder, flaps, rpm, manifold pressure |
 | [GrowRoll](block:GrowRoll), [GrowSpiral](block:GrowSpiral) | $\lambda = \dot\phi/\phi$: on a real mode this is the eigenvalue |
 

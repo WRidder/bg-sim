@@ -142,7 +142,7 @@ Each cup sits between two `FixedTransform3DNeutral` mounts:
 
 The cups form a 2 x 3 pattern, 0.36 m along the carton and 0.16 m across. Cups 1/2 trail, 3/4 sit in the middle and 5/6 lead, for a move in +x at yaw 0.
 
-Four [ContactPoint](block:Floor1) corners carry the carton on the conveyor and on the place table until the lift and after the release.
+Four corner contacts ([Floor1](block:Floor1) to `Floor4`, instances of the library subsystem `ContactFoot`: a mount and a `ContactPoint` each) carry the carton on the conveyor and on the place table until the lift and after the release.
 
 ## The suction cup
 

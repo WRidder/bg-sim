@@ -10,7 +10,9 @@
                    ArmIK blocks, the stacked pair and the ideal-SRS pair, drawn in 3D from the IK
                    solutions. The dashboard mirrors the interactive page.
 * `humanoid-hold`  the torso with both stacked 7-DOF arms as a spatial multibond model: links with
-                   mass and inertia, compliant Revolute3D joints, one bond-graph drive per joint
+                   mass and inertia, compliant Revolute3D joints (each link an instance `LArm1` ..
+                   `RArm7` of the library subsystem `RevoluteLink3D`, written to
+                   `library/RevoluteLink3D.bgsub.json` from `serial_link.py`), one bond-graph drive per joint
                    (motor, rotor inertia, elastic gear, joint friction, torque sensor), the shared
                    box held by two stiff grasp springs (Revolute3D welds), and the 1 kHz firmware
                    (trajectory -> IK -> PID servo per arm).
@@ -27,6 +29,7 @@ import numpy as np
 
 import humanoid as dz
 import srs
+import serial_link as sl
 from diagram import Diagram, fmt, mat, pose_params, vec
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -196,59 +199,41 @@ def build_ik() -> dict:
 
 X0 = 400  # first joint column
 DX = 520  # column pitch per joint
-ROWS = {"L": 300, "R": 2700}  # chain row per arm; the pose band is 450 below, the drives 900 below
+ROWS = {"L": 300, "R": 2700}  # chain row per arm; the hand frame is 450 below, the drives 900 below
 
 
 def add_arm(d: Diagram, p: str, s: int) -> None:
-    """World -> Mount -> J1 -> Link1 -> BJ1 -> B1, T2 -> J2 -> ... -> B7, the pose band and the
-    seven drives of arm p (L/R)."""
+    """World -> pArm1 -> ... -> pArm7 (RevoluteLink3D instances: offset T, joint J, offset Link, body B
+    on its junction BJ, pose band W, P) and the seven drives of arm p (L/R)."""
     f = dz.chain_frames(s)
     y0 = ROWS[p]
     band = y0 + 450
     yd = y0 + 900
     tau0 = dz.statics(dz.Q_START, s, dz.HAND_LOAD)
     bgear = dz.gear_damping()
-    d.ref(f"world{p}", f"World{p}", "stdlib:multibond/GroundSpatial", X0 - 260, y0)
-    d.ref(f"mount{p}", f"Mount{p}", "stdlib:multibond/FixedTransform3DNeutral", X0 - 120, y0,
-          params=pose_params(np.linalg.inv(f["LN"][0])))  # fmt: skip
-    d.connect("bond", (f"world{p}", "p"), (f"mount{p}", "b"))
-    d.ref(f"base{p}", f"Base{p}", "stdlib:spatial/LocalPose3D", X0 - 260, band, params=pose_params(np.eye(4)))
-    prev = f"base{p}"
+    d.ref(f"world{p}", f"World{p}", "stdlib:multibond/GroundSpatial", X0 - 260, y0 + 120)
+    d.ref(f"base{p}", f"Base{p}", "stdlib:spatial/LocalPose3D", X0 - 260, y0, params=pose_params(np.eye(4)))
     for i in range(srs.NJ):
         k = i + 1
         x = X0 + DX * i
         bt, br = dz.held_damping(dz.K_HELD, i)
-        d.ref(f"j{p}{k}", f"{p}J{k}", "stdlib:spatial/Revolute3D", x + 80, y0,
-              params={"kt": fmt(dz.K_HELD), "kr": fmt(dz.K_HELD), "bt": fmt(bt), "br": fmt(br),
-                      "q0": fmt(dz.Q_START[i] * srs.D)})  # fmt: skip
-        d.ref(f"link{p}{k}", f"{p}Link{k}", "stdlib:multibond/FixedTransform3DNeutral", x + 200, y0, params=pose_params(f["LC"][i]))
-        d.junction(f"bj{p}{k}", f"{p}BJ{k}", "1", x + 320, y0 + 10)
-        d.ref(f"b{p}{k}", f"{p}B{k}", "stdlib:spatial/RigidBody3D", x + 310, y0 + 110,
-              params={"m": fmt(dz.LINK_MASS[i]), "J": vec(dz.link_inertia(i)), "g0": fmt(dz.G0)})  # fmt: skip
+        # T: the parent body's frame seen from the joint frame (for joint 1 the shoulder mount, inv(LN_1))
+        t_pose = np.linalg.inv(f["LN"][0]) if i == 0 else np.linalg.inv(f["LN"][i]) @ f["LC"][i - 1]
+        params, starts = sl.pins(
+            pose_params(t_pose),
+            {"kt": fmt(dz.K_HELD), "kr": fmt(dz.K_HELD), "bt": fmt(bt), "br": fmt(br), "q0": fmt(dz.Q_START[i] * srs.D)},
+            pose_params(f["LC"][i]),
+            {"m": fmt(dz.LINK_MASS[i]), "J": vec(dz.link_inertia(i)), "g0": fmt(dz.G0)},
+            pose_params(f["LN"][i]),
+            pose_params(f["LC"][i]),
+        )  # fmt: skip
+        d.ref(f"arm{p}{k}", f"{p}Arm{k}", f"project:{sl.name()}", x + 60, y0, params=params, starts=starts)
         if i == 0:
-            d.connect("bond", (f"mount{p}", "a"), (f"j{p}1", "parent"))
+            d.connect("bond", (f"world{p}", "p"), (f"arm{p}1", "parent"))
+            d.connect("signal", (f"base{p}", "g"), (f"arm{p}1", "gp"))
         else:
-            t_pose = np.linalg.inv(f["LN"][i]) @ f["LC"][i - 1]
-            d.ref(f"t{p}{k}", f"{p}T{k}", "stdlib:multibond/FixedTransform3DNeutral", x - 40, y0, params=pose_params(t_pose))
-            d.connect("bond", (f"t{p}{k}", "a"), (f"j{p}{k}", "parent"))
-            d.connect("bond", (f"bj{p}{k - 1}", None), (f"t{p}{k}", "b"))
-        d.connect("bond", (f"j{p}{k}", "child"), (f"link{p}{k}", "a"))
-        d.connect("bond", (f"link{p}{k}", "b"), (f"bj{p}{k}", None))
-        d.connect("bond", (f"b{p}{k}", "p"), (f"bj{p}{k}", None))
-        # pose band: W_k = W_{k-1} o LN_k o J_k.pose ; body P_k = W_k o LC_k
-        d.ref(f"ln{p}{k}", f"{p}LN{k}", "stdlib:spatial/LocalPose3D", x - 40, band + 100, params=pose_params(f["LN"][i]))
-        d.ref(f"ca{p}{k}", f"{p}CA{k}", "stdlib:multibond/ComposePose3D", x - 40, band)
-        d.ref(f"w{p}{k}", f"{p}W{k}", "stdlib:multibond/ComposePose3D", x + 80, band)
-        d.ref(f"lc{p}{k}", f"{p}LC{k}", "stdlib:spatial/LocalPose3D", x + 310, band + 220, params=pose_params(f["LC"][i]))
-        d.ref(f"pb{p}{k}", f"{p}P{k}", "stdlib:multibond/ComposePose3D", x + 310, band + 110)
-        d.connect("signal", (prev, "g"), (f"ca{p}{k}", "gp"))
-        d.connect("signal", (f"ln{p}{k}", "g"), (f"ca{p}{k}", "gl"))
-        d.connect("signal", (f"ca{p}{k}", "g"), (f"w{p}{k}", "gp"))
-        d.connect("signal", (f"j{p}{k}", "pose"), (f"w{p}{k}", "gl"))
-        d.connect("signal", (f"w{p}{k}", "g"), (f"pb{p}{k}", "gp"))
-        d.connect("signal", (f"lc{p}{k}", "g"), (f"pb{p}{k}", "gl"))
-        d.connect("signal", (f"pb{p}{k}", "g"), (f"b{p}{k}", "g"))
-        prev = f"w{p}{k}"
+            d.connect("bond", (f"arm{p}{k - 1}", "child"), (f"arm{p}{k}", "parent"))
+            d.connect("signal", (f"arm{p}{k - 1}", "g"), (f"arm{p}{k}", "gp"))
         # drive: Motor (MSe) -> 1 [Rotor: I] -> 0 [TauSense: De] -> 1 [Spring: C, Damper: R]
         #                                         -> 1 [Friction: R] -> J.drive
         d.ref(f"mot{p}{k}", f"{p}Motor{k}", "stdlib:bondgraph/MSe", x - 40, yd, params={"gain": "1.0"})
@@ -271,12 +256,12 @@ def add_arm(d: Diagram, p: str, s: int) -> None:
         d.connect("bond", (f"s0{p}{k}", None), (f"tq{p}{k}", "p"))
         d.connect("bond", (f"s0{p}{k}", None), (f"jl{p}{k}", None))
         d.connect("bond", (f"jl{p}{k}", None), (f"fr{p}{k}", "p"))
-        d.connect("bond", (f"jl{p}{k}", None), (f"j{p}{k}", "drive"))
-    # the hand frame: Hand = W7 o LH
+        d.connect("bond", (f"jl{p}{k}", None), (f"arm{p}{k}", "drive"))
+    # the hand frame: Hand = pArm7/W o LH
     xh = X0 + DX * 7
     d.ref(f"lh{p}", f"{p}LH", "stdlib:spatial/LocalPose3D", xh, band + 100, params=pose_params(f["LH"]))
     d.ref(f"hand{p}", f"{p}Hand", "stdlib:multibond/ComposePose3D", xh + 120, band)
-    d.connect("signal", (f"w{p}7", "g"), (f"hand{p}", "gp"))
+    d.connect("signal", (f"arm{p}7", "g"), (f"hand{p}", "gp"))
     d.connect("signal", (f"lh{p}", "g"), (f"hand{p}", "gl"))
 
 
@@ -299,7 +284,7 @@ def add_grasp(d: Diagram, p: str, s: int) -> None:
     d.junction(f"wj{p}", f"{p}WeldJ", "1", xw, yw + 120)
     d.ref(f"wc{p}", f"{p}WeldSpring", "stdlib:bondgraph/C", xw - 60, yw + 220, params={"c": fmt(1.0 / g["kq"])})
     d.ref(f"wr{p}", f"{p}WeldDamper", "stdlib:bondgraph/R", xw + 60, yw + 220, params={"r": fmt(br)})
-    d.connect("bond", (f"bj{p}7", None), (f"tip{p}", "b"))
+    d.connect("bond", (f"arm{p}7", "child"), (f"tip{p}", "b"))
     d.connect("bond", (f"tip{p}", "a"), (f"weld{p}", "parent"))
     d.connect("bond", (f"weld{p}", "child"), (f"grip{p}", "a"))
     d.connect("bond", (f"grip{p}", "b"), ("boxj", None))
@@ -343,8 +328,8 @@ def add_hold_firmware(d: Diagram) -> None:
         ik = f"ik{p.lower()}"
         for k in range(1, 8):
             d.connect("signal", (ik, f"qr{k}"), (key, f"qr{k}"))
-            d.connect("signal", (f"j{p}{k}", "qout"), (key, f"q{k}"))
-            d.connect("signal", (f"j{p}{k}", "qdout"), (key, f"dq{k}"))
+            d.connect("signal", (f"arm{p}{k}", "q"), (key, f"q{k}"))
+            d.connect("signal", (f"arm{p}{k}", "qd"), (key, f"dq{k}"))
             d.connect("signal", (key, f"u{k}"), (f"mot{p}{k}", "u"))
     # readouts: the object and each hand against the commanded poses
     yb = (ROWS["L"] + ROWS["R"]) // 2
@@ -372,14 +357,14 @@ def build_hold() -> dict:
         add_grasp(d, p, s)
     add_hold_firmware(d)
     plots = [
-        {"id": "p1", "title": "Left arm: joint angles [rad]", "signals": [f"LJ{k}/qout" for k in range(1, 8)]},
-        {"id": "p2", "title": "Right arm: joint angles [rad]", "signals": [f"RJ{k}/qout" for k in range(1, 8)]},
+        {"id": "p1", "title": "Left arm: joint angles [rad]", "signals": [f"LArm{k}/J/qout" for k in range(1, 8)]},
+        {"id": "p2", "title": "Right arm: joint angles [rad]", "signals": [f"RArm{k}/J/qout" for k in range(1, 8)]},
         {"id": "p3", "title": "Object pose error (simulated vs commanded)", "signals": ["BoxError/e_mm", "BoxError/e_deg"]},
         {"id": "p4", "title": "Hand pose errors (simulated vs grasp target)",
          "signals": ["LHandError/e_mm", "LHandError/e_deg", "RHandError/e_mm", "RHandError/e_deg"]},
         {"id": "p5", "title": "IK solution errors and nearest limit", "signals": ["IKL/pe", "IKL/oe", "IKL/lim"]},
         {"id": "p6", "title": "Grasp loads", "signals": ["LGraspLoad/F", "RGraspLoad/F", "LGraspLoad/M", "RGraspLoad/M"]},
-        {"id": "p7", "title": "Left elbow position (world)", "signals": ["LW4/g[5]", "LW4/g[6]", "LW4/g[7]"]},
+        {"id": "p7", "title": "Left elbow position (world)", "signals": ["LArm4/W/g[5]", "LArm4/W/g[6]", "LArm4/W/g[7]"]},
         {"id": "p8", "title": "Left joint torques (sensors) [N m]", "signals": [f"LTauSense{k}/y" for k in range(1, 8)]},
     ]  # fmt: skip
     cards = [{"id": "t", "kind": "text", "size": "2x1", "title": "Bimanual hold, dynamic",
@@ -400,12 +385,12 @@ def build_hold() -> dict:
         value("IKR_lim", "Right: nearest joint limit", "IKR/lim", 0, "%", LIM_ZONES),
         value("F", "Left grasp force", "LGraspLoad/F", 1, "N"),
         value("M", "Left grasp moment", "LGraspLoad/M", 2, "N*m"),
-        {"id": "qL", "kind": "plot", "size": "2x2", "title": "Left arm: joint angles [rad]", "signals": [f"LJ{k}/qout" for k in range(1, 8)]},
-        {"id": "qR", "kind": "plot", "size": "2x2", "title": "Right arm: joint angles [rad]", "signals": [f"RJ{k}/qout" for k in range(1, 8)]},
+        {"id": "qL", "kind": "plot", "size": "2x2", "title": "Left arm: joint angles [rad]", "signals": [f"LArm{k}/J/qout" for k in range(1, 8)]},
+        {"id": "qR", "kind": "plot", "size": "2x2", "title": "Right arm: joint angles [rad]", "signals": [f"RArm{k}/J/qout" for k in range(1, 8)]},
         {"id": "eb", "kind": "plot", "size": "2x2", "title": "Object error (mm, deg) and elbow bias [deg]", "signals": ["BoxError/e_mm", "BoxError/e_deg", "Traj/elbow_bias"]},
-        {"id": "el", "kind": "plot", "size": "2x2", "title": "Left elbow position (world, m)", "signals": ["LW4/g[5]", "LW4/g[6]", "LW4/g[7]"]},
+        {"id": "el", "kind": "plot", "size": "2x2", "title": "Left elbow position (world, m)", "signals": ["LArm4/W/g[5]", "LArm4/W/g[6]", "LArm4/W/g[7]"]},
     ]  # fmt: skip
-    bindings = joint_bindings("L", lambda k: f"LJ{k}/qout") + joint_bindings("R", lambda k: f"RJ{k}/qout")
+    bindings = joint_bindings("L", lambda k: f"LArm{k}/J/qout") + joint_bindings("R", lambda k: f"RArm{k}/J/qout")
     bindings += joint_bindings("GL", lambda k: f"IdealL/qr{k}") + joint_bindings("GR", lambda k: f"IdealR/qr{k}")
     bindings += [pose_binding("link:box", "BoxPose/g"), pose_binding("link:box_target", "Traj/g"),
                  pose_binding("link:ghost_box", "Traj/gi")]  # fmt: skip
@@ -439,7 +424,17 @@ def write(model: dict) -> None:
     print(f"wrote {path.relative_to(ROOT.parent.parent)}")
 
 
+def write_definition() -> None:
+    """library/RevoluteLink3D.bgsub.json: one link of an arm (design/serial_link.py, shared with the other
+    spatial serial-chain examples)."""
+    definition = sl.definition()
+    path = ROOT / "library" / f"{definition['name']}.bgsub.json"
+    path.write_text(json.dumps(definition, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"wrote {path.relative_to(ROOT.parent.parent)}")
+
+
 def main() -> None:
+    write_definition()
     write(build_ik())
     write(build_hold())
 

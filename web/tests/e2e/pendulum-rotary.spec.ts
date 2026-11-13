@@ -13,12 +13,15 @@ import { expect, test, type Page } from "@playwright/test";
  * For each example:
  *
  * 1. create a copy through `POST /api/projects {name, example}`;
- * 2. open the model and assert the arm joint, the servo, the links and the firmware;
+ * 2. open the model and assert the arm joint, the servo, the links and the firmware; where the pendulum
+ *    links are instances of the library subsystem `RevoluteLink3D` (`L2..L4` of the triple), open the
+ *    first one and assert its joint `J`, body `B` and offsets inside;
  * 3. press Run, wait for `done`;
  * 4. plot the tip link angle (`Angles/phi<N>`): before the disturbance (a second before it) the
  *    chain stands upright inside 1 deg, and at the end of the run it has recovered inside 1 deg;
  * 5. open 3D: the scene loads, the bindings of every joint validate, and the first link joint
- *    follows `J2/qout` at two times (hanging at pi, upright at 0).
+ *    follows its joint angle (`J2/qout`, or `L2/J/qout` inside the instance) at two times (hanging at
+ *    pi, upright at 0).
  *
  * The fake worker answers every run from a fixed fixture, so this spec uses the real worker: it
  * starts one on a free port when the suite was not already started with `BGSIM_E2E_REAL=1` (as
@@ -40,6 +43,8 @@ interface Case {
   tDist: number;
   tEnd: number;
   nodes: string[];
+  /** The pendulum links drawn as instances of the library subsystem RevoluteLink3D. */
+  instances: string[];
 }
 
 const CASES: Case[] = [
@@ -49,13 +54,16 @@ const CASES: Case[] = [
     tDist: 8.5,
     tEnd: 12,
     nodes: ["Ctrl", "Motor", "Gear", "J1", "J2", "J3", "Arm", "Rod1", "Rod2", "Dist"],
+    instances: [],
   },
   {
     example: "pendulum-triple-rotary",
     links: 3,
     tDist: 8.5,
     tEnd: 12,
-    nodes: ["Ctrl", "Motor", "Gear", "J1", "J2", "J3", "J4", "Arm", "Rod1", "Rod2", "Rod3", "Dist"],
+    // The arm link (J1, Arm) is drawn flat; the three pendulum links are instances L2..L4.
+    nodes: ["Ctrl", "Motor", "Gear", "J1", "Arm", "Bearing2", "Bearing4", "Dist"],
+    instances: ["L2", "L3", "L4"],
   },
 ];
 
@@ -216,8 +224,22 @@ for (const scenario of CASES) {
     await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("run-button")).toBeEnabled();
 
-    for (const name of scenario.nodes) {
+    for (const name of [...scenario.nodes, ...scenario.instances]) {
       await expect(node(page, name)).toHaveCount(1);
+    }
+    const first = scenario.instances[0];
+    if (first !== undefined) {
+      // Inside the first pendulum link: the offset T, the joint J (its bearing is outside, on the
+      // drive port), the offset Link, the body junction BJ and the rod body B.
+      await node(page, first).dblclick({ position: { x: 8, y: 8 } });
+      await expect(page.getByTestId("breadcrumb-1")).toHaveAttribute("data-breadcrumb-name", first);
+      await expect(page.getByTestId("breadcrumb-1")).toContainText("RevoluteLink3D");
+      for (const name of ["T", "J", "Link", "BJ", "B"]) {
+        await expect(node(page, name)).toHaveCount(1);
+      }
+      await expect(page.getByTestId("boundary-wire-drive")).toHaveAttribute("data-kind", "power");
+      await page.getByTestId("breadcrumb-0").click();
+      await expect(node(page, first)).toHaveCount(1);
     }
 
     await page.getByTestId("run-button").click();
@@ -299,7 +321,7 @@ for (const scenario of CASES) {
       const raw = await bar.getAttribute("data-applied");
       return (JSON.parse(raw ?? "{}") as Record<string, number>)[target];
     };
-    // Hanging at t = 0.5 s (link 1 at pi), upright at t = tDist - 1 s (J2/qout near 0).
+    // Hanging at t = 0.5 s (link 1 at pi), upright at t = tDist - 1 s (its joint angle near 0).
     for (const [time, angle, tolerance] of [
       [0.5, Math.PI, 0.02],
       [scenario.tDist - 1.0, 0.0, 0.05],

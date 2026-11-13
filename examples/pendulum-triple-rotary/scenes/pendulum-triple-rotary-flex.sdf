@@ -5,7 +5,7 @@
   Z-up, metres. Every moving link is placed by a pose binding (no joints): the frames are the model's.
     arm_bar  Arm/pose    the beam's reference frame = end A at the motor axis, x along the arm, z up
     arm_tip  Arm/poseB   end B (deflected and turned with the tip slopes and the twist): the hinge housing
-    rodK     W{K+1}/g    the pendulum joint K's child frame: x along the link, z = the hinge axis
+    rodK     L{K+1}/W/g  the pendulum joint K's child frame: x along the link, z = the hinge axis
   The strip `arm_strip` (a box from the hub, end A, to the tip, end B: beam axis +x, beam y +y, length
   0.2159 m) is deformed by Arm/eta_y[1..2] (horizontal bending), Arm/eta_z[1..2] (vertical) and
   Arm/eta_t[1..1] (torsion), clamped-free basis. The scene is drawn at q = 0: the links upright.

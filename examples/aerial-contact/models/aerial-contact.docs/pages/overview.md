@@ -4,15 +4,15 @@ A hexarotor flies up to a wall, pushes an end-effector on it with a tilted thrus
 
 The model contains
 
-- a 2.1 kg hexarotor (80 cm across, 950 Kv motors, 10x4.5 in propellers, 16 V tether, 78 N maximum thrust) as a multibond floating body, every rotor a chain [Esc1](block:Esc1) - [Drv1](block:Drv1) - [Prop1](block:Prop1) (six of them), the air and rotor wrench in [RW](block:RW);
+- a 2.1 kg hexarotor (80 cm across, 950 Kv motors, 10x4.5 in propellers, 16 V tether, 78 N maximum thrust) as a multibond floating body, every rotor ([Rotor1](block:Rotor1) to `Rotor6`) an instance of the library subsystem `Rotor`, the chain `Esc` - `Drive` (`ElectricDrive`) - `Prop` (`Propeller`), the air and rotor wrench in [RW](block:RW);
 - a one-DoF manipulator: a position servo [Servo](block:Servo) about the body y axis, driven by [ServoCtl](block:ServoCtl), and a 0.6 m carbon tube [Arm](block:Arm) (0.23 kg, rigid);
 - the rubber shock mount [Rub](block:Rub), a compliant spherical joint with the spring-damper [RubK](block:RubK), and the 0.15 kg end-effector [EE](block:EE);
-- three omnidirectional wheels at 120 degrees, each an anisotropic contact [Wheel1](block:Wheel1), [Wheel2](block:Wheel2), [Wheel3](block:Wheel3) against the wall [Wall](block:Wall), driven open loop by [Omni](block:Omni);
+- three omnidirectional wheels at 120 degrees, each an instance of the library subsystem `OmniWheel` ([Wheel1](block:Wheel1), [Wheel2](block:Wheel2), [Wheel3](block:Wheel3): wheel pose, mount and an anisotropic contact named `Contact`) against the wall [Wall](block:Wall), driven open loop by [Omni](block:Omni);
 - the firmware: sensors ([Imu](block:Imu), [Gps](block:Gps)) and the navigation filter [Nav](block:Nav), the phase machine [Sup](block:Sup), and three controllers: the free-flight cascade ([Pos](block:Pos), [Att](block:Att), [Rate](block:Rate)), the engage controller [Eng](block:Eng) and the gain-scheduled LQR contact controller [Con](block:Con), selected by [Sel](block:Sel) and allocated to the rotors by [Mix](block:Mix).
 
 The run lasts 34 s and starts in hover (there is no take-off; the landing legs of the quadcopter example are not part of this model). It approaches the wall in free flight, engages with the pitch reference $\theta_{sp}$ ramping from 12 to 20 degrees, holds contact while $\theta_{sp}$ ramps to 27 degrees, climbs 0.30 m and descends again by an open-loop wheel velocity command, disengages by $C = 0.75$ m and hovers.
 
-![The run|720](assets/330d3ca62ecb.png)
+![The run|720](assets/237e7c189a6d.png)
 
 ## Run it
 

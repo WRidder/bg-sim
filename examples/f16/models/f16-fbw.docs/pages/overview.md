@@ -9,7 +9,7 @@ The aft-CG F-16 (xcg 0.38, an unstable pole of +0.66 1/s at the book's trim) flo
 | [StepOn](block:StepOn), [StepOff](block:StepOff), [QCmd](block:QCmd) | the pitch-rate command (0.05 s ramps) |
 | [SchedKa](block:SchedKa), [SchedKq](block:SchedKq), [SchedKi](block:SchedKi) | stdlib `Lookup2D` over (qbar in Pa, Mach) |
 | [SchedLaw](block:SchedLaw) | `PitchFBW`: $u = K_\alpha \alpha + K_q (q - 0.5\, q_{cmd}) + \xi$ with anti-windup |
-| [SchedAct](block:SchedAct) | the servo from stdlib blocks: ±25 deg, 20.2 rad/s, ±60 deg/s |
+| [SchedAct](block:SchedAct) | the servo, an instance of the library subsystem `F16Servo` (stdlib blocks): ±25 deg, 20.2 rad/s, ±60 deg/s |
 
 ## What to try
 

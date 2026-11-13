@@ -22,7 +22,7 @@
 @@ page hold-release overview - | Overview
 # Suction cup: one bellows cup and a box
 
-One bellows suction cup holds a small box. The cup is a [SuctionCup](block:Cup), the 1.5-fold bellows cup of the `fanuc-pick` example (lip 32 mm, rest length 30 mm), with the nonlinear bellows switched on. It sits on a tool with a prescribed motion ([CupTool](block:Tool)). One compact ejector ([Gen](block:Gen)) evacuates it. The box is a free [RigidBody3D](block:Box) of 0.6 kg (120 x 120 x 40 mm). It starts on a table (four [ContactPoint](block:Floor1) corners), is lifted 60 mm, put through one motion, put back and released.
+One bellows suction cup holds a small box. The cup is a [SuctionCup](block:Cup), the 1.5-fold bellows cup of the `fanuc-pick` example (lip 32 mm, rest length 30 mm), with the nonlinear bellows switched on. It sits on a tool with a prescribed motion ([CupTool](block:Tool)). One compact ejector ([Gen](block:Gen)) evacuates it. The box is a free [RigidBody3D](block:Box) of 0.6 kg (120 x 120 x 40 mm). It starts on a table (four corner contacts [Floor1](block:Floor1) to `Floor4`, instances of the library subsystem `ContactFoot`: a mount and a `ContactPoint` each), is lifted 60 mm, put through one motion, put back and released.
 
 ![The model canvas|900](@fig:diagram)
 

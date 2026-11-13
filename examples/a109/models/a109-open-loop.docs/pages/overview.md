@@ -13,11 +13,11 @@ Four helicopters are released from trim at sea level:
 * **Lon**: a 0.5 deg forward cyclic pulse in hover.
 * **Fwd**: a 1 deg pedal pulse at 100 kt.
 
-![The model canvas|900](assets/ae25ada341d2.png)
+![The model canvas|900](assets/6095c8d22a4f.png)
 
 | block | role |
 | --- | --- |
-| [Hover](block:Hover), [Coll](block:Coll), [Lon](block:Lon), [Fwd](block:Fwd) | one airframe each (a subsystem): rigid body, air data, the five components, drivetrain and governor |
+| [Hover](block:Hover), [Coll](block:Coll), [Lon](block:Lon), [Fwd](block:Fwd) | one airframe each, an instance of the library subsystem `HeliAirframe`: rigid body, air data, the five components, drivetrain and governor |
 | [Hoverth0](block:Hoverth0), [CollB1](block:CollB1) and the like | the trim blade angles (deg) and the steps and pulses |
 | [HoverView](block:HoverView) and the like | `HeliView`: keeps Hover framed; rotor disc and tail rotor poses |
 

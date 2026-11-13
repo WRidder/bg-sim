@@ -58,7 +58,7 @@ def free_checks(ref: vz.Reference, run_dir: Path, rigid: bool = False) -> list[d
     for j, tc in enumerate(times):
         for k in range(1, 8):
             value = float(sol.y[k - 1, j])
-            sig = f"J{k}/qout"
+            sig = f"L{k}/J/qout"
             meas = abs(at(t, cols[sig], tc) - value)
             if tc == 0.0:
                 tol, why = 1e-9, "released at rest at the ready pose on its consistent deflections"
@@ -98,11 +98,11 @@ def panda_checks(ref: vz.Reference, run_dir: Path, rigid: bool = False) -> list[
     t_end = float(t[-1])
     # start and end: the ready pose (the trajectory ends where it started)
     for k in range(1, 8):
-        sig = f"Robot/J{k}/qout"
+        sig = f"Robot/L{k}/J/qout"
         checks.append({"kind": "cursor_value", "signal": sig, "t": 0.0, "value": float(pz.Q_READY[k - 1]), "abs": 1e-9,
                        "note": "starts at the ready pose (drive springs preloaded with the gravity torque)"})  # fmt: skip
     for k in range(1, 8):
-        sig = f"Robot/J{k}/qout"
+        sig = f"Robot/L{k}/J/qout"
         meas = abs(at(t, cols[sig], t_end) - pz.Q_READY[k - 1])
         checks.append({"kind": "cursor_value", "signal": sig, "t": t_end, "value": float(pz.Q_READY[k - 1]),
                        "abs": bound(meas, 1e-5),
@@ -125,7 +125,7 @@ def panda_checks(ref: vz.Reference, run_dir: Path, rigid: bool = False) -> list[
         if tc > t_end:
             continue
         target = dz.target_pose(tc)
-        q_py, code = pz.ik_flange(target, dz.Q7_REF, np.array([at(t, cols[f"Robot/J{k}/qout"], tc) for k in range(1, 8)]))
+        q_py, code = pz.ik_flange(target, dz.Q7_REF, np.array([at(t, cols[f"Robot/L{k}/J/qout"], tc) for k in range(1, 8)]))
         assert code == 0, (tc, code)
         for k in range(1, 8):
             sig = f"IK/qr{k}"
@@ -154,8 +154,8 @@ def panda_checks(ref: vz.Reference, run_dir: Path, rigid: bool = False) -> list[
     checks.append({"kind": "max_abs_le", "signal": "IK/flag", "value": 0.0, "note": "the IK solves every tick (no hold, no flag)"})
     for k in range(1, 8):
         lim = float(pz.QD_MAX[k - 1])
-        peak = float(np.abs(cols[f"Robot/J{k}/qdout"]).max())
-        checks.append({"kind": "max_abs_le", "signal": f"Robot/J{k}/qdout", "value": lim,
+        peak = float(np.abs(cols[f"Robot/L{k}/J/qdout"]).max())
+        checks.append({"kind": "max_abs_le", "signal": f"Robot/L{k}/J/qdout", "value": lim,
                        "note": f"joint rate within the Franka limit {lim:g} rad/s; measured peak {peak:.3g} rad/s"})  # fmt: skip
     checks.append(no_diagnostics(rigid))
     return checks

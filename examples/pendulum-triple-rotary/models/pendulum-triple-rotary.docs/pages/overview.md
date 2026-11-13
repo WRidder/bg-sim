@@ -15,7 +15,7 @@ A Quanser-style **rotary arm** turns about the vertical axis; a chain of 3 pendu
 ## What to try
 
 - Open the **Plots** tab: "Link angles from upright" ([Angles/phi3](signal:Angles/phi3)), "Motor voltage" ([Ctrl/u](signal:Ctrl/u)) and "Controller phase" ([Ctrl/phase](signal:Ctrl/phase)).
-- Open the **3D View**: the arm and the links follow [J1/qout](signal:J1/qout), [J2/qout](signal:J2/qout), [J3/qout](signal:J3/qout) and [J4/qout](signal:J4/qout).
+- Open the **3D View**: the arm and the links follow [J1/qout](signal:J1/qout), [L2/J/qout](signal:L2/J/qout), [L3/J/qout](signal:L3/J/qout) and [L4/J/qout](signal:L4/J/qout).
 - Raise the disturbance amplitude ([DistPulse](block:DistPulse)): on the design model the balance loop recovers pulses up to 0.149 N (50 ms); beyond that the 15 V limit is reached for too long and the chain falls.
 - Run `pendulum-triple-rotary-free`: the design check, the plant released from a non-trivial pose with the controller off.
 

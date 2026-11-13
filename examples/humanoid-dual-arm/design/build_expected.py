@@ -167,7 +167,7 @@ def hold_checks(refs: dict, run: Run, dof6: bool) -> list[dict]:
         # forward kinematics of the start posture through the multibody pose chain
         for k in range(1, 8):
             for p in "LR":
-                sig = f"{p}J{k}/qout"
+                sig = f"{p}Arm{k}/J/qout"
                 checks.append(cursor(sig, 0.0, fk[p]["q_rad"][k - 1], 1e-9,
                                      "starts at the 6-DOF solution of the start pose (drive springs preloaded with the holding torque)"))  # fmt: skip
         for p in "LR":
@@ -177,7 +177,7 @@ def hold_checks(refs: dict, run: Run, dof6: bool) -> list[dict]:
                 checks.append(cursor(sig, 0.0, fk[p]["hand"][i - 1], bound(meas, 1e-9),
                                      f"hand pose of the start posture: numpy FK (srs.fk in the bg-sim world); measured |delta| {meas:.2g}"))  # fmt: skip
         for j, c in enumerate("xyz"):
-            sig = f"LW4/g[{5 + j}]"
+            sig = f"LArm4/W/g[{5 + j}]"
             meas = abs(run.at(sig, 0.0) - fk["L"]["elbow"][j])
             checks.append(cursor(sig, 0.0, fk["L"]["elbow"][j], bound(meas, 1e-9),
                                  f"left elbow (J4 frame) {c} of the start posture, numpy FK; measured |delta| {meas:.2g} m"))  # fmt: skip
@@ -198,8 +198,8 @@ def hold_checks(refs: dict, run: Run, dof6: bool) -> list[dict]:
     for p in "LR":
         for k in range(1, 8):
             m = run.t >= T_TRACK
-            meas = float(np.abs(run.c[f"{p}J{k}/qout"][m] - run.c[f"IK{p}/qr{k}"][m]).max())
-            checks.append({"kind": "compare_signals", "signal": f"{p}J{k}/qout", "signal_b": f"IK{p}/qr{k}",
+            meas = float(np.abs(run.c[f"{p}Arm{k}/J/qout"][m] - run.c[f"IK{p}/qr{k}"][m]).max())
+            checks.append({"kind": "compare_signals", "signal": f"{p}Arm{k}/J/qout", "signal_b": f"IK{p}/qr{k}",
                            "from_t": T_TRACK, "max_abs": float(f"{max(1.5 * meas, 1e-3):.2g}"),
                            "note": f"joint {k} follows the IK command (PID servo through the elastic gear); measured {meas:.3g} rad ({np.degrees(meas):.3g} deg), bound 1.5x"})  # fmt: skip
     if not dof6:
@@ -211,7 +211,7 @@ def hold_checks(refs: dict, run: Run, dof6: bool) -> list[dict]:
         for tc, tname in ((T_HOLD, "t_hold"), (T_BIAS, "t_bias")):
             ref = tw[tname]["L"]["elbow_world"]
             for j, c in enumerate("xyz"):
-                sig = f"LW4/g[{5 + j}]"
+                sig = f"LArm4/W/g[{5 + j}]"
                 meas = abs(run.at(sig, tc) - ref[j])
                 checks.append(cursor(sig, tc, ref[j], bound(meas, 1e-4),
                                      f"simulated left elbow {c} (world) against the twin's IK elbow, bias {0 if tc == T_HOLD else dz.BIAS:g} deg "
@@ -240,7 +240,7 @@ def hold_checks(refs: dict, run: Run, dof6: bool) -> list[dict]:
         # the 6-DOF arms cannot reach the grasp: joints on limits, the hand errors stay, the elbow stays
         for p in "LR":
             for k, val in ((3, -90.0), (5, 0.0)):
-                sig = f"{p}J{k}/qout"
+                sig = f"{p}Arm{k}/J/qout"
                 v = np.radians(val)
                 meas = abs(run.at(sig, T_BIAS) - v)
                 checks.append(cursor(sig, T_BIAS, v, bound(meas, 1e-4),
@@ -262,7 +262,7 @@ def hold_checks(refs: dict, run: Run, dof6: bool) -> list[dict]:
                 checks.append({"kind": "min_ge", "signal": sig, "from_t": W_DWELL[0], "to_t": T_END, "value": lo,
                                "note": f"6-DOF: the hands miss the grasp target at the commanded pose; measured minimum {meas:.3g}"})  # fmt: skip
         for j, c in enumerate("xyz"):
-            sig = f"LW4/g[{5 + j}]"
+            sig = f"LArm4/W/g[{5 + j}]"
             d = abs(run.at(sig, T_BIAS) - run.at(sig, T_HOLD))
             ref = tw["t_hold"]["L"]["elbow_world"][j]
             meas = abs(run.at(sig, T_BIAS) - ref)

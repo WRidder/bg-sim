@@ -8,7 +8,7 @@ the motor torque), `nz` along local z (vertical) and `nt` torsion modes about th
 Generalised coordinates, in this order::
 
     q[0]            arm (hub) angle about world z         J1/qout
-    q[1 .. 3]       link angles, as in the rigid model    J2/qout .. J4/qout (relative to the arm TIP frame)
+    q[1 .. 3]       link angles, as in the rigid model    L2/J/qout .. L4/J/qout (relative to the arm TIP frame)
     eta_y[1..ny]    horizontal bending, m                 Arm/eta_y[k]
     eta_z[1..nz]    vertical bending, m                   Arm/eta_z[k]
     eta_t[1..nt]    torsion, rad                          Arm/eta_t[k]

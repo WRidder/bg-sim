@@ -4,7 +4,7 @@ The same edge phase as `edge-contact`, but the contacts are replaced by a **`Swi
 
 It uses `RigidBody3D` behind a link rather than `ImpactBody3D`: the wheels need several bonds on the body port and `ImpactBody3D` exposes one; no impact is needed because the guard never fires. The run lasts 1.2 s (`reltol` 1e-9, `abstol` 1e-11, 241 points); 27 states.
 
-![The model canvas|900](assets/5afff19aa709.png)
+![The model canvas|900](assets/e9fa6cae9cd7.png)
 
 ![Tilt and wheel speeds on the switched pivot|900](assets/ca49e0d17ca0.png)
 

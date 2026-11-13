@@ -317,20 +317,23 @@
       },
       {
         "id": "n015",
-        "name": "FootPose1",
+        "name": "Foot1",
         "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
+          "ref": "project:ContactFoot"
         },
         "position": {
           "x": 220,
-          "y": 1180
+          "y": 1100
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "x": "0.20998714292262477",
-          "y": "0.3010845063964105",
-          "z": "-0.27083047222222223"
+          "Local/x": "0.20998714292262477",
+          "Local/y": "0.3010845063964105",
+          "Local/z": "-0.27083047222222223",
+          "Mount/x": "-0.20998714292262477",
+          "Mount/y": "-0.3010845063964105",
+          "Mount/z": "0.27083047222222223"
         },
         "constants": {},
         "starts": {},
@@ -341,17 +344,24 @@
       },
       {
         "id": "n016",
-        "name": "FootWorld1",
+        "name": "Foot2",
         "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 400,
-          "y": 1180
+          "x": 420,
+          "y": 1100
         },
         "rotation": 0,
         "flipX": false,
-        "params": {},
+        "params": {
+          "Local/x": "-0.20998714292262477",
+          "Local/y": "0.3010845063964105",
+          "Local/z": "-0.27083047222222223",
+          "Mount/x": "0.20998714292262477",
+          "Mount/y": "-0.3010845063964105",
+          "Mount/z": "0.27083047222222223"
+        },
         "constants": {},
         "starts": {},
         "ui": {
@@ -361,20 +371,23 @@
       },
       {
         "id": "n017",
-        "name": "FootMount1",
+        "name": "Foot3",
         "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 580,
-          "y": 1180
+          "x": 220,
+          "y": 1300
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "x": "-0.20998714292262477",
-          "y": "-0.3010845063964105",
-          "z": "0.27083047222222223"
+          "Local/x": "-0.20998714292262477",
+          "Local/y": "-0.3010845063964105",
+          "Local/z": "-0.27083047222222223",
+          "Mount/x": "0.20998714292262477",
+          "Mount/y": "0.3010845063964105",
+          "Mount/z": "0.27083047222222223"
         },
         "constants": {},
         "starts": {},
@@ -385,23 +398,23 @@
       },
       {
         "id": "n018",
-        "name": "Foot1",
+        "name": "Foot4",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 760,
-          "y": 1180
+          "x": 420,
+          "y": 1300
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
+          "Local/x": "0.20998714292262477",
+          "Local/y": "-0.3010845063964105",
+          "Local/z": "-0.27083047222222223",
+          "Mount/x": "-0.20998714292262477",
+          "Mount/y": "0.3010845063964105",
+          "Mount/z": "0.27083047222222223"
         },
         "constants": {},
         "starts": {},
@@ -412,291 +425,6 @@
       },
       {
         "id": "n019",
-        "name": "FootPose2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 220,
-          "y": 1260
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.20998714292262477",
-          "y": "0.3010845063964105",
-          "z": "-0.27083047222222223"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n020",
-        "name": "FootWorld2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 400,
-          "y": 1260
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n021",
-        "name": "FootMount2",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 580,
-          "y": 1260
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.20998714292262477",
-          "y": "-0.3010845063964105",
-          "z": "0.27083047222222223"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n022",
-        "name": "Foot2",
-        "block": {
-          "ref": "stdlib:contact/ContactPoint"
-        },
-        "position": {
-          "x": 760,
-          "y": 1260
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n023",
-        "name": "FootPose3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 220,
-          "y": 1340
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.20998714292262477",
-          "y": "-0.3010845063964105",
-          "z": "-0.27083047222222223"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n024",
-        "name": "FootWorld3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 400,
-          "y": 1340
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n025",
-        "name": "FootMount3",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 580,
-          "y": 1340
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.20998714292262477",
-          "y": "0.3010845063964105",
-          "z": "0.27083047222222223"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n026",
-        "name": "Foot3",
-        "block": {
-          "ref": "stdlib:contact/ContactPoint"
-        },
-        "position": {
-          "x": 760,
-          "y": 1340
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n027",
-        "name": "FootPose4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 220,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.20998714292262477",
-          "y": "-0.3010845063964105",
-          "z": "-0.27083047222222223"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n028",
-        "name": "FootWorld4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 400,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n029",
-        "name": "FootMount4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 580,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.20998714292262477",
-          "y": "0.3010845063964105",
-          "z": "0.27083047222222223"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n030",
-        "name": "Foot4",
-        "block": {
-          "ref": "stdlib:contact/ContactPoint"
-        },
-        "position": {
-          "x": 760,
-          "y": 1420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n031",
         "name": "Nav",
         "block": {
           "ref": "project:Nav"
@@ -718,7 +446,7 @@
         }
       },
       {
-        "id": "n032",
+        "id": "n020",
         "name": "RpmSet",
         "block": {
           "ref": "stdlib:sources/Constant"
@@ -740,7 +468,7 @@
         }
       },
       {
-        "id": "n033",
+        "id": "n021",
         "name": "SupplyU",
         "block": {
           "ref": "stdlib:bondgraph/MSe"
@@ -760,7 +488,7 @@
         }
       },
       {
-        "id": "n034",
+        "id": "n022",
         "name": "ElecU",
         "block": {
           "junction": "1"
@@ -780,7 +508,7 @@
         }
       },
       {
-        "id": "n035",
+        "id": "n023",
         "name": "RwU",
         "block": {
           "ref": "stdlib:bondgraph/R"
@@ -802,7 +530,7 @@
         }
       },
       {
-        "id": "n036",
+        "id": "n024",
         "name": "AmpU",
         "block": {
           "ref": "stdlib:bondgraph/Df"
@@ -822,7 +550,7 @@
         }
       },
       {
-        "id": "n037",
+        "id": "n025",
         "name": "MotorU",
         "block": {
           "ref": "stdlib:bondgraph/GY"
@@ -844,7 +572,7 @@
         }
       },
       {
-        "id": "n038",
+        "id": "n026",
         "name": "ShaftU",
         "block": {
           "junction": "1"
@@ -864,7 +592,7 @@
         }
       },
       {
-        "id": "n039",
+        "id": "n027",
         "name": "RotorU",
         "block": {
           "ref": "stdlib:spatial/Rotor3D"
@@ -888,7 +616,7 @@
         }
       },
       {
-        "id": "n040",
+        "id": "n028",
         "name": "AeroU",
         "block": {
           "ref": "project:RotorBEMT"
@@ -928,7 +656,7 @@
         }
       },
       {
-        "id": "n041",
+        "id": "n029",
         "name": "HubU",
         "block": {
           "ref": "stdlib:multibond/FixedTransform3DNeutral"
@@ -952,7 +680,7 @@
         }
       },
       {
-        "id": "n042",
+        "id": "n030",
         "name": "HubWrenchU",
         "block": {
           "ref": "stdlib:multibond/ExternalWrenchSpatial"
@@ -972,7 +700,7 @@
         }
       },
       {
-        "id": "n043",
+        "id": "n031",
         "name": "GovU",
         "block": {
           "ref": "project:RotorGovernor"
@@ -998,7 +726,7 @@
         }
       },
       {
-        "id": "n044",
+        "id": "n032",
         "name": "CollU",
         "block": {
           "ref": "stdlib:continuous/SecondOrder"
@@ -1024,7 +752,7 @@
         }
       },
       {
-        "id": "n045",
+        "id": "n033",
         "name": "CycXU",
         "block": {
           "ref": "stdlib:continuous/SecondOrder"
@@ -1050,7 +778,7 @@
         }
       },
       {
-        "id": "n046",
+        "id": "n034",
         "name": "CycYU",
         "block": {
           "ref": "stdlib:continuous/SecondOrder"
@@ -1076,7 +804,7 @@
         }
       },
       {
-        "id": "n047",
+        "id": "n035",
         "name": "AngleU",
         "block": {
           "ref": "stdlib:continuous/Integrator"
@@ -1096,7 +824,7 @@
         }
       },
       {
-        "id": "n048",
+        "id": "n036",
         "name": "SupplyL",
         "block": {
           "ref": "stdlib:bondgraph/MSe"
@@ -1116,7 +844,7 @@
         }
       },
       {
-        "id": "n049",
+        "id": "n037",
         "name": "ElecL",
         "block": {
           "junction": "1"
@@ -1136,7 +864,7 @@
         }
       },
       {
-        "id": "n050",
+        "id": "n038",
         "name": "RwL",
         "block": {
           "ref": "stdlib:bondgraph/R"
@@ -1158,7 +886,7 @@
         }
       },
       {
-        "id": "n051",
+        "id": "n039",
         "name": "AmpL",
         "block": {
           "ref": "stdlib:bondgraph/Df"
@@ -1178,7 +906,7 @@
         }
       },
       {
-        "id": "n052",
+        "id": "n040",
         "name": "MotorL",
         "block": {
           "ref": "stdlib:bondgraph/GY"
@@ -1200,7 +928,7 @@
         }
       },
       {
-        "id": "n053",
+        "id": "n041",
         "name": "ShaftL",
         "block": {
           "junction": "1"
@@ -1220,7 +948,7 @@
         }
       },
       {
-        "id": "n054",
+        "id": "n042",
         "name": "RotorL",
         "block": {
           "ref": "stdlib:spatial/Rotor3D"
@@ -1244,7 +972,7 @@
         }
       },
       {
-        "id": "n055",
+        "id": "n043",
         "name": "AeroL",
         "block": {
           "ref": "project:RotorBEMT"
@@ -1284,7 +1012,7 @@
         }
       },
       {
-        "id": "n056",
+        "id": "n044",
         "name": "HubL",
         "block": {
           "ref": "stdlib:multibond/FixedTransform3DNeutral"
@@ -1308,7 +1036,7 @@
         }
       },
       {
-        "id": "n057",
+        "id": "n045",
         "name": "HubWrenchL",
         "block": {
           "ref": "stdlib:multibond/ExternalWrenchSpatial"
@@ -1328,7 +1056,7 @@
         }
       },
       {
-        "id": "n058",
+        "id": "n046",
         "name": "GovL",
         "block": {
           "ref": "project:RotorGovernor"
@@ -1354,7 +1082,7 @@
         }
       },
       {
-        "id": "n059",
+        "id": "n047",
         "name": "CollL",
         "block": {
           "ref": "stdlib:continuous/SecondOrder"
@@ -1380,7 +1108,7 @@
         }
       },
       {
-        "id": "n060",
+        "id": "n048",
         "name": "CycXL",
         "block": {
           "ref": "stdlib:continuous/SecondOrder"
@@ -1406,7 +1134,7 @@
         }
       },
       {
-        "id": "n061",
+        "id": "n049",
         "name": "CycYL",
         "block": {
           "ref": "stdlib:continuous/SecondOrder"
@@ -1432,7 +1160,7 @@
         }
       },
       {
-        "id": "n062",
+        "id": "n050",
         "name": "AngleL",
         "block": {
           "ref": "stdlib:continuous/Integrator"
@@ -1452,7 +1180,7 @@
         }
       },
       {
-        "id": "n063",
+        "id": "n051",
         "name": "NoWake",
         "block": {
           "ref": "stdlib:sources/Constant"
@@ -1474,7 +1202,7 @@
         }
       },
       {
-        "id": "n064",
+        "id": "n052",
         "name": "Telem",
         "block": {
           "ref": "project:Telemetry"
@@ -1497,7 +1225,7 @@
         }
       },
       {
-        "id": "n065",
+        "id": "n053",
         "name": "Clock",
         "block": {
           "ref": "stdlib:sources/Time"
@@ -1517,7 +1245,7 @@
         }
       },
       {
-        "id": "n066",
+        "id": "n054",
         "name": "Plan",
         "block": {
           "ref": "project:FlightPlan"
@@ -1547,7 +1275,7 @@
         }
       },
       {
-        "id": "n067",
+        "id": "n055",
         "name": "Ctrl",
         "block": {
           "ref": "project:FlightControl"
@@ -1869,22 +1597,22 @@
           "port": "p"
         },
         "to": {
-          "node": "n017",
-          "port": "b"
+          "node": "n015",
+          "port": "p"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c021",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n017",
-          "port": "a"
+          "node": "n002",
+          "port": "pose"
         },
         "to": {
-          "node": "n018",
-          "port": "p"
+          "node": "n015",
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -1893,12 +1621,12 @@
         "id": "c022",
         "kind": "signal",
         "from": {
-          "node": "n002",
-          "port": "pose"
+          "node": "n014",
+          "port": "o"
         },
         "to": {
-          "node": "n016",
-          "port": "gp"
+          "node": "n015",
+          "port": "o"
         },
         "route": [],
         "label": null
@@ -1907,26 +1635,26 @@
         "id": "c023",
         "kind": "signal",
         "from": {
-          "node": "n015",
-          "port": "g"
+          "node": "n014",
+          "port": "fr"
         },
         "to": {
-          "node": "n016",
-          "port": "gl"
+          "node": "n015",
+          "port": "fr"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c024",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n016",
-          "port": "g"
+          "node": "n003",
+          "port": "p"
         },
         "to": {
-          "node": "n018",
-          "port": "g"
+          "node": "n016",
+          "port": "p"
         },
         "route": [],
         "label": null
@@ -1935,12 +1663,12 @@
         "id": "c025",
         "kind": "signal",
         "from": {
-          "node": "n014",
-          "port": "o"
+          "node": "n002",
+          "port": "pose"
         },
         "to": {
-          "node": "n018",
-          "port": "o"
+          "node": "n016",
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -1950,25 +1678,25 @@
         "kind": "signal",
         "from": {
           "node": "n014",
-          "port": "fr"
+          "port": "o"
         },
         "to": {
-          "node": "n018",
-          "port": "fr"
+          "node": "n016",
+          "port": "o"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c027",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n003",
-          "port": "p"
+          "node": "n014",
+          "port": "fr"
         },
         "to": {
-          "node": "n021",
-          "port": "b"
+          "node": "n016",
+          "port": "fr"
         },
         "route": [],
         "label": null
@@ -1977,11 +1705,11 @@
         "id": "c028",
         "kind": "bond",
         "from": {
-          "node": "n021",
-          "port": "a"
+          "node": "n003",
+          "port": "p"
         },
         "to": {
-          "node": "n022",
+          "node": "n017",
           "port": "p"
         },
         "route": [],
@@ -1995,8 +1723,8 @@
           "port": "pose"
         },
         "to": {
-          "node": "n020",
-          "port": "gp"
+          "node": "n017",
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -2005,12 +1733,12 @@
         "id": "c030",
         "kind": "signal",
         "from": {
-          "node": "n019",
-          "port": "g"
+          "node": "n014",
+          "port": "o"
         },
         "to": {
-          "node": "n020",
-          "port": "gl"
+          "node": "n017",
+          "port": "o"
         },
         "route": [],
         "label": null
@@ -2019,26 +1747,26 @@
         "id": "c031",
         "kind": "signal",
         "from": {
-          "node": "n020",
-          "port": "g"
+          "node": "n014",
+          "port": "fr"
         },
         "to": {
-          "node": "n022",
-          "port": "g"
+          "node": "n017",
+          "port": "fr"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c032",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n014",
-          "port": "o"
+          "node": "n003",
+          "port": "p"
         },
         "to": {
-          "node": "n022",
-          "port": "o"
+          "node": "n018",
+          "port": "p"
         },
         "route": [],
         "label": null
@@ -2047,40 +1775,40 @@
         "id": "c033",
         "kind": "signal",
         "from": {
-          "node": "n014",
-          "port": "fr"
+          "node": "n002",
+          "port": "pose"
         },
         "to": {
-          "node": "n022",
-          "port": "fr"
+          "node": "n018",
+          "port": "pose"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c034",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n003",
-          "port": "p"
+          "node": "n014",
+          "port": "o"
         },
         "to": {
-          "node": "n025",
-          "port": "b"
+          "node": "n018",
+          "port": "o"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c035",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n025",
-          "port": "a"
+          "node": "n014",
+          "port": "fr"
         },
         "to": {
-          "node": "n026",
-          "port": "p"
+          "node": "n018",
+          "port": "fr"
         },
         "route": [],
         "label": null
@@ -2093,8 +1821,8 @@
           "port": "pose"
         },
         "to": {
-          "node": "n024",
-          "port": "gp"
+          "node": "n019",
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -2103,54 +1831,51 @@
         "id": "c037",
         "kind": "signal",
         "from": {
-          "node": "n023",
-          "port": "g"
+          "node": "n003",
+          "port": "V"
         },
         "to": {
-          "node": "n024",
-          "port": "gl"
+          "node": "n019",
+          "port": "V"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c038",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n024",
-          "port": "g"
+          "node": "n021",
+          "port": "p"
         },
         "to": {
-          "node": "n026",
-          "port": "g"
+          "node": "n022"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c039",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n014",
-          "port": "o"
+          "node": "n022"
         },
         "to": {
-          "node": "n026",
-          "port": "o"
+          "node": "n023",
+          "port": "p"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c040",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n014",
-          "port": "fr"
+          "node": "n022"
         },
         "to": {
-          "node": "n026",
-          "port": "fr"
+          "node": "n024",
+          "port": "p"
         },
         "route": [],
         "label": null
@@ -2159,12 +1884,11 @@
         "id": "c041",
         "kind": "bond",
         "from": {
-          "node": "n003",
-          "port": "p"
+          "node": "n022"
         },
         "to": {
-          "node": "n029",
-          "port": "b"
+          "node": "n025",
+          "port": "p1"
         },
         "route": [],
         "label": null
@@ -2173,82 +1897,79 @@
         "id": "c042",
         "kind": "bond",
         "from": {
-          "node": "n029",
-          "port": "a"
+          "node": "n025",
+          "port": "p2"
         },
         "to": {
-          "node": "n030",
-          "port": "p"
+          "node": "n026"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c043",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n002",
-          "port": "pose"
+          "node": "n026"
         },
         "to": {
-          "node": "n028",
-          "port": "gp"
+          "node": "n027",
+          "port": "drive"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c044",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n027",
-          "port": "g"
+          "node": "n026"
         },
         "to": {
           "node": "n028",
-          "port": "gl"
+          "port": "shaft"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c045",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n028",
-          "port": "g"
+          "node": "n003",
+          "port": "p"
         },
         "to": {
-          "node": "n030",
-          "port": "g"
+          "node": "n027",
+          "port": "p"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c046",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n014",
-          "port": "o"
+          "node": "n030",
+          "port": "p"
         },
         "to": {
-          "node": "n030",
-          "port": "o"
+          "node": "n029",
+          "port": "a"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c047",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n014",
-          "port": "fr"
+          "node": "n029",
+          "port": "b"
         },
         "to": {
-          "node": "n030",
-          "port": "fr"
+          "node": "n003",
+          "port": "p"
         },
         "route": [],
         "label": null
@@ -2257,12 +1978,12 @@
         "id": "c048",
         "kind": "signal",
         "from": {
-          "node": "n002",
-          "port": "pose"
+          "node": "n028",
+          "port": "tx"
         },
         "to": {
-          "node": "n031",
-          "port": "pose"
+          "node": "n030",
+          "port": "tx"
         },
         "route": [],
         "label": null
@@ -2271,145 +1992,152 @@
         "id": "c049",
         "kind": "signal",
         "from": {
-          "node": "n003",
-          "port": "V"
+          "node": "n028",
+          "port": "ty"
         },
         "to": {
-          "node": "n031",
-          "port": "V"
+          "node": "n030",
+          "port": "ty"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c050",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n033",
-          "port": "p"
+          "node": "n028",
+          "port": "tz"
         },
         "to": {
-          "node": "n034"
+          "node": "n030",
+          "port": "tz"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c051",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n034"
+          "node": "n028",
+          "port": "fx"
         },
         "to": {
-          "node": "n035",
-          "port": "p"
+          "node": "n030",
+          "port": "fx"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c052",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n034"
+          "node": "n028",
+          "port": "fy"
         },
         "to": {
-          "node": "n036",
-          "port": "p"
+          "node": "n030",
+          "port": "fy"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c053",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n034"
+          "node": "n028",
+          "port": "fz"
         },
         "to": {
-          "node": "n037",
-          "port": "p1"
+          "node": "n030",
+          "port": "fz"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c054",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n037",
-          "port": "p2"
+          "node": "n027",
+          "port": "w_rel"
         },
         "to": {
-          "node": "n038"
+          "node": "n031",
+          "port": "w"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c055",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n038"
+          "node": "n024",
+          "port": "y"
         },
         "to": {
-          "node": "n039",
-          "port": "drive"
+          "node": "n031",
+          "port": "i"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c056",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n038"
+          "node": "n020",
+          "port": "y"
         },
         "to": {
-          "node": "n040",
-          "port": "shaft"
+          "node": "n031",
+          "port": "wset"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c057",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n003",
-          "port": "p"
+          "node": "n031",
+          "port": "u"
         },
         "to": {
-          "node": "n039",
-          "port": "p"
+          "node": "n021",
+          "port": "u"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c058",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n042",
-          "port": "p"
+          "node": "n032",
+          "port": "y"
         },
         "to": {
-          "node": "n041",
-          "port": "a"
+          "node": "n028",
+          "port": "theta"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c059",
-        "kind": "bond",
+        "kind": "signal",
         "from": {
-          "node": "n041",
-          "port": "b"
+          "node": "n033",
+          "port": "y"
         },
         "to": {
-          "node": "n003",
-          "port": "p"
+          "node": "n028",
+          "port": "cx"
         },
         "route": [],
         "label": null
@@ -2418,12 +2146,12 @@
         "id": "c060",
         "kind": "signal",
         "from": {
-          "node": "n040",
-          "port": "tx"
+          "node": "n034",
+          "port": "y"
         },
         "to": {
-          "node": "n042",
-          "port": "tx"
+          "node": "n028",
+          "port": "cy"
         },
         "route": [],
         "label": null
@@ -2432,308 +2160,140 @@
         "id": "c061",
         "kind": "signal",
         "from": {
-          "node": "n040",
-          "port": "ty"
+          "node": "n027",
+          "port": "w_rel"
         },
         "to": {
-          "node": "n042",
-          "port": "ty"
+          "node": "n035",
+          "port": "u"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c062",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n040",
-          "port": "tz"
+          "node": "n036",
+          "port": "p"
         },
         "to": {
-          "node": "n042",
-          "port": "tz"
+          "node": "n037"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c063",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n040",
-          "port": "fx"
+          "node": "n037"
         },
         "to": {
-          "node": "n042",
-          "port": "fx"
+          "node": "n038",
+          "port": "p"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c064",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n040",
-          "port": "fy"
+          "node": "n037"
         },
         "to": {
-          "node": "n042",
-          "port": "fy"
+          "node": "n039",
+          "port": "p"
         },
         "route": [],
         "label": null
       },
       {
         "id": "c065",
-        "kind": "signal",
+        "kind": "bond",
         "from": {
-          "node": "n040",
-          "port": "fz"
-        },
-        "to": {
-          "node": "n042",
-          "port": "fz"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c066",
-        "kind": "signal",
-        "from": {
-          "node": "n039",
-          "port": "w_rel"
-        },
-        "to": {
-          "node": "n043",
-          "port": "w"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c067",
-        "kind": "signal",
-        "from": {
-          "node": "n036",
-          "port": "y"
-        },
-        "to": {
-          "node": "n043",
-          "port": "i"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c068",
-        "kind": "signal",
-        "from": {
-          "node": "n032",
-          "port": "y"
-        },
-        "to": {
-          "node": "n043",
-          "port": "wset"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c069",
-        "kind": "signal",
-        "from": {
-          "node": "n043",
-          "port": "u"
-        },
-        "to": {
-          "node": "n033",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c070",
-        "kind": "signal",
-        "from": {
-          "node": "n044",
-          "port": "y"
+          "node": "n037"
         },
         "to": {
           "node": "n040",
-          "port": "theta"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c071",
-        "kind": "signal",
-        "from": {
-          "node": "n045",
-          "port": "y"
-        },
-        "to": {
-          "node": "n040",
-          "port": "cx"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c072",
-        "kind": "signal",
-        "from": {
-          "node": "n046",
-          "port": "y"
-        },
-        "to": {
-          "node": "n040",
-          "port": "cy"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c073",
-        "kind": "signal",
-        "from": {
-          "node": "n039",
-          "port": "w_rel"
-        },
-        "to": {
-          "node": "n047",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c074",
-        "kind": "bond",
-        "from": {
-          "node": "n048",
-          "port": "p"
-        },
-        "to": {
-          "node": "n049"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c075",
-        "kind": "bond",
-        "from": {
-          "node": "n049"
-        },
-        "to": {
-          "node": "n050",
-          "port": "p"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c076",
-        "kind": "bond",
-        "from": {
-          "node": "n049"
-        },
-        "to": {
-          "node": "n051",
-          "port": "p"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c077",
-        "kind": "bond",
-        "from": {
-          "node": "n049"
-        },
-        "to": {
-          "node": "n052",
           "port": "p1"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "c078",
+        "id": "c066",
         "kind": "bond",
         "from": {
-          "node": "n052",
+          "node": "n040",
           "port": "p2"
         },
         "to": {
-          "node": "n053"
+          "node": "n041"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "c079",
+        "id": "c067",
         "kind": "bond",
         "from": {
-          "node": "n053"
+          "node": "n041"
         },
         "to": {
-          "node": "n054",
+          "node": "n042",
           "port": "drive"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "c080",
+        "id": "c068",
         "kind": "bond",
         "from": {
-          "node": "n053"
+          "node": "n041"
         },
         "to": {
-          "node": "n055",
+          "node": "n043",
           "port": "shaft"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "c081",
+        "id": "c069",
         "kind": "bond",
         "from": {
           "node": "n003",
           "port": "p"
         },
         "to": {
-          "node": "n054",
+          "node": "n042",
           "port": "p"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "c082",
+        "id": "c070",
         "kind": "bond",
         "from": {
-          "node": "n057",
+          "node": "n045",
           "port": "p"
         },
         "to": {
-          "node": "n056",
+          "node": "n044",
           "port": "a"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "c083",
+        "id": "c071",
         "kind": "bond",
         "from": {
-          "node": "n056",
+          "node": "n044",
           "port": "b"
         },
         "to": {
@@ -2744,15 +2304,183 @@
         "label": null
       },
       {
-        "id": "c084",
+        "id": "c072",
         "kind": "signal",
         "from": {
-          "node": "n055",
+          "node": "n043",
           "port": "tx"
         },
         "to": {
-          "node": "n057",
+          "node": "n045",
           "port": "tx"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c073",
+        "kind": "signal",
+        "from": {
+          "node": "n043",
+          "port": "ty"
+        },
+        "to": {
+          "node": "n045",
+          "port": "ty"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c074",
+        "kind": "signal",
+        "from": {
+          "node": "n043",
+          "port": "tz"
+        },
+        "to": {
+          "node": "n045",
+          "port": "tz"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c075",
+        "kind": "signal",
+        "from": {
+          "node": "n043",
+          "port": "fx"
+        },
+        "to": {
+          "node": "n045",
+          "port": "fx"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c076",
+        "kind": "signal",
+        "from": {
+          "node": "n043",
+          "port": "fy"
+        },
+        "to": {
+          "node": "n045",
+          "port": "fy"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c077",
+        "kind": "signal",
+        "from": {
+          "node": "n043",
+          "port": "fz"
+        },
+        "to": {
+          "node": "n045",
+          "port": "fz"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c078",
+        "kind": "signal",
+        "from": {
+          "node": "n042",
+          "port": "w_rel"
+        },
+        "to": {
+          "node": "n046",
+          "port": "w"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c079",
+        "kind": "signal",
+        "from": {
+          "node": "n039",
+          "port": "y"
+        },
+        "to": {
+          "node": "n046",
+          "port": "i"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c080",
+        "kind": "signal",
+        "from": {
+          "node": "n020",
+          "port": "y"
+        },
+        "to": {
+          "node": "n046",
+          "port": "wset"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c081",
+        "kind": "signal",
+        "from": {
+          "node": "n046",
+          "port": "u"
+        },
+        "to": {
+          "node": "n036",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c082",
+        "kind": "signal",
+        "from": {
+          "node": "n047",
+          "port": "y"
+        },
+        "to": {
+          "node": "n043",
+          "port": "theta"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c083",
+        "kind": "signal",
+        "from": {
+          "node": "n048",
+          "port": "y"
+        },
+        "to": {
+          "node": "n043",
+          "port": "cx"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c084",
+        "kind": "signal",
+        "from": {
+          "node": "n049",
+          "port": "y"
+        },
+        "to": {
+          "node": "n043",
+          "port": "cy"
         },
         "route": [],
         "label": null
@@ -2761,12 +2489,12 @@
         "id": "c085",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "ty"
+          "node": "n042",
+          "port": "w_rel"
         },
         "to": {
-          "node": "n057",
-          "port": "ty"
+          "node": "n050",
+          "port": "u"
         },
         "route": [],
         "label": null
@@ -2775,12 +2503,12 @@
         "id": "c086",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "tz"
+          "node": "n028",
+          "port": "v0"
         },
         "to": {
-          "node": "n057",
-          "port": "tz"
+          "node": "n043",
+          "port": "vext"
         },
         "route": [],
         "label": null
@@ -2789,12 +2517,12 @@
         "id": "c087",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "fx"
+          "node": "n051",
+          "port": "y"
         },
         "to": {
-          "node": "n057",
-          "port": "fx"
+          "node": "n028",
+          "port": "vext"
         },
         "route": [],
         "label": null
@@ -2803,12 +2531,12 @@
         "id": "c088",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "fy"
+          "node": "n028",
+          "port": "T"
         },
         "to": {
-          "node": "n057",
-          "port": "fy"
+          "node": "n052",
+          "port": "Tu"
         },
         "route": [],
         "label": null
@@ -2817,12 +2545,12 @@
         "id": "c089",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "fz"
+          "node": "n043",
+          "port": "T"
         },
         "to": {
-          "node": "n057",
-          "port": "fz"
+          "node": "n052",
+          "port": "Tl"
         },
         "route": [],
         "label": null
@@ -2831,12 +2559,12 @@
         "id": "c090",
         "kind": "signal",
         "from": {
-          "node": "n054",
-          "port": "w_rel"
+          "node": "n028",
+          "port": "P"
         },
         "to": {
-          "node": "n058",
-          "port": "w"
+          "node": "n052",
+          "port": "Pu"
         },
         "route": [],
         "label": null
@@ -2845,12 +2573,12 @@
         "id": "c091",
         "kind": "signal",
         "from": {
-          "node": "n051",
-          "port": "y"
+          "node": "n043",
+          "port": "P"
         },
         "to": {
-          "node": "n058",
-          "port": "i"
+          "node": "n052",
+          "port": "Pl"
         },
         "route": [],
         "label": null
@@ -2859,12 +2587,12 @@
         "id": "c092",
         "kind": "signal",
         "from": {
-          "node": "n032",
-          "port": "y"
+          "node": "n031",
+          "port": "P_el"
         },
         "to": {
-          "node": "n058",
-          "port": "wset"
+          "node": "n052",
+          "port": "Pu_el"
         },
         "route": [],
         "label": null
@@ -2873,12 +2601,12 @@
         "id": "c093",
         "kind": "signal",
         "from": {
-          "node": "n058",
-          "port": "u"
+          "node": "n046",
+          "port": "P_el"
         },
         "to": {
-          "node": "n048",
-          "port": "u"
+          "node": "n052",
+          "port": "Pl_el"
         },
         "route": [],
         "label": null
@@ -2887,12 +2615,12 @@
         "id": "c094",
         "kind": "signal",
         "from": {
-          "node": "n059",
+          "node": "n032",
           "port": "y"
         },
         "to": {
-          "node": "n055",
-          "port": "theta"
+          "node": "n052",
+          "port": "th_u"
         },
         "route": [],
         "label": null
@@ -2901,12 +2629,12 @@
         "id": "c095",
         "kind": "signal",
         "from": {
-          "node": "n060",
+          "node": "n047",
           "port": "y"
         },
         "to": {
-          "node": "n055",
-          "port": "cx"
+          "node": "n052",
+          "port": "th_l"
         },
         "route": [],
         "label": null
@@ -2915,12 +2643,12 @@
         "id": "c096",
         "kind": "signal",
         "from": {
-          "node": "n061",
+          "node": "n048",
           "port": "y"
         },
         "to": {
-          "node": "n055",
-          "port": "cy"
+          "node": "n052",
+          "port": "cx"
         },
         "route": [],
         "label": null
@@ -2929,12 +2657,12 @@
         "id": "c097",
         "kind": "signal",
         "from": {
-          "node": "n054",
-          "port": "w_rel"
+          "node": "n049",
+          "port": "y"
         },
         "to": {
-          "node": "n062",
-          "port": "u"
+          "node": "n052",
+          "port": "cy"
         },
         "route": [],
         "label": null
@@ -2943,12 +2671,12 @@
         "id": "c098",
         "kind": "signal",
         "from": {
-          "node": "n040",
-          "port": "v0"
+          "node": "n043",
+          "port": "speed_rpm"
         },
         "to": {
-          "node": "n055",
-          "port": "vext"
+          "node": "n052",
+          "port": "speed_rpm"
         },
         "route": [],
         "label": null
@@ -2957,12 +2685,12 @@
         "id": "c099",
         "kind": "signal",
         "from": {
-          "node": "n063",
-          "port": "y"
+          "node": "n010",
+          "port": "va"
         },
         "to": {
-          "node": "n040",
-          "port": "vext"
+          "node": "n028",
+          "port": "va"
         },
         "route": [],
         "label": null
@@ -2971,12 +2699,12 @@
         "id": "c100",
         "kind": "signal",
         "from": {
-          "node": "n040",
-          "port": "T"
+          "node": "n010",
+          "port": "wb"
         },
         "to": {
-          "node": "n064",
-          "port": "Tu"
+          "node": "n028",
+          "port": "wb"
         },
         "route": [],
         "label": null
@@ -2985,12 +2713,12 @@
         "id": "c101",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "T"
+          "node": "n010",
+          "port": "va"
         },
         "to": {
-          "node": "n064",
-          "port": "Tl"
+          "node": "n043",
+          "port": "va"
         },
         "route": [],
         "label": null
@@ -2999,12 +2727,12 @@
         "id": "c102",
         "kind": "signal",
         "from": {
-          "node": "n040",
-          "port": "P"
+          "node": "n010",
+          "port": "wb"
         },
         "to": {
-          "node": "n064",
-          "port": "Pu"
+          "node": "n043",
+          "port": "wb"
         },
         "route": [],
         "label": null
@@ -3013,12 +2741,12 @@
         "id": "c103",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "P"
+          "node": "n053",
+          "port": "y"
         },
         "to": {
-          "node": "n064",
-          "port": "Pl"
+          "node": "n054",
+          "port": "tm"
         },
         "route": [],
         "label": null
@@ -3027,12 +2755,12 @@
         "id": "c104",
         "kind": "signal",
         "from": {
-          "node": "n043",
-          "port": "P_el"
+          "node": "n054",
+          "port": "p_sp"
         },
         "to": {
-          "node": "n064",
-          "port": "Pu_el"
+          "node": "n055",
+          "port": "p_sp"
         },
         "route": [],
         "label": null
@@ -3041,12 +2769,12 @@
         "id": "c105",
         "kind": "signal",
         "from": {
-          "node": "n058",
-          "port": "P_el"
+          "node": "n054",
+          "port": "v_sp"
         },
         "to": {
-          "node": "n064",
-          "port": "Pl_el"
+          "node": "n055",
+          "port": "v_sp"
         },
         "route": [],
         "label": null
@@ -3055,12 +2783,12 @@
         "id": "c106",
         "kind": "signal",
         "from": {
-          "node": "n044",
-          "port": "y"
+          "node": "n054",
+          "port": "a_sp"
         },
         "to": {
-          "node": "n064",
-          "port": "th_u"
+          "node": "n055",
+          "port": "a_sp"
         },
         "route": [],
         "label": null
@@ -3069,12 +2797,12 @@
         "id": "c107",
         "kind": "signal",
         "from": {
-          "node": "n059",
-          "port": "y"
+          "node": "n054",
+          "port": "psi_sp"
         },
         "to": {
-          "node": "n064",
-          "port": "th_l"
+          "node": "n055",
+          "port": "psi_sp"
         },
         "route": [],
         "label": null
@@ -3083,12 +2811,12 @@
         "id": "c108",
         "kind": "signal",
         "from": {
-          "node": "n060",
-          "port": "y"
+          "node": "n054",
+          "port": "psi_rate"
         },
         "to": {
-          "node": "n064",
-          "port": "cx"
+          "node": "n055",
+          "port": "psi_rate"
         },
         "route": [],
         "label": null
@@ -3097,12 +2825,12 @@
         "id": "c109",
         "kind": "signal",
         "from": {
-          "node": "n061",
-          "port": "y"
+          "node": "n054",
+          "port": "mode"
         },
         "to": {
-          "node": "n064",
-          "port": "cy"
+          "node": "n055",
+          "port": "mode"
         },
         "route": [],
         "label": null
@@ -3111,12 +2839,12 @@
         "id": "c110",
         "kind": "signal",
         "from": {
-          "node": "n055",
-          "port": "speed_rpm"
+          "node": "n019",
+          "port": "p"
         },
         "to": {
-          "node": "n064",
-          "port": "speed_rpm"
+          "node": "n055",
+          "port": "p"
         },
         "route": [],
         "label": null
@@ -3125,12 +2853,12 @@
         "id": "c111",
         "kind": "signal",
         "from": {
-          "node": "n010",
-          "port": "va"
+          "node": "n019",
+          "port": "vw"
         },
         "to": {
-          "node": "n040",
-          "port": "va"
+          "node": "n055",
+          "port": "vw"
         },
         "route": [],
         "label": null
@@ -3139,11 +2867,11 @@
         "id": "c112",
         "kind": "signal",
         "from": {
-          "node": "n010",
+          "node": "n019",
           "port": "wb"
         },
         "to": {
-          "node": "n040",
+          "node": "n055",
           "port": "wb"
         },
         "route": [],
@@ -3153,12 +2881,12 @@
         "id": "c113",
         "kind": "signal",
         "from": {
-          "node": "n010",
-          "port": "va"
+          "node": "n019",
+          "port": "roll"
         },
         "to": {
           "node": "n055",
-          "port": "va"
+          "port": "roll"
         },
         "route": [],
         "label": null
@@ -3167,12 +2895,12 @@
         "id": "c114",
         "kind": "signal",
         "from": {
-          "node": "n010",
-          "port": "wb"
+          "node": "n019",
+          "port": "pitch"
         },
         "to": {
           "node": "n055",
-          "port": "wb"
+          "port": "pitch"
         },
         "route": [],
         "label": null
@@ -3181,12 +2909,12 @@
         "id": "c115",
         "kind": "signal",
         "from": {
-          "node": "n065",
-          "port": "y"
+          "node": "n019",
+          "port": "yaw"
         },
         "to": {
-          "node": "n066",
-          "port": "tm"
+          "node": "n055",
+          "port": "yaw"
         },
         "route": [],
         "label": null
@@ -3195,12 +2923,12 @@
         "id": "c116",
         "kind": "signal",
         "from": {
-          "node": "n066",
-          "port": "p_sp"
+          "node": "n055",
+          "port": "th_u"
         },
         "to": {
-          "node": "n067",
-          "port": "p_sp"
+          "node": "n032",
+          "port": "u"
         },
         "route": [],
         "label": null
@@ -3209,12 +2937,12 @@
         "id": "c117",
         "kind": "signal",
         "from": {
-          "node": "n066",
-          "port": "v_sp"
+          "node": "n055",
+          "port": "th_l"
         },
         "to": {
-          "node": "n067",
-          "port": "v_sp"
+          "node": "n047",
+          "port": "u"
         },
         "route": [],
         "label": null
@@ -3223,12 +2951,12 @@
         "id": "c118",
         "kind": "signal",
         "from": {
-          "node": "n066",
-          "port": "a_sp"
+          "node": "n055",
+          "port": "cx"
         },
         "to": {
-          "node": "n067",
-          "port": "a_sp"
+          "node": "n033",
+          "port": "u"
         },
         "route": [],
         "label": null
@@ -3237,12 +2965,12 @@
         "id": "c119",
         "kind": "signal",
         "from": {
-          "node": "n066",
-          "port": "psi_sp"
+          "node": "n055",
+          "port": "cy"
         },
         "to": {
-          "node": "n067",
-          "port": "psi_sp"
+          "node": "n034",
+          "port": "u"
         },
         "route": [],
         "label": null
@@ -3251,12 +2979,12 @@
         "id": "c120",
         "kind": "signal",
         "from": {
-          "node": "n066",
-          "port": "psi_rate"
+          "node": "n055",
+          "port": "cx"
         },
         "to": {
-          "node": "n067",
-          "port": "psi_rate"
+          "node": "n048",
+          "port": "u"
         },
         "route": [],
         "label": null
@@ -3265,179 +2993,11 @@
         "id": "c121",
         "kind": "signal",
         "from": {
-          "node": "n066",
-          "port": "mode"
-        },
-        "to": {
-          "node": "n067",
-          "port": "mode"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c122",
-        "kind": "signal",
-        "from": {
-          "node": "n031",
-          "port": "p"
-        },
-        "to": {
-          "node": "n067",
-          "port": "p"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c123",
-        "kind": "signal",
-        "from": {
-          "node": "n031",
-          "port": "vw"
-        },
-        "to": {
-          "node": "n067",
-          "port": "vw"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c124",
-        "kind": "signal",
-        "from": {
-          "node": "n031",
-          "port": "wb"
-        },
-        "to": {
-          "node": "n067",
-          "port": "wb"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c125",
-        "kind": "signal",
-        "from": {
-          "node": "n031",
-          "port": "roll"
-        },
-        "to": {
-          "node": "n067",
-          "port": "roll"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c126",
-        "kind": "signal",
-        "from": {
-          "node": "n031",
-          "port": "pitch"
-        },
-        "to": {
-          "node": "n067",
-          "port": "pitch"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c127",
-        "kind": "signal",
-        "from": {
-          "node": "n031",
-          "port": "yaw"
-        },
-        "to": {
-          "node": "n067",
-          "port": "yaw"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c128",
-        "kind": "signal",
-        "from": {
-          "node": "n067",
-          "port": "th_u"
-        },
-        "to": {
-          "node": "n044",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c129",
-        "kind": "signal",
-        "from": {
-          "node": "n067",
-          "port": "th_l"
-        },
-        "to": {
-          "node": "n059",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c130",
-        "kind": "signal",
-        "from": {
-          "node": "n067",
-          "port": "cx"
-        },
-        "to": {
-          "node": "n045",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c131",
-        "kind": "signal",
-        "from": {
-          "node": "n067",
+          "node": "n055",
           "port": "cy"
         },
         "to": {
-          "node": "n046",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c132",
-        "kind": "signal",
-        "from": {
-          "node": "n067",
-          "port": "cx"
-        },
-        "to": {
-          "node": "n060",
-          "port": "u"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c133",
-        "kind": "signal",
-        "from": {
-          "node": "n067",
-          "port": "cy"
-        },
-        "to": {
-          "node": "n061",
+          "node": "n049",
           "port": "u"
         },
         "route": [],
@@ -3571,10 +3131,10 @@
       "id": "p10",
       "title": "Landing-gear normal forces (N)",
       "signals": [
-        "Foot1/f_n",
-        "Foot2/f_n",
-        "Foot3/f_n",
-        "Foot4/f_n"
+        "Foot1/Contact/f_n",
+        "Foot2/Contact/f_n",
+        "Foot3/Contact/f_n",
+        "Foot4/Contact/f_n"
       ]
     }
   ],

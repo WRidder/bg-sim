@@ -22,7 +22,8 @@ still and the sun turns backwards at 2.6 times the ring speed.
 
 ## The planetary set as a bond graph
 
-The set is the subsystem `Planetary` in every model. It has three transformers around one
+The set is `Planetary` in every model, an instance of the library subsystem `Planetary`
+(`library/Planetary.bgsub.json`). It has three transformers around one
 0-junction:
 
 ```

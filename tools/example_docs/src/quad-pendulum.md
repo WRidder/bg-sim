@@ -184,7 +184,7 @@ stays constant to 1e-6 J.
       {"ylabel": "link angle [deg]", "series": [{"signal": "Mon/th1", "label": "θ1"}, {"signal": "Mon/th2", "label": "θ2"}, {"signal": "Mon/th3", "label": "θ3"}, {"signal": "Mon/th4", "label": "θ4"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "stacked energy [J]", "series": [{"signal": "Mon/S1", "label": "E1"}, {"signal": "Mon/S2", "label": "E1+E2"}, {"signal": "Mon/S3", "label": "E1..E3"}, {"signal": "Mon/S4", "label": "total"}], "legend": true, "legend_loc": "right",
        "hlines": [{"y": 0.70632, "label": "UPRIGHT 0.706 J"}]},
-      {"ylabel": "arm [rad], torque [N m]", "series": [{"signal": "J1/qout", "label": "arm angle [rad]"}, {"signal": "Ctrl/u", "label": "torque [N m]"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "arm [rad], torque [N m]", "series": [{"signal": "L1/J/qout", "label": "arm angle [rad]"}, {"signal": "Ctrl/u", "label": "torque [N m]"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "phase", "series": [{"signal": "Ctrl/phase", "label": "0 hold, 1 swing-up, 2 balance"}], "legend": true, "legend_loc": "right"}
     ]
   }
@@ -196,10 +196,12 @@ The Furuta version: a horizontal arm (0.30 m) turns about the vertical axis, dri
 (±3 N m), and carries a chain of four links (4 × 0.15 m, 0.03 kg) at its tip. The pendulum joints point
 along the arm, so the links swing in the vertical plane tangent to the arm circle.
 
-- The plant is a spatial multibond bond graph: [J1](block:J1) (`Revolute3D` about world z) with
-  [Motor](block:Motor) (ideal torque source) and [ArmBearing](block:ArmBearing) on its drive, the
-  [Arm](block:Arm) body (the hub/rotor inertia is lumped into it), and four `Revolute3D` + `RigidBody3D`
-  links with viscous bearing friction.
+- The plant is a spatial multibond bond graph, a chain of five instances of the library subsystem
+  `RevoluteLink3D` (`library/RevoluteLink3D.bgsub.json`: offset, `Revolute3D` joint `J`, offset to the
+  centre of mass, `RigidBody3D` body `B` on its junction, and the pose band). [L1](block:L1) is the arm
+  (joint `L1/J` about world z, the hub/rotor inertia lumped into its body `L1/B`) with
+  [Motor](block:Motor) (ideal torque source) and [ArmBearing](block:ArmBearing) on its drive;
+  [L2](block:L2) .. [L5](block:L5) are the four links, with viscous bearing friction on their drive ports.
 - [Ctrl](block:Ctrl) (`QuadRotaryCtrl`), [Traj](block:Traj) and [Mon](block:Mon) follow the cart version.
 
 ![The model canvas|900](@fig:diagram)
@@ -232,7 +234,7 @@ quantised encoders; the balance alone is robust to both.
     "kind": "plot", "model": "quad-rotary-balance", "xlim": [0, 7],
     "rows": [
       {"ylabel": "link angle [deg]", "series": [{"signal": "Mon/th1", "label": "θ1"}, {"signal": "Mon/th2", "label": "θ2"}, {"signal": "Mon/th3", "label": "θ3"}, {"signal": "Mon/th4", "label": "θ4"}], "legend": true, "legend_loc": "right"},
-      {"ylabel": "arm [rad]", "series": [{"signal": "J1/qout", "label": "arm angle"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "arm [rad]", "series": [{"signal": "L1/J/qout", "label": "arm angle"}], "legend": true, "legend_loc": "right"},
       {"ylabel": "torque [N m]", "series": [{"signal": "Ctrl/u", "label": "torque"}], "legend": true, "legend_loc": "right"}
     ]
   }
@@ -250,7 +252,7 @@ The rotary model in the balance phase from the start: the chain leans 2° per li
     "kind": "plot", "model": "quad-rotary-free", "xlim": [0, 1.5],
     "rows": [
       {"ylabel": "link angle [deg]", "series": [{"signal": "Mon/th1", "label": "θ1"}, {"signal": "Mon/th2", "label": "θ2"}, {"signal": "Mon/th3", "label": "θ3"}, {"signal": "Mon/th4", "label": "θ4"}], "legend": true, "legend_loc": "right"},
-      {"ylabel": "arm [rad]", "series": [{"signal": "J1/qout", "label": "arm angle"}], "legend": true, "legend_loc": "right"}
+      {"ylabel": "arm [rad]", "series": [{"signal": "L1/J/qout", "label": "arm angle"}], "legend": true, "legend_loc": "right"}
     ]
   }
 }

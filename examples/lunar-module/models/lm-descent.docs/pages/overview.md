@@ -8,7 +8,7 @@ Eagle's descent engine lit at 102:33:05 GET, 15 km up at 1,695 m/s. Twelve and a
 
 Both P63 and P64 use Apollo's quadratic guidance, $a = a_T + 12 (r_T - r)/t_{go}^2 - 6 (v + v_T)/t_{go}$. The engine stops when a footpad touches the surface.
 
-![The model canvas|900](assets/6fbe89803b25.png)
+![The model canvas|900](assets/f0a690dd8426.png)
 
 | block | role |
 | --- | --- |
@@ -18,7 +18,7 @@ Both P63 and P64 use Apollo's quadratic guidance, $a = a_T + 12 (r_T - r)/t_{go}
 | [Guid](block:Guid), [Att](block:Att) | the descent guidance and the RCS attitude loop |
 | [PilotRate](block:PilotRate), [PilotFwd](block:PilotFwd) | the P66 pilot model from Aldrin's callouts |
 | [Windows](block:Windows) | the yaw to windows up |
-| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads on the lunar surface |
+| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads on the lunar surface (instances of the library subsystem `LunarFoot`) |
 | [State](block:State), [Status](block:Status) | altitude, velocities, tilt, pad height; velocity gained, hover time left |
 
 ## What to try
@@ -27,6 +27,6 @@ Both P63 and P64 use Apollo's quadratic guidance, $a = a_T + 12 (r_T - r)/t_{go}
 2. Scale the P66 descent rates with `rate_scale`. A slower landing phase burns more of the last propellant: watch the usable propellant and the hover time left at touchdown.
 3. Lower the attitude loop's `att_wn` and watch the tilt lag behind the guidance.
 
-![3D view 1.5 s before touchdown|600](assets/0757dc825899.png)
+![3D view 1.5 s before touchdown|600](assets/fa2f37c245e1.png)
 
 Continue with [the results](page:results).

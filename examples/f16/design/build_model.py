@@ -10,6 +10,9 @@
 The airframe (a subsystem, `airframe()`) is the same in every model: the multibond rigid body on a
 free joint, the air-data tap, the NASA tables as stdlib Lookup1D/Lookup2D blocks, the force build-up
 and the engine. The models differ in what flies it.
+The open-loop, fbw, envelope and pio aircraft and their stabilator servos are instances of the library
+subsystems `library/F16Airframe.bgsub.json` and `library/F16Servo.bgsub.json`, which this script writes
+too; f16-sim draws its own airframe (with wind and gear) and servos.
 """
 
 from __future__ import annotations
@@ -270,7 +273,7 @@ def landing_gear(d: Diagram, xcg: str, st: dict) -> None:
            x0, y0 - 420, 1400, 60, "blue")
 
 
-def airframe(xcg: str, start: dict, energy: bool = False, wind: bool = False, mass=None, J=None,
+def airframe(xcg: str, start: dict, wind: bool = False, mass=None, J=None,
              extra_outputs: bool = False, gear: dict | None = None) -> Diagram:
     """One F-16: inputs el, ail, rdr (deg) and thtl (0..1); xcg is a parameter expression.
 
@@ -367,19 +370,88 @@ def airframe(xcg: str, start: dict, energy: bool = False, wind: bool = False, ma
         d.sig(nm, "y", "Forces", nm.lower())
     for p in ("tx", "ty", "tz", "fx", "fy", "fz"):
         d.sig("Forces", p, "Wrench", p)
-    if energy:
-        d.node("Energy", "project:F16Energy", 1100, 40,
-               params={"J": vec(SI["J_principal"]), "m": num(SI["mass"]), "g0": num(SI["g0"])})
-        d.sig("Free", "pose", "Energy", "gP")
-        d.sig("Body", "V", "Energy", "VP")
-        d.node("Work", "stdlib:continuous/Integrator", 1300, 40)
-        d.sig("Forces", "P_ext", "Work", "u")
     if gear is not None:
         landing_gear(d, xcg, gear)
     for name, node, port, unit in AIRFRAME_OUTPUTS + (SIM_OUTPUTS if extra_outputs else []):
         d.port(name, "output", node, port, unit)
     d.port("pose", "output", "Air", "gB", None, size=7)
     return d
+
+
+# --------------------------------------------------------------------------- the library subsystems
+# Every F-16 of f16-open-loop, f16-fbw, f16-envelope and f16-pio is an instance of
+# library/F16Airframe.bgsub.json (airframe() in calm air, without gear), and every stabilator servo of
+# those models an instance of library/F16Servo.bgsub.json (actuator()). An instance sets only what the
+# definition pins: the airframe its CG and start state, the servo its start deflection. f16-sim keeps
+# its own drawn airframe (wind, gear, more outputs) and servos: the FMU's variable names come from them.
+AIRFRAME = "F16Airframe"
+SERVO = "F16Servo"
+POSE_KEYS = ("qw", "qx", "qy", "qz", "px", "py", "pz")
+AIRFRAME_PINS = {"params": ["Forces/xcg"], "starts": [f"Free/{k}" for k in POSE_KEYS] + ["Body/inertia/P", "Engine/P"]}
+SERVO_PINS = {"params": ["Travel/lower", "Travel/upper", "RateLimit/lower", "RateLimit/upper"], "starts": ["Servo/x"]}
+AUDIT_PORTS = [  # the energy audit's taps (f16-open-loop's A30): (port name, node, node port, size)
+    ("gP", "Free", "pose", 7), ("VP", "Body", "V", 6), ("P_ext", "Forces", "P_ext", 1),
+]
+
+
+def airframe_instance(d: Diagram, lab: str, case: dict, xcg: str, x: float, y: float) -> str:
+    """An F16Airframe instance: the CG (a number or a global) and the case's start state."""
+    assert list(case["start_pose"]) == list(POSE_KEYS)
+    starts = {f"Free/{k}": ex(case["start_pose"][k]) for k in POSE_KEYS}
+    starts.update({"Body/inertia/P": exvec(case["start_P"]), "Engine/P": ex(case["start_power"])})
+    return d.node(lab, f"project:{AIRFRAME}", x, y, params={"Forces/xcg": xcg}, starts=starts)
+
+
+def servo_instance(d: Diagram, name: str, el0, x: float, y: float) -> str:
+    """An F16Servo instance (the stabilator servo of FBW["act"]) starting at el0."""
+    return d.node(name, f"project:{SERVO}", x, y, starts={"Servo/x": ex(el0)})
+
+
+def _definition(name: str, sub: Diagram, pins: dict, description: str) -> dict:
+    diagram = sub.doc()
+    diagram.pop("subsystemPorts", None)
+    return {"format": "bgsim.subsystem", "name": name, "description": description, "ports": sub.ports,
+            "diagram": diagram, "pins": pins}
+
+
+def airframe_definition() -> dict:
+    """library/F16Airframe.bgsub.json: airframe() at the open-loop trim of xcg 0.35, plus the audit ports;
+    laid out on 100 px rows (f16-sim's drawn airframe keeps airframe()'s positions)."""
+    case = next(a for a in DESIGN["scenarios"]["open_loop"] if a["label"] == "A35")
+    sub = airframe(num(case["xcg"]), case)
+    for name, node, port, size in AUDIT_PORTS:
+        sub.port(name, "output", node, port, None, size=size)
+    pos = {"World": (40, 40), "Free": (220, 40), "Body": (420, 40), "Mount": (620, 40), "Wrench": (820, 40),
+           "Calm": (220, 300), "Air": (420, 300), "TIdle": (420, 600), "TMil": (420, 700), "TMax": (420, 800),
+           "Engine": (600, 700), "Forces": (1100, 300)}
+    pos.update({f"Se{k}": (40, 60 + 100 * k) for k in range(1, 7)})
+    pos.update({f"{nm}In": (40, 780 + 100 * k) for k, nm in enumerate(("el", "ail", "rdr", "thtl"))})
+    pos.update({nm: (700, 300 + 100 * k) for k, nm in enumerate(("CX", "CM", "CL", "CN", "DLDA", "DLDR", "DNDA",
+                                                                "DNDR", "CZ"))})
+    pos.update({nm: (900, 300 + 100 * k) for k, nm in enumerate(TABLES["DAMP"]["names"])})
+    assert set(pos) == {n["name"] for n in sub.nodes}
+    for n in sub.nodes:
+        n["position"] = {"x": pos[n["name"]][0], "y": pos[n["name"]][1]}
+    return _definition(AIRFRAME, sub, AIRFRAME_PINS, (
+        "One F-16 (Stevens & Lewis) in calm air, without landing gear: the multibond rigid body on a free joint "
+        "(principal axes), the air data, the NASA aerodynamic tables, the force build-up and the engine. Inputs el, "
+        "ail, rdr (deg) and thtl (0..1); outputs the air data, nz and the pose, and the energy-audit taps gP, VP, "
+        "P_ext. The defaults are the open-loop trim (502 ft/s, sea level) at xcg 0.35; an instance sets the CG "
+        "(Forces/xcg) and its start state (Free/*, Body/inertia/P, Engine/P). Generated by design/build_model.py."))
+
+
+def servo_definition() -> dict:
+    """library/F16Servo.bgsub.json: actuator() with the stabilator data of FBW["act"]."""
+    sub = actuator(0.0)
+    a = FBW["act"]
+    sub.annotations[0]["text"] = (f"Servo: {a['w']} rad/s lag, travel +-{a['pos']:g} deg, rate +-{a['rate']:g} deg/s "
+                                  "(the stabilator, Stevens & Lewis); the limits are pinned.")
+    return _definition(SERVO, sub, SERVO_PINS, (
+        f"Stevens & Lewis's control-surface servo from stdlib blocks: the command limited to the travel (Travel), "
+        f"a {a['w']} rad/s first-order lag (Bandwidth) and a rate limit (RateLimit) before the integrator (Servo). "
+        f"Input u (deg); outputs y (deg) and rate (deg/s). The defaults are the stabilator's: +-{a['pos']:g} deg, "
+        f"+-{a['rate']:g} deg/s. An instance sets its start deflection (Servo/x) and may set the limits. "
+        "Generated by design/build_model.py."))
 
 
 def pose_signals(prefix: str) -> list[str]:
@@ -393,13 +465,20 @@ def model_open_loop():
     params = [g("t_end", "15.0", "s", "Run length")]
     for k, a in enumerate(ol):
         lab = a["label"]
-        y = 40 + 320 * k
+        y = 40 + 500 * k   # the instance's card is 482 px tall (4 inputs, 15 outputs)
         params.append(g(f"xcg_{lab[1:]}", num(a["xcg"]), None, f"CG of {lab}, fraction of the mean chord"))
-        sub = airframe(f"xcg_{lab[1:]}", a, energy=(lab == "A30"))
-        sub.subsystem(d, lab, 400, y)
+        airframe_instance(d, lab, a, f"xcg_{lab[1:]}", 400, y)
+        if lab == "A30":
+            # the energy audit, on the airframe's taps: kinetic + potential energy and the wrench's work
+            d.node(f"Energy{lab}", "project:F16Energy", 700, y + 220,
+                   params={"J": vec(SI["J_principal"]), "m": num(SI["mass"]), "g0": num(SI["g0"])})
+            d.sig(lab, "gP", f"Energy{lab}", "gP")
+            d.sig(lab, "VP", f"Energy{lab}", "VP")
+            d.node(f"Work{lab}", "stdlib:continuous/Integrator", 700, y + 340)
+            d.sig(lab, "P_ext", f"Work{lab}", "u")
         d.node(f"El{lab}", "stdlib:sources/Constant", 100, y, params={"value": num(a["el"])})
-        d.node(f"Thr{lab}", "stdlib:sources/Constant", 100, y + 60, params={"value": num(a["throttle"])})
-        d.node(f"Zero{lab}", "stdlib:sources/Constant", 100, y + 120, params={"value": "0.0"})
+        d.node(f"Thr{lab}", "stdlib:sources/Constant", 100, y + 100, params={"value": num(a["throttle"])})
+        d.node(f"Zero{lab}", "stdlib:sources/Constant", 100, y + 200, params={"value": "0.0"})
         d.sig(f"El{lab}", "y", lab, "el")
         d.sig(f"Thr{lab}", "y", lab, "thtl")
         d.sig(f"Zero{lab}", "y", lab, "ail")
@@ -705,11 +784,11 @@ def gains(d: Diagram, lab: str, x: float, y: float, frozen: dict | None):
     for k, nm in enumerate(("Ka", "Kq", "Ki")):
         node = f"{lab}{nm}"
         if frozen is None:
-            lookup2d(d, node, {"x": FBW["qbar_pa"], "y": FBW["mach"], "table": transpose(FBW[nm])}, x, y + 70 * k)
+            lookup2d(d, node, {"x": FBW["qbar_pa"], "y": FBW["mach"], "table": transpose(FBW[nm])}, x, y + 100 * k)
             d.sig(lab, "qbar", node, "u")
             d.sig(lab, "mach", node, "v")
         else:
-            d.node(node, "stdlib:sources/Constant", x, y + 70 * k, params={"value": num(frozen[nm])})
+            d.node(node, "stdlib:sources/Constant", x, y + 100 * k, params={"value": num(frozen[nm])})
         out[nm] = node
     return out
 
@@ -717,16 +796,15 @@ def gains(d: Diagram, lab: str, x: float, y: float, frozen: dict | None):
 def flight_control(d: Diagram, lab: str, case: dict, xcg: str, x: float, y: float, q_cmd: tuple,
                    frozen=None, comp=None, throttle=None):
     """One F-16 with its fly-by-wire law, servo (and rate-limit compensation)."""
-    sub = airframe(xcg, case)
-    sub.subsystem(d, lab, x + 700, y)
+    airframe_instance(d, lab, case, xcg, x + 700, y)
     d.node(f"{lab}Zero", "stdlib:sources/Constant", x + 500, y + 200, params={"value": "0.0"})
     d.sig(f"{lab}Zero", "y", lab, "ail")
     d.sig(f"{lab}Zero", "y", lab, "rdr")
     if throttle is None:
-        d.node(f"{lab}Thr", "stdlib:sources/Constant", x + 500, y + 260, params={"value": num(case["throttle0"])})
+        d.node(f"{lab}Thr", "stdlib:sources/Constant", x + 500, y + 300, params={"value": num(case["throttle0"])})
     else:
         tr = SC["throttle_ramp"]
-        d.node(f"{lab}Thr", "stdlib:sources/Ramp", x + 500, y + 260,
+        d.node(f"{lab}Thr", "stdlib:sources/Ramp", x + 500, y + 300,
                params={"t_start": num(throttle[0]), "initial": num(case["throttle0"]),
                        "slope": num((throttle[1] - case["throttle0"]) / tr), "duration": num(tr)})
     d.sig(f"{lab}Thr", "y", lab, "thtl")
@@ -743,10 +821,10 @@ def flight_control(d: Diagram, lab: str, case: dict, xcg: str, x: float, y: floa
         d.sig(node, "y", law, nm)
     src = (law, "u")
     if comp is not None:
-        rate_comp(case["el0"], comp).subsystem(d, f"{lab}Comp", x + 350, y + 80)
+        rate_comp(case["el0"], comp).subsystem(d, f"{lab}Comp", x + 300, y + 120)
         d.sig(law, "u", f"{lab}Comp", "u")
         src = (f"{lab}Comp", "y")
-    actuator(case["el0"]).subsystem(d, f"{lab}Act", x + 500, y)
+    servo_instance(d, f"{lab}Act", case["el0"], x + 500, y)
     d.sig(src[0], src[1], f"{lab}Act", "u")
     d.sig(f"{lab}Act", "y", lab, "el")
     return law
@@ -777,14 +855,14 @@ def model_fbw():
               g("xcg", "0.38", None, "Centre of gravity, fraction of the mean chord (the law is designed for 0.38)")]
     fast = num(SC["fast"])
     d.node("StepOn", "stdlib:sources/Ramp", 40, 40, params={"t_start": num(t0), "slope": f"q_step / {fast}", "duration": fast})
-    d.node("StepOff", "stdlib:sources/Ramp", 40, 110, params={"t_start": num(t1), "slope": f"q_step / {fast}", "duration": fast})
-    d.node("QMx", "stdlib:continuous/Mux2", 180, 70)
-    d.node("QCmd", "stdlib:continuous/Sum", 300, 70, params={"signs": "[1.0, -1.0]"})
+    d.node("StepOff", "stdlib:sources/Ramp", 40, 140, params={"t_start": num(t1), "slope": f"q_step / {fast}", "duration": fast})
+    d.node("QMx", "stdlib:continuous/Mux2", 180, 90)
+    d.node("QCmd", "stdlib:continuous/Sum", 300, 90, params={"signs": "[1.0, -1.0]"})
     d.sig("StepOn", "y", "QMx", "u1")
     d.sig("StepOff", "y", "QMx", "u2")
     d.sig("QMx", "y", "QCmd", "u")
     for k, case in enumerate(sc["cases"]):
-        flight_control(d, case["label"], case, "xcg", 400, 40 + 420 * k, ("QCmd", "y"), frozen=case["frozen"])
+        flight_control(d, case["label"], case, "xcg", 400, 40 + 500 * k, ("QCmd", "y"), frozen=case["frozen"])
     labs = [c["label"] for c in sc["cases"]]
     plots = [
         {"id": "p1", "title": "Pitch rate and command (deg/s)", "signals": ["QCmd/y"] + [f"{l}/Air/q_deg" for l in labs]},
@@ -814,7 +892,7 @@ def model_envelope():
            params={"t_start": num(t_r), "slope": f"stick / {num(d_r)}", "duration": num(d_r)})
     for k, case in enumerate(sc["cases"]):
         lab = case["label"]
-        y = 40 + 420 * k
+        y = 40 + 500 * k
         cmd = g_command(d, lab, 200, y, ("Stick", "y"), "limiter" if case["limiter"] else "0.0", False)
         flight_control(d, lab, case, "0.38", 400, y, (cmd, "q_cmd"), throttle=(t_r, 1.0))
     labs = [c["label"] for c in sc["cases"]]
@@ -847,8 +925,8 @@ def model_pio():
               g("comp_k", num(sc["comp"]["k"]), "1/s", "Pull-back gain of the phase-compensated rate limiter")]
     for k, case in enumerate(sc["cases"]):
         lab = case["label"]
-        y = 40 + 420 * k
-        pilot(case["theta0"] * 57.29577951308232, sc).subsystem(d, f"{lab}Pilot", 40, y)
+        y = 40 + 500 * k
+        pilot(case["theta0"] * 57.29577951308232, sc).subsystem(d, f"{lab}Pilot", 0, y + 120)
         d.sig(lab, "theta_deg", f"{lab}Pilot", "theta")
         cmd = g_command(d, lab, 200, y, (f"{lab}Pilot", "stick"), "1.0", True)
         flight_control(d, lab, case, "0.38", 400, y, (cmd, "q_cmd"), comp=sc["comp"] if case["label"] == "Comp" else None)
@@ -1340,7 +1418,7 @@ def expected() -> dict:
          "value": max(abs(v) for t, v in zip(a30["t"], a30["q_deg"]) if t >= 8.0 - 1e-9), "rtol": 0.02,
          "note": "xcg 0.30: the short period (-1.204 +- 1.492j) has died out; the phugoid is left"},
         {"kind": "invariant", "tol": 1e-7,
-         "terms": [{"signal": "A30/Energy/E", "coeff": 1.0}, {"signal": "A30/Work/y", "coeff": -1.0}],
+         "terms": [{"signal": "EnergyA30/E", "coeff": 1.0}, {"signal": "WorkA30/y", "coeff": -1.0}],
          "note": "energy ledger: kinetic + potential energy minus the work of the aerodynamic and engine wrench is constant"},
     ]
     # ---- fbw
@@ -1633,6 +1711,10 @@ def main() -> int:
     models = {"f16-open-loop": model_open_loop(), "f16-fbw": model_fbw(), "f16-envelope": model_envelope(),
               "f16-pio": model_pio(), "f16-sim": model_sim()}
     (EXAMPLE / "library" / "F16Trail.jl").write_text(trail_block(), encoding="utf-8", newline="\n")
+    for name, definition in ((AIRFRAME, airframe_definition()), (SERVO, servo_definition())):
+        path = EXAMPLE / "library" / f"{name}.bgsub.json"
+        path.write_text(json.dumps(definition, indent=1) + "\n", encoding="utf-8", newline="\n")
+        print(f"wrote {path}")
     for block in CESSNA_BLOCKS:
         shutil.copyfile(EXAMPLE.parent / "cessna" / "library" / f"{block}.jl", EXAMPLE / "library" / f"{block}.jl")
     for name, doc in models.items():

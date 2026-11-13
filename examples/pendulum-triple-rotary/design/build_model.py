@@ -17,6 +17,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import serial_link as sl
 import triple_build as tb
 
 ROOT = HERE.parent
@@ -33,6 +34,7 @@ def main() -> None:
     (ROOT / "scenes").mkdir(exist_ok=True)
     (ROOT / "library" / "RotaryCtrl.jl").write_text(tb.controller_source(plant, dz), encoding="utf-8", newline="\n")
     (ROOT / "library" / "LinkAngles.jl").write_text(tb.angles_source(plant), encoding="utf-8", newline="\n")
+    tb.write_json(ROOT / "library" / f"{sl.name()}.bgsub.json", sl.definition())
     (ROOT / "scenes" / f"{name}.sdf").write_text(tb.scene_sdf(plant, name), encoding="utf-8", newline="\n")
     tb.write_json(ROOT / "models" / f"{name}.bgmodel.json", tb.build_model(plant, dz, name, False))
     tb.write_json(ROOT / "models" / f"{name}-free.bgmodel.json", tb.build_model(plant, dz, f"{name}-free", True))

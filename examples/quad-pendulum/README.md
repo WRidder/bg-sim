@@ -45,10 +45,19 @@ cart:   Ground -- Rail (Prismatic2D) -- CartJ(1) -- Cart (RigidBody2D)
            |drive                        `-- Joint1 (Revolute2DCompliant) -- Link1 -- N1(1) -- Body1 ... Body4 -- Push
         Force (ForceSource) + RailFriction (Damper) + EndStops (HardStop), each against a Fixed frame
 
-rotary: World -- Mount -- J1 (Revolute3D, world z) -- ArmLink -- BJ1 -- Arm (RigidBody3D, hub inertia lumped in)
-                          |drive: Motor (TorqueSource) + ArmBearing (RotationalDamper)
-                          T2 -- J2 (Revolute3D, along the arm) -- Link1 -- BJ2 -- Rod1 ... Rod4 -- Push
+rotary: World -- L1 (the arm) -- L2 -- L3 -- L4 -- L5 (the links) -- TipPoint -- Push
+                 |drive: Motor (TorqueSource) + ArmBearing (RotationalDamper); L2 .. L5 drive: Bearing2 .. Bearing5
 ```
+
+The rotary chain is five instances of the library subsystem `RevoluteLink3D`
+(`library/RevoluteLink3D.bgsub.json`, written by `design/build_models.py` from `design/serial_link.py`, the
+same definition as in `robot-arm-3d`, `panda-3d`, `pendulum-triple-rotary` and `humanoid-dual-arm`). One
+instance holds the offset `T` from the body below (for `L1` the base mount), the joint `J` (`Revolute3D`:
+world z for the arm `L1`, the arm axis for the links), the offset `Link` to the centre of mass, the body `B`
+(`RigidBody3D`, for `L1` the arm with the hub inertia lumped in) on its 1-junction `BJ`, and the pose band
+`W = gp o LN o J.pose`, `P = W o LC`; the instance pins all of them. The monitor reads the link bodies'
+twists and poses from the instance ports `V` and `gb`. Paths: `J1/qout` of the flat diagram is `L1/J/qout`,
+`J2/qout` .. `J5/qout` are `L2/J/qout` .. `L5/J/qout`.
 
 The pivots are compliant (1e8 N/m, the multibond convention). Every pendulum joint has viscous friction on its
 drive port. The firmware reads the joint encoders (`qout`, `qdout`). The monitor block (`QuadCartMonitor`,

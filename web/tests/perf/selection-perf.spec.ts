@@ -1,6 +1,7 @@
 /**
- * Canvas selection cost on a large diagram (fake worker): the panda example's
- * 81-node model. Two numbers:
+ * Canvas selection cost on a large diagram (fake worker): the humanoid-dual-arm
+ * example's `humanoid-hold` model, 195 nodes on its root diagram (the two arms'
+ * links are 14 library subsystem instances among them). Two numbers:
  *
  *  1. a box selection dragged across the whole diagram: the longest frame and
  *     the long-task time while the rectangle moves;
@@ -27,7 +28,7 @@ test.beforeEach(async ({ page }) => {
   project = `selection-perf-${Date.now()}-${test.info().workerIndex}`;
   await page.setViewportSize({ width: 1600, height: 1000 });
   const created = await page.request.post("/api/projects", {
-    data: { name: project, example: "panda-3d" },
+    data: { name: project, example: "humanoid-dual-arm" },
   });
   expect(created.status(), await created.text()).toBe(201);
 });
@@ -38,8 +39,8 @@ test.afterEach(async ({ request }) => {
   }
 });
 
-async function openPanda(page: Page): Promise<number> {
-  await page.goto(`/?project=${encodeURIComponent(project)}&model=panda-free`);
+async function openHumanoid(page: Page): Promise<number> {
+  await page.goto(`/?project=${encodeURIComponent(project)}&model=humanoid-hold`);
   const nodes = page.getByTestId("diagram-node");
   await expect(nodes.first()).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("fit-view").click();
@@ -95,11 +96,11 @@ async function stopRecording(page: Page): Promise<FrameStats> {
   });
 }
 
-test("a box selection over 80 nodes stays responsive; a click selects quickly", async ({
+test("a box selection over 195 nodes stays responsive; a click selects quickly", async ({
   page,
 }, testInfo) => {
-  const count = await openPanda(page);
-  expect(count).toBeGreaterThan(60);
+  const count = await openHumanoid(page);
+  expect(count).toBeGreaterThan(150);
   const pane = await page.locator(".react-flow__pane").boundingBox();
   if (pane === null) {
     throw new Error("the pane is not visible");

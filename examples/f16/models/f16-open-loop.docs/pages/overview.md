@@ -6,9 +6,10 @@ The nonlinear F-16 of Stevens & Lewis (*Aircraft Control and Simulation*, Sectio
 
 | block | role |
 | --- | --- |
-| [A30](block:A30), [A35](block:A35), [A38](block:A38) | one airframe each (a subsystem): rigid body, air data, NASA tables, force build-up, engine |
+| [A30](block:A30), [A35](block:A35), [A38](block:A38) | one airframe each, an instance of the library subsystem `F16Airframe` that sets its CG and start state: rigid body, air data, NASA tables, force build-up, engine |
 | [ElA30](block:ElA30), [ThrA30](block:ThrA30) | the book's trim elevator and throttle (and likewise for A35, A38) |
 | [GrowA38](block:GrowA38) | $\lambda = q/(\theta - \theta_0)$: on an unstable real mode this is the eigenvalue |
+| [EnergyA30](block:EnergyA30), [WorkA30](block:WorkA30) | A30's energy ledger on the airframe's audit outputs: kinetic + potential energy, and the work of the wrench |
 
 ## What to try
 

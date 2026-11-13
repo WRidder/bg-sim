@@ -13,7 +13,7 @@ The A109 of the open-loop model with ground effect at 15 m, flown with collectiv
 
 The sticks, the wind and the SCAS switch pass through export markers: in bg-sim they carry the demonstration pilot, in an FMU the host's pilot drives them. The start state (pose, momenta, flapping, rotor momentum, governor) is a set of globals, so an FMU host can start on the pad or in any trim. The host app `apps/a109-sim` flies the exported FMU in real time.
 
-![The model canvas|900](assets/4b0cee46a065.png)
+![The model canvas|900](assets/c3e7a1ada758.png)
 
 | block | role |
 | --- | --- |
@@ -31,6 +31,6 @@ The sticks, the wind and the SCAS switch pass through export markers: in bg-sim 
 2. Set **demo** to 0. The helicopter hovers hands-off. Add a longitudinal offset of 0.1: the SCAS holds the commanded 1.5 deg nose-down attitude and the helicopter accelerates gently.
 3. Then set **SCAS** to 0. The bare helicopter's hover phugoid diverges within 10 s.
 
-![3D view at t = 100 s, decelerating|600](assets/e93d81673afb.png)
+![3D view at t = 100 s, decelerating|600](assets/7d4e6de8f335.png)
 
 Continue with [the results](page:results).

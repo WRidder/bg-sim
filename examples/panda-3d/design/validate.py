@@ -190,7 +190,7 @@ def free_swing(ref: Reference, run_dir: Path) -> dict:
     x0 = np.r_[dz.Q_FREE, np.zeros(7)]
     sol = solve_ivp(rhs, (t[0], t[-1]), x0, method="DOP853", rtol=1e-12, atol=1e-12, t_eval=t, dense_output=False)
     q_ref = sol.y[:7]
-    q_bg = np.array([cols[f"J{k}/qout"] for k in range(1, 8)])
+    q_bg = np.array([cols[f"L{k}/J/qout"] for k in range(1, 8)])
     dq = np.abs(q_bg - q_ref)
     tcp = np.array([ref.flange(q_ref[:, j]) for j in range(len(t))]).T
     tcp_bg = np.array([cols[f"TCP/g[{k}]"] for k in (5, 6, 7)])
@@ -211,7 +211,7 @@ def free_swing(ref: Reference, run_dir: Path) -> dict:
 
 def closed_loop(ref: Reference, run_dir: Path) -> dict:
     t, cols = read_run(run_dir)
-    q = np.array([cols[f"Robot/J{k}/qout"] for k in range(1, 8)])
+    q = np.array([cols[f"Robot/L{k}/J/qout"] for k in range(1, 8)])
     tau = np.array([cols[f"Robot/TauSense{k}/y"] for k in range(1, 8)])
     out = {}
     # settled: measured torque at the end against the gravity torque of the reached pose

@@ -6,6 +6,6 @@ $$-T\sin\theta + w\,(c_x\cos^2\theta + c_z\sin^2\theta) = 0,\qquad T\cos\theta +
 
 `design.wind_tilt` solves it: $\theta = 0.075366$ rad for $w = 4$ m/s ($c_x w/(m g) = 0.0755$ in the small-angle limit). The noisy sensors make the attitude jitter, so `PitchAvg`, a 2 s low-pass, gives the mean. It reads $-0.0743$ to $-0.0745$ rad, within 1.3 % of the balance (the check allows 2 %). The quadcopter holds its place within 2.4 cm.
 
-![Pitch, its mean and the tracking error|900](assets/193afa0e5e2a.png)
+![Pitch, its mean and the tracking error|900](assets/9ca364b7eab7.png)
 
-![Hovering in the wind; the vane points downwind|700](assets/422ba6a7fcc9.png)
+![Hovering in the wind; the vane points downwind|700](assets/95a1a871f58b.png)

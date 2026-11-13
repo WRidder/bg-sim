@@ -8,13 +8,13 @@ The landing phase (P66, "rate of descent") was flown by hand: each click of the 
 
 The guidance is the descent model's P66 loop: the throttle holds the commanded descent rate, and the attitude tilts the thrust to reach the commanded forward speed. The engine stops at touchdown or when the usable propellant is gone.
 
-![The model canvas|900](assets/d43abd91e45b.png)
+![The model canvas|900](assets/aa9107dfc9c0.png)
 
 | block | role |
 | --- | --- |
 | [RateCmd](block:RateCmd), [FwdCmd](block:FwdCmd) | the pilot's commands from the dashboard |
 | [Guid](block:Guid), [Throttle](block:Throttle), [Att](block:Att) | the P66 loops, the engine and the RCS |
-| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads |
+| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads (instances of the library subsystem `LunarFoot`) |
 | [Status](block:Status) | hover time left, thrust-to-weight ratio |
 
 ![3D view after the landing|600](assets/94c1bf2ce5fe.png)

@@ -194,9 +194,9 @@ test("opens the quadcopter, flies it and reads the hover altitude and the 3D bin
   await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("run-button")).toBeEnabled();
 
-  // The airframe, the four motor drives and the firmware chain: navigation filter, position,
-  // attitude and rate controllers, mixer.
-  for (const name of ["Body", "Drv1", "Drv2", "Drv3", "Drv4", "Nav", "Pos", "Att", "Rate", "Mix"]) {
+  // The airframe, the four rotor instances (ESC, drive and propeller) and the firmware chain:
+  // navigation filter, position, attitude and rate controllers, mixer.
+  for (const name of ["Body", "Rotor1", "Rotor2", "Rotor3", "Rotor4", "Nav", "Pos", "Att", "Rate", "Mix"]) {
     await expect(node(page, name)).toBeVisible();
   }
 
@@ -275,7 +275,7 @@ test("opens the quadcopter, flies it and reads the hover altitude and the 3D bin
     const raw = await bar.getAttribute("data-applied");
     return (JSON.parse(raw ?? "{}") as Record<string, number>)[target];
   };
-  // Integrated rotor angles of the run (Drv<k>/rotor/phi, rad); the clockwise rotors 3 and 4 are bound
+  // Integrated rotor angles of the run (Rotor<k>/Drive/rotor/phi, rad); the clockwise rotors 3 and 4 are bound
   // with gain -1. The viewer interpolates the 60 Hz stream linearly, so a rotor turning at 480 rad/s
   // is off by a fraction of a radian at most between two stream samples.
   const frames = async (time: number): Promise<Buffer> => {

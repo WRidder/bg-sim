@@ -192,11 +192,11 @@
           "tol": 1e-07,
           "terms": [
             {
-              "signal": "A30/Energy/E",
+              "signal": "EnergyA30/E",
               "coeff": 1.0
             },
             {
-              "signal": "A30/Work/y",
+              "signal": "WorkA30/y",
               "coeff": -1.0
             }
           ],

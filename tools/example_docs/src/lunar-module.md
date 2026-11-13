@@ -96,7 +96,7 @@ The descent burns 0.7 % less propellant than Eagle did and gains 3 % more veloci
   "touchdown": {
     "kind": "plot", "model": "lm-descent", "xlim": [755, 775],
     "rows": [
-      {"ylabel": "pad force [N]", "series": [{"signal": "Pad1/f_n", "label": "+Y"}, {"signal": "Pad2/f_n", "label": "-Y", "style": "--"}, {"signal": "Pad3/f_n", "label": "+Z (forward)"}, {"signal": "Pad4/f_n", "label": "-Z"}], "legend": true},
+      {"ylabel": "pad force [N]", "series": [{"signal": "Pad1/Contact/f_n", "label": "+Y"}, {"signal": "Pad2/Contact/f_n", "label": "-Y", "style": "--"}, {"signal": "Pad3/Contact/f_n", "label": "+Z (forward)"}, {"signal": "Pad4/Contact/f_n", "label": "-Z"}], "legend": true},
       {"ylabel": "tilt [deg]", "series": [{"signal": "State/tilt_deg", "label": "tilt"}]},
       {"ylabel": "pad height [m]", "series": [{"signal": "State/h_pad", "label": "lowest pad"}]}
     ]
@@ -123,7 +123,7 @@ Both P63 and P64 use Apollo's quadratic guidance, $a = a_T + 12 (r_T - r)/t_{go}
 | [Guid](block:Guid), [Att](block:Att) | the descent guidance and the RCS attitude loop |
 | [PilotRate](block:PilotRate), [PilotFwd](block:PilotFwd) | the P66 pilot model from Aldrin's callouts |
 | [Windows](block:Windows) | the yaw to windows up |
-| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads on the lunar surface |
+| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads on the lunar surface (instances of the library subsystem `LunarFoot`) |
 | [State](block:State), [Status](block:Status) | altitude, velocities, tilt, pad height; velocity gained, hover time left |
 
 ## What to try
@@ -175,7 +175,7 @@ The checks compare tightly (2e-4) with the independent scipy integration in `des
       {"ylabel": "altitude [ft]", "series": [{"signal": "State/h_ft", "label": "h"}]},
       {"ylabel": "velocity [ft/s]", "series": [{"signal": "State/rdot_fps", "label": "vertical"}, {"signal": "State/vh_fps", "label": "forward", "style": "--"}], "legend": true},
       {"ylabel": "hover time [s]", "series": [{"signal": "Status/hover_left", "label": "left"}]},
-      {"ylabel": "pad force [N]", "series": [{"signal": "Pad1/f_n", "label": "+Y"}, {"signal": "Pad3/f_n", "label": "+Z", "style": "--"}], "legend": true}
+      {"ylabel": "pad force [N]", "series": [{"signal": "Pad1/Contact/f_n", "label": "+Y"}, {"signal": "Pad3/Contact/f_n", "label": "+Z", "style": "--"}], "legend": true}
     ]
   },
   "dry": {
@@ -185,7 +185,7 @@ The checks compare tightly (2e-4) with the independent scipy integration in `des
     "rows": [
       {"ylabel": "altitude [ft]", "series": [{"signal": "State/h_ft", "label": "h"}]},
       {"ylabel": "propellant [kg]", "series": [{"signal": "Tank/prop", "label": "usable"}]},
-      {"ylabel": "pad force [N]", "series": [{"signal": "Pad1/f_n", "label": "+Y"}]}
+      {"ylabel": "pad force [N]", "series": [{"signal": "Pad1/Contact/f_n", "label": "+Y"}]}
     ]
   }
 }
@@ -206,7 +206,7 @@ The guidance is the descent model's P66 loop: the throttle holds the commanded d
 | --- | --- |
 | [RateCmd](block:RateCmd), [FwdCmd](block:FwdCmd) | the pilot's commands from the dashboard |
 | [Guid](block:Guid), [Throttle](block:Throttle), [Att](block:Att) | the P66 loops, the engine and the RCS |
-| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads |
+| [Pad1](block:Pad1)..[Pad4](block:Pad4) | the footpads (instances of the library subsystem `LunarFoot`) |
 | [Status](block:Status) | hover time left, thrust-to-weight ratio |
 
 ![3D view after the landing|600](@fig:scene)

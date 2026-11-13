@@ -6,4 +6,4 @@ The bottle moves about 11 cm along the carton and 6 cm across, sliding on the fl
 
 ![The bottle in the see-through carton|700](assets/20fc1d6b8612.png)
 
-![Bottle position in the carton, wall force and cup utilisation|900](assets/1286c3434d79.png)
+![Bottle position in the carton, wall force and cup utilisation|900](assets/a4d37a6beb5c.png)

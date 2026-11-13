@@ -10,6 +10,10 @@ pose integrators for the 3D scene, `TipSequencer` -> `Allocator`), and replaces 
 cube: the geometry (`design.py`), the vertex positions, the wheel mounts (spin axis along the face
 normal, wheel centre `DW` inside the face), the sensors and the scene bindings.
 
+The vertex contacts C1 to C4 are instances of the library subsystem `ContactFoot` (mount, vertex pose and
+`ContactPoint`); the script copies `library/ContactFoot.bgsub.json` from the cube example and pins the
+vertex offsets on each instance.
+
 Run it with ``uv run examples/tetra-3d/design/build_model.py`` (needs the cube example next to it).
 """
 
@@ -27,6 +31,8 @@ import design as d  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT.parent / "cube-pyramid-3d" / "models" / "sequence-contact.bgmodel.json"
+#: the vertex contact unit of the template (C1..C4 are its instances), copied into this project's library
+FOOT = ROOT.parent / "cube-pyramid-3d" / "library" / "ContactFoot.bgsub.json"
 
 # ------------------------------------------------------------------ parameters of this example
 FIRMWARE = dict(t1=d.FW["t1"], t2=d.FW["t2"], Tf=d.FW["Tf"], Tr1=d.FW["Tr1"], Tr2=d.FW["Tr2"])
@@ -99,11 +105,13 @@ def build_model() -> dict:
     nodes["EnBody"] = nodes.pop("EnCube")
     nodes["EnBody"]["params"] = {"m": num(d.M_BODY), "g0": "9.81"}
 
-    # contacts at the four vertices
+    # contacts at the four vertices: instances C1..C4 of library/ContactFoot (copied from the cube)
     for k in range(4):
         v = d.VERT[k]
-        nodes[f"Mount{k + 1}"]["params"] = {"x": num(-v[0]), "y": num(-v[1]), "z": num(-v[2])}
-        nodes[f"Local{k + 1}"]["params"] = {"x": num(v[0]), "y": num(v[1]), "z": num(v[2])}
+        nodes[f"C{k + 1}"]["params"] = {
+            "Local/x": num(v[0]), "Local/y": num(v[1]), "Local/z": num(v[2]),
+            "Mount/x": num(-v[0]), "Mount/y": num(-v[1]), "Mount/z": num(-v[2]),
+        }
 
     # the cube had eight vertex inputs on the sensors; the tetrahedron has four
     zero_id = nodes["Zero"]["id"]
@@ -140,7 +148,7 @@ def build_model() -> dict:
 
     model["plots"] = [
         {"id": "p1", "title": "Attitude error to the edge and vertex balance", "signals": ["Sense/ang_edge", "Sense/ang_vert", "Seq/ph"]},
-        {"id": "p2", "title": "Vertex loads", "signals": ["C1/f_n", "C2/f_n", "C3/f_n", "C4/f_n"]},
+        {"id": "p2", "title": "Vertex loads", "signals": [f"C{k}/Contact/f_n" for k in range(1, 5)]},
         {"id": "p3", "title": "Wheel speeds (relative to the body)", "signals": [f"WJoint{k}/qdout" for k in range(1, 5)]},
         {"id": "p4", "title": "Motor torques", "signals": [f"Tap/t{k}" for k in range(1, 5)]},
         {"id": "p5", "title": "Motor terminal voltage", "signals": [f"Ledger/v{k}" for k in range(1, 5)]},
@@ -266,6 +274,8 @@ if __name__ == "__main__":
     out = ROOT / "models" / "sequence-contact.bgmodel.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8", newline="\n")
+    (ROOT / "library" / "ContactFoot.bgsub.json").write_text(FOOT.read_text(encoding="utf-8"), encoding="utf-8",
+                                                             newline="\n")
     (ROOT / "scenes").mkdir(exist_ok=True)
     (ROOT / "scenes" / "tetra-3d.sdf").write_text(build_scene(pz0), encoding="utf-8", newline="\n")
     build_mesh(ROOT / "meshes" / "tetra.glb")

@@ -10,14 +10,14 @@ All plants are bond graphs. The magnet and coil are the stdlib `converters/Elect
 | --- | --- |
 | `maglev-module` | One levitation module carrying a quarter of a car (chassis 1.5 t, body share 11.75 t on a 1 Hz secondary suspension). Lift-off from the skids at 0.45 s, gap regulation at 10 mm, a 1 mm guideway step at 2 s and a 2 t payload step at 4 s. LQR state feedback (`design/design.py`). |
 | `maglev-module-open-loop` | The same module without feedback, released 10 nm from its trim gap: the gap deviation grows with the unstable pole of the linearisation (52.68 1/s). |
-| `maglev-vehicle` | A 53 t car section on two such modules (heave and pitch of a 3D car body), LSM and speed profile (1 m/s² to 430 km/h, 30 s cruise, braking), guideway of 24.768 m spans with a 3 mm sag and one 2 mm bump. Ride readouts: vertical acceleration, pitch rate. |
+| `maglev-vehicle` | A 53 t car section on two such modules (heave and pitch of a 3D car body), LSM and speed profile (1 m/s² to 430 km/h, 30 s cruise, braking), guideway of 24.768 m spans with a 3 mm sag and one 2 mm bump. Ride readouts: vertical acceleration, pitch rate. The two modules `ModF` and `ModR` are instances of the library subsystem `LevitationModule` (`library/LevitationModule.bgsub.json`: coil, chassis, skids, secondary suspension and gap controller behind six ports); the rear lever's `FlipR` stays outside it. |
 
 ## Layout
 
 ```
 bgsim.project.json
 models/*.bgmodel.json       written by design/build_model.py
-library/                    GapController, LsmController, Guideway, Bias
+library/                    GapController, LsmController, Guideway, Bias (blocks); LevitationModule (subsystem, written by build_model.py)
 scenes/                     maglev-module.sdf, maglev-train.sdf
 design/design.py            trim, linearisation, LQR gains, nonlinear scipy simulations -> design.json
 design/build_model.py       models, scenes and expected.json (reads design.json)

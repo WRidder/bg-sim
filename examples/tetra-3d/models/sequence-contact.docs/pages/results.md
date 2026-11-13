@@ -1,8 +1,8 @@
 # Results and checks
 
-![Attitude error, phase, vertex loads and wheel speeds over the 3.8 s run|900](assets/80734f8a22fb.png)
+![Attitude error, phase, vertex loads and wheel speeds over the 3.8 s run|900](assets/1638b007dd5e.png)
 
-![Centre of mass height and motor terminal voltage|900](assets/484c5155f905.png)
+![Centre of mass height and motor terminal voltage|900](assets/d6359da54ee2.png)
 
 ## Measured (README, `run_checks.py --only tetra-3d`)
 

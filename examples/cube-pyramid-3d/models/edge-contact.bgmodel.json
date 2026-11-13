@@ -126,93 +126,24 @@
         }
       },
       {
-        "id": "n06",
-        "name": "Mount1",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 340,
-          "y": 240
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n07",
-        "name": "Local1",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 340,
-          "y": 140
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.1",
-          "y": "-0.1",
-          "z": "-0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n08",
-        "name": "Compose1",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 200,
-          "y": 140
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "$comment": "migrate_bond_orientation: O7",
         "id": "n09",
         "name": "C1",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 200,
-          "y": 240
+          "x": 240,
+          "y": 140
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
+          "Local/x": "-0.1",
+          "Local/y": "-0.1",
+          "Local/z": "-0.1",
+          "Mount/x": "0.1",
+          "Mount/y": "0.1",
+          "Mount/z": "0.1"
         },
         "constants": {},
         "starts": {},
@@ -222,93 +153,24 @@
         }
       },
       {
-        "id": "n10",
-        "name": "Mount2",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 340,
-          "y": 540
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.1",
-          "y": "0.1",
-          "z": "0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n11",
-        "name": "Local2",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 340,
-          "y": 440
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.1",
-          "y": "-0.1",
-          "z": "-0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n12",
-        "name": "Compose2",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 200,
-          "y": 440
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "$comment": "migrate_bond_orientation: O7",
         "id": "n13",
         "name": "C2",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 200,
-          "y": 540
+          "x": 240,
+          "y": 440
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
+          "Local/x": "0.1",
+          "Local/y": "-0.1",
+          "Local/z": "-0.1",
+          "Mount/x": "-0.1",
+          "Mount/y": "0.1",
+          "Mount/z": "0.1"
         },
         "constants": {},
         "starts": {},
@@ -318,93 +180,24 @@
         }
       },
       {
-        "id": "n14",
-        "name": "Mount3",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 340,
-          "y": 840
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.1",
-          "y": "-0.1",
-          "z": "0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n15",
-        "name": "Local3",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 340,
-          "y": 740
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.1",
-          "y": "0.1",
-          "z": "-0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n16",
-        "name": "Compose3",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 200,
-          "y": 740
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "$comment": "migrate_bond_orientation: O7",
         "id": "n17",
         "name": "C3",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 200,
-          "y": 840
+          "x": 240,
+          "y": 740
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
+          "Local/x": "-0.1",
+          "Local/y": "0.1",
+          "Local/z": "-0.1",
+          "Mount/x": "0.1",
+          "Mount/y": "-0.1",
+          "Mount/z": "0.1"
         },
         "constants": {},
         "starts": {},
@@ -414,93 +207,24 @@
         }
       },
       {
-        "id": "n18",
-        "name": "Mount4",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 340,
-          "y": 1140
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "-0.1",
-          "y": "-0.1",
-          "z": "0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n19",
-        "name": "Local4",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 340,
-          "y": 1040
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "x": "0.1",
-          "y": "0.1",
-          "z": "-0.1"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "n20",
-        "name": "Compose4",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 200,
-          "y": 1040
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "$comment": "migrate_bond_orientation: O7",
         "id": "n21",
         "name": "C4",
         "block": {
-          "ref": "stdlib:contact/ContactPoint"
+          "ref": "project:ContactFoot"
         },
         "position": {
-          "x": 200,
-          "y": 1140
+          "x": 240,
+          "y": 1040
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "20000.0",
-          "xref": "0.001",
-          "c": "5.0",
-          "mu": "0.8",
-          "vs": "0.001",
-          "eps": "1e-06"
+          "Local/x": "0.1",
+          "Local/y": "0.1",
+          "Local/z": "-0.1",
+          "Mount/x": "-0.1",
+          "Mount/y": "-0.1",
+          "Mount/z": "0.1"
         },
         "constants": {},
         "starts": {},
@@ -1590,37 +1314,6 @@
           "port": "p"
         },
         "to": {
-          "node": "n06",
-          "port": "b"
-        },
-        "route": [
-          {
-            "x": 500,
-            "y": 590
-          },
-          {
-            "x": 480,
-            "y": 590
-          },
-          {
-            "x": 480,
-            "y": 270
-          },
-          {
-            "x": 420,
-            "y": 270
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c05",
-        "kind": "bond",
-        "from": {
-          "node": "n06",
-          "port": "a"
-        },
-        "to": {
           "node": "n09",
           "port": "p"
         },
@@ -1635,73 +1328,8 @@
           "port": "g"
         },
         "to": {
-          "node": "n08",
-          "port": "gp"
-        },
-        "route": [
-          {
-            "x": 610,
-            "y": 730
-          },
-          {
-            "x": 610,
-            "y": 720
-          },
-          {
-            "x": 600,
-            "y": 720
-          },
-          {
-            "x": 600,
-            "y": 700
-          },
-          {
-            "x": 530,
-            "y": 700
-          },
-          {
-            "x": 530,
-            "y": 650
-          },
-          {
-            "x": 290,
-            "y": 650
-          },
-          {
-            "x": 290,
-            "y": 120
-          },
-          {
-            "x": 230,
-            "y": 120
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c07",
-        "kind": "signal",
-        "from": {
-          "node": "n07",
-          "port": "g"
-        },
-        "to": {
-          "node": "n08",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c08",
-        "kind": "signal",
-        "from": {
-          "node": "n08",
-          "port": "g"
-        },
-        "to": {
           "node": "n09",
-          "port": "g"
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -1717,32 +1345,7 @@
           "node": "n09",
           "port": "o"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 460
-          },
-          {
-            "x": 180,
-            "y": 460
-          },
-          {
-            "x": 180,
-            "y": 280
-          },
-          {
-            "x": 190,
-            "y": 280
-          },
-          {
-            "x": 190,
-            "y": 260
-          },
-          {
-            "x": 180,
-            "y": 260
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -1756,28 +1359,7 @@
           "node": "n09",
           "port": "fr"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 480
-          },
-          {
-            "x": 150,
-            "y": 490
-          },
-          {
-            "x": 140,
-            "y": 490
-          },
-          {
-            "x": 140,
-            "y": 270
-          },
-          {
-            "x": 180,
-            "y": 270
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -1791,28 +1373,7 @@
           "node": "n03",
           "port": "fn1"
         },
-        "route": [
-          {
-            "x": 170,
-            "y": 280
-          },
-          {
-            "x": 40,
-            "y": 280
-          },
-          {
-            "x": 40,
-            "y": 1290
-          },
-          {
-            "x": 220,
-            "y": 1290
-          },
-          {
-            "x": 220,
-            "y": 1280
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -1821,37 +1382,6 @@
         "from": {
           "node": "n01",
           "port": "p"
-        },
-        "to": {
-          "node": "n10",
-          "port": "b"
-        },
-        "route": [
-          {
-            "x": 500,
-            "y": 590
-          },
-          {
-            "x": 490,
-            "y": 590
-          },
-          {
-            "x": 490,
-            "y": 570
-          },
-          {
-            "x": 420,
-            "y": 570
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c13",
-        "kind": "bond",
-        "from": {
-          "node": "n10",
-          "port": "a"
         },
         "to": {
           "node": "n13",
@@ -1868,65 +1398,8 @@
           "port": "g"
         },
         "to": {
-          "node": "n12",
-          "port": "gp"
-        },
-        "route": [
-          {
-            "x": 610,
-            "y": 730
-          },
-          {
-            "x": 610,
-            "y": 760
-          },
-          {
-            "x": 430,
-            "y": 760
-          },
-          {
-            "x": 430,
-            "y": 660
-          },
-          {
-            "x": 280,
-            "y": 660
-          },
-          {
-            "x": 280,
-            "y": 420
-          },
-          {
-            "x": 230,
-            "y": 420
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c15",
-        "kind": "signal",
-        "from": {
-          "node": "n11",
-          "port": "g"
-        },
-        "to": {
-          "node": "n12",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c16",
-        "kind": "signal",
-        "from": {
-          "node": "n12",
-          "port": "g"
-        },
-        "to": {
           "node": "n13",
-          "port": "g"
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -1942,24 +1415,7 @@
           "node": "n13",
           "port": "o"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 460
-          },
-          {
-            "x": 150,
-            "y": 470
-          },
-          {
-            "x": 180,
-            "y": 470
-          },
-          {
-            "x": 180,
-            "y": 560
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -1973,24 +1429,7 @@
           "node": "n13",
           "port": "fr"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 480
-          },
-          {
-            "x": 160,
-            "y": 480
-          },
-          {
-            "x": 160,
-            "y": 570
-          },
-          {
-            "x": 180,
-            "y": 570
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2004,24 +1443,7 @@
           "node": "n03",
           "port": "fn2"
         },
-        "route": [
-          {
-            "x": 170,
-            "y": 580
-          },
-          {
-            "x": 150,
-            "y": 580
-          },
-          {
-            "x": 150,
-            "y": 1280
-          },
-          {
-            "x": 220,
-            "y": 1280
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2030,37 +1452,6 @@
         "from": {
           "node": "n01",
           "port": "p"
-        },
-        "to": {
-          "node": "n14",
-          "port": "b"
-        },
-        "route": [
-          {
-            "x": 500,
-            "y": 590
-          },
-          {
-            "x": 440,
-            "y": 590
-          },
-          {
-            "x": 440,
-            "y": 870
-          },
-          {
-            "x": 420,
-            "y": 870
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c21",
-        "kind": "bond",
-        "from": {
-          "node": "n14",
-          "port": "a"
         },
         "to": {
           "node": "n17",
@@ -2077,57 +1468,8 @@
           "port": "g"
         },
         "to": {
-          "node": "n16",
-          "port": "gp"
-        },
-        "route": [
-          {
-            "x": 610,
-            "y": 730
-          },
-          {
-            "x": 610,
-            "y": 790
-          },
-          {
-            "x": 420,
-            "y": 790
-          },
-          {
-            "x": 420,
-            "y": 720
-          },
-          {
-            "x": 230,
-            "y": 720
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c23",
-        "kind": "signal",
-        "from": {
-          "node": "n15",
-          "port": "g"
-        },
-        "to": {
-          "node": "n16",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c24",
-        "kind": "signal",
-        "from": {
-          "node": "n16",
-          "port": "g"
-        },
-        "to": {
           "node": "n17",
-          "port": "g"
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -2143,28 +1485,7 @@
           "node": "n17",
           "port": "o"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 460
-          },
-          {
-            "x": 150,
-            "y": 450
-          },
-          {
-            "x": 130,
-            "y": 450
-          },
-          {
-            "x": 130,
-            "y": 870
-          },
-          {
-            "x": 180,
-            "y": 870
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2178,28 +1499,7 @@
           "node": "n17",
           "port": "fr"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 480
-          },
-          {
-            "x": 170,
-            "y": 480
-          },
-          {
-            "x": 170,
-            "y": 570
-          },
-          {
-            "x": 180,
-            "y": 570
-          },
-          {
-            "x": 180,
-            "y": 860
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2213,28 +1513,7 @@
           "node": "n03",
           "port": "fn3"
         },
-        "route": [
-          {
-            "x": 170,
-            "y": 880
-          },
-          {
-            "x": 160,
-            "y": 880
-          },
-          {
-            "x": 160,
-            "y": 1270
-          },
-          {
-            "x": 230,
-            "y": 1270
-          },
-          {
-            "x": 230,
-            "y": 1280
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2243,37 +1522,6 @@
         "from": {
           "node": "n01",
           "port": "p"
-        },
-        "to": {
-          "node": "n18",
-          "port": "b"
-        },
-        "route": [
-          {
-            "x": 500,
-            "y": 590
-          },
-          {
-            "x": 490,
-            "y": 590
-          },
-          {
-            "x": 490,
-            "y": 1170
-          },
-          {
-            "x": 420,
-            "y": 1170
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c29",
-        "kind": "bond",
-        "from": {
-          "node": "n18",
-          "port": "a"
         },
         "to": {
           "node": "n21",
@@ -2290,61 +1538,8 @@
           "port": "g"
         },
         "to": {
-          "node": "n20",
-          "port": "gp"
-        },
-        "route": [
-          {
-            "x": 610,
-            "y": 730
-          },
-          {
-            "x": 620,
-            "y": 730
-          },
-          {
-            "x": 620,
-            "y": 800
-          },
-          {
-            "x": 450,
-            "y": 800
-          },
-          {
-            "x": 450,
-            "y": 1020
-          },
-          {
-            "x": 230,
-            "y": 1020
-          }
-        ],
-        "label": null
-      },
-      {
-        "id": "c31",
-        "kind": "signal",
-        "from": {
-          "node": "n19",
-          "port": "g"
-        },
-        "to": {
-          "node": "n20",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "c32",
-        "kind": "signal",
-        "from": {
-          "node": "n20",
-          "port": "g"
-        },
-        "to": {
           "node": "n21",
-          "port": "g"
+          "port": "pose"
         },
         "route": [],
         "label": null
@@ -2360,32 +1555,7 @@
           "node": "n21",
           "port": "o"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 460
-          },
-          {
-            "x": 160,
-            "y": 460
-          },
-          {
-            "x": 160,
-            "y": 440
-          },
-          {
-            "x": 120,
-            "y": 440
-          },
-          {
-            "x": 120,
-            "y": 1170
-          },
-          {
-            "x": 180,
-            "y": 1170
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2399,32 +1569,7 @@
           "node": "n21",
           "port": "fr"
         },
-        "route": [
-          {
-            "x": 150,
-            "y": 480
-          },
-          {
-            "x": 150,
-            "y": 570
-          },
-          {
-            "x": 140,
-            "y": 570
-          },
-          {
-            "x": 140,
-            "y": 860
-          },
-          {
-            "x": 180,
-            "y": 860
-          },
-          {
-            "x": 180,
-            "y": 1160
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -2438,28 +1583,7 @@
           "node": "n03",
           "port": "fn4"
         },
-        "route": [
-          {
-            "x": 170,
-            "y": 1180
-          },
-          {
-            "x": 170,
-            "y": 1260
-          },
-          {
-            "x": 250,
-            "y": 1260
-          },
-          {
-            "x": 250,
-            "y": 1280
-          },
-          {
-            "x": 240,
-            "y": 1280
-          }
-        ],
+        "route": [],
         "label": null
       },
       {
@@ -4027,10 +3151,10 @@
       "id": "p2",
       "title": "Vertex loads",
       "signals": [
-        "C1/f_n",
-        "C2/f_n",
-        "C3/f_n",
-        "C4/f_n"
+        "C1/Contact/f_n",
+        "C2/Contact/f_n",
+        "C3/Contact/f_n",
+        "C4/Contact/f_n"
       ]
     },
     {

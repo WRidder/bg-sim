@@ -61,8 +61,11 @@ by U (blue to red). A lost seal leaves the lip behind on the box.
     held latch. It also passes the cup's `ext` and `T` on, multiplied by the seal latch, for the
     force-stroke plot.
   - `Transmissibility` demodulates the box and tool motion at the chirp phase into `TR`.
+  - `ContactFoot.bgsub.json` is a library subsystem: one table contact (mount, corner pose and
+    `ContactPoint` on the table plane). The four corners under each box (`Floor1` to `Floor4`, and
+    `FloorL1` to `FloorL4` in `linear-vs-nonlinear`) are instances of it, pinned to their corner offsets.
 - `design/params.py`: all parameters. They become global parameters of the models.
-- `design/build_model.py`: writes `models/*.bgmodel.json`, `bgsim.project.json` and the scenes
+- `design/build_model.py`: writes `models/*.bgmodel.json`, `library/ContactFoot.bgsub.json`, `bgsim.project.json` and the scenes
   (`scenes/suction-cup.sdf`, `scenes/suction-cup-compare.sdf`, through `scene.py`).
 - `design/analysis.py`: the hand calculation. It covers the operating vacuum, the static hold with the
   lift stroke and bottoming, the axial mode, the two-degree-of-freedom lateral model (modes and

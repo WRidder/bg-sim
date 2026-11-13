@@ -4,4 +4,4 @@ The tool tilts about its flange to 30° in 0.8 s, holds for 0.6 s and returns. G
 
 Then the tool swings ±10° at 1.5 Hz for three cycles. The fast swing adds the inertia of the box to the shear and the moment: U peaks at 0.84, and the box is held.
 
-![Tool angle, lateral deflection, box tilt and U|900](assets/440e3ef16151.png)
+![Tool angle, lateral deflection, box tilt and U|900](assets/312b2af6b83b.png)
