@@ -162,7 +162,7 @@ Against the direction of rotation (negative speeds), the friction and the motor 
 @@ page microduck-hang overview - | Overview
 # The microduck on a stand
 
-The robot hangs by its trunk, the way a real robot is brought up. Its 15 bodies come from the microduck_rl MJCF, with 14 `Revolute3D` joints. One [XL330](block:left_knee) instance per joint is named after the joint. Every `vbus` port sits on one battery bus: a [battery](block:Battery) behind a [resistance](block:Rbat), and a [bus capacitor](block:Cbus).
+The robot hangs by its trunk, the way a real robot is brought up. Its 15 bodies come from the microduck_rl MJCF, with 14 `Revolute3D` joints. Each jointed body is an instance of the library subsystem `Link` ([left_knee_link](block:left_knee_link): the body, its two frames and its pose band), with its joint beside it. One [XL330](block:left_knee) instance per joint is named after the joint. Every `vbus` port sits on one battery bus: a [battery](block:Battery) behind a [resistance](block:Rbat), and a [bus capacitor](block:Cbus).
 
 At 0.2 s the hip-pitch, knee and ankle goals step from HOME to a pose that would lower a standing trunk by 15 mm (inverse kinematics in `design/robot.py`). The other joints hold HOME.
 
@@ -197,7 +197,7 @@ Every leg joint stops 15 to 20 mrad short of the reference, on the side it came 
     "kind": "plot", "model": "microduck-stand", "xlim": [0, 1.3],
     "rows": [
       {"ylabel": "trunk quaternion", "series": [{"signal": "Free/pose[1]", "label": "w"}, {"signal": "Free/pose[3]", "label": "y (pitch)"}], "hlines": [{"y": 0.9397, "label": "40 deg tilt"}], "legend": true},
-      {"ylabel": "foot forces [N]", "series": [{"signal": "FootL1/f_n", "label": "left toe out"}, {"signal": "FootL2/f_n", "label": "left toe in"}, {"signal": "FootL3/f_n", "label": "left heel in"}, {"signal": "FootL4/f_n", "label": "left heel out"}], "legend": true},
+      {"ylabel": "foot forces [N]", "series": [{"signal": "FootL1/Contact/f_n", "label": "left toe out"}, {"signal": "FootL2/Contact/f_n", "label": "left toe in"}, {"signal": "FootL3/Contact/f_n", "label": "left heel in"}, {"signal": "FootL4/Contact/f_n", "label": "left heel out"}], "legend": true},
       {"ylabel": "left leg [rad]", "series": [{"signal": "left_hip_pitch/Encoder/y", "label": "hip pitch"}, {"signal": "left_knee/Encoder/y", "label": "knee"}, {"signal": "left_ankle/Encoder/y", "label": "ankle"}], "legend": true}
     ]
   }
@@ -205,7 +205,7 @@ Every leg joint stops 15 to 20 mrad short of the reference, on the side it came 
 @@ page microduck-stand overview - | Overview
 # The microduck holding HOME
 
-The robot is released 0.1 mm above the floor in the STAND pose, on a free joint ([Free](block:Free)). Each sole has four contact points with friction 1.0. The 14 servos hold the HOME goals at kp 200, and **no policy runs**.
+The robot is released 0.1 mm above the floor in the STAND pose, on a free joint ([Free](block:Free)). Each sole has four contact points with friction 1.0, each an instance of the library subsystem `GroundContact` (such as [FootL1](block:FootL1)). The 14 servos hold the HOME goals at kp 200, and **no policy runs**.
 
 The robot first settles into its gear play and its P stiffness: the knees bend, and the weight moves from the heels to the toes. Then it tips forward. HOME at walking gain is balanced only by a policy that keeps balancing it. The microduck design notes report the same from their own simulation: "a robot holding it on the floor tips past 40° within a second or two". Here the trunk passes 40° at 1.14 s.
 

@@ -2,16 +2,19 @@
 # requires-python = ">=3.11"
 # dependencies = ["numpy>=2.0"]
 # ///
-"""Write the microduck example: the XL330 library subsystem, the models and the scene.
+"""Write the microduck example: the library subsystems, the models and the scene.
 
     uv run examples/microduck/design/build_model.py
 
-* library/XL330.bgsub.json  the actuator, drawn once (design/xl330.py)
+* library/XL330.bgsub.json  the actuator, drawn once (design/xl330.py; also XL330Rigid, XL330Backlash)
+* library/Link.bgsub.json   one jointed body of the robot without its joint (design/robot.py)
+* library/GroundContact.bgsub.json  one contact point of a body on the ground (design/robot.py)
 * models/xl330-step         one XL330 on the Pollen/BAM pendulum bench, goal pulse 0 -> 1 -> 0 rad
 * models/xl330-torque-speed one XL330 with its horn driven by a speed ramp, goal far ahead:
                             the torque-speed curve with the current limit and the friction
-* models/microduck-stand    the 14-joint robot (MJCF masses/inertias), 14 XL330 instances on a
-                            2S battery bus, foot contacts, released at the STAND pose
+* models/microduck-stand    the 14-joint robot (MJCF masses/inertias): 14 Link instances with
+                            their joints, 14 XL330 instances on a 2S battery bus, 8 GroundContact
+                            instances under the soles, released at the STAND pose
 * models/microduck-hang     the same robot held by the trunk, the legs stepping to a squat pose
 
 Every number comes from xl330.py (actuator) and robot.py (body).
@@ -346,7 +349,7 @@ DASHBOARDS = {
         slider(*KP), slider(*VBAT),
         value("Trunk quaternion w", "Free/pose[1]", 3), value("Battery current", "BatCurrent/y", 2, "A"),
         plot("Trunk attitude and height", ["Free/pose[1]", "Free/pose[3]", "Free/pose[7]"]),
-        plot("Foot normal forces (N)", [f"Foot{s}{k}/f_n" for s in "LR" for k in range(1, 5)]),
+        plot("Foot normal forces (N)", [f"Foot{s}{k}/Contact/f_n" for s in "LR" for k in range(1, 5)]),
     ]),
     "microduck-policy": (False, [
         text("microduck for a policy", "The robot that velstand.onnx drives in the browser demo, run here by itself: "
@@ -391,6 +394,8 @@ def main() -> None:
     write_json(LIBRARY / "XL330.bgsub.json", xl.definition())
     write_json(LIBRARY / "XL330Rigid.bgsub.json", xl.definition_rigid())
     write_json(LIBRARY / "XL330Backlash.bgsub.json", xl.definition_backlash())
+    write_json(LIBRARY / "Link.bgsub.json", rb.link_definition())
+    write_json(LIBRARY / "GroundContact.bgsub.json", rb.contact_definition())
     write_json(MODELS / "xl330-backlash-step.bgmodel.json", with_dashboard(build_backlash_bench()))
     write_json(MODELS / "xl330-backlash-reversal.bgmodel.json", with_dashboard(build_backlash_bench(reversal=True)))
     write_json(MODELS / "xl330-step.bgmodel.json", with_dashboard(build_step()))

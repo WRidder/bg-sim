@@ -1,6 +1,6 @@
 # The microduck holding HOME
 
-The robot is released 0.1 mm above the floor in the STAND pose, on a free joint ([Free](block:Free)). Each sole has four contact points with friction 1.0. The 14 servos hold the HOME goals at kp 200, and **no policy runs**.
+The robot is released 0.1 mm above the floor in the STAND pose, on a free joint ([Free](block:Free)). Each sole has four contact points with friction 1.0, each an instance of the library subsystem `GroundContact` (such as [FootL1](block:FootL1)). The 14 servos hold the HOME goals at kp 200, and **no policy runs**.
 
 The robot first settles into its gear play and its P stiffness: the knees bend, and the weight moves from the heels to the toes. Then it tips forward. HOME at walking gain is balanced only by a policy that keeps balancing it. The microduck design notes report the same from their own simulation: "a robot holding it on the floor tips past 40° within a second or two". Here the trunk passes 40° at 1.14 s.
 

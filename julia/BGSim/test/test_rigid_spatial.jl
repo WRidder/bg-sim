@@ -165,7 +165,7 @@ end
         @test occursin("`left_knee_joint/qdot` is declared `state = :prefer`", only(w).message)
         @test only(w).path == "left_knee_joint"
         # ... but not a derivative-causal element's momentum, whose preference is not passed on
-        pk = only(v for v in flat.variables if v.id == "left_knee_link/inertia/P[1]")
+        pk = only(v for v in flat.variables if v.id == "left_knee_link/Body/inertia/P[1]")
         @test isempty(Compile._w219(flat, csys, [pk]))
     end
 

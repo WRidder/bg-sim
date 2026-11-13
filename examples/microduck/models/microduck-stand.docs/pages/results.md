@@ -1,6 +1,6 @@
 # Results
 
-![Trunk attitude, left foot forces and left leg joints|900](assets/04d19702385b.png)
+![Trunk attitude, left foot forces and left leg joints|900](assets/f360dbf9c54a.png)
 
 - In the first 0.3 s the trunk drops 1.7 mm. The joints take up their backlash (±1°), the knee shows the largest sag, and the heels carry more than the toes. The centre of mass is 0.6 mm ahead of the trunk origin, which is 12 mm from the heel edge and 25 mm from the toe edge.
 - The knees keep bending forward, and the load moves onto the toes.

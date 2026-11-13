@@ -1,0 +1,241 @@
+{
+  "format": "bgsim.subsystem",
+  "name": "GroundContact",
+  "description": "One contact point of a body on a ground plane: the point's pose in the body's principal frame, its mount on the body's centre-of-mass junction and a ContactPoint (Hertz normal law, Coulomb friction). The soles use it with friction 1.0, the bumpers with friction 0.",
+  "ports": [
+    {
+      "name": "p",
+      "kind": "power",
+      "domain": "Spatial",
+      "size": [
+        6
+      ],
+      "node": "Mount",
+      "port": "b"
+    },
+    {
+      "name": "pose",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        7
+      ],
+      "unit": null,
+      "node": "World",
+      "port": "gp"
+    },
+    {
+      "name": "o",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        3
+      ],
+      "unit": "m",
+      "node": "Contact",
+      "port": "o"
+    },
+    {
+      "name": "fr",
+      "kind": "signal",
+      "direction": "input",
+      "type": "Real",
+      "size": [
+        9
+      ],
+      "unit": "1",
+      "node": "Contact",
+      "port": "fr"
+    },
+    {
+      "name": "f_n",
+      "kind": "signal",
+      "direction": "output",
+      "type": "Real",
+      "size": [
+        1
+      ],
+      "unit": "N",
+      "node": "Contact",
+      "port": "f_n"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Pose",
+        "name": "Pose",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 0,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "World",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 160,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Mount",
+        "name": "Mount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 160,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Contact",
+        "name": "Contact",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 340,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "20000.0",
+          "xref": "0.001",
+          "c": "5.0",
+          "mu": "1.0",
+          "vs": "0.001",
+          "eps": "1e-06"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b0001",
+        "kind": "bond",
+        "from": {
+          "node": "Mount",
+          "port": "a"
+        },
+        "to": {
+          "node": "Contact",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0002",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "World",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0003",
+        "kind": "signal",
+        "from": {
+          "node": "World",
+          "port": "g"
+        },
+        "to": {
+          "node": "Contact",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a001",
+        "kind": "text",
+        "text": "**A contact point on the ground.** `p` is the body's centre-of-mass junction and `pose` the world pose of its principal frame. Pose is the point in that frame, Mount the same offset for the bond, World the point in the world. `o` and `fr` are the ground plane (ContactSurface). Pinned: Pose and Mount x, y, z and the friction coefficient.",
+        "x": 0,
+        "y": -150,
+        "w": 520,
+        "h": 110,
+        "color": "blue"
+      }
+    ]
+  },
+  "pins": {
+    "params": [
+      "Pose/x",
+      "Pose/y",
+      "Pose/z",
+      "Mount/x",
+      "Mount/y",
+      "Mount/z",
+      "Contact/mu"
+    ],
+    "starts": []
+  }
+}

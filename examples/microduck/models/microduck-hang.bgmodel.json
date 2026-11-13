@@ -522,33 +522,13 @@
         }
       },
       {
-        "id": "trunk_bj",
-        "name": "trunk_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 420,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "trunk_L",
         "name": "trunk_L",
         "block": {
           "ref": "stdlib:multibond/FixedTransform3DNeutral"
         },
         "position": {
-          "x": 300,
+          "x": 160,
           "y": 0
         },
         "rotation": 0,
@@ -570,46 +550,18 @@
         }
       },
       {
-        "id": "left_hip_yaw_bj",
-        "name": "left_hip_yaw_bj",
+        "id": "trunk_bj",
+        "name": "trunk_bj",
         "block": {
           "junction": "1"
         },
         "position": {
-          "x": 1320,
-          "y": -1300
+          "x": 300,
+          "y": 0
         },
         "rotation": 0,
         "flipX": false,
         "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_yaw_L",
-        "name": "left_hip_yaw_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1200,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.01643932985640513",
-          "qx": "0.7069156586424383",
-          "qy": "-0.01643932985640513",
-          "qz": "-0.7069156586424382",
-          "x": "-8.8e-11",
-          "y": "0.00099414",
-          "z": "0.0168917"
-        },
         "constants": {},
         "starts": {},
         "ui": {
@@ -621,94 +573,45 @@
         "id": "left_hip_yaw_link",
         "name": "left_hip_yaw_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 1320,
-          "y": -1180
+          "x": 680,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0230406",
-          "J": "[2.3241322433233854e-06, 3.4198877566766147e-06, 4.1964e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_yaw_LC",
-        "name": "left_hip_yaw_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1200,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.01643932985640513",
-          "qx": "0.7069156586424383",
-          "qy": "-0.01643932985640513",
-          "qz": "-0.7069156586424382",
-          "x": "-8.8e-11",
-          "y": "0.00099414",
-          "z": "0.0168917"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_yaw_P",
-        "name": "left_hip_yaw_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1320,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_yaw_T",
-        "name": "left_hip_yaw_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 840,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.6679949763914825",
-          "qx": "0.23525143838284715",
-          "qy": "-0.6646263459347792",
-          "qz": "-0.23814132892870035",
-          "x": "-0.0175270828",
-          "y": "-0.0286332",
-          "z": "-0.0078006400000000045"
+          "T/qw": "0.6679949763914825",
+          "T/qx": "0.23525143838284715",
+          "T/qy": "-0.6646263459347792",
+          "T/qz": "-0.23814132892870035",
+          "T/x": "-0.0175270828",
+          "T/y": "-0.0286332",
+          "T/z": "-0.0078006400000000045",
+          "L/qw": "0.01643932985640513",
+          "L/qx": "0.7069156586424383",
+          "L/qy": "-0.01643932985640513",
+          "L/qz": "-0.7069156586424382",
+          "L/x": "-8.8e-11",
+          "L/y": "0.00099414",
+          "L/z": "0.0168917",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "0.006",
+          "LN/y": "0.0175",
+          "LN/z": "-0.005",
+          "LC/qw": "0.01643932985640513",
+          "LC/qx": "0.7069156586424383",
+          "LC/qy": "-0.01643932985640513",
+          "LC/qz": "-0.7069156586424382",
+          "LC/x": "-8.8e-11",
+          "LC/y": "0.00099414",
+          "LC/z": "0.0168917",
+          "Body/m": "0.0230406",
+          "Body/J": "[2.3241322433233854e-06, 3.4198877566766147e-06, 4.1964e-06]"
         },
         "constants": {},
         "starts": {},
@@ -724,8 +627,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 1000,
-          "y": -1300
+          "x": 480,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
@@ -747,82 +650,14 @@
         }
       },
       {
-        "id": "left_hip_yaw_LN",
-        "name": "left_hip_yaw_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.7071067811865476",
-          "qy": "0.7071067811865476",
-          "qz": "0.0",
-          "x": "0.006",
-          "y": "0.0175",
-          "z": "-0.005"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_yaw_CA",
-        "name": "left_hip_yaw_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_yaw_W",
-        "name": "left_hip_yaw_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1000,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_hip_yaw",
         "name": "left_hip_yaw",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 1000,
-          "y": -1700
+          "x": 480,
+          "y": -1300
         },
         "rotation": 0,
         "flipX": false,
@@ -841,145 +676,48 @@
         }
       },
       {
-        "id": "left_hip_roll_bj",
-        "name": "left_hip_roll_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 2220,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_roll_L",
-        "name": "left_hip_roll_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2100,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.7570294949403574e-05",
-          "qx": "-0.442315749531647",
-          "qy": "-3.759504040703664e-05",
-          "qz": "-0.8968593958888734",
-          "x": "0.014815",
-          "y": "1.6179e-08",
-          "z": "-0.00829992"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_hip_roll_link",
         "name": "left_hip_roll_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 2220,
-          "y": -1180
+          "x": 1160,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.00618934",
-          "J": "[3.5245839627768914e-07, 1.157529999987118e-06, 1.1597556037351934e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_roll_LC",
-        "name": "left_hip_roll_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2100,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.7570294949403574e-05",
-          "qx": "-0.442315749531647",
-          "qy": "-3.759504040703664e-05",
-          "qz": "-0.8968593958888734",
-          "x": "0.014815",
-          "y": "1.6179e-08",
-          "z": "-0.00829992"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_roll_P",
-        "name": "left_hip_roll_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2220,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_roll_T",
-        "name": "left_hip_roll_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1740,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.4882404943333962",
-          "qx": "-0.5114892175726493",
-          "qy": "-0.4882404943333962",
-          "qz": "0.5114892175726493",
-          "x": "-8.8e-11",
-          "y": "-0.004391700000000002",
-          "z": "-0.015505860000000003"
+          "T/qw": "0.4882404943333962",
+          "T/qx": "-0.5114892175726493",
+          "T/qy": "-0.4882404943333962",
+          "T/qz": "0.5114892175726493",
+          "T/x": "-8.8e-11",
+          "T/y": "-0.004391700000000002",
+          "T/z": "-0.015505860000000003",
+          "L/qw": "1.7570294949403574e-05",
+          "L/qx": "-0.442315749531647",
+          "L/qy": "-3.759504040703664e-05",
+          "L/qz": "-0.8968593958888734",
+          "L/x": "0.014815",
+          "L/y": "1.6179e-08",
+          "L/z": "-0.00829992",
+          "LN/qw": "0.7071067811865477",
+          "LN/qx": "-0.7071067811865475",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.0",
+          "LN/y": "0.0165",
+          "LN/z": "0.0125",
+          "LC/qw": "1.7570294949403574e-05",
+          "LC/qx": "-0.442315749531647",
+          "LC/qy": "-3.759504040703664e-05",
+          "LC/qz": "-0.8968593958888734",
+          "LC/x": "0.014815",
+          "LC/y": "1.6179e-08",
+          "LC/z": "-0.00829992",
+          "Body/m": "0.00618934",
+          "Body/J": "[3.5245839627768914e-07, 1.157529999987118e-06, 1.1597556037351934e-06]"
         },
         "constants": {},
         "starts": {},
@@ -995,8 +733,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 1900,
-          "y": -1300
+          "x": 960,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
@@ -1018,82 +756,14 @@
         }
       },
       {
-        "id": "left_hip_roll_LN",
-        "name": "left_hip_roll_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1740,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7071067811865477",
-          "qx": "-0.7071067811865475",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.0",
-          "y": "0.0165",
-          "z": "0.0125"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_roll_CA",
-        "name": "left_hip_roll_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1740,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_roll_W",
-        "name": "left_hip_roll_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1900,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_hip_roll",
         "name": "left_hip_roll",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 1900,
-          "y": -1700
+          "x": 960,
+          "y": -1300
         },
         "rotation": 0,
         "flipX": false,
@@ -1112,145 +782,48 @@
         }
       },
       {
-        "id": "left_hip_pitch_bj",
-        "name": "left_hip_pitch_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 3120,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_pitch_L",
-        "name": "left_hip_pitch_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3000,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5233046035439823",
-          "qx": "-0.026248860216010198",
-          "qy": "0.006005190636059521",
-          "qz": "-0.8517201576412646",
-          "x": "0.006766",
-          "y": "0.0228838",
-          "z": "0.0134531"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_hip_pitch_link",
         "name": "left_hip_pitch_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 3120,
-          "y": -1180
+          "x": 1640,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0482067",
-          "J": "[8.117992081470836e-06, 1.910804196247167e-05, 1.98452659560575e-05]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_pitch_LC",
-        "name": "left_hip_pitch_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3000,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5233046035439823",
-          "qx": "-0.026248860216010198",
-          "qy": "0.006005190636059521",
-          "qz": "-0.8517201576412646",
-          "x": "0.006766",
-          "y": "0.0228838",
-          "z": "0.0134531"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_pitch_P",
-        "name": "left_hip_pitch_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3120,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_pitch_T",
-        "name": "left_hip_pitch_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2640,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.6695775603375316",
-          "qx": "0.2272994058462915",
-          "qy": "0.22724424051093498",
-          "qz": "-0.6695975850829889",
-          "x": "-1.6179e-08",
-          "y": "-0.010200079999999999",
-          "z": "-0.010185000000000001"
+          "T/qw": "0.6695775603375316",
+          "T/qx": "0.2272994058462915",
+          "T/qy": "0.22724424051093498",
+          "T/qz": "-0.6695975850829889",
+          "T/x": "-1.6179e-08",
+          "T/y": "-0.010200079999999999",
+          "T/z": "-0.010185000000000001",
+          "L/qw": "0.5233046035439823",
+          "L/qx": "-0.026248860216010198",
+          "L/qy": "0.006005190636059521",
+          "L/qz": "-0.8517201576412646",
+          "L/x": "0.006766",
+          "L/y": "0.0228838",
+          "L/z": "0.0134531",
+          "LN/qw": "0.5",
+          "LN/qx": "-0.5",
+          "LN/qy": "0.5",
+          "LN/qz": "-0.5",
+          "LN/x": "0.025",
+          "LN/y": "0.0",
+          "LN/z": "-0.0185",
+          "LC/qw": "0.5233046035439823",
+          "LC/qx": "-0.026248860216010198",
+          "LC/qy": "0.006005190636059521",
+          "LC/qz": "-0.8517201576412646",
+          "LC/x": "0.006766",
+          "LC/y": "0.0228838",
+          "LC/z": "0.0134531",
+          "Body/m": "0.0482067",
+          "Body/J": "[8.117992081470836e-06, 1.910804196247167e-05, 1.98452659560575e-05]"
         },
         "constants": {},
         "starts": {},
@@ -1266,8 +839,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 2800,
-          "y": -1300
+          "x": 1440,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
@@ -1289,82 +862,14 @@
         }
       },
       {
-        "id": "left_hip_pitch_LN",
-        "name": "left_hip_pitch_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2640,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5",
-          "qx": "-0.5",
-          "qy": "0.5",
-          "qz": "-0.5",
-          "x": "0.025",
-          "y": "0.0",
-          "z": "-0.0185"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_pitch_CA",
-        "name": "left_hip_pitch_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2640,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_hip_pitch_W",
-        "name": "left_hip_pitch_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2800,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_hip_pitch",
         "name": "left_hip_pitch",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 2800,
-          "y": -1700
+          "x": 1440,
+          "y": -1300
         },
         "rotation": 0,
         "flipX": false,
@@ -1383,145 +888,48 @@
         }
       },
       {
-        "id": "left_knee_bj",
-        "name": "left_knee_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 4020,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_knee_L",
-        "name": "left_knee_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3900,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5702627108965027",
-          "qx": "0.41809125517692713",
-          "qy": "-0.5702626861872622",
-          "qz": "-0.41809163068404204",
-          "x": "-1.52e-10",
-          "y": "0.0318937",
-          "z": "-0.00953505"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_knee_link",
         "name": "left_knee_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 4020,
-          "y": -1180
+          "x": 2120,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0215844",
-          "J": "[1.9137833772389263e-06, 4.580536622760666e-06, 5.250560000000408e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_knee_LC",
-        "name": "left_knee_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3900,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5702627108965027",
-          "qx": "0.41809125517692713",
-          "qy": "-0.5702626861872622",
-          "qz": "-0.41809163068404204",
-          "x": "-1.52e-10",
-          "y": "0.0318937",
-          "z": "-0.00953505"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_knee_P",
-        "name": "left_knee_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4020,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_knee_T",
-        "name": "left_knee_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3540,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.014314436036082945",
-          "qx": "-0.23222486534932563",
-          "qy": "0.9722893329335011",
-          "qz": "0.022807058078234257",
-          "x": "-0.012893299999999996",
-          "y": "-0.015233999999999998",
-          "z": "-0.017453100000000006"
+          "T/qw": "0.014314436036082945",
+          "T/qx": "-0.23222486534932563",
+          "T/qy": "0.9722893329335011",
+          "T/qz": "0.022807058078234257",
+          "T/x": "-0.012893299999999996",
+          "T/y": "-0.015233999999999998",
+          "T/z": "-0.017453100000000006",
+          "L/qw": "0.5702627108965027",
+          "L/qx": "0.41809125517692713",
+          "L/qy": "-0.5702626861872622",
+          "L/qz": "-0.41809163068404204",
+          "L/x": "-1.52e-10",
+          "L/y": "0.0318937",
+          "L/z": "-0.00953505",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "0.022",
+          "LN/y": "0.0357771",
+          "LN/z": "-0.004",
+          "LC/qw": "0.5702627108965027",
+          "LC/qx": "0.41809125517692713",
+          "LC/qy": "-0.5702626861872622",
+          "LC/qz": "-0.41809163068404204",
+          "LC/x": "-1.52e-10",
+          "LC/y": "0.0318937",
+          "LC/z": "-0.00953505",
+          "Body/m": "0.0215844",
+          "Body/J": "[1.9137833772389263e-06, 4.580536622760666e-06, 5.250560000000408e-06]"
         },
         "constants": {},
         "starts": {},
@@ -1537,8 +945,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 3700,
-          "y": -1300
+          "x": 1920,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
@@ -1560,82 +968,14 @@
         }
       },
       {
-        "id": "left_knee_LN",
-        "name": "left_knee_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3540,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.7071067811865476",
-          "qy": "0.7071067811865476",
-          "qz": "0.0",
-          "x": "0.022",
-          "y": "0.0357771",
-          "z": "-0.004"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_knee_CA",
-        "name": "left_knee_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3540,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_knee_W",
-        "name": "left_knee_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3700,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_knee",
         "name": "left_knee",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 3700,
-          "y": -1700
+          "x": 1920,
+          "y": -1300
         },
         "rotation": 0,
         "flipX": false,
@@ -1654,145 +994,48 @@
         }
       },
       {
-        "id": "left_ankle_bj",
-        "name": "left_ankle_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 4920,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_ankle_L",
-        "name": "left_ankle_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 4800,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7119704394779868",
-          "qx": "-0.7015555600674546",
-          "qy": "0.0024653518902359815",
-          "qz": "0.03019621645206692",
-          "x": "-0.00615742",
-          "y": "-0.0137483",
-          "z": "-0.0156585"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_ankle_link",
         "name": "left_ankle_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 4920,
-          "y": -1180
+          "x": 2600,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0300246",
-          "J": "[5.90333840156386e-06, 7.743197719635798e-06, 1.1162273878800348e-05]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_ankle_LC",
-        "name": "left_ankle_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 4800,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7119704394779868",
-          "qx": "-0.7015555600674546",
-          "qy": "0.0024653518902359815",
-          "qz": "0.03019621645206692",
-          "x": "-0.00615742",
-          "y": "-0.0137483",
-          "z": "-0.0156585"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_ankle_P",
-        "name": "left_ankle_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4920,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_ankle_T",
-        "name": "left_ankle_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 4440,
-          "y": -1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.4180912551769272",
-          "qx": "-0.5702627108965029",
-          "qy": "-0.41809163068404204",
-          "qz": "0.5702626861872622",
-          "x": "-1.52e-10",
-          "y": "0.010106300000000006",
-          "z": "-0.01646495"
+          "T/qw": "0.4180912551769272",
+          "T/qx": "-0.5702627108965029",
+          "T/qy": "-0.41809163068404204",
+          "T/qz": "0.5702626861872622",
+          "T/x": "-1.52e-10",
+          "T/y": "0.010106300000000006",
+          "T/z": "-0.01646495",
+          "L/qw": "0.7119704394779868",
+          "L/qx": "-0.7015555600674546",
+          "L/qy": "0.0024653518902359815",
+          "L/qz": "0.03019621645206692",
+          "L/x": "-0.00615742",
+          "L/y": "-0.0137483",
+          "L/z": "-0.0156585",
+          "LN/qw": "0.0",
+          "LN/qx": "1.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.0",
+          "LN/y": "0.042",
+          "LN/z": "-0.026",
+          "LC/qw": "0.7119704394779868",
+          "LC/qx": "-0.7015555600674546",
+          "LC/qy": "0.0024653518902359815",
+          "LC/qz": "0.03019621645206692",
+          "LC/x": "-0.00615742",
+          "LC/y": "-0.0137483",
+          "LC/z": "-0.0156585",
+          "Body/m": "0.0300246",
+          "Body/J": "[5.90333840156386e-06, 7.743197719635798e-06, 1.1162273878800348e-05]"
         },
         "constants": {},
         "starts": {},
@@ -1808,8 +1051,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 4600,
-          "y": -1300
+          "x": 2400,
+          "y": -1000
         },
         "rotation": 0,
         "flipX": false,
@@ -1831,82 +1074,14 @@
         }
       },
       {
-        "id": "left_ankle_LN",
-        "name": "left_ankle_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 4440,
-          "y": -880
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "1.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.0",
-          "y": "0.042",
-          "z": "-0.026"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_ankle_CA",
-        "name": "left_ankle_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4440,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "left_ankle_W",
-        "name": "left_ankle_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4600,
-          "y": -980
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "left_ankle",
         "name": "left_ankle",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 4600,
-          "y": -1700
+          "x": 2400,
+          "y": -1300
         },
         "rotation": 0,
         "flipX": false,
@@ -1925,145 +1100,48 @@
         }
       },
       {
-        "id": "neck_pitch_bj",
-        "name": "neck_pitch_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 1320,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "neck_pitch_L",
-        "name": "neck_pitch_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1200,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5",
-          "qx": "0.5",
-          "qy": "0.5",
-          "qz": "0.5",
-          "x": "0.0",
-          "y": "-0.025",
-          "z": "0.0141665"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "neck_pitch_link",
         "name": "neck_pitch_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 1320,
-          "y": 120
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.0368414",
-          "J": "[3.12694e-06, 1.63707e-05, 1.72925e-05]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "neck_pitch_LC",
-        "name": "neck_pitch_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1200,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5",
-          "qx": "0.5",
-          "qy": "0.5",
-          "qz": "0.5",
-          "x": "0.0",
-          "y": "-0.025",
-          "z": "0.0141665"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "neck_pitch_P",
-        "name": "neck_pitch_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1320,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "neck_pitch_T",
-        "name": "neck_pitch_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 840,
+          "x": 680,
           "y": 0
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "qw": "0.9030070448189047",
-          "qx": "-0.0031292605012783734",
-          "qy": "0.00023936995542501646",
-          "qz": "0.4296142775073569",
-          "x": "0.048633200000000015",
-          "y": "0.029620860000000006",
-          "z": "0.014527082800000011"
+          "T/qw": "0.9030070448189047",
+          "T/qx": "-0.0031292605012783734",
+          "T/qy": "0.00023936995542501646",
+          "T/qz": "0.4296142775073569",
+          "T/x": "0.048633200000000015",
+          "T/y": "0.029620860000000006",
+          "T/z": "0.014527082800000011",
+          "L/qw": "0.5",
+          "L/qx": "0.5",
+          "L/qy": "0.5",
+          "L/qz": "0.5",
+          "L/x": "0.0",
+          "L/y": "-0.025",
+          "L/z": "0.0141665",
+          "LN/qw": "0.0",
+          "LN/qx": "0.0",
+          "LN/qy": "-0.7071067811865476",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.026",
+          "LN/y": "0.0145",
+          "LN/z": "0.0324215",
+          "LC/qw": "0.5",
+          "LC/qx": "0.5",
+          "LC/qy": "0.5",
+          "LC/qz": "0.5",
+          "LC/x": "0.0",
+          "LC/y": "-0.025",
+          "LC/z": "0.0141665",
+          "Body/m": "0.0368414",
+          "Body/J": "[3.12694e-06, 1.63707e-05, 1.72925e-05]"
         },
         "constants": {},
         "starts": {},
@@ -2079,7 +1157,7 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 1000,
+          "x": 480,
           "y": 0
         },
         "rotation": 0,
@@ -2102,82 +1180,14 @@
         }
       },
       {
-        "id": "neck_pitch_LN",
-        "name": "neck_pitch_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.0",
-          "qy": "-0.7071067811865476",
-          "qz": "0.7071067811865476",
-          "x": "0.026",
-          "y": "0.0145",
-          "z": "0.0324215"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "neck_pitch_CA",
-        "name": "neck_pitch_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "neck_pitch_W",
-        "name": "neck_pitch_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1000,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "neck_pitch",
         "name": "neck_pitch",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 1000,
-          "y": -400
+          "x": 480,
+          "y": -300
         },
         "rotation": 0,
         "flipX": false,
@@ -2196,145 +1206,48 @@
         }
       },
       {
-        "id": "head_pitch_bj",
-        "name": "head_pitch_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 2220,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_pitch_L",
-        "name": "head_pitch_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2100,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7071067811865476",
-          "qx": "0.0",
-          "qy": "-0.7071067811865475",
-          "qz": "0.0",
-          "x": "-6.533e-09",
-          "y": "0.0116641",
-          "z": "-0.0145"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "head_pitch_link",
         "name": "head_pitch_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 2220,
-          "y": 120
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.00572",
-          "J": "[5.12111e-07, 9.66855e-07, 1.09186e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_pitch_LC",
-        "name": "head_pitch_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2100,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7071067811865476",
-          "qx": "0.0",
-          "qy": "-0.7071067811865475",
-          "qz": "0.0",
-          "x": "-6.533e-09",
-          "y": "0.0116641",
-          "z": "-0.0145"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_pitch_P",
-        "name": "head_pitch_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2220,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_pitch_T",
-        "name": "head_pitch_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1740,
+          "x": 1160,
           "y": 0
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "qw": "0.5",
-          "qx": "-0.5",
-          "qy": "0.5",
-          "qz": "-0.5",
-          "x": "0.0",
-          "y": "-0.025",
-          "z": "-0.0141665"
+          "T/qw": "0.5",
+          "T/qx": "-0.5",
+          "T/qy": "0.5",
+          "T/qz": "-0.5",
+          "T/x": "0.0",
+          "T/y": "-0.025",
+          "T/z": "-0.0141665",
+          "L/qw": "0.7071067811865476",
+          "L/qx": "0.0",
+          "L/qy": "-0.7071067811865475",
+          "L/qz": "0.0",
+          "L/x": "-6.533e-09",
+          "L/y": "0.0116641",
+          "L/z": "-0.0145",
+          "LN/qw": "0.0",
+          "LN/qx": "1.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "0.0",
+          "LN/y": "-0.05",
+          "LN/z": "0.0",
+          "LC/qw": "0.7071067811865476",
+          "LC/qx": "0.0",
+          "LC/qy": "-0.7071067811865475",
+          "LC/qz": "0.0",
+          "LC/x": "-6.533e-09",
+          "LC/y": "0.0116641",
+          "LC/z": "-0.0145",
+          "Body/m": "0.00572",
+          "Body/J": "[5.12111e-07, 9.66855e-07, 1.09186e-06]"
         },
         "constants": {},
         "starts": {},
@@ -2350,7 +1263,7 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 1900,
+          "x": 960,
           "y": 0
         },
         "rotation": 0,
@@ -2373,82 +1286,14 @@
         }
       },
       {
-        "id": "head_pitch_LN",
-        "name": "head_pitch_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1740,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "1.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "0.0",
-          "y": "-0.05",
-          "z": "0.0"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_pitch_CA",
-        "name": "head_pitch_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1740,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_pitch_W",
-        "name": "head_pitch_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1900,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "head_pitch",
         "name": "head_pitch",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 1900,
-          "y": -400
+          "x": 960,
+          "y": -300
         },
         "rotation": 0,
         "flipX": false,
@@ -2467,145 +1312,48 @@
         }
       },
       {
-        "id": "head_yaw_bj",
-        "name": "head_yaw_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 3120,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_yaw_L",
-        "name": "head_yaw_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3000,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.9844361927267663",
-          "qx": "-0.10976063265546819",
-          "qy": "-0.008385469874405603",
-          "qz": "-0.1369951454018937",
-          "x": "-0.000166657",
-          "y": "-0.00500964",
-          "z": "0.0178065"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "head_yaw_link",
         "name": "head_yaw_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 3120,
-          "y": 120
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.0486",
-          "J": "[6.887804907974077e-06, 8.117877396259051e-06, 9.65511769576687e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_yaw_LC",
-        "name": "head_yaw_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3000,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.9844361927267663",
-          "qx": "-0.10976063265546819",
-          "qy": "-0.008385469874405603",
-          "qz": "-0.1369951454018937",
-          "x": "-0.000166657",
-          "y": "-0.00500964",
-          "z": "0.0178065"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_yaw_P",
-        "name": "head_yaw_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3120,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_yaw_T",
-        "name": "head_yaw_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2640,
+          "x": 1640,
           "y": 0
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "qw": "0.5",
-          "qx": "0.5",
-          "qy": "0.5",
-          "qz": "0.4999999999999999",
-          "x": "6.533000000000003e-09",
-          "y": "0.0",
-          "z": "-0.007029000000000002"
+          "T/qw": "0.5",
+          "T/qx": "0.5",
+          "T/qy": "0.5",
+          "T/qz": "0.4999999999999999",
+          "T/x": "6.533000000000003e-09",
+          "T/y": "0.0",
+          "T/z": "-0.007029000000000002",
+          "L/qw": "0.9844361927267663",
+          "L/qx": "-0.10976063265546819",
+          "L/qy": "-0.008385469874405603",
+          "L/qz": "-0.1369951454018937",
+          "L/x": "-0.000166657",
+          "L/y": "-0.00500964",
+          "L/z": "0.0178065",
+          "LN/qw": "0.0",
+          "LN/qx": "0.0",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.0",
+          "LN/y": "0.0186931",
+          "LN/z": "-0.0145",
+          "LC/qw": "0.9844361927267663",
+          "LC/qx": "-0.10976063265546819",
+          "LC/qy": "-0.008385469874405603",
+          "LC/qz": "-0.1369951454018937",
+          "LC/x": "-0.000166657",
+          "LC/y": "-0.00500964",
+          "LC/z": "0.0178065",
+          "Body/m": "0.0486",
+          "Body/J": "[6.887804907974077e-06, 8.117877396259051e-06, 9.65511769576687e-06]"
         },
         "constants": {},
         "starts": {},
@@ -2621,7 +1369,7 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 2800,
+          "x": 1440,
           "y": 0
         },
         "rotation": 0,
@@ -2644,82 +1392,14 @@
         }
       },
       {
-        "id": "head_yaw_LN",
-        "name": "head_yaw_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2640,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.0",
-          "qy": "0.7071067811865476",
-          "qz": "0.7071067811865476",
-          "x": "0.0",
-          "y": "0.0186931",
-          "z": "-0.0145"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_yaw_CA",
-        "name": "head_yaw_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2640,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_yaw_W",
-        "name": "head_yaw_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2800,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "head_yaw",
         "name": "head_yaw",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 2800,
-          "y": -400
+          "x": 1440,
+          "y": -300
         },
         "rotation": 0,
         "flipX": false,
@@ -2738,145 +1418,48 @@
         }
       },
       {
-        "id": "head_roll_bj",
-        "name": "head_roll_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 4020,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_roll_L",
-        "name": "head_roll_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3900,
-          "y": 0
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7203811328753097",
-          "qx": "0.01646762229089037",
-          "qy": "0.6932785649621923",
-          "qz": "0.012027974781042903",
-          "x": "0.00460523",
-          "y": "0.00120047",
-          "z": "-0.0324761"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "head_roll_link",
         "name": "head_roll_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 4020,
-          "y": 120
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "m": "0.188766",
-          "J": "[0.0001494606648026423, 0.000254265736749713, 0.00032106659844764474]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_roll_LC",
-        "name": "head_roll_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3900,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7203811328753097",
-          "qx": "0.01646762229089037",
-          "qy": "0.6932785649621923",
-          "qz": "0.012027974781042903",
-          "x": "0.00460523",
-          "y": "0.00120047",
-          "z": "-0.0324761"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_roll_P",
-        "name": "head_roll_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4020,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_roll_T",
-        "name": "head_roll_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3540,
+          "x": 2120,
           "y": 0
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "qw": "0.7020309301341912",
-          "qx": "-0.17448268396132327",
-          "qy": "0.6901720849109358",
-          "qz": "-0.019257708645308947",
-          "x": "0.003306500000000002",
-          "y": "-0.00500964",
-          "z": "-0.017733343000000002"
+          "T/qw": "0.7020309301341912",
+          "T/qx": "-0.17448268396132327",
+          "T/qy": "0.6901720849109358",
+          "T/qz": "-0.019257708645308947",
+          "T/x": "0.003306500000000002",
+          "T/y": "-0.00500964",
+          "T/z": "-0.017733343000000002",
+          "L/qw": "0.7203811328753097",
+          "L/qx": "0.01646762229089037",
+          "L/qy": "0.6932785649621923",
+          "L/qz": "0.012027974781042903",
+          "L/x": "0.00460523",
+          "L/y": "0.00120047",
+          "L/z": "-0.0324761",
+          "LN/qw": "0.7071067811865477",
+          "LN/qx": "0.0",
+          "LN/qy": "-0.7071067811865475",
+          "LN/qz": "0.0",
+          "LN/x": "-0.0179",
+          "LN/y": "0.0",
+          "LN/z": "0.0145",
+          "LC/qw": "0.7203811328753097",
+          "LC/qx": "0.01646762229089037",
+          "LC/qy": "0.6932785649621923",
+          "LC/qz": "0.012027974781042903",
+          "LC/x": "0.00460523",
+          "LC/y": "0.00120047",
+          "LC/z": "-0.0324761",
+          "Body/m": "0.188766",
+          "Body/J": "[0.0001494606648026423, 0.000254265736749713, 0.00032106659844764474]"
         },
         "constants": {},
         "starts": {},
@@ -2892,7 +1475,7 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 3700,
+          "x": 1920,
           "y": 0
         },
         "rotation": 0,
@@ -2915,82 +1498,14 @@
         }
       },
       {
-        "id": "head_roll_LN",
-        "name": "head_roll_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3540,
-          "y": 420
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.7071067811865477",
-          "qx": "0.0",
-          "qy": "-0.7071067811865475",
-          "qz": "0.0",
-          "x": "-0.0179",
-          "y": "0.0",
-          "z": "0.0145"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_roll_CA",
-        "name": "head_roll_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3540,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "head_roll_W",
-        "name": "head_roll_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3700,
-          "y": 320
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "head_roll",
         "name": "head_roll",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 3700,
-          "y": -400
+          "x": 1920,
+          "y": -300
         },
         "rotation": 0,
         "flipX": false,
@@ -3009,145 +1524,48 @@
         }
       },
       {
-        "id": "right_hip_yaw_bj",
-        "name": "right_hip_yaw_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 1320,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_yaw_L",
-        "name": "right_hip_yaw_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1200,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.01643932985640513",
-          "qx": "0.7069156586424383",
-          "qy": "-0.01643932985640513",
-          "qz": "-0.7069156586424382",
-          "x": "-8.8e-11",
-          "y": "0.00099414",
-          "z": "0.0168917"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_hip_yaw_link",
         "name": "right_hip_yaw_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 1320,
-          "y": 1420
+          "x": 680,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0230406",
-          "J": "[2.3241322433233854e-06, 3.4198877566766147e-06, 4.1964e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_yaw_LC",
-        "name": "right_hip_yaw_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1200,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.01643932985640513",
-          "qx": "0.7069156586424383",
-          "qy": "-0.01643932985640513",
-          "qz": "-0.7069156586424382",
-          "x": "-8.8e-11",
-          "y": "0.00099414",
-          "z": "0.0168917"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_yaw_P",
-        "name": "right_hip_yaw_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1320,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_yaw_T",
-        "name": "right_hip_yaw_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 840,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.6679949763914825",
-          "qx": "0.23525143838284715",
-          "qy": "-0.6646263459347792",
-          "qz": "-0.23814132892870035",
-          "x": "0.01747291720000001",
-          "y": "-0.028633200000000008",
-          "z": "-0.0078006400000000045"
+          "T/qw": "0.6679949763914825",
+          "T/qx": "0.23525143838284715",
+          "T/qy": "-0.6646263459347792",
+          "T/qz": "-0.23814132892870035",
+          "T/x": "0.01747291720000001",
+          "T/y": "-0.028633200000000008",
+          "T/z": "-0.0078006400000000045",
+          "L/qw": "0.01643932985640513",
+          "L/qx": "0.7069156586424383",
+          "L/qy": "-0.01643932985640513",
+          "L/qz": "-0.7069156586424382",
+          "L/x": "-8.8e-11",
+          "L/y": "0.00099414",
+          "L/z": "0.0168917",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "0.006",
+          "LN/y": "-0.0175",
+          "LN/z": "-0.005",
+          "LC/qw": "0.01643932985640513",
+          "LC/qx": "0.7069156586424383",
+          "LC/qy": "-0.01643932985640513",
+          "LC/qz": "-0.7069156586424382",
+          "LC/x": "-8.8e-11",
+          "LC/y": "0.00099414",
+          "LC/z": "0.0168917",
+          "Body/m": "0.0230406",
+          "Body/J": "[2.3241322433233854e-06, 3.4198877566766147e-06, 4.1964e-06]"
         },
         "constants": {},
         "starts": {},
@@ -3163,8 +1581,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 1000,
-          "y": 1300
+          "x": 480,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
@@ -3186,82 +1604,14 @@
         }
       },
       {
-        "id": "right_hip_yaw_LN",
-        "name": "right_hip_yaw_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.7071067811865476",
-          "qy": "0.7071067811865476",
-          "qz": "0.0",
-          "x": "0.006",
-          "y": "-0.0175",
-          "z": "-0.005"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_yaw_CA",
-        "name": "right_hip_yaw_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 840,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_yaw_W",
-        "name": "right_hip_yaw_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1000,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_hip_yaw",
         "name": "right_hip_yaw",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 1000,
-          "y": 900
+          "x": 480,
+          "y": 700
         },
         "rotation": 0,
         "flipX": false,
@@ -3280,145 +1630,48 @@
         }
       },
       {
-        "id": "right_hip_roll_bj",
-        "name": "right_hip_roll_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 2220,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_roll_L",
-        "name": "right_hip_roll_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2100,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.7570294949403574e-05",
-          "qx": "-0.442315749531647",
-          "qy": "-3.759504040703664e-05",
-          "qz": "-0.8968593958888734",
-          "x": "0.014815",
-          "y": "1.6212e-08",
-          "z": "-0.00829992"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_hip_roll_link",
         "name": "right_hip_roll_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 2220,
-          "y": 1420
+          "x": 1160,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.00618934",
-          "J": "[3.5245839627768914e-07, 1.157529999987118e-06, 1.1597556037351934e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_roll_LC",
-        "name": "right_hip_roll_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2100,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "1.7570294949403574e-05",
-          "qx": "-0.442315749531647",
-          "qy": "-3.759504040703664e-05",
-          "qz": "-0.8968593958888734",
-          "x": "0.014815",
-          "y": "1.6212e-08",
-          "z": "-0.00829992"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_roll_P",
-        "name": "right_hip_roll_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2220,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_roll_T",
-        "name": "right_hip_roll_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 1740,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5114892175726493",
-          "qx": "-0.4882404943333962",
-          "qy": "0.5114892175726493",
-          "qz": "-0.4882404943333962",
-          "x": "8.800000000000005e-11",
-          "y": "0.004391700000000002",
-          "z": "-0.015505860000000005"
+          "T/qw": "0.5114892175726493",
+          "T/qx": "-0.4882404943333962",
+          "T/qy": "0.5114892175726493",
+          "T/qz": "-0.4882404943333962",
+          "T/x": "8.800000000000005e-11",
+          "T/y": "0.004391700000000002",
+          "T/z": "-0.015505860000000005",
+          "L/qw": "1.7570294949403574e-05",
+          "L/qx": "-0.442315749531647",
+          "L/qy": "-3.759504040703664e-05",
+          "L/qz": "-0.8968593958888734",
+          "L/x": "0.014815",
+          "L/y": "1.6212e-08",
+          "L/z": "-0.00829992",
+          "LN/qw": "0.0",
+          "LN/qx": "0.0",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.7071067811865476",
+          "LN/x": "0.0",
+          "LN/y": "0.0165",
+          "LN/z": "0.0125",
+          "LC/qw": "1.7570294949403574e-05",
+          "LC/qx": "-0.442315749531647",
+          "LC/qy": "-3.759504040703664e-05",
+          "LC/qz": "-0.8968593958888734",
+          "LC/x": "0.014815",
+          "LC/y": "1.6212e-08",
+          "LC/z": "-0.00829992",
+          "Body/m": "0.00618934",
+          "Body/J": "[3.5245839627768914e-07, 1.157529999987118e-06, 1.1597556037351934e-06]"
         },
         "constants": {},
         "starts": {},
@@ -3434,8 +1687,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 1900,
-          "y": 1300
+          "x": 960,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
@@ -3457,82 +1710,14 @@
         }
       },
       {
-        "id": "right_hip_roll_LN",
-        "name": "right_hip_roll_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 1740,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.0",
-          "qy": "0.7071067811865476",
-          "qz": "0.7071067811865476",
-          "x": "0.0",
-          "y": "0.0165",
-          "z": "0.0125"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_roll_CA",
-        "name": "right_hip_roll_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1740,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_roll_W",
-        "name": "right_hip_roll_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 1900,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_hip_roll",
         "name": "right_hip_roll",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 1900,
-          "y": 900
+          "x": 960,
+          "y": 700
         },
         "rotation": 0,
         "flipX": false,
@@ -3551,145 +1736,48 @@
         }
       },
       {
-        "id": "right_hip_pitch_bj",
-        "name": "right_hip_pitch_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 3120,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_pitch_L",
-        "name": "right_hip_pitch_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3000,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.8517201576412645",
-          "qx": "0.006005190636059551",
-          "qy": "-0.02624886021601022",
-          "qz": "-0.5233046035439824",
-          "x": "-0.006766",
-          "y": "0.0228838",
-          "z": "0.0134531"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_hip_pitch_link",
         "name": "right_hip_pitch_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 3120,
-          "y": 1420
+          "x": 1640,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0482067",
-          "J": "[8.117992081470836e-06, 1.910804196247167e-05, 1.98452659560575e-05]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_pitch_LC",
-        "name": "right_hip_pitch_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3000,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.8517201576412645",
-          "qx": "0.006005190636059551",
-          "qy": "-0.02624886021601022",
-          "qz": "-0.5233046035439824",
-          "x": "-0.006766",
-          "y": "0.0228838",
-          "z": "0.0134531"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_pitch_P",
-        "name": "right_hip_pitch_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3120,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_pitch_T",
-        "name": "right_hip_pitch_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 2640,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.6695775603375316",
-          "qx": "0.2272994058462915",
-          "qy": "0.22724424051093498",
-          "qz": "-0.6695975850829889",
-          "x": "-1.6212e-08",
-          "y": "-0.010200079999999999",
-          "z": "-0.010185000000000001"
+          "T/qw": "0.6695775603375316",
+          "T/qx": "0.2272994058462915",
+          "T/qy": "0.22724424051093498",
+          "T/qz": "-0.6695975850829889",
+          "T/x": "-1.6212e-08",
+          "T/y": "-0.010200079999999999",
+          "T/z": "-0.010185000000000001",
+          "L/qw": "0.8517201576412645",
+          "L/qx": "0.006005190636059551",
+          "L/qy": "-0.02624886021601022",
+          "L/qz": "-0.5233046035439824",
+          "L/x": "-0.006766",
+          "L/y": "0.0228838",
+          "L/z": "0.0134531",
+          "LN/qw": "0.5",
+          "LN/qx": "-0.5",
+          "LN/qy": "0.5",
+          "LN/qz": "-0.5",
+          "LN/x": "0.025",
+          "LN/y": "0.0",
+          "LN/z": "-0.0185",
+          "LC/qw": "0.8517201576412645",
+          "LC/qx": "0.006005190636059551",
+          "LC/qy": "-0.02624886021601022",
+          "LC/qz": "-0.5233046035439824",
+          "LC/x": "-0.006766",
+          "LC/y": "0.0228838",
+          "LC/z": "0.0134531",
+          "Body/m": "0.0482067",
+          "Body/J": "[8.117992081470836e-06, 1.910804196247167e-05, 1.98452659560575e-05]"
         },
         "constants": {},
         "starts": {},
@@ -3705,8 +1793,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 2800,
-          "y": 1300
+          "x": 1440,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
@@ -3728,82 +1816,14 @@
         }
       },
       {
-        "id": "right_hip_pitch_LN",
-        "name": "right_hip_pitch_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 2640,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5",
-          "qx": "-0.5",
-          "qy": "0.5",
-          "qz": "-0.5",
-          "x": "0.025",
-          "y": "0.0",
-          "z": "-0.0185"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_pitch_CA",
-        "name": "right_hip_pitch_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2640,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_hip_pitch_W",
-        "name": "right_hip_pitch_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 2800,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_hip_pitch",
         "name": "right_hip_pitch",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 2800,
-          "y": 900
+          "x": 1440,
+          "y": 700
         },
         "rotation": 0,
         "flipX": false,
@@ -3822,145 +1842,48 @@
         }
       },
       {
-        "id": "right_knee_bj",
-        "name": "right_knee_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 4020,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_knee_L",
-        "name": "right_knee_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3900,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.6988717741510697",
-          "qx": "-0.6988720571467685",
-          "qy": "-0.10760120271871317",
-          "qz": "-0.10760145077026866",
-          "x": "-0.0318937",
-          "y": "-1.52e-10",
-          "z": "-0.00953505"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_knee_link",
         "name": "right_knee_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 4020,
-          "y": 1420
+          "x": 2120,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0215844",
-          "J": "[1.9137833772389263e-06, 4.580536622760667e-06, 5.250560000000407e-06]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_knee_LC",
-        "name": "right_knee_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3900,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.6988717741510697",
-          "qx": "-0.6988720571467685",
-          "qy": "-0.10760120271871317",
-          "qz": "-0.10760145077026866",
-          "x": "-0.0318937",
-          "y": "-1.52e-10",
-          "z": "-0.00953505"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_knee_P",
-        "name": "right_knee_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4020,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_knee_T",
-        "name": "right_knee_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 3540,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.006005190636059551",
-          "qx": "-0.8517201576412645",
-          "qy": "-0.5233046035439824",
-          "qz": "0.02624886021601022",
-          "x": "0.015233999999999998",
-          "y": "0.0128933",
-          "z": "-0.0174531"
+          "T/qw": "0.006005190636059551",
+          "T/qx": "-0.8517201576412645",
+          "T/qy": "-0.5233046035439824",
+          "T/qz": "0.02624886021601022",
+          "T/x": "0.015233999999999998",
+          "T/y": "0.0128933",
+          "T/z": "-0.0174531",
+          "L/qw": "0.6988717741510697",
+          "L/qx": "-0.6988720571467685",
+          "L/qy": "-0.10760120271871317",
+          "L/qz": "-0.10760145077026866",
+          "L/x": "-0.0318937",
+          "L/y": "-1.52e-10",
+          "L/z": "-0.00953505",
+          "LN/qw": "0.0",
+          "LN/qx": "1.0",
+          "LN/qy": "0.0",
+          "LN/qz": "0.0",
+          "LN/x": "-0.022",
+          "LN/y": "0.0357771",
+          "LN/z": "-0.004",
+          "LC/qw": "0.6988717741510697",
+          "LC/qx": "-0.6988720571467685",
+          "LC/qy": "-0.10760120271871317",
+          "LC/qz": "-0.10760145077026866",
+          "LC/x": "-0.0318937",
+          "LC/y": "-1.52e-10",
+          "LC/z": "-0.00953505",
+          "Body/m": "0.0215844",
+          "Body/J": "[1.9137833772389263e-06, 4.580536622760667e-06, 5.250560000000407e-06]"
         },
         "constants": {},
         "starts": {},
@@ -3976,8 +1899,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 3700,
-          "y": 1300
+          "x": 1920,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
@@ -3999,82 +1922,14 @@
         }
       },
       {
-        "id": "right_knee_LN",
-        "name": "right_knee_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 3540,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "1.0",
-          "qy": "0.0",
-          "qz": "0.0",
-          "x": "-0.022",
-          "y": "0.0357771",
-          "z": "-0.004"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_knee_CA",
-        "name": "right_knee_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3540,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_knee_W",
-        "name": "right_knee_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 3700,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_knee",
         "name": "right_knee",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 3700,
-          "y": 900
+          "x": 1920,
+          "y": 700
         },
         "rotation": 0,
         "flipX": false,
@@ -4093,145 +1948,48 @@
         }
       },
       {
-        "id": "right_ankle_bj",
-        "name": "right_ankle_bj",
-        "block": {
-          "junction": "1"
-        },
-        "position": {
-          "x": 4920,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_ankle_L",
-        "name": "right_ankle_L",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 4800,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.711999241788759",
-          "qx": "-0.7015248763945282",
-          "qy": "-0.0025545372677144803",
-          "qz": "-0.030222538464235078",
-          "x": "0.00615539",
-          "y": "-0.0137482",
-          "z": "-0.0156566"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_ankle_link",
         "name": "right_ankle_link",
         "block": {
-          "ref": "stdlib:spatial/RigidBody3D"
+          "ref": "project:Link"
         },
         "position": {
-          "x": 4920,
-          "y": 1420
+          "x": 2600,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.0300251",
-          "J": "[5.903438255781445e-06, 7.743205838473821e-06, 1.1162245905744725e-05]",
-          "g0": "9.81"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_ankle_LC",
-        "name": "right_ankle_LC",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 4800,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.711999241788759",
-          "qx": "-0.7015248763945282",
-          "qy": "-0.0025545372677144803",
-          "qz": "-0.030222538464235078",
-          "x": "0.00615539",
-          "y": "-0.0137482",
-          "z": "-0.0156566"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_ankle_P",
-        "name": "right_ankle_P",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4920,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_ankle_T",
-        "name": "right_ankle_T",
-        "block": {
-          "ref": "stdlib:multibond/FixedTransform3DNeutral"
-        },
-        "position": {
-          "x": 4440,
-          "y": 1300
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.5702627108965026",
-          "qx": "0.4180912551769275",
-          "qy": "0.5702626861872623",
-          "qz": "0.418091630684042",
-          "x": "-1.520000022440494e-10",
-          "y": "0.010106300000000006",
-          "z": "-0.016464950000000006"
+          "T/qw": "0.5702627108965026",
+          "T/qx": "0.4180912551769275",
+          "T/qy": "0.5702626861872623",
+          "T/qz": "0.418091630684042",
+          "T/x": "-1.520000022440494e-10",
+          "T/y": "0.010106300000000006",
+          "T/z": "-0.016464950000000006",
+          "L/qw": "0.711999241788759",
+          "L/qx": "-0.7015248763945282",
+          "L/qy": "-0.0025545372677144803",
+          "L/qz": "-0.030222538464235078",
+          "L/x": "0.00615539",
+          "L/y": "-0.0137482",
+          "L/z": "-0.0156566",
+          "LN/qw": "0.0",
+          "LN/qx": "0.7071067811865476",
+          "LN/qy": "0.7071067811865476",
+          "LN/qz": "0.0",
+          "LN/x": "-0.042",
+          "LN/y": "0.0",
+          "LN/z": "-0.026",
+          "LC/qw": "0.711999241788759",
+          "LC/qx": "-0.7015248763945282",
+          "LC/qy": "-0.0025545372677144803",
+          "LC/qz": "-0.030222538464235078",
+          "LC/x": "0.00615539",
+          "LC/y": "-0.0137482",
+          "LC/z": "-0.0156566",
+          "Body/m": "0.0300251",
+          "Body/J": "[5.903438255781445e-06, 7.743205838473821e-06, 1.1162245905744725e-05]"
         },
         "constants": {},
         "starts": {},
@@ -4247,8 +2005,8 @@
           "ref": "stdlib:spatial/Revolute3D"
         },
         "position": {
-          "x": 4600,
-          "y": 1300
+          "x": 2400,
+          "y": 1000
         },
         "rotation": 0,
         "flipX": false,
@@ -4270,82 +2028,14 @@
         }
       },
       {
-        "id": "right_ankle_LN",
-        "name": "right_ankle_LN",
-        "block": {
-          "ref": "stdlib:spatial/LocalPose3D"
-        },
-        "position": {
-          "x": 4440,
-          "y": 1720
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {
-          "qw": "0.0",
-          "qx": "0.7071067811865476",
-          "qy": "0.7071067811865476",
-          "qz": "0.0",
-          "x": "-0.042",
-          "y": "0.0",
-          "z": "-0.026"
-        },
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_ankle_CA",
-        "name": "right_ankle_CA",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4440,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
-        "id": "right_ankle_W",
-        "name": "right_ankle_W",
-        "block": {
-          "ref": "stdlib:multibond/ComposePose3D"
-        },
-        "position": {
-          "x": 4600,
-          "y": 1620
-        },
-        "rotation": 0,
-        "flipX": false,
-        "params": {},
-        "constants": {},
-        "starts": {},
-        "ui": {
-          "showLabel": true,
-          "color": null
-        }
-      },
-      {
         "id": "right_ankle",
         "name": "right_ankle",
         "block": {
           "ref": "project:XL330"
         },
         "position": {
-          "x": 4600,
-          "y": 900
+          "x": 2400,
+          "y": 700
         },
         "rotation": 0,
         "flipX": false,
@@ -4473,11 +2163,11 @@
         "id": "b0009",
         "kind": "bond",
         "from": {
-          "node": "left_hip_yaw_L",
-          "port": "b"
+          "node": "trunk_bj"
         },
         "to": {
-          "node": "left_hip_yaw_bj"
+          "node": "left_hip_yaw_link",
+          "port": "parent"
         },
         "route": [],
         "label": null
@@ -4487,61 +2177,7 @@
         "kind": "bond",
         "from": {
           "node": "left_hip_yaw_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "left_hip_yaw_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0011",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_yaw_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_yaw_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0012",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_yaw_P",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_yaw_link",
-          "port": "g"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0013",
-        "kind": "bond",
-        "from": {
-          "node": "trunk_bj"
-        },
-        "to": {
-          "node": "left_hip_yaw_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0014",
-        "kind": "bond",
-        "from": {
-          "node": "left_hip_yaw_T",
-          "port": "a"
+          "port": "to_joint"
         },
         "to": {
           "node": "left_hip_yaw_joint",
@@ -4551,91 +2187,49 @@
         "label": null
       },
       {
-        "id": "b0015",
+        "id": "b0011",
         "kind": "bond",
         "from": {
           "node": "left_hip_yaw_joint",
           "port": "child"
         },
         "to": {
-          "node": "left_hip_yaw_L",
-          "port": "a"
+          "node": "left_hip_yaw_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0016",
+        "id": "s0012",
         "kind": "signal",
         "from": {
           "node": "TrunkPose",
           "port": "g"
         },
         "to": {
-          "node": "left_hip_yaw_CA",
-          "port": "gp"
+          "node": "left_hip_yaw_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0017",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_yaw_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_yaw_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0018",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_yaw_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_yaw_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0019",
+        "id": "s0013",
         "kind": "signal",
         "from": {
           "node": "left_hip_yaw_joint",
           "port": "pose"
         },
         "to": {
-          "node": "left_hip_yaw_W",
-          "port": "gl"
+          "node": "left_hip_yaw_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0020",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_yaw_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_yaw_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0021",
+        "id": "b0014",
         "kind": "bond",
         "from": {
           "node": "left_hip_yaw",
@@ -4649,7 +2243,7 @@
         "label": null
       },
       {
-        "id": "b0022",
+        "id": "b0015",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -4662,7 +2256,7 @@
         "label": null
       },
       {
-        "id": "s0023",
+        "id": "s0016",
         "kind": "signal",
         "from": {
           "node": "Goal_left_hip_yaw",
@@ -4676,78 +2270,25 @@
         "label": null
       },
       {
-        "id": "b0024",
+        "id": "b0017",
         "kind": "bond",
         "from": {
-          "node": "left_hip_roll_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "left_hip_roll_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0025",
-        "kind": "bond",
-        "from": {
-          "node": "left_hip_roll_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "left_hip_roll_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0026",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_roll_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_roll_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0027",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_roll_P",
-          "port": "g"
+          "node": "left_hip_yaw_link",
+          "port": "com"
         },
         "to": {
           "node": "left_hip_roll_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0028",
+        "id": "b0018",
         "kind": "bond",
         "from": {
-          "node": "left_hip_yaw_bj"
-        },
-        "to": {
-          "node": "left_hip_roll_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0029",
-        "kind": "bond",
-        "from": {
-          "node": "left_hip_roll_T",
-          "port": "a"
+          "node": "left_hip_roll_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "left_hip_roll_joint",
@@ -4757,91 +2298,49 @@
         "label": null
       },
       {
-        "id": "b0030",
+        "id": "b0019",
         "kind": "bond",
         "from": {
           "node": "left_hip_roll_joint",
           "port": "child"
         },
         "to": {
-          "node": "left_hip_roll_L",
-          "port": "a"
+          "node": "left_hip_roll_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0031",
+        "id": "s0020",
         "kind": "signal",
         "from": {
-          "node": "left_hip_yaw_W",
-          "port": "g"
+          "node": "left_hip_yaw_link",
+          "port": "pose"
         },
         "to": {
-          "node": "left_hip_roll_CA",
-          "port": "gp"
+          "node": "left_hip_roll_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0032",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_roll_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_roll_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0033",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_roll_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_roll_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0034",
+        "id": "s0021",
         "kind": "signal",
         "from": {
           "node": "left_hip_roll_joint",
           "port": "pose"
         },
         "to": {
-          "node": "left_hip_roll_W",
-          "port": "gl"
+          "node": "left_hip_roll_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0035",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_roll_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_roll_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0036",
+        "id": "b0022",
         "kind": "bond",
         "from": {
           "node": "left_hip_roll",
@@ -4855,7 +2354,7 @@
         "label": null
       },
       {
-        "id": "b0037",
+        "id": "b0023",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -4868,7 +2367,7 @@
         "label": null
       },
       {
-        "id": "s0038",
+        "id": "s0024",
         "kind": "signal",
         "from": {
           "node": "Goal_left_hip_roll",
@@ -4882,78 +2381,25 @@
         "label": null
       },
       {
-        "id": "b0039",
+        "id": "b0025",
         "kind": "bond",
         "from": {
-          "node": "left_hip_pitch_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "left_hip_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0040",
-        "kind": "bond",
-        "from": {
-          "node": "left_hip_pitch_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "left_hip_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0041",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_pitch_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_pitch_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0042",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_pitch_P",
-          "port": "g"
+          "node": "left_hip_roll_link",
+          "port": "com"
         },
         "to": {
           "node": "left_hip_pitch_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0043",
+        "id": "b0026",
         "kind": "bond",
         "from": {
-          "node": "left_hip_roll_bj"
-        },
-        "to": {
-          "node": "left_hip_pitch_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0044",
-        "kind": "bond",
-        "from": {
-          "node": "left_hip_pitch_T",
-          "port": "a"
+          "node": "left_hip_pitch_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "left_hip_pitch_joint",
@@ -4963,91 +2409,49 @@
         "label": null
       },
       {
-        "id": "b0045",
+        "id": "b0027",
         "kind": "bond",
         "from": {
           "node": "left_hip_pitch_joint",
           "port": "child"
         },
         "to": {
-          "node": "left_hip_pitch_L",
-          "port": "a"
+          "node": "left_hip_pitch_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0046",
+        "id": "s0028",
         "kind": "signal",
         "from": {
-          "node": "left_hip_roll_W",
-          "port": "g"
+          "node": "left_hip_roll_link",
+          "port": "pose"
         },
         "to": {
-          "node": "left_hip_pitch_CA",
-          "port": "gp"
+          "node": "left_hip_pitch_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0047",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_pitch_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_pitch_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0048",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_pitch_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_pitch_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0049",
+        "id": "s0029",
         "kind": "signal",
         "from": {
           "node": "left_hip_pitch_joint",
           "port": "pose"
         },
         "to": {
-          "node": "left_hip_pitch_W",
-          "port": "gl"
+          "node": "left_hip_pitch_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0050",
-        "kind": "signal",
-        "from": {
-          "node": "left_hip_pitch_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_hip_pitch_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0051",
+        "id": "b0030",
         "kind": "bond",
         "from": {
           "node": "left_hip_pitch",
@@ -5061,7 +2465,7 @@
         "label": null
       },
       {
-        "id": "b0052",
+        "id": "b0031",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -5074,7 +2478,7 @@
         "label": null
       },
       {
-        "id": "s0053",
+        "id": "s0032",
         "kind": "signal",
         "from": {
           "node": "Goal_left_hip_pitch",
@@ -5088,78 +2492,25 @@
         "label": null
       },
       {
-        "id": "b0054",
+        "id": "b0033",
         "kind": "bond",
         "from": {
-          "node": "left_knee_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "left_knee_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0055",
-        "kind": "bond",
-        "from": {
-          "node": "left_knee_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "left_knee_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0056",
-        "kind": "signal",
-        "from": {
-          "node": "left_knee_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_knee_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0057",
-        "kind": "signal",
-        "from": {
-          "node": "left_knee_P",
-          "port": "g"
+          "node": "left_hip_pitch_link",
+          "port": "com"
         },
         "to": {
           "node": "left_knee_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0058",
+        "id": "b0034",
         "kind": "bond",
         "from": {
-          "node": "left_hip_pitch_bj"
-        },
-        "to": {
-          "node": "left_knee_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0059",
-        "kind": "bond",
-        "from": {
-          "node": "left_knee_T",
-          "port": "a"
+          "node": "left_knee_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "left_knee_joint",
@@ -5169,91 +2520,49 @@
         "label": null
       },
       {
-        "id": "b0060",
+        "id": "b0035",
         "kind": "bond",
         "from": {
           "node": "left_knee_joint",
           "port": "child"
         },
         "to": {
-          "node": "left_knee_L",
-          "port": "a"
+          "node": "left_knee_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0061",
+        "id": "s0036",
         "kind": "signal",
         "from": {
-          "node": "left_hip_pitch_W",
-          "port": "g"
+          "node": "left_hip_pitch_link",
+          "port": "pose"
         },
         "to": {
-          "node": "left_knee_CA",
-          "port": "gp"
+          "node": "left_knee_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0062",
-        "kind": "signal",
-        "from": {
-          "node": "left_knee_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_knee_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0063",
-        "kind": "signal",
-        "from": {
-          "node": "left_knee_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_knee_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0064",
+        "id": "s0037",
         "kind": "signal",
         "from": {
           "node": "left_knee_joint",
           "port": "pose"
         },
         "to": {
-          "node": "left_knee_W",
-          "port": "gl"
+          "node": "left_knee_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0065",
-        "kind": "signal",
-        "from": {
-          "node": "left_knee_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_knee_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0066",
+        "id": "b0038",
         "kind": "bond",
         "from": {
           "node": "left_knee",
@@ -5267,7 +2576,7 @@
         "label": null
       },
       {
-        "id": "b0067",
+        "id": "b0039",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -5280,7 +2589,7 @@
         "label": null
       },
       {
-        "id": "s0068",
+        "id": "s0040",
         "kind": "signal",
         "from": {
           "node": "Goal_left_knee",
@@ -5294,78 +2603,25 @@
         "label": null
       },
       {
-        "id": "b0069",
+        "id": "b0041",
         "kind": "bond",
         "from": {
-          "node": "left_ankle_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "left_ankle_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0070",
-        "kind": "bond",
-        "from": {
-          "node": "left_ankle_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "left_ankle_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0071",
-        "kind": "signal",
-        "from": {
-          "node": "left_ankle_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_ankle_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0072",
-        "kind": "signal",
-        "from": {
-          "node": "left_ankle_P",
-          "port": "g"
+          "node": "left_knee_link",
+          "port": "com"
         },
         "to": {
           "node": "left_ankle_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0073",
+        "id": "b0042",
         "kind": "bond",
         "from": {
-          "node": "left_knee_bj"
-        },
-        "to": {
-          "node": "left_ankle_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0074",
-        "kind": "bond",
-        "from": {
-          "node": "left_ankle_T",
-          "port": "a"
+          "node": "left_ankle_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "left_ankle_joint",
@@ -5375,91 +2631,49 @@
         "label": null
       },
       {
-        "id": "b0075",
+        "id": "b0043",
         "kind": "bond",
         "from": {
           "node": "left_ankle_joint",
           "port": "child"
         },
         "to": {
-          "node": "left_ankle_L",
-          "port": "a"
+          "node": "left_ankle_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0076",
+        "id": "s0044",
         "kind": "signal",
         "from": {
-          "node": "left_knee_W",
-          "port": "g"
+          "node": "left_knee_link",
+          "port": "pose"
         },
         "to": {
-          "node": "left_ankle_CA",
-          "port": "gp"
+          "node": "left_ankle_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0077",
-        "kind": "signal",
-        "from": {
-          "node": "left_ankle_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_ankle_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0078",
-        "kind": "signal",
-        "from": {
-          "node": "left_ankle_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_ankle_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0079",
+        "id": "s0045",
         "kind": "signal",
         "from": {
           "node": "left_ankle_joint",
           "port": "pose"
         },
         "to": {
-          "node": "left_ankle_W",
-          "port": "gl"
+          "node": "left_ankle_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0080",
-        "kind": "signal",
-        "from": {
-          "node": "left_ankle_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "left_ankle_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0081",
+        "id": "b0046",
         "kind": "bond",
         "from": {
           "node": "left_ankle",
@@ -5473,7 +2687,7 @@
         "label": null
       },
       {
-        "id": "b0082",
+        "id": "b0047",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -5486,7 +2700,7 @@
         "label": null
       },
       {
-        "id": "s0083",
+        "id": "s0048",
         "kind": "signal",
         "from": {
           "node": "Goal_left_ankle",
@@ -5500,78 +2714,24 @@
         "label": null
       },
       {
-        "id": "b0084",
-        "kind": "bond",
-        "from": {
-          "node": "neck_pitch_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "neck_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0085",
-        "kind": "bond",
-        "from": {
-          "node": "neck_pitch_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "neck_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0086",
-        "kind": "signal",
-        "from": {
-          "node": "neck_pitch_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "neck_pitch_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0087",
-        "kind": "signal",
-        "from": {
-          "node": "neck_pitch_P",
-          "port": "g"
-        },
-        "to": {
-          "node": "neck_pitch_link",
-          "port": "g"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0088",
+        "id": "b0049",
         "kind": "bond",
         "from": {
           "node": "trunk_bj"
         },
         "to": {
-          "node": "neck_pitch_T",
-          "port": "b"
+          "node": "neck_pitch_link",
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0089",
+        "id": "b0050",
         "kind": "bond",
         "from": {
-          "node": "neck_pitch_T",
-          "port": "a"
+          "node": "neck_pitch_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "neck_pitch_joint",
@@ -5581,91 +2741,49 @@
         "label": null
       },
       {
-        "id": "b0090",
+        "id": "b0051",
         "kind": "bond",
         "from": {
           "node": "neck_pitch_joint",
           "port": "child"
         },
         "to": {
-          "node": "neck_pitch_L",
-          "port": "a"
+          "node": "neck_pitch_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0091",
+        "id": "s0052",
         "kind": "signal",
         "from": {
           "node": "TrunkPose",
           "port": "g"
         },
         "to": {
-          "node": "neck_pitch_CA",
-          "port": "gp"
+          "node": "neck_pitch_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0092",
-        "kind": "signal",
-        "from": {
-          "node": "neck_pitch_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "neck_pitch_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0093",
-        "kind": "signal",
-        "from": {
-          "node": "neck_pitch_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "neck_pitch_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0094",
+        "id": "s0053",
         "kind": "signal",
         "from": {
           "node": "neck_pitch_joint",
           "port": "pose"
         },
         "to": {
-          "node": "neck_pitch_W",
-          "port": "gl"
+          "node": "neck_pitch_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0095",
-        "kind": "signal",
-        "from": {
-          "node": "neck_pitch_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "neck_pitch_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0096",
+        "id": "b0054",
         "kind": "bond",
         "from": {
           "node": "neck_pitch",
@@ -5679,7 +2797,7 @@
         "label": null
       },
       {
-        "id": "b0097",
+        "id": "b0055",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -5692,7 +2810,7 @@
         "label": null
       },
       {
-        "id": "s0098",
+        "id": "s0056",
         "kind": "signal",
         "from": {
           "node": "Goal_neck_pitch",
@@ -5706,78 +2824,25 @@
         "label": null
       },
       {
-        "id": "b0099",
+        "id": "b0057",
         "kind": "bond",
         "from": {
-          "node": "head_pitch_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "head_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0100",
-        "kind": "bond",
-        "from": {
-          "node": "head_pitch_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "head_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0101",
-        "kind": "signal",
-        "from": {
-          "node": "head_pitch_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_pitch_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0102",
-        "kind": "signal",
-        "from": {
-          "node": "head_pitch_P",
-          "port": "g"
+          "node": "neck_pitch_link",
+          "port": "com"
         },
         "to": {
           "node": "head_pitch_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0103",
+        "id": "b0058",
         "kind": "bond",
         "from": {
-          "node": "neck_pitch_bj"
-        },
-        "to": {
-          "node": "head_pitch_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0104",
-        "kind": "bond",
-        "from": {
-          "node": "head_pitch_T",
-          "port": "a"
+          "node": "head_pitch_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "head_pitch_joint",
@@ -5787,91 +2852,49 @@
         "label": null
       },
       {
-        "id": "b0105",
+        "id": "b0059",
         "kind": "bond",
         "from": {
           "node": "head_pitch_joint",
           "port": "child"
         },
         "to": {
-          "node": "head_pitch_L",
-          "port": "a"
+          "node": "head_pitch_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0106",
+        "id": "s0060",
         "kind": "signal",
         "from": {
-          "node": "neck_pitch_W",
-          "port": "g"
+          "node": "neck_pitch_link",
+          "port": "pose"
         },
         "to": {
-          "node": "head_pitch_CA",
-          "port": "gp"
+          "node": "head_pitch_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0107",
-        "kind": "signal",
-        "from": {
-          "node": "head_pitch_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_pitch_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0108",
-        "kind": "signal",
-        "from": {
-          "node": "head_pitch_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_pitch_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0109",
+        "id": "s0061",
         "kind": "signal",
         "from": {
           "node": "head_pitch_joint",
           "port": "pose"
         },
         "to": {
-          "node": "head_pitch_W",
-          "port": "gl"
+          "node": "head_pitch_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0110",
-        "kind": "signal",
-        "from": {
-          "node": "head_pitch_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_pitch_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0111",
+        "id": "b0062",
         "kind": "bond",
         "from": {
           "node": "head_pitch",
@@ -5885,7 +2908,7 @@
         "label": null
       },
       {
-        "id": "b0112",
+        "id": "b0063",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -5898,7 +2921,7 @@
         "label": null
       },
       {
-        "id": "s0113",
+        "id": "s0064",
         "kind": "signal",
         "from": {
           "node": "Goal_head_pitch",
@@ -5912,78 +2935,25 @@
         "label": null
       },
       {
-        "id": "b0114",
+        "id": "b0065",
         "kind": "bond",
         "from": {
-          "node": "head_yaw_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "head_yaw_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0115",
-        "kind": "bond",
-        "from": {
-          "node": "head_yaw_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "head_yaw_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0116",
-        "kind": "signal",
-        "from": {
-          "node": "head_yaw_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_yaw_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0117",
-        "kind": "signal",
-        "from": {
-          "node": "head_yaw_P",
-          "port": "g"
+          "node": "head_pitch_link",
+          "port": "com"
         },
         "to": {
           "node": "head_yaw_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0118",
+        "id": "b0066",
         "kind": "bond",
         "from": {
-          "node": "head_pitch_bj"
-        },
-        "to": {
-          "node": "head_yaw_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0119",
-        "kind": "bond",
-        "from": {
-          "node": "head_yaw_T",
-          "port": "a"
+          "node": "head_yaw_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "head_yaw_joint",
@@ -5993,91 +2963,49 @@
         "label": null
       },
       {
-        "id": "b0120",
+        "id": "b0067",
         "kind": "bond",
         "from": {
           "node": "head_yaw_joint",
           "port": "child"
         },
         "to": {
-          "node": "head_yaw_L",
-          "port": "a"
+          "node": "head_yaw_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0121",
+        "id": "s0068",
         "kind": "signal",
         "from": {
-          "node": "head_pitch_W",
-          "port": "g"
+          "node": "head_pitch_link",
+          "port": "pose"
         },
         "to": {
-          "node": "head_yaw_CA",
-          "port": "gp"
+          "node": "head_yaw_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0122",
-        "kind": "signal",
-        "from": {
-          "node": "head_yaw_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_yaw_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0123",
-        "kind": "signal",
-        "from": {
-          "node": "head_yaw_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_yaw_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0124",
+        "id": "s0069",
         "kind": "signal",
         "from": {
           "node": "head_yaw_joint",
           "port": "pose"
         },
         "to": {
-          "node": "head_yaw_W",
-          "port": "gl"
+          "node": "head_yaw_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0125",
-        "kind": "signal",
-        "from": {
-          "node": "head_yaw_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_yaw_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0126",
+        "id": "b0070",
         "kind": "bond",
         "from": {
           "node": "head_yaw",
@@ -6091,7 +3019,7 @@
         "label": null
       },
       {
-        "id": "b0127",
+        "id": "b0071",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -6104,7 +3032,7 @@
         "label": null
       },
       {
-        "id": "s0128",
+        "id": "s0072",
         "kind": "signal",
         "from": {
           "node": "Goal_head_yaw",
@@ -6118,78 +3046,25 @@
         "label": null
       },
       {
-        "id": "b0129",
+        "id": "b0073",
         "kind": "bond",
         "from": {
-          "node": "head_roll_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "head_roll_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0130",
-        "kind": "bond",
-        "from": {
-          "node": "head_roll_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "head_roll_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0131",
-        "kind": "signal",
-        "from": {
-          "node": "head_roll_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_roll_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0132",
-        "kind": "signal",
-        "from": {
-          "node": "head_roll_P",
-          "port": "g"
+          "node": "head_yaw_link",
+          "port": "com"
         },
         "to": {
           "node": "head_roll_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0133",
+        "id": "b0074",
         "kind": "bond",
         "from": {
-          "node": "head_yaw_bj"
-        },
-        "to": {
-          "node": "head_roll_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0134",
-        "kind": "bond",
-        "from": {
-          "node": "head_roll_T",
-          "port": "a"
+          "node": "head_roll_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "head_roll_joint",
@@ -6199,91 +3074,49 @@
         "label": null
       },
       {
-        "id": "b0135",
+        "id": "b0075",
         "kind": "bond",
         "from": {
           "node": "head_roll_joint",
           "port": "child"
         },
         "to": {
-          "node": "head_roll_L",
-          "port": "a"
+          "node": "head_roll_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0136",
+        "id": "s0076",
         "kind": "signal",
         "from": {
-          "node": "head_yaw_W",
-          "port": "g"
+          "node": "head_yaw_link",
+          "port": "pose"
         },
         "to": {
-          "node": "head_roll_CA",
-          "port": "gp"
+          "node": "head_roll_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0137",
-        "kind": "signal",
-        "from": {
-          "node": "head_roll_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_roll_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0138",
-        "kind": "signal",
-        "from": {
-          "node": "head_roll_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_roll_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0139",
+        "id": "s0077",
         "kind": "signal",
         "from": {
           "node": "head_roll_joint",
           "port": "pose"
         },
         "to": {
-          "node": "head_roll_W",
-          "port": "gl"
+          "node": "head_roll_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0140",
-        "kind": "signal",
-        "from": {
-          "node": "head_roll_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "head_roll_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0141",
+        "id": "b0078",
         "kind": "bond",
         "from": {
           "node": "head_roll",
@@ -6297,7 +3130,7 @@
         "label": null
       },
       {
-        "id": "b0142",
+        "id": "b0079",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -6310,7 +3143,7 @@
         "label": null
       },
       {
-        "id": "s0143",
+        "id": "s0080",
         "kind": "signal",
         "from": {
           "node": "Goal_head_roll",
@@ -6324,78 +3157,24 @@
         "label": null
       },
       {
-        "id": "b0144",
-        "kind": "bond",
-        "from": {
-          "node": "right_hip_yaw_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "right_hip_yaw_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0145",
-        "kind": "bond",
-        "from": {
-          "node": "right_hip_yaw_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "right_hip_yaw_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0146",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_yaw_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_yaw_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0147",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_yaw_P",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_yaw_link",
-          "port": "g"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0148",
+        "id": "b0081",
         "kind": "bond",
         "from": {
           "node": "trunk_bj"
         },
         "to": {
-          "node": "right_hip_yaw_T",
-          "port": "b"
+          "node": "right_hip_yaw_link",
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0149",
+        "id": "b0082",
         "kind": "bond",
         "from": {
-          "node": "right_hip_yaw_T",
-          "port": "a"
+          "node": "right_hip_yaw_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "right_hip_yaw_joint",
@@ -6405,91 +3184,49 @@
         "label": null
       },
       {
-        "id": "b0150",
+        "id": "b0083",
         "kind": "bond",
         "from": {
           "node": "right_hip_yaw_joint",
           "port": "child"
         },
         "to": {
-          "node": "right_hip_yaw_L",
-          "port": "a"
+          "node": "right_hip_yaw_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0151",
+        "id": "s0084",
         "kind": "signal",
         "from": {
           "node": "TrunkPose",
           "port": "g"
         },
         "to": {
-          "node": "right_hip_yaw_CA",
-          "port": "gp"
+          "node": "right_hip_yaw_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0152",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_yaw_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_yaw_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0153",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_yaw_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_yaw_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0154",
+        "id": "s0085",
         "kind": "signal",
         "from": {
           "node": "right_hip_yaw_joint",
           "port": "pose"
         },
         "to": {
-          "node": "right_hip_yaw_W",
-          "port": "gl"
+          "node": "right_hip_yaw_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0155",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_yaw_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_yaw_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0156",
+        "id": "b0086",
         "kind": "bond",
         "from": {
           "node": "right_hip_yaw",
@@ -6503,7 +3240,7 @@
         "label": null
       },
       {
-        "id": "b0157",
+        "id": "b0087",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -6516,7 +3253,7 @@
         "label": null
       },
       {
-        "id": "s0158",
+        "id": "s0088",
         "kind": "signal",
         "from": {
           "node": "Goal_right_hip_yaw",
@@ -6530,78 +3267,25 @@
         "label": null
       },
       {
-        "id": "b0159",
+        "id": "b0089",
         "kind": "bond",
         "from": {
-          "node": "right_hip_roll_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "right_hip_roll_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0160",
-        "kind": "bond",
-        "from": {
-          "node": "right_hip_roll_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "right_hip_roll_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0161",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_roll_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_roll_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0162",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_roll_P",
-          "port": "g"
+          "node": "right_hip_yaw_link",
+          "port": "com"
         },
         "to": {
           "node": "right_hip_roll_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0163",
+        "id": "b0090",
         "kind": "bond",
         "from": {
-          "node": "right_hip_yaw_bj"
-        },
-        "to": {
-          "node": "right_hip_roll_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0164",
-        "kind": "bond",
-        "from": {
-          "node": "right_hip_roll_T",
-          "port": "a"
+          "node": "right_hip_roll_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "right_hip_roll_joint",
@@ -6611,91 +3295,49 @@
         "label": null
       },
       {
-        "id": "b0165",
+        "id": "b0091",
         "kind": "bond",
         "from": {
           "node": "right_hip_roll_joint",
           "port": "child"
         },
         "to": {
-          "node": "right_hip_roll_L",
-          "port": "a"
+          "node": "right_hip_roll_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0166",
+        "id": "s0092",
         "kind": "signal",
         "from": {
-          "node": "right_hip_yaw_W",
-          "port": "g"
+          "node": "right_hip_yaw_link",
+          "port": "pose"
         },
         "to": {
-          "node": "right_hip_roll_CA",
-          "port": "gp"
+          "node": "right_hip_roll_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0167",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_roll_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_roll_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0168",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_roll_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_roll_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0169",
+        "id": "s0093",
         "kind": "signal",
         "from": {
           "node": "right_hip_roll_joint",
           "port": "pose"
         },
         "to": {
-          "node": "right_hip_roll_W",
-          "port": "gl"
+          "node": "right_hip_roll_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0170",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_roll_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_roll_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0171",
+        "id": "b0094",
         "kind": "bond",
         "from": {
           "node": "right_hip_roll",
@@ -6709,7 +3351,7 @@
         "label": null
       },
       {
-        "id": "b0172",
+        "id": "b0095",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -6722,7 +3364,7 @@
         "label": null
       },
       {
-        "id": "s0173",
+        "id": "s0096",
         "kind": "signal",
         "from": {
           "node": "Goal_right_hip_roll",
@@ -6736,78 +3378,25 @@
         "label": null
       },
       {
-        "id": "b0174",
+        "id": "b0097",
         "kind": "bond",
         "from": {
-          "node": "right_hip_pitch_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "right_hip_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0175",
-        "kind": "bond",
-        "from": {
-          "node": "right_hip_pitch_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "right_hip_pitch_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0176",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_pitch_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_pitch_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0177",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_pitch_P",
-          "port": "g"
+          "node": "right_hip_roll_link",
+          "port": "com"
         },
         "to": {
           "node": "right_hip_pitch_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0178",
+        "id": "b0098",
         "kind": "bond",
         "from": {
-          "node": "right_hip_roll_bj"
-        },
-        "to": {
-          "node": "right_hip_pitch_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0179",
-        "kind": "bond",
-        "from": {
-          "node": "right_hip_pitch_T",
-          "port": "a"
+          "node": "right_hip_pitch_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "right_hip_pitch_joint",
@@ -6817,91 +3406,49 @@
         "label": null
       },
       {
-        "id": "b0180",
+        "id": "b0099",
         "kind": "bond",
         "from": {
           "node": "right_hip_pitch_joint",
           "port": "child"
         },
         "to": {
-          "node": "right_hip_pitch_L",
-          "port": "a"
+          "node": "right_hip_pitch_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0181",
+        "id": "s0100",
         "kind": "signal",
         "from": {
-          "node": "right_hip_roll_W",
-          "port": "g"
+          "node": "right_hip_roll_link",
+          "port": "pose"
         },
         "to": {
-          "node": "right_hip_pitch_CA",
-          "port": "gp"
+          "node": "right_hip_pitch_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0182",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_pitch_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_pitch_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0183",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_pitch_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_pitch_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0184",
+        "id": "s0101",
         "kind": "signal",
         "from": {
           "node": "right_hip_pitch_joint",
           "port": "pose"
         },
         "to": {
-          "node": "right_hip_pitch_W",
-          "port": "gl"
+          "node": "right_hip_pitch_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0185",
-        "kind": "signal",
-        "from": {
-          "node": "right_hip_pitch_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_hip_pitch_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0186",
+        "id": "b0102",
         "kind": "bond",
         "from": {
           "node": "right_hip_pitch",
@@ -6915,7 +3462,7 @@
         "label": null
       },
       {
-        "id": "b0187",
+        "id": "b0103",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -6928,7 +3475,7 @@
         "label": null
       },
       {
-        "id": "s0188",
+        "id": "s0104",
         "kind": "signal",
         "from": {
           "node": "Goal_right_hip_pitch",
@@ -6942,78 +3489,25 @@
         "label": null
       },
       {
-        "id": "b0189",
+        "id": "b0105",
         "kind": "bond",
         "from": {
-          "node": "right_knee_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "right_knee_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0190",
-        "kind": "bond",
-        "from": {
-          "node": "right_knee_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "right_knee_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0191",
-        "kind": "signal",
-        "from": {
-          "node": "right_knee_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_knee_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0192",
-        "kind": "signal",
-        "from": {
-          "node": "right_knee_P",
-          "port": "g"
+          "node": "right_hip_pitch_link",
+          "port": "com"
         },
         "to": {
           "node": "right_knee_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0193",
+        "id": "b0106",
         "kind": "bond",
         "from": {
-          "node": "right_hip_pitch_bj"
-        },
-        "to": {
-          "node": "right_knee_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0194",
-        "kind": "bond",
-        "from": {
-          "node": "right_knee_T",
-          "port": "a"
+          "node": "right_knee_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "right_knee_joint",
@@ -7023,91 +3517,49 @@
         "label": null
       },
       {
-        "id": "b0195",
+        "id": "b0107",
         "kind": "bond",
         "from": {
           "node": "right_knee_joint",
           "port": "child"
         },
         "to": {
-          "node": "right_knee_L",
-          "port": "a"
+          "node": "right_knee_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0196",
+        "id": "s0108",
         "kind": "signal",
         "from": {
-          "node": "right_hip_pitch_W",
-          "port": "g"
+          "node": "right_hip_pitch_link",
+          "port": "pose"
         },
         "to": {
-          "node": "right_knee_CA",
-          "port": "gp"
+          "node": "right_knee_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0197",
-        "kind": "signal",
-        "from": {
-          "node": "right_knee_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_knee_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0198",
-        "kind": "signal",
-        "from": {
-          "node": "right_knee_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_knee_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0199",
+        "id": "s0109",
         "kind": "signal",
         "from": {
           "node": "right_knee_joint",
           "port": "pose"
         },
         "to": {
-          "node": "right_knee_W",
-          "port": "gl"
+          "node": "right_knee_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0200",
-        "kind": "signal",
-        "from": {
-          "node": "right_knee_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_knee_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0201",
+        "id": "b0110",
         "kind": "bond",
         "from": {
           "node": "right_knee",
@@ -7121,7 +3573,7 @@
         "label": null
       },
       {
-        "id": "b0202",
+        "id": "b0111",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -7134,7 +3586,7 @@
         "label": null
       },
       {
-        "id": "s0203",
+        "id": "s0112",
         "kind": "signal",
         "from": {
           "node": "Goal_right_knee",
@@ -7148,78 +3600,25 @@
         "label": null
       },
       {
-        "id": "b0204",
+        "id": "b0113",
         "kind": "bond",
         "from": {
-          "node": "right_ankle_L",
-          "port": "b"
-        },
-        "to": {
-          "node": "right_ankle_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0205",
-        "kind": "bond",
-        "from": {
-          "node": "right_ankle_link",
-          "port": "p"
-        },
-        "to": {
-          "node": "right_ankle_bj"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0206",
-        "kind": "signal",
-        "from": {
-          "node": "right_ankle_LC",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_ankle_P",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0207",
-        "kind": "signal",
-        "from": {
-          "node": "right_ankle_P",
-          "port": "g"
+          "node": "right_knee_link",
+          "port": "com"
         },
         "to": {
           "node": "right_ankle_link",
-          "port": "g"
+          "port": "parent"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "b0208",
+        "id": "b0114",
         "kind": "bond",
         "from": {
-          "node": "right_knee_bj"
-        },
-        "to": {
-          "node": "right_ankle_T",
-          "port": "b"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0209",
-        "kind": "bond",
-        "from": {
-          "node": "right_ankle_T",
-          "port": "a"
+          "node": "right_ankle_link",
+          "port": "to_joint"
         },
         "to": {
           "node": "right_ankle_joint",
@@ -7229,91 +3628,49 @@
         "label": null
       },
       {
-        "id": "b0210",
+        "id": "b0115",
         "kind": "bond",
         "from": {
           "node": "right_ankle_joint",
           "port": "child"
         },
         "to": {
-          "node": "right_ankle_L",
-          "port": "a"
+          "node": "right_ankle_link",
+          "port": "from_joint"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0211",
+        "id": "s0116",
         "kind": "signal",
         "from": {
-          "node": "right_knee_W",
-          "port": "g"
+          "node": "right_knee_link",
+          "port": "pose"
         },
         "to": {
-          "node": "right_ankle_CA",
-          "port": "gp"
+          "node": "right_ankle_link",
+          "port": "parent_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0212",
-        "kind": "signal",
-        "from": {
-          "node": "right_ankle_LN",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_ankle_CA",
-          "port": "gl"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0213",
-        "kind": "signal",
-        "from": {
-          "node": "right_ankle_CA",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_ankle_W",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s0214",
+        "id": "s0117",
         "kind": "signal",
         "from": {
           "node": "right_ankle_joint",
           "port": "pose"
         },
         "to": {
-          "node": "right_ankle_W",
-          "port": "gl"
+          "node": "right_ankle_link",
+          "port": "joint_pose"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s0215",
-        "kind": "signal",
-        "from": {
-          "node": "right_ankle_W",
-          "port": "g"
-        },
-        "to": {
-          "node": "right_ankle_P",
-          "port": "gp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "b0216",
+        "id": "b0118",
         "kind": "bond",
         "from": {
           "node": "right_ankle",
@@ -7327,7 +3684,7 @@
         "label": null
       },
       {
-        "id": "b0217",
+        "id": "b0119",
         "kind": "bond",
         "from": {
           "node": "Bus"
@@ -7340,7 +3697,7 @@
         "label": null
       },
       {
-        "id": "s0218",
+        "id": "s0120",
         "kind": "signal",
         "from": {
           "node": "Goal_right_ankle",
@@ -7594,182 +3951,182 @@
       "target": "link:yaw2roll",
       "property": "pose",
       "signal": [
-        "left_hip_yaw_W/g[1]",
-        "left_hip_yaw_W/g[2]",
-        "left_hip_yaw_W/g[3]",
-        "left_hip_yaw_W/g[4]",
-        "left_hip_yaw_W/g[5]",
-        "left_hip_yaw_W/g[6]",
-        "left_hip_yaw_W/g[7]"
+        "left_hip_yaw_link/W/g[1]",
+        "left_hip_yaw_link/W/g[2]",
+        "left_hip_yaw_link/W/g[3]",
+        "left_hip_yaw_link/W/g[4]",
+        "left_hip_yaw_link/W/g[5]",
+        "left_hip_yaw_link/W/g[6]",
+        "left_hip_yaw_link/W/g[7]"
       ]
     },
     {
       "target": "link:hip_l",
       "property": "pose",
       "signal": [
-        "left_hip_roll_W/g[1]",
-        "left_hip_roll_W/g[2]",
-        "left_hip_roll_W/g[3]",
-        "left_hip_roll_W/g[4]",
-        "left_hip_roll_W/g[5]",
-        "left_hip_roll_W/g[6]",
-        "left_hip_roll_W/g[7]"
+        "left_hip_roll_link/W/g[1]",
+        "left_hip_roll_link/W/g[2]",
+        "left_hip_roll_link/W/g[3]",
+        "left_hip_roll_link/W/g[4]",
+        "left_hip_roll_link/W/g[5]",
+        "left_hip_roll_link/W/g[6]",
+        "left_hip_roll_link/W/g[7]"
       ]
     },
     {
       "target": "link:upper_leg_left",
       "property": "pose",
       "signal": [
-        "left_hip_pitch_W/g[1]",
-        "left_hip_pitch_W/g[2]",
-        "left_hip_pitch_W/g[3]",
-        "left_hip_pitch_W/g[4]",
-        "left_hip_pitch_W/g[5]",
-        "left_hip_pitch_W/g[6]",
-        "left_hip_pitch_W/g[7]"
+        "left_hip_pitch_link/W/g[1]",
+        "left_hip_pitch_link/W/g[2]",
+        "left_hip_pitch_link/W/g[3]",
+        "left_hip_pitch_link/W/g[4]",
+        "left_hip_pitch_link/W/g[5]",
+        "left_hip_pitch_link/W/g[6]",
+        "left_hip_pitch_link/W/g[7]"
       ]
     },
     {
       "target": "link:leg",
       "property": "pose",
       "signal": [
-        "left_knee_W/g[1]",
-        "left_knee_W/g[2]",
-        "left_knee_W/g[3]",
-        "left_knee_W/g[4]",
-        "left_knee_W/g[5]",
-        "left_knee_W/g[6]",
-        "left_knee_W/g[7]"
+        "left_knee_link/W/g[1]",
+        "left_knee_link/W/g[2]",
+        "left_knee_link/W/g[3]",
+        "left_knee_link/W/g[4]",
+        "left_knee_link/W/g[5]",
+        "left_knee_link/W/g[6]",
+        "left_knee_link/W/g[7]"
       ]
     },
     {
       "target": "link:ankle_left",
       "property": "pose",
       "signal": [
-        "left_ankle_W/g[1]",
-        "left_ankle_W/g[2]",
-        "left_ankle_W/g[3]",
-        "left_ankle_W/g[4]",
-        "left_ankle_W/g[5]",
-        "left_ankle_W/g[6]",
-        "left_ankle_W/g[7]"
+        "left_ankle_link/W/g[1]",
+        "left_ankle_link/W/g[2]",
+        "left_ankle_link/W/g[3]",
+        "left_ankle_link/W/g[4]",
+        "left_ankle_link/W/g[5]",
+        "left_ankle_link/W/g[6]",
+        "left_ankle_link/W/g[7]"
       ]
     },
     {
       "target": "link:neck",
       "property": "pose",
       "signal": [
-        "neck_pitch_W/g[1]",
-        "neck_pitch_W/g[2]",
-        "neck_pitch_W/g[3]",
-        "neck_pitch_W/g[4]",
-        "neck_pitch_W/g[5]",
-        "neck_pitch_W/g[6]",
-        "neck_pitch_W/g[7]"
+        "neck_pitch_link/W/g[1]",
+        "neck_pitch_link/W/g[2]",
+        "neck_pitch_link/W/g[3]",
+        "neck_pitch_link/W/g[4]",
+        "neck_pitch_link/W/g[5]",
+        "neck_pitch_link/W/g[6]",
+        "neck_pitch_link/W/g[7]"
       ]
     },
     {
       "target": "link:neck_pitch",
       "property": "pose",
       "signal": [
-        "head_pitch_W/g[1]",
-        "head_pitch_W/g[2]",
-        "head_pitch_W/g[3]",
-        "head_pitch_W/g[4]",
-        "head_pitch_W/g[5]",
-        "head_pitch_W/g[6]",
-        "head_pitch_W/g[7]"
+        "head_pitch_link/W/g[1]",
+        "head_pitch_link/W/g[2]",
+        "head_pitch_link/W/g[3]",
+        "head_pitch_link/W/g[4]",
+        "head_pitch_link/W/g[5]",
+        "head_pitch_link/W/g[6]",
+        "head_pitch_link/W/g[7]"
       ]
     },
     {
       "target": "link:yaw_roll_motion",
       "property": "pose",
       "signal": [
-        "head_yaw_W/g[1]",
-        "head_yaw_W/g[2]",
-        "head_yaw_W/g[3]",
-        "head_yaw_W/g[4]",
-        "head_yaw_W/g[5]",
-        "head_yaw_W/g[6]",
-        "head_yaw_W/g[7]"
+        "head_yaw_link/W/g[1]",
+        "head_yaw_link/W/g[2]",
+        "head_yaw_link/W/g[3]",
+        "head_yaw_link/W/g[4]",
+        "head_yaw_link/W/g[5]",
+        "head_yaw_link/W/g[6]",
+        "head_yaw_link/W/g[7]"
       ]
     },
     {
       "target": "link:jaw_soft",
       "property": "pose",
       "signal": [
-        "head_roll_W/g[1]",
-        "head_roll_W/g[2]",
-        "head_roll_W/g[3]",
-        "head_roll_W/g[4]",
-        "head_roll_W/g[5]",
-        "head_roll_W/g[6]",
-        "head_roll_W/g[7]"
+        "head_roll_link/W/g[1]",
+        "head_roll_link/W/g[2]",
+        "head_roll_link/W/g[3]",
+        "head_roll_link/W/g[4]",
+        "head_roll_link/W/g[5]",
+        "head_roll_link/W/g[6]",
+        "head_roll_link/W/g[7]"
       ]
     },
     {
       "target": "link:bearing_roll",
       "property": "pose",
       "signal": [
-        "right_hip_yaw_W/g[1]",
-        "right_hip_yaw_W/g[2]",
-        "right_hip_yaw_W/g[3]",
-        "right_hip_yaw_W/g[4]",
-        "right_hip_yaw_W/g[5]",
-        "right_hip_yaw_W/g[6]",
-        "right_hip_yaw_W/g[7]"
+        "right_hip_yaw_link/W/g[1]",
+        "right_hip_yaw_link/W/g[2]",
+        "right_hip_yaw_link/W/g[3]",
+        "right_hip_yaw_link/W/g[4]",
+        "right_hip_yaw_link/W/g[5]",
+        "right_hip_yaw_link/W/g[6]",
+        "right_hip_yaw_link/W/g[7]"
       ]
     },
     {
       "target": "link:hip_l_2",
       "property": "pose",
       "signal": [
-        "right_hip_roll_W/g[1]",
-        "right_hip_roll_W/g[2]",
-        "right_hip_roll_W/g[3]",
-        "right_hip_roll_W/g[4]",
-        "right_hip_roll_W/g[5]",
-        "right_hip_roll_W/g[6]",
-        "right_hip_roll_W/g[7]"
+        "right_hip_roll_link/W/g[1]",
+        "right_hip_roll_link/W/g[2]",
+        "right_hip_roll_link/W/g[3]",
+        "right_hip_roll_link/W/g[4]",
+        "right_hip_roll_link/W/g[5]",
+        "right_hip_roll_link/W/g[6]",
+        "right_hip_roll_link/W/g[7]"
       ]
     },
     {
       "target": "link:upper_leg_right",
       "property": "pose",
       "signal": [
-        "right_hip_pitch_W/g[1]",
-        "right_hip_pitch_W/g[2]",
-        "right_hip_pitch_W/g[3]",
-        "right_hip_pitch_W/g[4]",
-        "right_hip_pitch_W/g[5]",
-        "right_hip_pitch_W/g[6]",
-        "right_hip_pitch_W/g[7]"
+        "right_hip_pitch_link/W/g[1]",
+        "right_hip_pitch_link/W/g[2]",
+        "right_hip_pitch_link/W/g[3]",
+        "right_hip_pitch_link/W/g[4]",
+        "right_hip_pitch_link/W/g[5]",
+        "right_hip_pitch_link/W/g[6]",
+        "right_hip_pitch_link/W/g[7]"
       ]
     },
     {
       "target": "link:leg_2",
       "property": "pose",
       "signal": [
-        "right_knee_W/g[1]",
-        "right_knee_W/g[2]",
-        "right_knee_W/g[3]",
-        "right_knee_W/g[4]",
-        "right_knee_W/g[5]",
-        "right_knee_W/g[6]",
-        "right_knee_W/g[7]"
+        "right_knee_link/W/g[1]",
+        "right_knee_link/W/g[2]",
+        "right_knee_link/W/g[3]",
+        "right_knee_link/W/g[4]",
+        "right_knee_link/W/g[5]",
+        "right_knee_link/W/g[6]",
+        "right_knee_link/W/g[7]"
       ]
     },
     {
       "target": "link:ankle_right",
       "property": "pose",
       "signal": [
-        "right_ankle_W/g[1]",
-        "right_ankle_W/g[2]",
-        "right_ankle_W/g[3]",
-        "right_ankle_W/g[4]",
-        "right_ankle_W/g[5]",
-        "right_ankle_W/g[6]",
-        "right_ankle_W/g[7]"
+        "right_ankle_link/W/g[1]",
+        "right_ankle_link/W/g[2]",
+        "right_ankle_link/W/g[3]",
+        "right_ankle_link/W/g[4]",
+        "right_ankle_link/W/g[5]",
+        "right_ankle_link/W/g[6]",
+        "right_ankle_link/W/g[7]"
       ]
     }
   ]

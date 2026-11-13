@@ -7,8 +7,9 @@ One SDF link per body of design/robot_data.json, named after the body, carrying 
 `meshes/<body>.glb` (Pollen Robotics' CAD meshes in that body's frame, CC BY-NC-SA 4.0, written
 by design/build_visuals.py) at the link origin. The link poses in the file are the STAND pose
 (HOME) with the trunk where the model starts it; in a run every link follows the world pose of
-its body frame, the pose band of design/robot.py: `<joint>_W/g` (W_b = W_P o T_Pb o joint pose)
-and, for the trunk, `Free/pose` (floating) or `TrunkPose/g` (held). Floor: 6 x 6 tiles of 0.1 m.
+its body frame, the pose band of design/robot.py: `<joint>_link/W/g` (W of the body's Link
+instance, W_b = W_P o T_Pb o joint pose) and, for the trunk, `Free/pose` (floating) or
+`TrunkPose/g` (held). Floor: 6 x 6 tiles of 0.1 m.
 """
 
 from __future__ import annotations
@@ -103,7 +104,7 @@ def bindings(held: bool) -> list[dict]:
         if b["parent"] is None:
             sig = "TrunkPose/g" if held else "Free/pose"
         else:
-            sig = f"{rb.node_names(b)['W']}/g"
+            sig = rb.node_names(b)["pose"]
         out.append({"target": f"link:{b['name']}", "property": "pose", "signal": [f"{sig}[{k}]" for k in range(1, 8)]})
     return out
 

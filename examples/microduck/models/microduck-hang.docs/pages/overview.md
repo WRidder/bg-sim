@@ -1,6 +1,6 @@
 # The microduck on a stand
 
-The robot hangs by its trunk, the way a real robot is brought up. Its 15 bodies come from the microduck_rl MJCF, with 14 `Revolute3D` joints. One [XL330](block:left_knee) instance per joint is named after the joint. Every `vbus` port sits on one battery bus: a [battery](block:Battery) behind a [resistance](block:Rbat), and a [bus capacitor](block:Cbus).
+The robot hangs by its trunk, the way a real robot is brought up. Its 15 bodies come from the microduck_rl MJCF, with 14 `Revolute3D` joints. Each jointed body is an instance of the library subsystem `Link` ([left_knee_link](block:left_knee_link): the body, its two frames and its pose band), with its joint beside it. One [XL330](block:left_knee) instance per joint is named after the joint. Every `vbus` port sits on one battery bus: a [battery](block:Battery) behind a [resistance](block:Rbat), and a [bus capacitor](block:Cbus).
 
 At 0.2 s the hip-pitch, knee and ankle goals step from HOME to a pose that would lower a standing trunk by 15 mm (inverse kinematics in `design/robot.py`). The other joints hold HOME.
 

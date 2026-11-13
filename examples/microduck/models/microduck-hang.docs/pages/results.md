@@ -1,6 +1,6 @@
 # Results
 
-![Left leg goals and encoders, motor and battery currents|900](assets/3d08845e2e5e.png)
+![Left leg goals and encoders, motor and battery currents|900](assets/4c9bbed5af88.png)
 
 ## The quasi-static reference
 

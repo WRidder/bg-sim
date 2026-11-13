@@ -7,16 +7,23 @@ microduck_rl MJCF by extract_mjcf.py), the STAND pose, the squat pose, the two r
 
     uv run examples/microduck/design/robot.py      # the design report (mass, stand height, statics)
 
-Model structure (per body b with parent P, joint about the local z of b):
+Model structure (per body b with parent P, joint about the local z of b). Every jointed body is
+an instance `<joint>_link` of the library subsystem `Link` (library/Link.bgsub.json), with the
+joint `<joint>_joint` and the servo `<joint>` beside it in the model:
 
-    BJ_P -> T_b (FixedTransform3DNeutral, P's centre of mass seen from the joint frame)
-         -> b_joint (Revolute3D) -> L_b (FixedTransform3DNeutral, b's principal CoM frame) -> BJ_b
-    BJ_b <- b (RigidBody3D, principal moments)
-    XL330 instance (named after the joint): horn -> b_joint.drive, vbus <- Bus
-    pose band: W_b = W_P o T_Pb o b_joint.pose, P_b = W_b o C_b -> b.g
+    Link:  parent -> T (FixedTransform3DNeutral, P's centre of mass seen from the joint frame) -> to_joint
+           from_joint -> L (FixedTransform3DNeutral, b's principal CoM frame) -> BJ (1-junction, port `com`)
+           BJ <- Body (RigidBody3D, principal moments)
+           pose band: W = parent_pose o LN (T_Pb) o joint_pose, P = W o LC (C_b) -> Body.g;
+           outputs `pose` (W, the body frame in the world) and `com_pose` (P)
+    <P>_link.com -> <joint>_link.parent; <joint>_link.to_joint -> <joint>_joint (Revolute3D)
+                 -> <joint>_link.from_joint
+    XL330 instance (named after the joint): horn -> <joint>_joint.drive, vbus <- Bus
 
-The trunk floats: World -> Free3D -> TrunkCoM -> BJ_trunk_base. Each sole carries four
-ContactPoint elements (Hunt-Crossley, Coulomb friction) on one ground ContactSurface.
+The trunk floats: World -> Free3D -> trunk_L -> trunk_bj. Each sole carries four contact points
+on one ground ContactSurface; a contact point is an instance of the library subsystem
+`GroundContact` (library/GroundContact.bgsub.json: the point's pose, its mount and a
+ContactPoint, Hunt-Crossley with Coulomb friction).
 """
 
 from __future__ import annotations
@@ -174,10 +181,113 @@ def _rotvec(r) -> np.ndarray:
 # ------------------------------------------------------------------ the model
 
 def node_names(b) -> dict:
-    """Nodes of body b, named after the joint that moves it (the trunk: `trunk`)."""
+    """Nodes of body b, named after the joint that moves it (the trunk: `trunk`). A jointed body is
+    the `Link` instance `link` and the joint `joint`. `com` and `com_pose` are the ends at which
+    the body's centre-of-mass 1-junction and the world pose of its principal frame are reached;
+    `pose` is the signal of the world pose of the body frame (W of the pose band)."""
     k = b.get("joint", "trunk")
-    return {"body": f"{k}_link", "bj": f"{k}_bj", "T": f"{k}_T", "L": f"{k}_L", "joint": f"{k}_joint",
-            "LN": f"{k}_LN", "CA": f"{k}_CA", "W": f"{k}_W", "LC": f"{k}_LC", "P": f"{k}_P"}
+    if "joint" not in b:  # the trunk is drawn in the model
+        return {"body": f"{k}_link", "bj": f"{k}_bj", "L": f"{k}_L", "LC": f"{k}_LC", "P": f"{k}_P",
+                "com": (f"{k}_bj", None), "com_pose": (f"{k}_P", "g")}
+    link = f"{k}_link"
+    return {"link": link, "joint": f"{k}_joint", "com": (link, "com"), "com_pose": (link, "com_pose"),
+            "pose": f"{link}/W/g"}
+
+
+POSE_KEYS = ("qw", "qx", "qy", "qz", "x", "y", "z")
+LINK_PINS = [f"{n}/{k}" for n in ("T", "L", "LN", "LC") for k in POSE_KEYS] + ["Body/m", "Body/J"]
+
+
+def link_definition() -> dict:
+    """library/Link.bgsub.json: one jointed body of the robot without its joint.
+
+    The joint stays in the model between `to_joint` and `from_joint` (Revolute3D with its own
+    stops, or Revolute3DRigid), so one definition serves every robot model. An instance pins the
+    four frames (T, L, LN, LC) and the body's mass and principal moments."""
+    d = Diagram()
+    eye = pose_params(np.eye(4))
+    d.ref("T", "stdlib:multibond/FixedTransform3DNeutral", 0, 0, params=eye)
+    d.ref("L", "stdlib:multibond/FixedTransform3DNeutral", 360, 0, params=eye)
+    d.junction("BJ", "1", 520, 0)
+    d.ref("Body", "stdlib:spatial/RigidBody3D", 520, 140, params={"m": 1.0, "J": vec([0.1, 0.1, 0.1]), "g0": G0})
+    d.bond("L", "b", "BJ")
+    d.bond("Body", "p", "BJ")
+    d.ref("LN", "stdlib:spatial/LocalPose3D", 0, 440, params=eye)
+    d.ref("CA", "stdlib:multibond/ComposePose3D", 0, 320)
+    d.ref("W", "stdlib:multibond/ComposePose3D", 180, 320)
+    d.ref("LC", "stdlib:spatial/LocalPose3D", 360, 440, params=eye)
+    d.ref("P", "stdlib:multibond/ComposePose3D", 520, 320)
+    d.sig("LN", "g", "CA", "gl")
+    d.sig("CA", "g", "W", "gp")
+    d.sig("W", "g", "P", "gp")
+    d.sig("LC", "g", "P", "gl")
+    d.sig("P", "g", "Body", "g")
+    d.power_port("parent", "Spatial", "T", "b", size=6)
+    d.power_port("to_joint", "Spatial", "T", "a", size=6)
+    d.power_port("from_joint", "Spatial", "L", "a", size=6)
+    d.power_port("com", "Spatial", "BJ", size=6)
+    d.signal_port("parent_pose", "input", "CA", "gp", size=7)
+    d.signal_port("joint_pose", "input", "W", "gl", size=7)
+    d.signal_port("pose", "output", "W", "g", size=7)
+    d.signal_port("com_pose", "output", "P", "g", size=7)
+    d.note("**Bonds.** `parent` is the parent body's centre-of-mass junction. T carries it to the joint "
+           "frame (`to_joint`); the joint sits outside, between `to_joint` and `from_joint`. L carries the "
+           "joint's child side to this body's principal centre-of-mass frame, the 1-junction BJ (`com`), "
+           "where the body, the next link and the contact points attach.", 0, -150, 640, 110)
+    d.note("**Pose band.** W = parent_pose o LN o joint_pose is the body frame in the world (`pose`, "
+           "what the 3D scene reads); P = W o LC is the principal frame (`com_pose`), which the body "
+           "and the contact points read.", 0, 540, 640, 90)
+    return {
+        "format": "bgsim.subsystem",
+        "name": "Link",
+        "description": (
+            "One jointed body of the microduck without its joint: the frame from the parent's centre of mass "
+            "to the joint (T), the frame from the joint to this body's principal centre-of-mass frame (L), "
+            "the rigid body on its 1-junction, and the pose band that gives the body frame and the principal "
+            "frame in the world. The joint is bonded between to_joint and from_joint."),
+        "ports": d.ports,
+        "diagram": d.document(),
+        "pins": {"params": LINK_PINS, "starts": []},
+    }
+
+
+CONTACT_PINS = [f"{n}/{k}" for n in ("Pose", "Mount") for k in ("x", "y", "z")] + ["Contact/mu"]
+
+
+def contact_definition() -> dict:
+    """library/GroundContact.bgsub.json: one contact point of a body on the ground plane.
+
+    An instance pins where the point is (Pose and its inverse Mount, in the body's principal
+    frame) and the friction coefficient (the library value is the soles' 1.0; bumpers 0)."""
+    d = Diagram()
+    eye = pose_params(np.eye(4))
+    d.ref("Pose", "stdlib:spatial/LocalPose3D", 0, 160, params=eye)
+    d.ref("World", "stdlib:multibond/ComposePose3D", 160, 160)
+    d.ref("Mount", "stdlib:multibond/FixedTransform3DNeutral", 160, 0, params=eye)
+    d.ref("Contact", "stdlib:contact/ContactPoint", 340, 0, params=CONTACT)
+    d.bond("Mount", "a", "Contact", "p")
+    d.sig("Pose", "g", "World", "gl")
+    d.sig("World", "g", "Contact", "g")
+    d.power_port("p", "Spatial", "Mount", "b", size=6)
+    d.signal_port("pose", "input", "World", "gp", size=7)
+    d.signal_port("o", "input", "Contact", "o", "m", size=3)
+    d.signal_port("fr", "input", "Contact", "fr", "1", size=9)
+    d.signal_port("f_n", "output", "Contact", "f_n", "N")
+    d.note("**A contact point on the ground.** `p` is the body's centre-of-mass junction and `pose` the "
+           "world pose of its principal frame. Pose is the point in that frame, Mount the same offset "
+           "for the bond, World the point in the world. `o` and `fr` are the ground plane "
+           "(ContactSurface). Pinned: Pose and Mount x, y, z and the friction coefficient.", 0, -150, 520, 110)
+    return {
+        "format": "bgsim.subsystem",
+        "name": "GroundContact",
+        "description": (
+            "One contact point of a body on a ground plane: the point's pose in the body's principal frame, "
+            "its mount on the body's centre-of-mass junction and a ContactPoint (Hertz normal law, Coulomb "
+            "friction). The soles use it with friction 1.0, the bumpers with friction 0."),
+        "ports": d.ports,
+        "diagram": d.document(),
+        "pins": {"params": CONTACT_PINS, "starts": []},
+    }
 
 
 LAYOUT = {  # columns per body, rows per branch
@@ -186,7 +296,7 @@ LAYOUT = {  # columns per body, rows per branch
     "neck": (1, 0), "neck_pitch": (2, 0), "yaw_roll_motion": (3, 0), "jaw_soft": (4, 0),
     "bearing_roll": (1, 1), "hip_l_2": (2, 1), "upper_leg_right": (3, 1), "leg_2": (4, 1), "ankle_right": (5, 1),
 }
-DX, DY = 900, 1300
+DX, DY = 480, 1000
 
 
 def static_sink(m_total=None) -> float:
@@ -197,28 +307,27 @@ def static_sink(m_total=None) -> float:
     return (f * math.sqrt(CONTACT["xref"]) / CONTACT["k"]) ** (2.0 / 3.0)
 
 
-def add_contact(d: Diagram, n: dict, cb: np.ndarray, tag: str, pt, x, y, params: dict, prefix: str) -> str:
-    """A ContactPoint at `pt` (body frame of the body whose nodes are `n`) on the ground plane."""
+def add_contact(d: Diagram, n: dict, cb: np.ndarray, name: str, pt, x, y, mu=None) -> str:
+    """A GroundContact instance `name` at `pt` (body frame of the body whose nodes are `n`) on the
+    ground plane; mu: the friction coefficient when it is not the library's (the soles' 1.0)."""
     r_c = np.linalg.inv(cb) @ np.append(pt, 1.0)  # point in the principal CoM frame
     local = np.eye(4)
     local[:3, 3] = r_c[:3]
-    name = f"{prefix}{tag}"
-    pose_name = "Sole" if prefix == "Foot" else f"{prefix}Pose"
-    mount_name = "SoleMount" if prefix == "Foot" else f"{prefix}Mount"
-    world_name = "SoleW" if prefix == "Foot" else f"{prefix}W"
-    d.ref(f"{pose_name}{tag}", "stdlib:spatial/LocalPose3D", x, y, params=pose_params(local))
-    d.ref(f"{world_name}{tag}", "stdlib:multibond/ComposePose3D", x + 120, y)
-    d.ref(f"{mount_name}{tag}", "stdlib:multibond/FixedTransform3DNeutral", x + 240, y,
-          params=pose_params(np.linalg.inv(local)))
-    d.ref(name, "stdlib:contact/ContactPoint", x + 360, y, params=params)
-    d.bond(n["bj"], None, f"{mount_name}{tag}", "b")
-    d.bond(f"{mount_name}{tag}", "a", name, "p")
-    d.sig(n["P"], "g", f"{world_name}{tag}", "gp")
-    d.sig(f"{pose_name}{tag}", "g", f"{world_name}{tag}", "gl")
-    d.sig(f"{world_name}{tag}", "g", name, "g")
+    pose, mount = pose_params(local), pose_params(np.linalg.inv(local))
+    params = {f"Pose/{k}": pose[k] for k in "xyz"} | {f"Mount/{k}": mount[k] for k in "xyz"}
+    if mu is not None:
+        params["Contact/mu"] = mu
+    d.ref(name, "project:GroundContact", x, y, params=params)
+    d.bond(*n["com"], name, "p")
+    d.sig(*n["com_pose"], name, "pose")
     d.sig("Ground", "o", name, "o")
     d.sig("Ground", "fr", name, "fr")
     return name
+
+
+def contact_grid(x, y, k) -> tuple[int, int]:
+    """Place of the k-th contact point of a body (two columns below the body)."""
+    return x + 170 * ((k - 1) % 2), y + 110 * ((k - 1) // 2)
 
 
 # Bumpers (falls): the microduck_rl ground-contact model gives every collision geom other than the
@@ -269,31 +378,32 @@ def build_robot(d: Diagram, goal_nodes: dict, q0=HOME, floating=True, policy=Non
         d.bond("Bus", None, "BusVoltage", "p")
     # ---- ground
     if floating:
-        d.ref("Ground", "stdlib:contact/ContactSurface", -600, 2400)
+        d.ref("Ground", "stdlib:contact/ContactSurface", -600, 700)
     world_pose = {}
     for b in BODIES:
         n = node_names(b)
         col, row = LAYOUT[b["name"]]
         x, y = col * DX, row * DY
         moments, cb = principal(b)
-        d.junction(n["bj"], "1", x + 420, y)
-        d.ref(n["L"], "stdlib:multibond/FixedTransform3DNeutral", x + 300, y, params=pose_params(cb))
-        d.bond(n["L"], "b", n["bj"])
-        if b["parent"] is None and not floating:  # held trunk: no body, the ground holds the frame
-            d.bond("World", "p", n["L"], "a")
-            world_pose[b["name"]] = ("TrunkPose", "g")
-            continue
-        d.ref(n["body"], "stdlib:spatial/RigidBody3D", x + 420, y + 120,
-              params={"m": b["mass"], "J": vec(moments), "g0": G0})
-        d.bond(n["body"], "p", n["bj"])
-        d.ref(n["LC"], "stdlib:spatial/LocalPose3D", x + 300, y + 420, params=pose_params(cb))
-        d.ref(n["P"], "stdlib:multibond/ComposePose3D", x + 420, y + 320)
-        d.sig(n["LC"], "g", n["P"], "gl")
-        d.sig(n["P"], "g", n["body"], "g")
-        if policy is not None and policy.get("bumpers") and "bumpers" in b:
-            for k, pt in enumerate(b["bumpers"], start=1):
-                add_contact(d, n, cb, f"{BUMPER_TAGS[b['name']]}{k}", pt, x + 1100, y + 120 * k, BUMPER_CONTACT, "Bump")
-        if b["parent"] is None:
+        bumpers = b["bumpers"] if policy is not None and policy.get("bumpers") and "bumpers" in b else []
+        tag = BUMPER_TAGS.get(b["name"])
+        if b["parent"] is None:  # the trunk, drawn in the model
+            d.ref(n["L"], "stdlib:multibond/FixedTransform3DNeutral", 160, y, params=pose_params(cb))
+            d.junction(n["bj"], "1", 300, y)
+            d.bond(n["L"], "b", n["bj"])
+            if not floating:  # held trunk: no body, the ground holds the frame
+                d.bond("World", "p", n["L"], "a")
+                world_pose[b["name"]] = ("TrunkPose", "g")
+                continue
+            d.ref(n["body"], "stdlib:spatial/RigidBody3D", 300, y + 120,
+                  params={"m": b["mass"], "J": vec(moments), "g0": G0})
+            d.bond(n["body"], "p", n["bj"])
+            d.ref(n["LC"], "stdlib:spatial/LocalPose3D", 160, y + 420, params=pose_params(cb))
+            d.ref(n["P"], "stdlib:multibond/ComposePose3D", 300, y + 320)
+            d.sig(n["LC"], "g", n["P"], "gl")
+            d.sig(n["P"], "g", n["body"], "g")
+            for k, pt in enumerate(bumpers, start=1):
+                add_contact(d, n, cb, f"Bump{tag}{k}", pt, *contact_grid(120, y + 560, k), mu=BUMPER_CONTACT["mu"])
             d.bond("Free", "child", n["L"], "a")
             d.sig("Free", "pose", n["P"], "gp")
             world_pose[b["name"]] = ("Free", "pose")
@@ -304,48 +414,48 @@ def build_robot(d: Diagram, goal_nodes: dict, q0=HOME, floating=True, policy=Non
         t_pb = parent_frame(b)
         joint = b["joint"]
         lo, hi = b["range"]
-        d.ref(n["T"], "stdlib:multibond/FixedTransform3DNeutral", x - 60, y,
-              params=pose_params(np.linalg.inv(t_pb) @ cp))
+        # the body: a Link instance (frames, rigid body, pose band)
+        frames = {"T": np.linalg.inv(t_pb) @ cp, "L": cb, "LN": t_pb, "LC": cb}
+        params = {f"{node}/{k}": v for node, t in frames.items() for k, v in pose_params(t).items()}
+        params |= {"Body/m": b["mass"], "Body/J": vec(moments)}
+        d.ref(n["link"], "project:Link", x + 200, y, params=params)
+        # the joint
         if policy is not None:
-            d.ref(n["joint"], "stdlib:spatial/Revolute3DRigid", x + 100, y,
+            d.ref(n["joint"], "stdlib:spatial/Revolute3DRigid", x, y,
                   params={"q0": q0[joint], "Ja": "0.0" if policy.get("backlash") else "armature"})
         else:
-            d.ref(n["joint"], "stdlib:spatial/Revolute3D", x + 100, y,
+            d.ref(n["joint"], "stdlib:spatial/Revolute3D", x, y,
                   params={"kt": K_HELD, "kr": K_HELD, "bt": 2 * math.sqrt(K_HELD * 0.05),
                           "br": 2 * math.sqrt(K_HELD * 2e-5), "q0": q0[joint]},
                   constants={"q_min": lo, "q_max": hi})
-        d.bond(node_names(p)["bj"], None, n["T"], "b")
-        d.bond(n["T"], "a", n["joint"], "parent")
-        d.bond(n["joint"], "child", n["L"], "a")
+        d.bond(*node_names(p)["com"], n["link"], "parent")
+        d.bond(n["link"], "to_joint", n["joint"], "parent")
+        d.bond(n["joint"], "child", n["link"], "from_joint")
         # pose band
-        d.ref(n["LN"], "stdlib:spatial/LocalPose3D", x - 60, y + 420, params=pose_params(t_pb))
-        d.ref(n["CA"], "stdlib:multibond/ComposePose3D", x - 60, y + 320)
-        d.ref(n["W"], "stdlib:multibond/ComposePose3D", x + 100, y + 320)
-        d.sig(*world_pose[p["name"]], n["CA"], "gp")
-        d.sig(n["LN"], "g", n["CA"], "gl")
-        d.sig(n["CA"], "g", n["W"], "gp")
-        d.sig(n["joint"], "pose", n["W"], "gl")
-        d.sig(n["W"], "g", n["P"], "gp")
-        world_pose[b["name"]] = (n["W"], "g")
+        d.sig(*world_pose[p["name"]], n["link"], "parent_pose")
+        d.sig(n["joint"], "pose", n["link"], "joint_pose")
+        world_pose[b["name"]] = (n["link"], "pose")
         # the actuator
         if policy is not None:
             if policy.get("backlash"):
-                rigid_actuator(d, joint, x + 100, y - 400, q0=q0[joint], ws=policy.get("ws"),
+                rigid_actuator(d, joint, x, y - 300, q0=q0[joint], ws=policy.get("ws"),
                                invw=PLAY_DATA["joints"][joint]["invweight0"], gap="backlash")
             else:
-                rigid_actuator(d, joint, x + 100, y - 400, q0=q0[joint], ws=policy.get("ws"))
+                rigid_actuator(d, joint, x, y - 300, q0=q0[joint], ws=policy.get("ws"))
             d.sig(n["joint"], "qout", joint, "q")
             d.sig(*policy["kp"], joint, "kp")
         else:
-            actuator(d, joint, x + 100, y - 400, q0=q0[joint])
+            actuator(d, joint, x, y - 300, q0=q0[joint])
         d.bond(joint, "horn", n["joint"], "drive")
         d.bond("Bus", None, joint, "vbus")
         d.sig(*goal_nodes[joint], joint, "q_goal")
-        # the sole
+        # bumpers and the sole
+        for k, pt in enumerate(bumpers, start=1):
+            add_contact(d, n, cb, f"Bump{tag}{k}", pt, *contact_grid(x + 200, y + 200, k), mu=BUMPER_CONTACT["mu"])
         if "sole" in b and floating:
             side = "L" if "left" in b["name"] else "R"
             for k, pt in enumerate(contact_points(b), start=1):
-                add_contact(d, n, cb, f"{side}{k}", pt, x + 600, y + 700 + 120 * k, CONTACT, "Foot")
+                add_contact(d, n, cb, f"Foot{side}{k}", pt, *contact_grid(x + 200, y + 200, k))
 
 
 def robot_globals(policy=False, backlash=False):
@@ -372,7 +482,7 @@ def stand_plots():
         {"id": "p1", "title": "Trunk attitude (quaternion) and height", "signals": ["Free/pose[1]", "Free/pose[2]", "Free/pose[3]", "Free/pose[4]", "Free/pose[7]"]},
         {"id": "p2", "title": "Leg joint angles (encoders)", "signals": [f"{j}/Encoder/y" for j in LEGS]},
         {"id": "p3", "title": "Leg motor currents", "signals": [f"{j}/Current/y" for j in LEGS]},
-        {"id": "p4", "title": "Foot normal forces", "signals": [f"Foot{s}{k}/f_n" for s in "LR" for k in range(1, 5)]},
+        {"id": "p4", "title": "Foot normal forces", "signals": [f"Foot{s}{k}/Contact/f_n" for s in "LR" for k in range(1, 5)]},
         {"id": "p5", "title": "Battery current and bus voltage", "signals": ["BatCurrent/y", "BusVoltage/y"]},
     ]
 

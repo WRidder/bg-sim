@@ -18,7 +18,7 @@ The four robot models have a **3D view**: every body is drawn with Pollen Roboti
 
 The servo is the **library subsystem** `XL330` (`library/XL330.bgsub.json`). It is drawn once and placed once per joint: one instance on each bench and 14 in each robot, all on the battery bus. A second subsystem, `XL330Rigid`, keeps the firmware, the winding and the friction but drops the gear play, as the training simulation does; it is the servo of the robot that the published walking policy drives. A third, `XL330Backlash`, adds back the 2° of gear play that the policy was trained with, built as the training simulator builds it: a passive hinge after the gear with MuJoCo's soft joint limit at ±1°. Each instance can set its own P gain, friction scale, rotor inertia, backlash and initial angle (the subsystem's pins), as the domain randomisation of training does.
 
-![The bench model: goal, supply, one XL330 instance and the pendulum arm|900](assets/ff3bdf770d5a.png)
+![The bench model: goal, supply, one XL330 instance and the pendulum arm|900](assets/1f0733bd11db.png)
 
 ## Inside the XL330
 

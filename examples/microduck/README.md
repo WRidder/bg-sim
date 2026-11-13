@@ -8,6 +8,10 @@ servo with its gear play) and `XL330Rigid` (`library/XL330Rigid.bgsub.json`, the
 winding and friction on a rigid gear, for the robot a policy drives and an FMU runs in real time).
 A third, `XL330Backlash` (`library/XL330Backlash.bgsub.json`), is `XL330Rigid` with the gear play
 the policy was trained with, built as the training simulator builds it.
+The body repeats too: in the four robot models every jointed body is an instance of `Link`
+(`library/Link.bgsub.json`: its two frames, the rigid body and the pose band, with the joint and
+the servo beside it in the model), and every sole and bumper point is an instance of
+`GroundContact` (`library/GroundContact.bgsub.json`).
 
 The aim is a model in which the actuator behaves the way the policies were trained to expect,
 so that a policy can move between this model and the real robot. **That transfer is not
@@ -235,6 +239,12 @@ Ground contact: Hunt-Crossley, k = 2e4 N/m at 1 mm, c = 5 s/m, mu = 1.0 (the RL 
 regularised over 1 mm/s (assumed except mu). The joints are `Revolute3D` with the MJCF ranges as
 hard stops and 1e5 N/m, N m/rad compliance in the held directions.
 
+Each of the 14 jointed bodies is a `Link` instance named `<joint>_link`, which pins the body's
+frames, mass and principal moments; its joint `<joint>_joint` and its servo `<joint>` stay in the
+model. Each contact point is a `GroundContact` instance (`FootL1`..`FootR4`, and the bumpers
+`Bump<part><k>` of the policy robot), which pins the point's place and its friction coefficient;
+the normal force is `FootL1/Contact/f_n`.
+
 ## Results
 
 * `xl330-step` against the BAM simulator (`design/compare_bench.py`): largest encoder
@@ -405,7 +415,7 @@ every step of all eight. In this simulation only; it says nothing about the real
 `microduck-stand`, `microduck-hang`, `microduck-policy` and `microduck-policy-backlash` carry a
 3D scene (`scenes/microduck.sdf`, `scenes/microduck-hang.sdf`, written by `design/scene.py`):
 one link per body, each bound to the pose of its body (`Free/pose` or `TrunkPose/g` for the
-trunk, `<joint>_W/g` for the others), on a floor of 10 cm tiles. The browser game
+trunk, `<joint>_link/W/g` for the others), on a floor of 10 cm tiles. The browser game
 (`apps/web/microduck`) draws the same parts from `apps/web/src/microduck/duck.glb`.
 
 The parts are Pollen Robotics' own CAD visual meshes from microduck_rl at 0daab16

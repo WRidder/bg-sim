@@ -100,12 +100,12 @@ class Diagram:
         self.annotations.append({"id": f"a{len(self.annotations) + 1:03d}", "kind": "text", "text": text,
                                  "x": int(x), "y": int(y), "w": int(w), "h": int(h), "color": color})
 
-    def signal_port(self, name, direction, node, port, unit=None, x=None, y=None):
+    def signal_port(self, name, direction, node, port, unit=None, x=None, y=None, size=1):
         self.ports.append({"name": name, "kind": "signal", "direction": direction, "type": "Real",
-                           "size": [1], "unit": unit, "node": node, "port": port})
+                           "size": [size], "unit": unit, "node": node, "port": port})
 
-    def power_port(self, name, domain, node, port="junction"):
-        self.ports.append({"name": name, "kind": "power", "domain": domain, "size": [1],
+    def power_port(self, name, domain, node, port="junction", size=1):
+        self.ports.append({"name": name, "kind": "power", "domain": domain, "size": [size],
                            "node": node, "port": port})
 
     def document(self) -> dict:
