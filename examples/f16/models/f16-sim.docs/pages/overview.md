@@ -2,7 +2,7 @@
 
 The flyable F-16: the Stevens & Lewis airframe of the other models under a full three-axis fly-by-wire, trimmed at 500 ft/s (Mach 0.46) and 10 000 ft with the CG at 0.35. Its inputs and outputs are export markers, so the same model is the FMU of the browser game Island Sortie (`apps/web` in the repository). In bg-sim the markers pass a test input through: by default a roll-stick pulse that banks the aircraft to 60 deg, then a coordinated level turn with the stick centred.
 
-![The model canvas|900](assets/32f59a899750.png)
+![The model canvas|900](assets/81a4cbee3368.png)
 
 | block | role |
 | --- | --- |
@@ -11,6 +11,7 @@ The flyable F-16: the Stevens & Lewis airframe of the other models under a full 
 | [PitchLaw](block:PitchLaw) | `PitchFBW` with Ka, Kq, Ki over (qbar, Mach), as in `f16-fbw` |
 | [LatLaw](block:LatLaw) | `LateralFBW`: roll-rate command about the velocity vector, yaw damper, ARI, sideslip command |
 | [Kp](block:Kp), [Kip](block:Kip), [Kr](block:Kr), [Kb](block:Kb), [Kib](block:Kib), [Kari](block:Kari) | the lateral gains: `Lookup2D` over (qbar, Mach), the ARI a `Lookup1D` over alpha |
+| [StabComp](block:StabComp) | `StabComp`: a phase-compensated rate limiter between the pitch law and the stabilator servo |
 | [StabAct](block:StabAct), [AilAct](block:AilAct), [RdrAct](block:RdrAct) | servos: ±25 deg 60 deg/s, ±21.5 deg 80 deg/s, ±30 deg 120 deg/s, all 20.2 rad/s |
 | [Status](block:Status) | `F16Status`: the quaternion, Euler angles, calibrated airspeed, departure and ground flags for the host |
 | `F16` gear blocks | the landing gear inside the `F16` subsystem: three legs, the retraction, steering and weight on wheels (see [the landing gear](page:gear)) |
@@ -25,6 +26,6 @@ The flyable F-16: the Stevens & Lewis airframe of the other models under a full 
 
 The flaperons (the ailerons), the rudder and the stabilators of the 3D view move with their servos.
 
-![3D view at t = 1.8 s|600](assets/07074e11d8ca.png)
+![3D view at t = 1.8 s|600](assets/7589f7d0b799.png)
 
 Continue with [the control laws](page:laws), [the results](page:results), [the landing gear](page:gear) and [the FMU](page:fmu).

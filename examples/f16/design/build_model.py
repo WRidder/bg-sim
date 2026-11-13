@@ -725,7 +725,8 @@ def actuator(el0, a: dict | None = None, label: str = "Elevator") -> Diagram:
 def rate_comp(el0: float, comp: dict) -> Diagram:
     """Phase-compensated rate limiter: y' = clamp(du_f/dt + k (u - y), +-rate). The output turns
     round as soon as the command does (the derivative term); the slow k-feedback pulls it back
-    onto the command. A plain rate limiter only turns round when the command crosses the output."""
+    onto the command. A plain rate limiter only turns round when the command crosses the output.
+    f16-sim has the same law as the block library/StabComp.jl, which also knows the ground."""
     s = Diagram()
     s.node("In", "stdlib:continuous/Gain", 40, 40, params={"k": "1.0"})
     s.node("Deriv", "stdlib:continuous/FilteredDerivative", 200, 0, params={"Tf": num(comp["tf"])}, starts={"x": num(el0)})
@@ -1147,8 +1148,16 @@ def model_sim():
     d.sig("stick_pitch", "y", "StickDirect", "u")
     d.sig("StickDirect", "y", "PitchLaw", "u_ground")
     act = LAT["act"]
+    # The phase-compensated rate limiter of f16-pio ahead of the servo: at low dynamic pressure the
+    # law's gains ask for more than 60 deg/s, and a plain rate limit then sustains a limit cycle.
+    # On the wheels (w) its pull-back gain rises, so the direct stick command arrives at once.
+    comp = DESIGN["sim_law"]["stab_comp"]
+    d.node("StabComp", "project:StabComp", 1000, 160, params={k: num(comp[k]) for k in ("rate", "k", "k2", "e0", "k_ground", "tf")},
+           starts={"x": "el0", "xf": "el0"})
+    d.sig("PitchLaw", "y", "StabComp", "u")
+    d.sig("F16", "w", "StabComp", "w")
     actuator("el0", act["el"], "Stabilator").subsystem(d, "StabAct", 1100, 40)
-    d.sig("PitchLaw", "y", "StabAct", "u")
+    d.sig("StabComp", "y", "StabAct", "u")
     d.sig("StabAct", "y", "F16", "el")
     # ---- roll and yaw: scheduled lateral law, ARI over alpha, aileron and rudder servos
     d.node("LatLaw", "project:LateralFBW", 900, 500, params={
@@ -1184,7 +1193,8 @@ def model_sim():
     d.note("**Three-axis fly-by-wire.** Pitch: g-command with turn compensation and the alpha/g limiter "
            "(PitchCommand, PitchFBW, Ka/Kq/Ki over qbar and Mach). Roll and yaw: LateralFBW with Kp/Kip/Kr/Kb/Kib "
            "over qbar and Mach and the ARI gain Kari over alpha. Servos: stabilator +-25 deg 60 deg/s, ailerons "
-           "+-21.5 deg 80 deg/s, rudder +-30 deg 120 deg/s, all 20.2 rad/s.", 700, -60, 700, 50, "blue")
+           "+-21.5 deg 80 deg/s, rudder +-30 deg 120 deg/s, all 20.2 rad/s. StabComp, a phase-compensated rate "
+           "limiter, keeps the stabilator's rate limit from sustaining a pitch oscillation at low speed.", 700, -60, 700, 60, "blue")
     # ---- what the host reads
     d.node("Status", "project:F16Status", 1900, 300, params={"mass": "mass", "g0": num(SI["g0"]),
                                                              "stroke": num(GEAR["stroke_max"])})

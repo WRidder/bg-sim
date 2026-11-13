@@ -77,6 +77,8 @@ reverses as soon as the command does, where a plain rate limiter waits for the c
     yaw     rdr = Kari(alpha) ail + Kr r_wo + Kb (beta - beta_cmd) + xi_b,   xi_b' = Kib (beta - beta_cmd) + anti-windup
             r_wo = rs through a 1 s washout,  beta_cmd = -6 deg per unit pedal
     servos  stabilator +-25 deg 60 deg/s, ailerons +-21.5 deg 80 deg/s, rudder +-30 deg 120 deg/s, all 20.2 rad/s
+    StabComp (ahead of the stabilator servo, e = u - y)
+            y' = clamp(du/dt + (0.5 + 20 w) e + 6 (e - clamp(e, +-12)), +-60 deg/s)
 
 `design/lateral.py` designs the lateral gains at the 5 x 5 points of the pitch schedule (CG 0.38).
 `Kp` and `Kip` place the roll loop at 4 rad/s, damping 0.8. `Kr`, `Kb` and `Kib` come from a joint
@@ -88,6 +90,18 @@ Over the grid, the full law gives a dutch-roll damping of at least 0.6 and a rol
 0.35..0.55 s. The g-error term of the pitch command builds the load factor of a turn in about half
 a second, which cuts the altitude loss of a 60 deg turn over 30 s from about 160 m to 45 m. The
 clamp keeps full-stick pulls from overdriving the alpha limiter.
+
+`StabComp` is the phase-compensated rate limiter of `f16-pio`, between the pitch law and the stabilator
+servo. The pitch gains fall as 1/qbar, so at the low end of the schedule they are large (`Kq` is 3.2 deg
+per deg/s at 80 psf) and below about 150 KEAS a small pitch rate already asks for more than the servo's
+60 deg/s. With a plain rate limit the loop then settles in a limit cycle: at 122 KEAS a tap of 3 % stick
+leaves the stabilator swinging +-22 deg at 60 deg/s, alpha 17 to 20 deg, with the stick centred. With the
+compensator the same tap settles, and a full pull at 153 KEAS peaks at 26 deg of alpha where it swung
+between 18 and 31 deg. The pull-back gain has to stay small (from about 2 1/s the limit cycle is back), but
+a stick reversal at full rate leaves the output up to 20 deg off the command, and at 0.5 1/s that offset
+keeps the stabilator away from the law for seconds: the take-off below pitched up to 80 deg. So the part of
+the error beyond 12 deg is pulled back at 6 1/s. On the wheels (`w`) the gain rises by 20 1/s, a plain rate
+limit, because the stick commands the stabilator directly there.
 
 `design/sim3.py` is the nonlinear three-axis reference: RK4 at 1 ms, the stimulus at the stage
 times, central-difference linearisation. `design/simscen.py` runs the scenarios that
@@ -102,7 +116,7 @@ times, central-difference linearisation. `design/simscen.py` runs the scenarios 
 | full-stick roll | 217 deg/s, limit 219; peak sideslip 1.5 deg | |
 | coordinated 60 deg turn, stick centred, throttle 0.33 | peak sideslip 0.57 deg, 2 g, altitude -45 m in 30 s | cursor values within 0.01 g, 1 m |
 | full-stick roll at 260 ft/s (alpha 15.7 deg) | peak sideslip 3.1 deg about the velocity vector, 7.1 deg about the body axis without ARI | |
-| full aft stick | alpha peak 26.6 deg, 5.7 g | |
+| full aft stick | alpha peak 22.3 deg, 5.1 g | |
 
 `dutch roll` uses the run-check kind `damping`: a damped sinusoid fitted to a signal by variable
 projection (`examples/run_checks.py`).
@@ -179,8 +193,8 @@ geometry. It writes `design/gear.json`, and `build_model.py` turns that into fiv
 | | nose / main wheel load | 22.38 / 34.39 kN | 22.38 / 34.39 kN |
 | taxi at 25 % throttle, then brakes | peak speed | 26.8 m/s | 26.8 m/s |
 | | where it stops | 324.7 m | 324.7 m |
-| take-off, full afterburner | height at 26 s | 516.6 m | 516.6 m |
-| | peak pitch | 32.8 deg | 32.9 deg |
+| take-off, full afterburner | height at 20 s | 220.8 m | 220.8 m |
+| | peak pitch | 37.5 deg | 37.5 deg |
 | landing, no flare | peak main wheel | 113.9 kN | 115.3 kN |
 | | peak nose wheel | 57.4 kN | 57.4 kN |
 | | where it stops | 2205.5 m | 2205.5 m |
@@ -188,7 +202,7 @@ geometry. It writes `design/gear.json`, and `build_model.py` turns that into fiv
 
 Without thrust the analytic rest is 1.6232 m with 20.03 kN (22.0 %) on the nose wheel and 35.56 kN on each main
 wheel. The idle thrust against the brakes moves about 2.3 kN onto the nose wheel. With full afterburner, full
-aft stick at 12 s (152 kt) lifts off at about 87 m/s (170 kt) after 413 m. In the landing the aircraft comes
+aft stick at 12 s (152 kt) lifts off at about 90 m/s (175 kt) after 439 m. In the landing the aircraft comes
 down a 1.9 deg path at 76 m/s at the trim's alpha of 12.9 deg, with no flare, and touches down at 2.13 m/s of
 sink (7 ft/s), 74.9 m/s, 11.4 deg of pitch. The struts compress 10.5 cm (main) and 19.5 cm (nose).
 
@@ -229,13 +243,13 @@ with bg-sim runs that the same inputs drive. The worst deviation is relative to 
 
 | run | worst output | alpha | theta | nz | altitude | main wheel load |
 | --- | --- | --- | --- | --- | --- | --- |
-| pitch doublet | 3.5e-5 (stabilator) | 3.1e-5 deg | 3.7e-5 deg | 1.4e-5 g | 0.1 mm | |
-| roll and roll back | 2.2e-4 (stabilator) | 8.1e-5 deg | 5.1e-5 deg | 5.0e-5 g | 0.4 mm | |
-| coordinated turn | 2.0e-5 (stabilator) | 4.7e-6 deg | 3.4e-6 deg | 1.5e-6 g | 0.1 mm | |
+| pitch doublet | 1.0e-4 (stabilator) | 1.7e-4 deg | 2.2e-4 deg | 5.4e-5 g | 0.7 mm | |
+| roll and roll back | 2.3e-4 (stabilator) | 1.3e-4 deg | 1.3e-4 deg | 6.7e-5 g | 0.8 mm | |
+| coordinated turn | 8.2e-6 (aileron) | 2.8e-6 deg | 2.0e-6 deg | 9.5e-7 g | 0.06 mm | |
 | throttle step and pedals | 1.4e-3 (power) | 1.1e-4 deg | 4.7e-5 deg | 1.1e-5 g | 2 mm | |
 | taxi, steering and brakes in a crosswind | 5.2e-3 (alpha) | 7.4e-3 deg | 4.1e-8 deg | 6.4e-7 g | 2e-8 m | 0.03 N |
-| take-off, gear coming up | 4.4e-3 (rudder) | 0.025 deg | 0.031 deg | 3.4e-3 g | 15 cm | 99 N |
-| landing | 1.1e-2 (stabilator) | 1.3e-3 deg | 1.2e-3 deg | 3.4e-3 g | 0.03 mm | 29 N |
+| take-off, gear coming up | 8.8e-3 (stabilator) | 0.096 deg | 0.13 deg | 9.2e-3 g | 51 cm | 231 N |
+| landing | 1.1e-2 (stabilator) | 1.8e-3 deg | 1.3e-3 deg | 4.5e-3 g | 0.02 mm | 31 N |
 
 The stabilator of the landing is the one number above the 1 % gate. Its peak in that run is small and the
 laws hand over within a few steps of touchdown, so one substep of timing shows; the check takes 0.05 deg
@@ -263,6 +277,9 @@ way, so the check holds it to its own bound. The browser game Island Sortie (`ap
   or below -15 deg, |beta| above 15 deg) is only an indication for the host. The trim globals must
   come from a trim (`design/simscen.py`, or the host's start list): another combination starts out
   of trim.
+* `f16-sim`: the gain schedule ends at 80 psf (154 KEAS at sea level) and the gains are held below it. The
+  small-signal damping of the pitch loop and of the roll/rudder mode falls from about 0.45 there to 0.25..0.3
+  at 110 KEAS. `StabComp` removes the rate-limit limit cycle, not this.
 * Commands change over 0.05 s ramps (the throttle over 0.2 s) rather than steps: a step that
   pushes a saturation across its corner at the same instant makes bg-sim's event handling
   chatter (W206). The engine's RTAU is written as a `clamp` on the two continuous branches for the
@@ -294,7 +311,7 @@ way, so the check holds it to its own bound. The browser game Island Sortie (`ap
 | `design/design.py` | runs everything and writes `design/design.json` |
 | `design/build_model.py` | writes the models, scenes, `library/F16Trail.jl`, the library subsystems `library/F16Airframe.bgsub.json` and `library/F16Servo.bgsub.json`, the copied gear blocks and `expected.json` |
 | `design/make_meshes.py` | writes `meshes/*.glb` |
-| `library/` | the subsystems `F16Airframe` and `F16Servo`; the blocks `F16AirData` (with wind inputs), `F16Forces`, `F16Engine`, `F16Energy`, `GrowthRate`, `GCommand`, `PitchFBW`, `F16View`, `F16Trail`; for f16-sim `PitchCommand`, `LateralFBW`, `F16Status`; for its gear `GearLogic`, `GearActuator`, `GearDrag`, and `GearContact`, `StrutSpring`, `StrutDamper`, `WheelFriction`, `WheelSide` (copies of the Cessna's, written by `build_model.py`) |
+| `library/` | the subsystems `F16Airframe` and `F16Servo`; the blocks `F16AirData` (with wind inputs), `F16Forces`, `F16Engine`, `F16Energy`, `GrowthRate`, `GCommand`, `PitchFBW`, `F16View`, `F16Trail`; for f16-sim `PitchCommand`, `StabComp`, `LateralFBW`, `F16Status`; for its gear `GearLogic`, `GearActuator`, `GearDrag`, and `GearContact`, `StrutSpring`, `StrutDamper`, `WheelFriction`, `WheelSide` (copies of the Cessna's, written by `build_model.py`) |
 | `../export_f16.jl`, `../export_f16_check.py` | the f16-sim FMU: export, references and the fmpy acceptance |
 
     uv run examples/f16/design/design.py

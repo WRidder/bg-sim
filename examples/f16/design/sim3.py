@@ -6,12 +6,13 @@ function per block so each can be compared with its `.jl` source:
     PitchCommand   stick -> g-command with turn compensation, +9/-3 g and alpha limiter
     PitchFBW       u = Ka (alpha - alpha_ref) + Kq (q - kff q_cmd) + xi        (library/PitchFBW.jl)
     LateralFBW     roll-rate command about the velocity vector, yaw damper, ARI, sideslip command
+    StabComp       phase-compensated rate limiter ahead of the stabilator servo (below)
     actuators      travel limit, 20.2 rad/s lag, rate limit (stabilator, ailerons, rudder)
     F16Engine      the book's power-level lag (inside f16_ref, state 13)
 
 State: the book's 13 (ft units) + the three servo positions (deg) + the pitch integrator xi_q,
-the roll integrator xi_p, the sideslip integrator xi_b (deg) and the washout state xw (deg/s):
-20 states. Angles of the laws in deg, rates in deg/s, as in the blocks.
+the roll integrator xi_p, the sideslip integrator xi_b (deg), the washout state xw (deg/s) and the
+two states of the stabilator's rate-limit compensator (deg): 22 states. Angles of the laws in deg, rates in deg/s, as in the blocks.
 
 `run` integrates with fixed-step RK4 (1 ms); the inputs (stick, pedals, throttle, rudder kick)
 are functions of time built from the same 0.05 s ramps as the model's stimulus. `linearise`
@@ -31,13 +32,27 @@ import fbw
 
 RTOD = 180.0 / math.pi
 G0_SI = SI.G0                      # 9.805416 m/s^2: the book's 32.17 ft/s^2
-NX = 20
-I_EL, I_AIL, I_RDR, I_XQ, I_XP, I_XB, I_XW = 13, 14, 15, 16, 17, 18, 19
+NX = 22
+I_EL, I_AIL, I_RDR, I_XQ, I_XP, I_XB, I_XW, I_CY, I_CF = 13, 14, 15, 16, 17, 18, 19, 20, 21
 
 # ---- actuators (Stevens & Lewis, Section 3.6 / Table 3.6-? : first-order 20.2 rad/s lags)
 ACT = {"el": {"pos": 25.0, "rate": 60.0, "w": 20.2},
        "ail": {"pos": 21.5, "rate": 80.0, "w": 20.2},
        "rdr": {"pos": 30.0, "rate": 120.0, "w": 20.2}}
+
+# ---- the stabilator's phase-compensated rate limiter (StabComp.jl; the one of f16-pio):
+#     y' = clamp(du_f/dt + (k + w k_ground) e + k2 dz(e, e0), +-rate),   e = u - y,
+#     du_f/dt = (u - x_f)/tf,  x_f' = du_f/dt,   dz(e, e0) = e - clamp(e, +-e0)
+# Below about 150 KEAS the pitch law's gains are large (Kq is 3.2 deg per deg/s at 80 psf), so a
+# small pitch rate already asks for more than the servo's 60 deg/s. A plain rate limit then lags
+# the command by up to a quarter period and the loop settles in a limit cycle, stabilator
+# +-20 deg at 60 deg/s. The compensator turns round with the command, which takes that lag out.
+# k must stay small (from about 2 1/s the limit cycle is back). But a stick reversal at full rate
+# leaves the output up to 20 deg off the command, and at 0.5 1/s that offset would hold the
+# stabilator away from the law for seconds: a take-off pitched up to 80 deg. So beyond e0 the
+# pull-back is k2. On the wheels (w, only in gear.py) k_ground makes it a plain rate limit, so
+# the direct stick command reaches the stabilator at once.
+STAB_COMP = {"rate": 60.0, "k": 0.5, "k2": 6.0, "e0": 12.0, "k_ground": 20.0, "tf": 0.01}
 
 # ---- pitch command (PitchCommand.jl)
 NZ_PULL = 10.0         # g per unit aft stick: full aft asks for 11 g (the limiter holds 9 g)
@@ -154,6 +169,15 @@ def lateral(cfg, g, X, stick_r, pedal, alpha_deg, beta_deg, p_deg, r_deg, nz, qb
     return ail, rdr, dxp, dxb, dxw, {"ps": ps, "rs": rs, "p_lim": p_lim, "p_cmd": p_cmd, "beta_cmd": beta_cmd}
 
 
+def stab_comp(u, y, xf, w):
+    """StabComp.jl: the rates of its output y and of its filter state xf."""
+    c = STAB_COMP
+    du = (u - xf) / c["tf"]
+    e = u - y
+    pull = (c["k"] + w * c["k_ground"]) * e + c["k2"] * (e - _clamp(e, -c["e0"], c["e0"]))
+    return _clamp(du + pull, -c["rate"], c["rate"]), du
+
+
 def servo(name, u, x):
     a = ACT[name]
     return _clamp(a["w"] * (_clamp(u, -a["pos"], a["pos"]) - x), -a["rate"], a["rate"])
@@ -186,7 +210,8 @@ def rhs(cfg, des, lat, X, inp, alpha_ref):
                                                 nz, qbar_pa, k_ari)
     dX = np.empty(NX)
     dX[:13] = xd
-    dX[I_EL] = servo("el", u, el)
+    dX[I_CY], dX[I_CF] = stab_comp(u, X[I_CY], X[I_CF], 0.0)
+    dX[I_EL] = servo("el", X[I_CY], el)
     dX[I_AIL] = servo("ail", ail, ail_x)
     dX[I_RDR] = servo("rdr", rdr + kick, rdr_x)
     dX[I_XQ], dX[I_XP], dX[I_XB], dX[I_XW] = dxq, dxp, dxb, dxw
@@ -206,6 +231,8 @@ def start_state(tr):
     X[0], X[1], X[4], X[11], X[12] = tr["vt"], tr["alpha"], tr["theta"], tr["h"], tr["power"]
     X[I_EL] = tr["el"]
     X[I_XQ] = tr["el"]
+    X[I_CY] = tr["el"]
+    X[I_CF] = tr["el"]
     return X
 
 

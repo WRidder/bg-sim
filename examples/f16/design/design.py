@@ -138,7 +138,8 @@ def main() -> int:
     import simscen
     out["lat"] = lateral.design(out)
     out["sim_law"] = {"nz_pull": sim3.NZ_PULL, "nz_push": sim3.NZ_PUSH, "nz_min": sim3.NZ_MIN,
-                      "k_nzc": sim3.K_NZC, "nzc_lim": sim3.NZC_LIM}
+                      "k_nzc": sim3.K_NZC, "nzc_lim": sim3.NZC_LIM,
+                      "stab_comp": sim3.STAB_COMP}
     out["sim"] = simscen.run(out)
 
     (HERE / "design.json").write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8", newline="\n")
