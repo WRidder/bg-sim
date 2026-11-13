@@ -138,6 +138,7 @@ It is the same weapon with a host interface:
 - **outputs** (`ExportOutput`): the model-frame pose and quaternion, attitude and path angles, air
   data, rates, mass, thrust, the four fin angles, seeker range/rate, `lock`, `fuze`, `hit`,
   `min_range_m` and `t_go_s`.
+- **tuning**: `design/build_fmu_model.py` sets the weapon loop up for shots well off the nose (`TUNING`): the autopilot's acceleration feedback `K_acc` 20 and rate gain `K_q` 60, guidance from 0.3 s after launch, a 50 ms command lag and 80 % of the lift limit. The other models keep the library defaults (`K_acc` 0, the pure rate command).
 - **parameters** (before initialization): `vt0`, `h0`, `alpha0`, `tvc_on`, `nav_N`, `a_max_g` with
   ranges, one instance per shot. A host sets them to the carrier's speed/altitude and its guidance
   limits; the model has no `StopSimulation`, so the host latches `fuze`/`hit` and retires the

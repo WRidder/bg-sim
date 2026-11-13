@@ -1147,7 +1147,10 @@
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "K_acc": "20.0",
+     "K_q": "60.0"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -1211,7 +1214,9 @@
     },
     "rotation": 0,
     "flipX": false,
-    "params": {},
+    "params": {
+     "t_lock": "0.3"
+    },
     "constants": {},
     "starts": {},
     "ui": {
@@ -1253,7 +1258,10 @@
     "flipX": false,
     "params": {
      "N": "nav_N",
-     "a_max": "a_max_g*9.80665"
+     "a_max": "a_max_g*9.80665",
+     "t_lock": "0.3",
+     "tau_g": "0.05",
+     "a_frac": "0.8"
     },
     "constants": {},
     "starts": {},

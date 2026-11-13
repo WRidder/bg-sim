@@ -21,6 +21,8 @@ The start lists of the F-16, the Cessna and the A109 (`src/<game>/starts.json`) 
 - `npx vitest run` runs the unit tests and the scripted pilots.
 - `node tests/keys.mjs out.png` flies with real key presses against the dev server.
 - `node tests/weapons-keys.mjs out.png` selects Intercept, waits for the lock and fires.
+- `node tests/weapons-perf.mjs` does the same with the frame rate uncapped and prints the frame times round each launch, the long frames and the shader programs built (`PERF_TIER=0` fixes the quality tier, `PERF_SIZE=1920x1080` the window).
+- `node tests/f16-pad.mjs` flies the F-16 with a synthetic gamepad: sticks, bumpers, triggers and buttons.
 - `node tests/cessna-keys.mjs`, `tests/a109-keys.mjs` and `tests/cars-keys.mjs` do the same for the other games.
 
 ## In the game
@@ -31,7 +33,9 @@ The start lists of the F-16, the Cessna and the A109 (`src/<game>/starts.json`) 
 
 In the F-16, `G` works the gear and `B` or `Space` holds the brakes. Start on the runway or on final from the Start list, or come back from anywhere: a landing that stops on the airfield gets a marked sheet. Anywhere else, the ground is still a crash, and so is the runway with the gear up.
 
-The F-16's Intercept mode puts up to three target drones in the play area. `Tab` or `N` selects one; the seeker cue builds a lock in about one second when the target is within 45 degrees of the nose and about 7 km. `M` fires the next AIM-9X (two per sortie), and `Shift+M` toggles the sound. The tactical scope at the top left shows the drones, the selected target and the lock; a hit removes the drone and a replacement enters after four seconds.
+The F-16's Intercept mode puts up to three target drones in the play area. `Tab` or `N` selects one; the seeker cue builds a lock in about one second when the target is within 45 degrees of the nose and about 7 km. `M` fires the next AIM-9X (two per sortie), and `Shift+M` toggles the sound. The tactical scope at the top left shows the drones, the selected target and the lock; a hit removes the drone and a replacement enters after four seconds. A round in flight leaves smoke with a lit and a shaded edge, never thinner than about a pixel, and its motor shows as a point of light while it burns; the HUD puts a caret on each round with its seconds to go (amber and `LOST` once the seeker has lost the target), and the scope shows it as a dot. Not every shot can hit: a target far off the nose at short range, or one that crosses fast, is outside what the round can turn.
+
+The F-16 takes a gamepad with the browser's standard mapping, laid out as in Ace Combat 7 (expert handling): left stick pitch and roll (back is nose up), LB and RB (L1, R1) rudder, RT and LT (R2, L2) throttle up and down with LT also the wheel brakes, right stick to look round, B (Circle) fires, Y (Triangle) takes the next target, R3 changes the view, Start (Options) pauses, and Start or A (Cross) answers a menu. The gear, which that game does not have, is on D-pad down. A flight started from the pad is silent until a key or a click, because a browser does not let a pad button start the sound.
 
 The Cessna and the A109 export only start values, so they have no setup until their exports expose parameters.
 

@@ -11,9 +11,9 @@
     #   lock                 seeker_on and the target inside the field of view and bright enough
     #   ir_target            irradiance of the target (W/m^2)
     #
-    # The LOS rate is *inertial*: the body-frame derivative of the LOS vector plus the body
-    # rate, omega_LOS = d x (v_rel - omega x d) / |d|^2. That is what a stabilised seeker
-    # measures and what proportional navigation needs. The gimbal follows the LOS through a
+    # The LOS rate is *inertial*: omega_LOS = d x v_rel / |d|^2 with the inertial relative
+    # velocity (only resolved in body axes). That is what a stabilised seeker measures and
+    # what proportional navigation needs. The gimbal follows the LOS through a
     # 20 ms lag and a 180 deg/s rate limit; its mechanical stop is a little wider than the
     # 90 deg off-boresight field of view.
     @inputs begin
@@ -43,7 +43,7 @@
         dhat::Vec{3} = [1.0, 0.0, 0.0], [description = "Unit LOS, target"]
         vrel::Vec{3} = [0.0, 0.0, 0.0], [unit = "m/s", description = "Target minus missile velocity, body axes"]
         vw::Vec{3} = [0.0, 0.0, 0.0], [unit = "m/s", description = "Missile velocity, world"]
-        ddot::Vec{3} = [0.0, 0.0, 0.0], [unit = "m/s", description = "Body-frame LOS derivative"]
+        ddot::Vec{3} = [0.0, 0.0, 0.0], [unit = "m/s", description = "Inertial LOS derivative, body axes"]
         lom::Vec{3} = [0.0, 0.0, 0.0], [unit = "1/s", description = "Inertial LOS rate vector"]
         ir_t::Real = 0.0, [unit = "W/m^2"]
         rr::Real = 0.0, [unit = "m/s"]
@@ -92,10 +92,13 @@
         dhat[2] ~ d[2] / r
         dhat[3] ~ d[3] / r
         ir_t ~ I_t / (r * r) * exp(-atten * r)
-        # body-frame LOS derivative: v_rel minus the rotation of the body
-        ddot[1] ~ vrel[1] - (Vm[2] * d[3] - Vm[3] * d[2])
-        ddot[2] ~ vrel[2] - (Vm[3] * d[1] - Vm[1] * d[3])
-        ddot[3] ~ vrel[3] - (Vm[1] * d[2] - Vm[2] * d[1])
+        # inertial LOS derivative, in body axes: the relative velocity alone. Taking the body's
+        # own rotation out of it (v_rel - omega x d) would give the rate as the body sees it,
+        # LOS rate minus body rate, and proportional navigation on that turns the missile no
+        # faster than the line of sight: a tail chase that never leads the target.
+        ddot[1] ~ vrel[1]
+        ddot[2] ~ vrel[2]
+        ddot[3] ~ vrel[3]
         gsum ~ max(r * r, 1.0)
         lom[1] ~ (d[2] * ddot[3] - d[3] * ddot[2]) / gsum
         lom[2] ~ (d[3] * ddot[1] - d[1] * ddot[3]) / gsum

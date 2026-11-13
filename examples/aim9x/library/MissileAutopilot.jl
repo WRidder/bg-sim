@@ -11,7 +11,18 @@
     #
     #     dp = K_q (q_cmd - q_up),        dy = K_q (r_left_cmd - r_left)
     #
-    # with r_left = -r_right. The gain is scheduled on the square root of dynamic pressure:
+    # with r_left = -r_right. That rate is the one of the steady turn only: to *build* the
+    # incidence that makes the lift, the body has to turn faster than the flight path. With the
+    # rate command alone the incidence grows as the integral of (rate - a/Vt), with the
+    # airframe's incidence lag T_alpha = m Vt / (qbar S CN_alpha), which is seconds for this
+    # low-lift-slope body. `K_acc` adds the acceleration error to the command through a
+    # lag `tau_acc`,
+    #
+    #     q_cmd = (a_z_cmd + x_a) / Vt,     tau_acc dx_a/dt = K_acc (a_z_cmd - a_z) - x_a,
+    #
+    # which shortens that lag to about T_alpha / (1 + K_acc). The lag keeps the canards' own
+    # lift, which the accelerometer sees at once, out of the loop. It is 0 by default (the
+    # pure rate command). The gain is scheduled on the square root of dynamic pressure:
     # the canard moment per degree grows with qbar, so the same rate command needs less
     # deflection at high qbar, and the square root keeps the loop gain roughly constant
     # without the wind-up of a 1/qbar schedule at the low-qbar end of a launch.
@@ -42,6 +53,8 @@
         K_i_roll::Real = 8.0, [description = "Roll integrator, deg per rad"]
         p_cmd_max::Real = 4.363323, [unit = "rad/s", description = "Roll-rate command limit (250 deg/s)"]
         K_q::Real = 20.0, [description = "Rate-loop gain, deg per rad/s"]
+        K_acc::Real = 0.0, [min = 0, description = "Acceleration-error feedback into the rate command"]
+        tau_acc::Real = 0.15, [unit = "s", min = 1.0e-6, description = "Lag of the acceleration-error feedback"]
         q_cmd_max::Real = 1.5, [unit = "rad/s", description = "Pitch/yaw rate command limit"]
         dp_max::Real = 16.0, [unit = "deg", description = "Virtual pitch command limit"]
         dy_max::Real = 16.0, [unit = "deg", description = "Virtual yaw command limit"]
@@ -68,6 +81,8 @@
         ty_cmd::Real = 0.0, [unit = "rad"]
         tp_s::Real = 0.0, [unit = "rad", state = :prefer, description = "Rate-limited TVC pitch gimbal"]
         ty_s::Real = 0.0, [unit = "rad", state = :prefer, description = "Rate-limited TVC yaw gimbal"]
+        xa_z::Real = 0.0, [unit = "m/s^2", state = :prefer, description = "Filtered acceleration-error feedback, up"]
+        xa_y::Real = 0.0, [unit = "m/s^2", state = :prefer, description = "Filtered acceleration-error feedback, left"]
         ez::Real = 0.0, [unit = "m/s^2"]
         ey::Real = 0.0, [unit = "m/s^2"]
     end
@@ -97,8 +112,10 @@
         ey ~ a_y_cmd - a_y
         roll_err ~ atan(sin(roll_cmd - phi), cos(roll_cmd - phi))
         p_cmd ~ clamp(K_phi * roll_err, -p_cmd_max, p_cmd_max)
-        q_cmd ~ clamp(a_z_cmd / max(vt, 100.0), -q_cmd_max, q_cmd_max)
-        r_cmd ~ clamp(a_y_cmd / max(vt, 100.0), -q_cmd_max, q_cmd_max)
+        ddt(xa_z) ~ (K_acc * ez - xa_z) / tau_acc
+        ddt(xa_y) ~ (K_acc * ey - xa_y) / tau_acc
+        q_cmd ~ clamp((a_z_cmd + xa_z) / max(vt, 100.0), -q_cmd_max, q_cmd_max)
+        r_cmd ~ clamp((a_y_cmd + xa_y) / max(vt, 100.0), -q_cmd_max, q_cmd_max)
         dr_raw ~ sched * K_p_roll * (p_cmd - p) + xi_r
         dp_raw ~ sched * K_q * (q_cmd - q_up)
         dy_raw ~ sched * K_q * (r_cmd + r_right)

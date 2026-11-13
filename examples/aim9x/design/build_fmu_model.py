@@ -18,7 +18,8 @@ reusable FMU:
   instance);
 * the pose, attitude, air data, fin angles, thrust and fuze status are `ExportOutput`
   markers, so the FMU has the interface `examples/export_aim9x.jl` builds;
-* the launch state stays in the globals `vt0`, `h0`, `alpha0`, `tvc_on`, `nav_N`, `a_max_g`.
+* the launch state stays in the globals `vt0`, `h0`, `alpha0`, `tvc_on`, `nav_N`, `a_max_g`;
+* the autopilot, guidance and seeker get the off-boresight settings in `TUNING`.
 
 The model is generated from `aim9x-intercept`, so run `build_model.py` first. The scene is
 not part of the FMU model.
@@ -34,6 +35,17 @@ MODELS = ROOT / "models"
 SOURCE = MODELS / "aim9x-intercept.bgmodel.json"
 DEST = MODELS / "aim9x-fmu.bgmodel.json"
 PROJECT = ROOT / "bgsim.project.json"
+
+# The intercept example flies one head-on shot; the host fires at whatever the pilot has locked,
+# well off the nose. For that the weapon loop is set up tighter: the autopilot feeds the
+# acceleration error back (the pure rate command takes seconds to build incidence on this
+# airframe), the rate loop holds a turn against the static stability, guidance starts as soon as
+# the round is clear of the rail and may use more of the lift there is.
+TUNING = {
+    "AP": {"K_acc": "20.0", "K_q": "60.0"},
+    "Guide": {"t_lock": "0.3", "tau_g": "0.05", "a_frac": "0.8"},
+    "Seeker": {"t_lock": "0.3"},
+}
 
 TARGET_GLOBALS = {"tgt_x", "tgt_y", "tgt_z", "tgt_v", "tgt_psi", "turn_rate", "turn_t"}
 
@@ -102,6 +114,9 @@ def main() -> int:
         if node is not None:
             nodes.remove(node)
             conns[:] = [c for c in conns if node["id"] not in (c["from"]["node"], c["to"]["node"])]
+
+    for name, params in TUNING.items():
+        by_name[name]["params"].update(params)
 
     conns[:] = [c for c in conns
                 if not (ids.get(c["from"]["node"]) == "Air" and ids.get(c["to"]["node"]) == "Target")]

@@ -17,16 +17,24 @@ export interface JetSound {
   inside: number;
 }
 
-function noiseBuffer(context: AudioContext, seconds: number): AudioBuffer {
-  const buffer = context.createBuffer(2, context.sampleRate * seconds, context.sampleRate);
-  for (let channel = 0; channel < 2; channel += 1) {
-    const data = buffer.getChannelData(channel);
+const NOISE_RATE = 44100;
+
+/** Brown noise, two channels. Made when the game loads: at the first click it would hold up a frame. */
+function brownNoise(seconds: number): Float32Array<ArrayBuffer>[] {
+  return [0, 1].map(() => {
+    const data = new Float32Array(NOISE_RATE * seconds);
     let brown = 0;
     for (let i = 0; i < data.length; i += 1) {
       brown = (brown + 0.02 * (Math.random() * 2 - 1)) / 1.02;
       data[i] = brown * 3.5;
     }
-  }
+    return data;
+  });
+}
+
+function noiseBuffer(context: AudioContext, channels: Float32Array<ArrayBuffer>[]): AudioBuffer {
+  const buffer = context.createBuffer(channels.length, channels[0].length, NOISE_RATE);
+  channels.forEach((data, channel) => buffer.copyToChannel(data, channel));
   return buffer;
 }
 
@@ -37,23 +45,38 @@ export class Sound {
   private warningAt = 0;
   muted = false;
 
+  /**
+   * Opens the sound card ahead of time, silent: a browser lets a page make the context before a
+   * click and only keeps it from playing. Opening it takes a few frames, which a game would
+   * rather spend behind its loading screen than at the first click.
+   */
+  prepare(): void {
+    if (!this.context) {
+      this.open();
+    }
+  }
+
   /** Call from a click or a key press: a browser allows sound from nothing else. */
   start(): void {
-    if (this.context) {
-      void this.context.resume();
-      return;
+    if (!this.context) {
+      this.open();
     }
+    void (this.context as AudioContext).resume();
+  }
+
+  private open(): void {
     const context = new AudioContext();
     this.context = context;
     this.master = context.createGain();
     const limiter = context.createDynamicsCompressor();
     this.master.connect(limiter).connect(context.destination);
     this.master.gain.value = 0.7;
-    this.noise = noiseBuffer(context, 4);
+    this.noise = noiseBuffer(context, this.samples);
     this.build(context);
   }
 
   private noise!: AudioBuffer;
+  private readonly samples = brownNoise(4);
 
   /** Sets up the voice: the context exists from here on. */
   protected build(_context: AudioContext): void {}

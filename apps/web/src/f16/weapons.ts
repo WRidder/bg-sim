@@ -40,7 +40,7 @@ export interface MissileMesh {
   root: THREE.Group;
   fins: THREE.Group[];
   plume: THREE.Mesh;
-  flash: THREE.Mesh;
+  glow: THREE.Points;
 }
 
 /** One round in the body frame (x forward, y left, z up, origin at the CG). */
@@ -91,14 +91,22 @@ export function buildMissile(): MissileMesh {
   plume.visible = false;
   root.add(plume);
 
-  const flash = new THREE.Mesh(
-    new THREE.SphereGeometry(1.0, 12, 8),
-    new THREE.MeshBasicMaterial({ color: 0xff8a24, transparent: true, opacity: 0.8, depthWrite: false }),
+  // The motor seen from far off: a point of light a few pixels across whatever the distance,
+  // bright enough to bloom. A burning rocket motor is visible for kilometres; the round is not.
+  const glowGeometry = new THREE.BufferGeometry();
+  glowGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([-1.6, 0, 0]), 3));
+  const glow = new THREE.Points(
+    glowGeometry,
+    new THREE.PointsMaterial({
+      color: new THREE.Color(9, 4.2, 1.2), size: 5, sizeAttenuation: false,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    }),
   );
-  flash.visible = false;
-  root.add(flash);
+  glow.frustumCulled = false;
+  glow.visible = false;
+  root.add(glow);
 
-  return { root, fins, plume, flash };
+  return { root, fins, plume, glow };
 }
 
 // The canard geometry is shared; each hinge gets its own mesh.
@@ -142,24 +150,55 @@ export function buildDrone(): DroneMesh {
   return { root };
 }
 
+/** The smoke: a point every `TRAIL_STEP` seconds, so it hangs in the air for about ten. */
+const TRAIL_POINTS = 240;
+const TRAIL_STEP = 0.04;
+/** About a pixel and a half on a 1080-line screen. */
+const TRAIL_MIN_ANGLE = 0.0014;
+
 export class MissileView {
   readonly mesh = buildMissile();
   private readonly q = new THREE.Quaternion();
-  private readonly trail = new Trail(100, 0.2, new THREE.Color(0.72, 0.75, 0.8), 0.42);
+  private readonly at = new THREE.Vector3();
+  // Lit on one edge, in its own shade on the other: it reads against the sky and against the land.
+  private readonly trail = new Trail(
+    TRAIL_POINTS, 0.3, new THREE.Color(1.5, 1.5, 1.52), 0.7, TRAIL_MIN_ANGLE, new THREE.Color(0.1, 0.11, 0.13),
+  );
+  /** Trail points laid since the round was spent. */
+  private spent = 0;
+  private since = TRAIL_STEP;
 
   constructor(parent: THREE.Scene) {
     parent.add(this.mesh.root, this.trail.mesh);
-    this.mesh.root.visible = false;
+    this.hide();
   }
 
-  update(missile: Missile, elapsed: number, eye: THREE.Vector3): void {
+  /**
+   * Draws the round, `dt` seconds on; true once it is spent and its smoke has faded, when the
+   * view is free again.
+   */
+  update(missile: Missile, eye: THREE.Vector3, dt: number): boolean {
     if (!missile.active) {
       this.mesh.root.visible = false;
-      return;
+      return false;
     }
     this.mesh.root.visible = !missile.done;
-    const at = missile.worldPosition();
-    this.trail.add(at, missile.done ? 0 : 1.0);
+    this.trail.mesh.visible = true;
+    if (this.spent > TRAIL_POINTS) {
+      return true;
+    }
+    const at = missile.worldPosition(this.at);
+    const burning = missile.thrust > 1 && !missile.done;
+    this.since += dt;
+    if (this.since >= TRAIL_STEP) {
+      this.since = 0;
+      // Thick smoke while the motor burns, a thin wake after it: the round coasts most of the way.
+      this.trail.add(at, missile.done ? 0 : burning ? 1 : 0.4);
+      this.spent = missile.done ? this.spent + 1 : 0;
+    } else if (!missile.done) {
+      this.trail.move(at);
+    }
+    this.mesh.glow.visible = burning;
     this.trail.update(eye);
     this.mesh.root.position.copy(at);
     this.mesh.root.quaternion.copy(missile.worldQuaternion(this.q));
@@ -175,18 +214,16 @@ export class MissileView {
     } else {
       this.mesh.plume.visible = false;
     }
-    if (missile.justHit && elapsed < 0.8) {
-      this.mesh.flash.visible = true;
-      this.mesh.flash.scale.setScalar(1 + 3 * elapsed);
-      (this.mesh.flash.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - elapsed / 0.8);
-    } else {
-      this.mesh.flash.visible = false;
-    }
+    return false;
   }
 
-  destroy(): void {
-    this.mesh.root.removeFromParent();
-    this.trail.mesh.removeFromParent();
+  /** Out of the picture, ready for the next round. */
+  hide(): void {
+    this.mesh.root.visible = false;
+    this.trail.mesh.visible = false;
+    this.trail.clear();
+    this.spent = 0;
+    this.since = TRAIL_STEP;
   }
 }
 
@@ -194,8 +231,11 @@ export class DroneView {
   readonly mesh = buildDrone();
   private readonly q = new THREE.Quaternion();
 
+  private readonly turn = new THREE.Quaternion();
+
   constructor(parent: THREE.Scene) {
     parent.add(this.mesh.root);
+    this.hide();
   }
 
   update(drone: Drone): void {
@@ -206,11 +246,11 @@ export class DroneView {
     this.mesh.root.position.set(drone.east, drone.alt, -drone.north);
     // A drone heading h has its body x along north*cos(h) + east*sin(h).
     attitude(1, 0, 0, 0, this.q);
-    this.q.premultiply(new THREE.Quaternion().setFromAxisAngle(UP, -drone.heading * DEG));
+    this.q.premultiply(this.turn.setFromAxisAngle(UP, -drone.heading * DEG));
     this.mesh.root.quaternion.copy(this.q);
   }
 
-  destroy(): void {
-    this.mesh.root.removeFromParent();
+  hide(): void {
+    this.mesh.root.visible = false;
   }
 }

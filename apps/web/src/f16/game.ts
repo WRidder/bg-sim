@@ -8,7 +8,7 @@ import { JetVoice } from "../engine/audio";
 import { Rig, VIEWS } from "../engine/camera";
 import { Burst, Trail } from "../engine/effects";
 import { attitude } from "../engine/frames";
-import { Controls, STANDARD_PAD } from "../engine/input";
+import { ACE_BUTTONS, ACE_PAD, Controls, PAD, PadState } from "../engine/input";
 import { coastOutline, type ScreenPoint } from "../engine/overlay";
 import { Stage } from "../engine/stage";
 import { SideBar } from "../engine/side";
@@ -29,7 +29,7 @@ import { MissileSystem } from "./missiles";
 import { DroneView, MissileView } from "./weapons";
 import { SeekerView } from "./seeker";
 import { F16_KNOBS, f16Panel } from "./telemetry";
-import { Hud, type HudView, warnings } from "./hud";
+import { Hud, type HudView, type Shot, warnings } from "./hud";
 import starts from "./starts.json";
 
 const q = new URLSearchParams(location.search);
@@ -86,6 +86,7 @@ async function main(): Promise<void> {
   stage.resize();
   const outline = coastOutline(field.heights, field.size, field.extent);
   const sound = new JetVoice();
+  const pad = new PadState();
   const controls = new Controls(
     {
       pull: ["ArrowDown", "KeyS"],
@@ -97,16 +98,22 @@ async function main(): Promise<void> {
       throttleUp: ["PageUp", "Equal", "NumpadAdd"],
       throttleDown: ["PageDown", "Minus", "NumpadSubtract"],
     },
-    STANDARD_PAD,
+    ACE_PAD,
+    undefined,
+    pad,
+    ACE_BUTTONS,
   );
 
   const flight = await Flight.create(ground, STARTS[0]);
   const targets = new DroneManager(ground);
   const lock = new LockOn();
   const weapons = await MissileSystem.create();
-  const seeker = new SeekerView(renderer, $("seeker"), stage.world, stage.near);
+  const seeker = new SeekerView(renderer, pipeline, $("seeker"), stage.world, stage.near);
+  // The drones and rounds are built now and used again, so a launch or a kill builds nothing.
   const droneViews = new Map<number, DroneView>();
   const missileViews = new Map<number, MissileView>();
+  const spareDrones = [new DroneView(near), new DroneView(near), new DroneView(near)];
+  const spareMissiles = [new MissileView(near), new MissileView(near), new MissileView(near), new MissileView(near)];
   const side = new SideBar("f16", (left, right) => hud.room(left, right));
   const telemetry = new Telemetry(side, f16Panel(flight));
   new Setup(side).use(flight.tuning, "Aircraft setup", F16_KNOBS);
@@ -163,10 +170,12 @@ async function main(): Promise<void> {
 
   const clearWeaponViews = (): void => {
     for (const view of droneViews.values()) {
-      view.destroy();
+      view.hide();
+      spareDrones.push(view);
     }
     for (const view of missileViews.values()) {
-      view.destroy();
+      view.hide();
+      spareMissiles.push(view);
     }
     droneViews.clear();
     missileViews.clear();
@@ -266,6 +275,65 @@ async function main(): Promise<void> {
     }
   };
 
+  const nextView = (): void => {
+    rig.view = VIEWS[(VIEWS.indexOf(rig.view) + 1) % VIEWS.length];
+    rig.snap();
+  };
+
+  /**
+   * The buttons of a gamepad, laid out as in Ace Combat 7: Circle (B) fires, Triangle (Y) takes the
+   * next target, R3 changes the view, Options (Start) pauses. Cross (A) also answers a menu. The
+   * gear is not in that game; it is on D-pad down.
+   */
+  const padButtons = (): void => {
+    pad.update();
+    if (!pad.connected) {
+      return;
+    }
+    const start = pad.pressed(PAD.START);
+    if (phase === "title" || phase === "over") {
+      if (start || pad.pressed(PAD.A)) {
+        sound.start();
+        begin();
+      }
+      return;
+    }
+    if (phase === "paused") {
+      if (start || pad.pressed(PAD.A)) {
+        show("flying");
+      }
+      return;
+    }
+    if (start) {
+      show("paused");
+      return;
+    }
+    if (pad.pressed(PAD.B)) {
+      fireWeapon();
+    }
+    if (pad.pressed(PAD.Y) && mode === "intercept") {
+      lock.cycle(targets);
+    }
+    if (pad.pressed(PAD.R3)) {
+      nextView();
+    }
+    if (pad.pressed(PAD.DOWN)) {
+      flight.toggleGear();
+    }
+  };
+
+  /** The right stick looks round the aircraft, and lets go like the mouse does. */
+  const padLook = (dt: number): void => {
+    const x = pad.axis(2);
+    const y = pad.axis(3);
+    if (x === 0 && y === 0) {
+      return;
+    }
+    const follow = Math.min(1, dt * 10);
+    rig.azimuth += (-x * 2.8 - rig.azimuth) * follow;
+    rig.elevation += (THREE.MathUtils.clamp(-y * 1.1, -1.3, 1.3) - rig.elevation) * follow;
+  };
+
   const brakeKeys = new Set<string>();
   addEventListener("keydown", (event) => {
     if (event.code === "KeyB" || event.code === "Space") {
@@ -274,6 +342,9 @@ async function main(): Promise<void> {
     }
     if (event.repeat) {
       return;
+    }
+    if (phase !== "title") {
+      sound.start();   // a flight begun from the gamepad is silent until a key or a click allows sound
     }
     if (phase === "flying" && (event.code === "KeyP" || event.code === "Escape")) {
       show("paused");
@@ -284,8 +355,7 @@ async function main(): Promise<void> {
     } else if (phase === "flying" && event.code === "KeyG") {
       flight.toggleGear();
     } else if (event.code === "KeyC") {
-      rig.view = VIEWS[(VIEWS.indexOf(rig.view) + 1) % VIEWS.length];
-      rig.snap();
+      nextView();
     } else if (event.code === "Tab" || event.code === "KeyN") {
       if (phase === "flying" && mode === "intercept") {
         event.preventDefault();
@@ -374,6 +444,7 @@ async function main(): Promise<void> {
     const dt = Math.min(interval / 1000, 0.1);
     stage.judge(interval);
     requestAnimationFrame(frame);
+    padButtons();
 
     if (phase === "title") {
       flyOrbit(flight, TITLE_ORBIT, 190, ground);
@@ -386,7 +457,9 @@ async function main(): Promise<void> {
       controls.update(dt);
       const v = controls.value;
       flight.setControls(v.pitch, v.roll, v.yaw, v.throttle);
-      flight.setBrakes(brakeKeys.size > 0 ? 1 : 0);
+      // The left trigger takes the throttle off, and on the ground it is the brakes as well.
+      flight.setBrakes(brakeKeys.size > 0 ? 1 : pad.value(PAD.LT));
+      padLook(dt);
     }
     if (phase !== "paused") {
       time += dt;
@@ -403,7 +476,7 @@ async function main(): Promise<void> {
             const target = targets.byId(missile.targetId);
             if (target) {
               targets.kill(missile.targetId);
-              burst.fire(new THREE.Vector3(target.east, target.alt, -target.north));
+              burst.fire(tip.set(target.east, target.alt, -target.north));
             }
           }
         }
@@ -503,33 +576,56 @@ async function main(): Promise<void> {
     if (mode === "intercept" && phase !== "title") {
       for (const drone of targets.drones) {
         let view = droneViews.get(drone.id);
+        if (!drone.alive) {
+          if (view) {
+            view.hide();
+            spareDrones.push(view);
+            droneViews.delete(drone.id);
+          }
+          continue;
+        }
         if (!view) {
-          view = new DroneView(near);
+          view = spareDrones.pop() ?? new DroneView(near);
           droneViews.set(drone.id, view);
         }
         view.update(drone);
       }
-      for (const missile of weapons.live) {
+      for (let k = weapons.live.length - 1; k >= 0; k -= 1) {
+        const missile = weapons.live[k];
         let view = missileViews.get(missile.id);
         if (!view) {
-          view = new MissileView(near);
+          view = spareMissiles.pop() ?? new MissileView(near);
           missileViews.set(missile.id, view);
         }
-        view.update(missile, time, camera.position);
+        // A spent round stays until its smoke has faded, then gives its mesh back.
+        if (view.update(missile, camera.position, phase === "paused" ? 0 : dt)) {
+          view.hide();
+          spareMissiles.push(view);
+          missileViews.delete(missile.id);
+          weapons.retire(missile);
+        }
       }
     }
 
     telemetry.update(dt, phase === "flying" && !flight.crashed ? "running" : phase === "title" ? "hidden" : "frozen");
     stage.render(position, time);
-    const live = mode === "intercept" ? weapons.active().filter((missile) => !missile.done) : [];
-    seeker.render(live.length > 0 ? live[live.length - 1] : null);
-    const seekerMissile = live.length > 0 ? live[live.length - 1] : null;
+    const seekerMissile = mode === "intercept" ? weapons.newest() : null;
+    seeker.render(seekerMissile);
     const seekerDrone = seekerMissile ? targets.byId(seekerMissile.targetId) : null;
     const seekerMark = seekerMissile && seekerDrone ? seeker.project(seekerDrone) : null;
 
     if (phase === "flying") {
       const gate = run.next();
       const selected = targets.byId(lock.selectedId);
+      const shots: Shot[] = [];
+      if (mode === "intercept") {
+        for (const missile of weapons.live) {
+          if (missile.active && !missile.done) {
+            const at = missile.worldPosition(tip);
+            shots.push({ north: -at.z, east: at.x, onScreen: screen(at), timeToGo: missile.timeToGo, tracking: missile.tracking || missile.time < 0.6 });
+          }
+        }
+      }
       const view: HudView = {
         cockpit: rig.view === "cockpit",
         fov: camera.fov,
@@ -539,9 +635,10 @@ async function main(): Promise<void> {
         targetRange: lock.rangeM,
         lock: mode === "intercept" ? lock.state() : null,
         contacts: mode === "intercept" ? targets.contacts(lock.selectedId, lock.locked) : [],
-        seeker: live.length > 0,
+        seeker: seekerMissile !== null,
         seekerMark,
         reload: weapons.reloading ? weapons.reloadLeft : null,
+        shots,
       };
       if (flight.crashed) {
         hud.clear();
@@ -569,6 +666,11 @@ async function main(): Promise<void> {
     }
   };
 
+  // Every shader the sortie can need is built behind the loading screen: the rounds, the drones
+  // and the fireball are not drawn until they are used, and would stop the frame that needs them.
+  await stage.warm();
+  seeker.prepare(camera);
+  sound.prepare();
   $("loading").hidden = true;
   attract();
   show("title");

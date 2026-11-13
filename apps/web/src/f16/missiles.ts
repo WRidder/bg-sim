@@ -1,5 +1,5 @@
 /**
- * The AIM-9X FMU on the browser side. Each wingtip is one `Fmu` instance and one `Missile`
+ * The AIM-9X FMU on the browser side. Each round in flight is one `Fmu` instance and one `Missile`
  * (a `Sim` view of it); the host gives the missile a launch frame and the target's launch-relative
  * NED position/velocity every 5 ms. The FMU has no fuze stop: the first `fuze`/`hit` retires the
  * shot in the game, the same as in the desktop host.
@@ -20,7 +20,7 @@ export const MISSILE_INPUTS = [
 export const MISSILE_OUTPUTS = [
   "north_m", "west_m", "alt_m", "q_w", "q_x", "q_y", "q_z", "thrust_n",
   "fin1_deg", "fin2_deg", "fin3_deg", "fin4_deg", "fuze", "hit", "range_m",
-  "min_range_m", "lock", "mass_kg", "vt_mps", "alpha_deg", "beta_deg",
+  "min_range_m", "lock", "mass_kg", "vt_mps", "alpha_deg", "beta_deg", "t_go_s",
 ] as const;
 export type MissileOutput = (typeof MISSILE_OUTPUTS)[number];
 
@@ -34,6 +34,7 @@ export interface LaunchFrame {
 const DEG = Math.PI / 180;
 const IR_W = 1e6;
 const UP = new THREE.Vector3(0, 1, 0);
+const TURN = new THREE.Quaternion();
 
 /** The target in the FMU's launch-relative NED frame (down is absolute, -altitude). */
 export function targetInput(frame: LaunchFrame, target: Drone): number[] {
@@ -115,14 +116,14 @@ export class Missile extends Sim<MissileOutput> {
     }
   }
 
-  worldPosition(): THREE.Vector3 {
-      const [north, east, alt] = localToWorld(
+  worldPosition(into = new THREE.Vector3()): THREE.Vector3 {
+    const [north, east, alt] = localToWorld(
       this.frame,
       this.between("north_m"),
       this.between("west_m"),
       this.between("alt_m"),
     );
-    return new THREE.Vector3(east, alt, -north);
+    return into.set(east, alt, -north);
   }
 
   worldQuaternion(into: THREE.Quaternion): THREE.Quaternion {
@@ -133,8 +134,22 @@ export class Missile extends Sim<MissileOutput> {
       -this.between("q_z"),
       into,
     );
-    into.premultiply(new THREE.Quaternion().setFromAxisAngle(UP, -this.frame.heading * DEG));
+    into.premultiply(TURN.setFromAxisAngle(UP, -this.frame.heading * DEG));
     return into;
+  }
+
+  uses(fmu: Fmu): boolean {
+    return this.fmu === fmu;
+  }
+
+  /** Seconds to the target at the present closing speed, as the round's own guidance has it. */
+  get timeToGo(): number {
+    return this.get("t_go_s");
+  }
+
+  /** True while the seeker holds the target. */
+  get tracking(): boolean {
+    return this.get("lock") > 0.5;
   }
 
   get thrust(): number {
@@ -150,7 +165,7 @@ export const RELOAD_DELAY = 5;
 
 export class MissileSystem {
   private constructor(
-    private readonly fmu: readonly [Fmu, Fmu],
+    private readonly fmus: readonly Fmu[],
   ) {}
 
   /** The loaded rounds; a slot is null while it is being reloaded or was fired. */
@@ -161,7 +176,9 @@ export class MissileSystem {
   private reloadIn: number | null = null;
 
   static async create(): Promise<MissileSystem> {
-    return new MissileSystem([await Fmu.load(missileModel), await Fmu.load(missileModel)]);
+    // More instances than wingtips: a round can still be flying when its wingtip is loaded again,
+    // and each round in flight needs an instance of its own.
+    return new MissileSystem(await Promise.all([0, 1, 2, 3].map(() => Fmu.load(missileModel))));
   }
 
   reset(): void {
@@ -202,7 +219,11 @@ export class MissileSystem {
     if (this.shots[side] !== null) {
       return null;
     }
-    const missile = new Missile(this.fmu[side]);
+    const fmu = this.fmus.find((candidate) => !this.live.some((round) => round.uses(candidate) && !round.done));
+    if (!fmu) {
+      return null;
+    }
+    const missile = new Missile(fmu);
     missile.fire(this.nextId, frame, target, speed, side);
     this.nextId += 1;
     this.shots[side] = missile;
@@ -229,5 +250,23 @@ export class MissileSystem {
 
   active(): Missile[] {
     return this.live.filter((missile) => missile.active && !missile.done);
+  }
+
+  /** The last round fired that is still flying. */
+  newest(): Missile | null {
+    for (let i = this.live.length - 1; i >= 0; i -= 1) {
+      if (this.live[i].active && !this.live[i].done) {
+        return this.live[i];
+      }
+    }
+    return null;
+  }
+
+  /** Forgets a spent round once the game no longer draws it. */
+  retire(missile: Missile): void {
+    const at = this.live.indexOf(missile);
+    if (at >= 0) {
+      this.live.splice(at, 1);
+    }
   }
 }

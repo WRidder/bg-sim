@@ -31,6 +31,19 @@ export interface HudView {
   seekerMark: SeekerMark | null;
   /** Seconds left before the wingtips reload, or null. */
   reload: number | null;
+  /** The rounds in flight. */
+  shots: readonly Shot[];
+}
+
+/** A round in flight, as the aircraft's weapon system follows it. */
+export interface Shot {
+  north: number;
+  east: number;
+  onScreen: ScreenPoint;
+  /** Seconds to the target. */
+  timeToGo: number;
+  /** False once the seeker has lost the target: the round is ballistic. */
+  tracking: boolean;
 }
 
 export function warnings(f: Flight): string[] {
@@ -103,6 +116,32 @@ export class Hud extends Overlay {
     this.text(`${(range / 1000).toFixed(1)} km`, ax, ay + 30 * this.scale, 13, "center", color);
   }
 
+  /**
+   * The rounds in flight: a small caret where each one is, with the seconds it has to go. A round
+   * is out of sight within a second or two; this is the weapon system's own track of it.
+   */
+  private shotMarkers(shots: readonly Shot[]): void {
+    const c = this.c;
+    const r = 7 * this.scale;
+    for (const shot of shots) {
+      const g = shot.onScreen;
+      const x = g.x * this.width;
+      const y = g.y * this.height;
+      if (!g.ahead || x < 0 || x > this.width || y < 0 || y > this.height) {
+        continue;
+      }
+      const colour = shot.tracking ? GREEN : AMBER;
+      c.strokeStyle = colour;
+      c.beginPath();
+      c.moveTo(x - r, y + r);
+      c.lineTo(x, y);
+      c.lineTo(x + r, y + r);
+      c.stroke();
+      const seconds = shot.timeToGo < 60 ? `${shot.timeToGo.toFixed(1)} s` : "";
+      this.text(shot.tracking ? seconds : "LOST", x, y + r + 14 * this.scale, 12, "center", colour);
+    }
+  }
+
   /** The seeker state, above the gate clock. */
   private lockText(lock: LockState | null, seeker: boolean): void {
     if (!lock) {
@@ -122,7 +161,7 @@ export class Hud extends Overlay {
   }
 
   /** A 12 km tactical scope above the throttle: own ship in green, drones red, lock green. */
-  private tactical(north: number, east: number, heading: number, contacts: readonly Contact[]): void {
+  private tactical(north: number, east: number, heading: number, contacts: readonly Contact[], shots: readonly Shot[]): void {
     if (contacts.length === 0) {
       return;
     }
@@ -180,6 +219,15 @@ export class Hud extends Overlay {
         c.arc(px, py, 10 * this.scale, 0, Math.PI * 2);
         c.stroke();
       }
+    }
+    // The rounds in flight: small dots.
+    for (const shot of shots) {
+      const dx = (shot.east - east) * perMetre;
+      const dy = -(shot.north - north) * perMetre;
+      c.fillStyle = shot.tracking ? GREEN : AMBER;
+      c.beginPath();
+      c.arc(cx + dx, cy + dy, 2 * this.scale, 0, Math.PI * 2);
+      c.fill();
     }
     // Own ship: a triangle pointing along the heading.
     const radians = (heading * Math.PI) / 180;
@@ -353,7 +401,8 @@ export class Hud extends Overlay {
     }
     this.lockText(view.lock, view.seeker);
     this.reloadText(view.reload);
-    this.tactical(f.north(), f.east(), f.heading(), view.contacts);
+    this.shotMarkers(view.shots);
+    this.tactical(f.north(), f.east(), f.heading(), view.contacts, view.shots);
     this.seekerTarget(view.seekerMark);
     if (f.run.active) {
       this.gateClock(f.run.time, f.run.gates.filter((g) => g.passed).length, f.run.gates.length, f.run.missed());
