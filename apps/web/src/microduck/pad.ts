@@ -193,7 +193,7 @@ export interface InputState {
 }
 
 export class DuckInput {
-  mode: PadMode = "drive";
+  mode: PadMode = "headDrive";
   private readonly held = new Set<string>();
   private readonly pressedKeys: string[] = [];
   private keySticks: Sticks = { lx: 0, ly: 0, rx: 0, ry: 0 };
