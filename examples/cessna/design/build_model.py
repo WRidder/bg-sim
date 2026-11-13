@@ -917,7 +917,7 @@ def expected_sim() -> dict:
                          "brake_l": {"min": 0.0, "max": 0.5}, "brake_r": {"min": 0.0, "max": 0.5},
                          "wind_n": {"min": -2.0, "max": 2.0}, "wind_e": {"min": -2.0, "max": 2.0}},
               "interface": {"inputs": [m for m, _, _ in SIM_INPUTS], "outputs": [m for m, _, _ in SIM_OUTPUT_SOURCES]},
-              "note": "the FMU of apps/cessna-sim; its own acceptance is examples/export_cessna_check.py"}
+              "note": "the FMU of apps/web; its own acceptance is examples/export_cessna_check.py"}
     out = {"cessna-sim": {"checks": checks, "export": export}}
     # ---- the autopilot: heading and altitude hold from a trimmed 95 KCAS at 1000 m
     ap = SIMD["ap"]

@@ -13,4 +13,4 @@ The analysis picks RK4 at 2.5 ms, 2 substeps per 5 ms communication step. A step
 - every output agrees to about 1e-4 of its peak;
 - the exception is the stall flag, whose threshold switch the FMU evaluates once per step.
 
-The host `apps/cessna-sim` flies the FMU. It is a Panda3D world with an airfield and has three cameras (chase, cockpit, tower) and a six-pack panel. Input comes from the keyboard, a joystick, pedals or a throttle quadrant.
+The browser game Short Final (`apps/web` in the repository) flies the FMU, compiled to WebAssembly.

@@ -262,7 +262,7 @@ The buggy at 8 m/s over rolling hills: an analytic height field $h(x, y) = \sum_
 
 ![The model canvas|900](@fig:diagram)
 
-A second `TerrainSurface`, [TerrainProbe](block:TerrainProbe), evaluates the terrain at the point where the FL tyre says it touches ([FL/Tyre/zc](signal:FL/Tyre/zc)): the two heights agree to a few micrometres. The same table (`design/hills.json`) draws the hills in the 3D view and in the `apps/car-sim` host.
+A second `TerrainSurface`, [TerrainProbe](block:TerrainProbe), evaluates the terrain at the point where the FL tyre says it touches ([FL/Tyre/zc](signal:FL/Tyre/zc)): the two heights agree to a few micrometres. The same table (`design/hills.json`) draws the hills in the 3D view and in the `apps/web` host.
 
 ![3D view at t = 12 s|600](@fig:scene)
 
@@ -281,7 +281,7 @@ After the drop onto the terrain (the first 0.5 s) the contact point lies on the 
 @@ page racecar-sim overview - | Overview
 # Race car: the FMU source
 
-The race car with the interface of the `apps/car-sim` driving simulator, on the race track (flat, z = 0).
+The race car with the interface of the `apps/web` driving simulator, on the race track (flat, z = 0).
 
 ![The model canvas|900](@fig:diagram)
 
@@ -300,7 +300,7 @@ Export it with `julia --project=julia/BGSim examples/export_cars.jl <out> raceca
 @@ page buggy-sim overview - | Overview
 # Buggy: the FMU source
 
-The buggy with the interface of the `apps/car-sim` driving simulator, on the rolling hills of `buggy-hills`. The interface is the race car's (see `racecar-sim`), with a front and a rear motor.
+The buggy with the interface of the `apps/web` driving simulator, on the rolling hills of `buggy-hills`. The interface is the race car's (see `racecar-sim`), with a front and a rear motor.
 
 ![The model canvas|900](@fig:diagram)
 

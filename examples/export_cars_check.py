@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["numpy>=2.0", "fmpy>=0.3.20"]
 # ///
-"""Acceptance of the car-sim FMUs (the FMUs of the car-sim host, apps/car-sim).
+"""Acceptance of the car-sim FMUs (the FMUs of the car-sim host, apps/web).
 
     uv run examples/export_cars_check.py [--out DIR] [--skip-julia] [racecar|buggy ...]
 

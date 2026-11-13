@@ -4,10 +4,10 @@
 # ///
 """Turn a bg-sim FMU into what a browser game imports: one TypeScript module with the Wasm inside.
 
-    uv run build_wasm.py f16 ../f16-sim/build/f16_sim.fmu
-    uv run build_wasm.py cars ../car-sim/build/buggy_sim.fmu buggy.gen.ts
+    uv run build_wasm.py f16 build/f16_sim.fmu
+    uv run build_wasm.py cars build/buggy_sim.fmu buggy.gen.ts
 
-compiles the C sources every FMU carries with the shim in `shim/`, and writes
+(`build_fmu.py` builds the FMUs into `build/` and runs this for each.) It compiles the C sources every FMU carries with the shim in `shim/`, and writes
 `src/<game>/model.gen.ts` (or the name given third, for a game with two models): the Wasm as base64, the GUID, the communication step and the value
 references by name. Embedding it means the static site and the single HTML file load the model the
 same way, and it needs no fetch, which a page opened from file:// could not do.

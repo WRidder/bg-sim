@@ -6,16 +6,15 @@ The bg-sim FMU apps as web games: the flight or vehicle model compiled to WebAss
 
 ```
 npm ci
-uv run build_wasm.py f16 ../f16-sim/build/f16_sim.fmu
-uv run build_wasm.py f16 ../f16-sim/build/aim9x_fmu.fmu missile.gen.ts
-uv run build_wasm.py cessna ../cessna-sim/build/cessna_sim.fmu
-uv run build_wasm.py a109 ../a109-sim/build/a109_sim.fmu
-uv run build_wasm.py cars ../car-sim/build/racecar_sim.fmu racecar.gen.ts
-uv run build_wasm.py cars ../car-sim/build/buggy_sim.fmu buggy.gen.ts
+uv run build_fmu.py
 npm run dev -- --host 127.0.0.1 --port 8831
 ```
 
 Then open http://127.0.0.1:8831/.
+
+`build_fmu.py` builds the models of the games, once after cloning and again when a model changes. For each of `f16`, `missile`, `cessna`, `a109`, `racecar` and `buggy` (name some to build only those) it exports the example's model from bg-sim (`examples/export_*.jl`, needs Julia), compiles and checks the FMU with gcc into `build/`, and has `build_wasm.py` turn it into `src/<game>/*.gen.ts`, the module the game imports. Neither `build/` nor the generated modules are committed. `uv run build_wasm.py <game> <fmu> [<name>.gen.ts]` does the last step alone, for an FMU built elsewhere.
+
+The start lists of the F-16, the Cessna and the A109 (`src/<game>/starts.json`) are committed. They are trims from the design scripts of the examples; `uv run build_fmu.py --starts` writes them again, which is needed only when a model's trim changes.
 
 - `npm run build` writes a static site to `dist/`.
 - `GAME=f16 npm run build:single` writes one self-contained file to `dist-single/f16/index.html`. Also for `cessna`, `a109` and `cars`.

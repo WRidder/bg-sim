@@ -1,6 +1,6 @@
 # Web games
 
-The FMU-based desktop apps (`apps/f16-sim`, `cessna-sim`, `a109-sim`, `car-sim`) as browser games, in `apps/web`. They have nothing to do with the bg-sim editor: no backend, no Python, no Julia at run time. A static file server is enough, and each game also builds into one HTML file that opens from disk and can be mailed around.
+The FMU-based apps as browser games, in `apps/web`. They began as desktop apps (`f16-sim`, `cessna-sim`, `a109-sim` and `car-sim`, on Panda3D and fmpy), which were removed once the games covered them; their FMU build step is now `apps/web/build_fmu.py`. They have nothing to do with the bg-sim editor: no backend, no Python, no Julia at run time. A static file server is enough, and each game also builds into one HTML file that opens from disk and can be mailed around.
 
 ## Decisions
 
@@ -88,8 +88,7 @@ What velstand does on the stand-in, measured: with a 25 ms joint lag it flails e
 ```
 cd apps/web
 npm ci
-uv run build_wasm.py f16 ../f16-sim/build/f16_sim.fmu    # once per game, needs the FMU built
-uv run build_wasm.py f16 ../f16-sim/build/aim9x_fmu.fmu missile.gen.ts
+uv run build_fmu.py                                      # once: exports the FMUs and compiles them to Wasm
 npm run dev                                              # or: npm run build, then serve dist/
 GAME=f16 npm run build:single                            # dist-single/f16/index.html
 npx vitest run

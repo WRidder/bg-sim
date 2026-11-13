@@ -15,7 +15,7 @@ bg-sim; the design scripts work in the book's ft/slug units and convert.
 | `f16-open-loop` | Three aircraft trimmed at the book's point (502 ft/s, sea level) with the CG at 0.30, 0.35 and 0.38 of the mean chord, each released on its own mode. A30 (forward CG) has a stable short period, A35 and A38 a real unstable pole (+0.102 and +0.657 1/s), read live by `GrowthRate` blocks. A30 also carries an energy ledger. |
 | `f16-fbw` | The aft-CG (0.38, statically unstable) F-16 at 400 ft/s, 25 000 ft under a pitch-rate command law whose gains are scheduled on dynamic pressure and Mach (three stdlib `Lookup2D` tables), next to the same law with the gains of a 1000 ft/s, 2000 ft point frozen. Sliders for the step and the CG. |
 | `f16-envelope` | Full aft stick (11 g asked) at 900 ft/s, 5000 ft through a g-command path with a min-select alpha/g limiter, on and off. Protected: alpha stays below 17.3 deg and nz below 8.84 g through the loop. Unprotected: 10.1 g, then the slow top of the loop departs to more than 80 deg alpha. Sliders for the stick and the limiter; gauges. |
-| `f16-sim` | The flyable F-16: a three-axis fly-by-wire at 500 ft/s, 10 000 ft (CG 0.35). Pitch: g command with turn compensation and the alpha/g limiter. Roll: roll-rate command about the velocity vector, with a limit that falls with nz and at low qbar. Yaw: yaw damper, aileron-rudder interconnect and a pedal sideslip command. All gains are scheduled on qbar and Mach. Its inputs, outputs, trim, CG, mass and law switches are the FMU interface of `apps/f16-sim`. The default run is a coordinated 60 deg turn. Sliders for the sticks, pedals, throttle and switches; the flaperons and the rudder move in 3D. It has a landing gear: it rests, taxis, takes off and lands. |
+| `f16-sim` | The flyable F-16: a three-axis fly-by-wire at 500 ft/s, 10 000 ft (CG 0.35). Pitch: g command with turn compensation and the alpha/g limiter. Roll: roll-rate command about the velocity vector, with a limit that falls with nz and at low qbar. Yaw: yaw damper, aileron-rudder interconnect and a pedal sideslip command. All gains are scheduled on qbar and Mach. Its inputs, outputs, trim, CG, mass and law switches are the FMU interface of `apps/web`. The default run is a coordinated 60 deg turn. Sliders for the sticks, pedals, throttle and switches; the flaperons and the rudder move in 3D. It has a landing gear: it rests, taxis, takes off and lands. |
 | `f16-pio` | An aggressive pilot (gain 3/s on the pitch-attitude error, 0.25 s delay) captures a 7 deg attitude change through the 60 deg/s rate-limited stabilator. Plain rate limit: a growing, rate-saturated oscillation (attitude error 29 -> 36 -> 41 deg peak-to-peak per 2 s). With a phase-compensated rate limiter: damped (7 -> 2.2 -> 0.45 -> 0.14 deg). |
 
 The aircraft of `f16-open-loop`, `f16-fbw`, `f16-envelope` and `f16-pio` are instances of the library subsystem `F16Airframe` (`library/F16Airframe.bgsub.json`: the airframe in calm air, without gear), and their stabilator servos (`SchedAct`, `PlainAct`, ...) instances of `F16Servo`; each instance sets only its CG and start state, or its start deflection. A30's energy ledger (`EnergyA30`, `WorkA30`) sits beside it, on the airframe's audit outputs `gP`, `VP` and `P_ext`. `f16-sim` draws its own airframe (wind, gear) and servos, because the FMU's variable names come from them.
@@ -243,7 +243,7 @@ as the floor for it, a fifth of what the stabilator moves in a 5 ms step.
 
 The power level crosses military power, where the engine lag switches its rate. The FMU evaluates
 that switch once per step, so it can come up to one step late (W203). `on_ground` switches the same
-way, so the check holds it to its own bound. `apps/f16-sim` is the host: see its README.
+way, so the check holds it to its own bound. The browser game Island Sortie (`apps/web`) is the host: see `apps/web/README.md`.
 
 ## Limitations
 
@@ -279,7 +279,7 @@ way, so the check holds it to its own bound. `apps/f16-sim` is the host: see its
   lift-off, over about a millimetre of travel. It scales with the damping and it has no effect on the path.
 * The ground is flat at 0 m. `tas_mps` reads the 1 m/s floor at rest, and `nz_g` includes the wheels' load.
 * The 3D scene of `f16-sim` does not draw the gear, and its floor is a reference plane below the start
-  altitude, so a run on the wheels looks odd in it. The host `apps/f16-sim` draws the gear.
+  altitude, so a run on the wheels looks odd in it. The browser game (`apps/web`) draws the gear.
 
 ## Files
 

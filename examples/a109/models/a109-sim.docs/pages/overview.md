@@ -11,7 +11,7 @@ The A109 of the open-loop model with ground effect at 15 m, flown with collectiv
   * a coordinated 20 deg bank turn through 146 deg;
   * decelerate and hover.
 
-The sticks, the wind and the SCAS switch pass through export markers: in bg-sim they carry the demonstration pilot, in an FMU the host's pilot drives them. The start state (pose, momenta, flapping, rotor momentum, governor) is a set of globals, so an FMU host can start on the pad or in any trim. The host app `apps/a109-sim` flies the exported FMU in real time.
+The sticks, the wind and the SCAS switch pass through export markers: in bg-sim they carry the demonstration pilot, in an FMU the host's pilot drives them. The start state (pose, momenta, flapping, rotor momentum, governor) is a set of globals, so an FMU host can start on the pad or in any trim. The browser game Island Lift (`apps/web` in the repository) flies the exported FMU in real time.
 
 ![The model canvas|900](assets/c3e7a1ada758.png)
 

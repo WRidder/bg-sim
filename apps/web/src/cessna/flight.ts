@@ -305,7 +305,7 @@ export class Flight extends Sim<Output> {
     this.previousPoint = [north, east, alt];
   }
 
-  /** From `core.py`: the sink over the last 0.1 s, since the contact has already stopped it. */
+  /** From the former desktop app's `core.py`: the sink over the last 0.1 s, since the contact has already stopped it. */
   private watchWheels(onGround: boolean, north: number, east: number, surface: Surface): void {
     const dt = this.fmu.step;
     if (onGround) {

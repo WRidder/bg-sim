@@ -34,19 +34,19 @@ The **beaver-sim** model of the beaver example has a cockpit interface:
 - the outputs are the position, the attitude, the air data, the surfaces and the engine;
 - the `drivetrain` global is kept tunable. It switches between the bond-graph drivetrain and the source's algebraic engine power.
 
-The **racecar-sim** and **buggy-sim** models of the cars example do the same for a driving simulator (`apps/car-sim`):
+The **racecar-sim** and **buggy-sim** models of the cars example do the same for a driving simulator (`apps/web`):
 
 - the steering, the pedals, the handbrake, the reverse switch and a friction scale per wheel come in through `ExportInputPass` markers (the host sets the friction from the surface under each tyre);
 - the outputs are the chassis and wheel poses, the tyre and suspension states, the motor speeds, torques and powers, the battery's state of charge, voltage and current, and the aerodynamic downforce and drag (the host's live telemetry panel plots them);
 - the start position, heading and charge are globals whose expressions set the start state, and the motor and brake limits are block parameters kept tunable, all with ranges.
 
-The **cessna-sim** model of the cessna example is the FMU of a flight simulator that starts on the runway (`apps/cessna-sim`):
+The **cessna-sim** model of the cessna example is the FMU of a flight simulator that starts on the runway (`apps/web`):
 
 - the yoke, the pedals, the throttle, the mixture, the flap detent, the trim, the two toe brakes, the autopilot modes, the heading bug, the altitude to hold and the wind come in through 16 `ExportInputPass` markers;
 - 38 `ExportOutput` markers carry the pose, the six-pack instruments, the engine, the surfaces and the three wheel loads;
 - the start state is 20 globals kept tunable with ranges: the pose, the momenta, the crankshaft's momentum, the manifold pressure, the flap angle and the strut compressions. The host sets them together from the runway equilibrium or a trim.
 
-The **a109-sim** model of the a109 example is the FMU of a helicopter simulator that starts on a helipad (`apps/a109-sim`):
+The **a109-sim** model of the a109 example is the FMU of a helicopter simulator that starts on a helipad (`apps/web`):
 
 - the collective, the cyclic (longitudinal and lateral), the pedals, the SCAS switch and the wind come in through 8 `ExportInputPass` markers;
 - 29 `ExportOutput` markers carry the pose, the rates and velocities, the air data, the rotor speed, power, thrust and flapping, the blade angles, the three wheel loads and the weight on wheels;

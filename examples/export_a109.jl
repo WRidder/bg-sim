@@ -1,6 +1,6 @@
-# The a109-sim FMU of the a109-sim host (apps/a109-sim/build_fmu.py runs this).
+# The a109-sim FMU of the A109 web game (apps/web/build_fmu.py runs this).
 #
-#   julia --project=julia/BGSim apps/a109-sim/export_fmu.jl <out_dir> [--method=rk4] [--dt=0.00125]
+#   julia --project=julia/BGSim examples/export_a109.jl <out_dir> [--method=rk4] [--dt=0.00125]
 #
 # Exports examples/a109/models/a109-sim with the host interface into <out_dir>/fmu:
 #   * the ExportInputPass markers are FMU inputs: collective, cyclic_lon, cyclic_lat, pedals, the
@@ -18,13 +18,13 @@
 using BGSim
 import JSON3
 
-const ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-const PROJECT = joinpath(ROOT, "examples", "a109")
+const HERE = @__DIR__
+const PROJECT = joinpath(HERE, "a109")
 const STEP = 0.005          # s, the host's communication step (200 Hz)
 const T_END = 3600.0        # s, the default stop time in the modelDescription (the host runs open-ended)
 
 # FMU parameters: the start state (examples/a109/design/build_model.py, SIM_START). Ranges: every
-# start of the host's start list (build/starts.json), with margin.
+# start of the game's start list (apps/web/src/a109/starts.json), with margin.
 const TUNABLES = [
     "global:qw0" => (-1.0, 1.0), "global:qx0" => (-1.0, 1.0), "global:qy0" => (-1.0, 1.0), "global:qz0" => (-1.0, 1.0),
     "global:x0" => (-20000.0, 20000.0), "global:y0" => (-20000.0, 20000.0), "global:z0" => (0.5, 3000.0),

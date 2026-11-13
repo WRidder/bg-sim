@@ -7,7 +7,7 @@
     uv run examples/aim9x/design/build_fmu_model.py
 
 `aim9x-intercept` is the closed-loop example: its target is a `TargetMotion` source and its
-run stops at the proximity fuze. The F-16 host (`apps/f16-sim`) needs the same weapon as a
+run stops at the proximity fuze. The F-16 host (`apps/web`) needs the same weapon as a
 reusable FMU:
 
 * the target is supplied by the host, so `Target` becomes `ExternalTarget` and the seven
@@ -134,7 +134,7 @@ def main() -> int:
     doc["parameters"] = [g for g in doc["parameters"] if g["name"] not in TARGET_GLOBALS]
     doc["name"] = "aim9x-fmu"
     doc["$comment"] = (
-        "Host-interface AIM-9X for apps/f16-sim: launch-relative target inputs, missile pose/status "
+        "Host-interface AIM-9X for apps/web: launch-relative target inputs, missile pose/status "
         "outputs, no fuze stop. Generated from aim9x-intercept by design/build_fmu_model.py; do not "
         "edit by hand.")
     doc.pop("scene", None)

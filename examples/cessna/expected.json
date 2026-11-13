@@ -398,7 +398,7 @@
             "ap_roll"
           ]
         },
-        "note": "the FMU of apps/cessna-sim; its own acceptance is examples/export_cessna_check.py"
+        "note": "the FMU of apps/web; its own acceptance is examples/export_cessna_check.py"
       }
     },
     "cessna-sim-autopilot": {

@@ -1,6 +1,6 @@
 # Three-axis fly-by-wire
 
-The flyable F-16: the Stevens & Lewis airframe of the other models under a full three-axis fly-by-wire, trimmed at 500 ft/s (Mach 0.46) and 10 000 ft with the CG at 0.35. Its inputs and outputs are export markers, so the same model is the FMU of the **f16-sim** flight-simulator host (`apps/f16-sim` in the repository). In bg-sim the markers pass a test input through: by default a roll-stick pulse that banks the aircraft to 60 deg, then a coordinated level turn with the stick centred.
+The flyable F-16: the Stevens & Lewis airframe of the other models under a full three-axis fly-by-wire, trimmed at 500 ft/s (Mach 0.46) and 10 000 ft with the CG at 0.35. Its inputs and outputs are export markers, so the same model is the FMU of the browser game Island Sortie (`apps/web` in the repository). In bg-sim the markers pass a test input through: by default a roll-stick pulse that banks the aircraft to 60 deg, then a coordinated level turn with the stick centred.
 
 ![The model canvas|900](assets/32f59a899750.png)
 

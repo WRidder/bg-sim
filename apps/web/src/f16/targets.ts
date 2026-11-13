@@ -1,6 +1,6 @@
 /**
  * The tactical layer of the F-16 interception mode, without three.js: the target drones, their
- * spawn/respawn rule and the seeker cue. It mirrors `apps/f16-sim/src/f16sim/tactical.py`, with
+ * spawn/respawn rule and the seeker cue. It follows the former desktop app's `tactical.py`, with
  * the web game's world coordinates (north and east in metres, altitude up).
  */
 

@@ -272,8 +272,8 @@ against bg-sim references: the take-off roll with a rotation, a braked run-up, a
 steering in a crosswind. Every output agrees to about 1e-4 of its peak. The one exception is the
 stall flag: its threshold switch is evaluated once per step (W203), so it can come one step late.
 
-The host is `apps/cessna-sim`: a Panda3D flight simulator with an airfield, three cameras, a
-six-pack panel, and keyboard or joystick, pedal and throttle input.
+The host is the browser game Short Final (`apps/web`, the FMU compiled to WebAssembly): see
+`apps/web/README.md`.
 
 ## Files
 

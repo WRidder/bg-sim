@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["numpy>=2.0", "fmpy>=0.3.20"]
 # ///
-"""Acceptance of the f16-sim FMU (the FMU of the f16-sim host, apps/f16-sim).
+"""Acceptance of the f16-sim FMU (the FMU of the f16-sim host, apps/web).
 
     uv run examples/export_f16_check.py [--out DIR] [--skip-julia]
 

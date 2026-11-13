@@ -7,7 +7,7 @@ The flyable Cessna 172P, standing on runway 36 with the engine at idle and flaps
 3. a climb at 75 KCAS, with the flaps up at 65 ft;
 4. a turn to the east at 75 s.
 
-The same model is the FMU of the flight simulator `apps/cessna-sim`.
+The same model is the FMU of the browser game Short Final (`apps/web` in the repository).
 
 ![The model canvas|900](assets/bf13b6253813.png)
 

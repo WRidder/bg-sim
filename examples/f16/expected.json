@@ -1373,7 +1373,7 @@
             "gear_pos"
           ]
         },
-        "note": "the FMU of apps/f16-sim; its own acceptance (the host's settings and tunables, four manoeuvres) is examples/export_f16_check.py"
+        "note": "the FMU of apps/web; its own acceptance (the host's settings and tunables, four manoeuvres) is examples/export_f16_check.py"
       }
     },
     "f16-sim-roll-step": {

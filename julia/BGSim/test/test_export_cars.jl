@@ -1,4 +1,4 @@
-# The racecar-sim and buggy-sim FMUs of examples/cars (the FMUs of the apps/car-sim host): the
+# The racecar-sim and buggy-sim FMUs of examples/cars (the FMUs of the apps/web host): the
 # export with the host's interface and settings (examples/export_cars.jl) is accepted, fixed-step
 # RK4 inside the 5 ms communication step, the ExportInputPass markers are the FMU inputs and the
 # ExportOutput markers its outputs, the start pose and charge and the motor and brake limits are FMU

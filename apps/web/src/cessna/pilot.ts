@@ -1,6 +1,6 @@
 /**
  * A pilot for the title screen and for the tests: the phases of a circuit, flown closed loop with
- * the same levers as the player has. The inner loops are those of the desktop app's pilot.py:
+ * the same levers as the player has. The inner loops are those of the former desktop app's pilot.py:
  * attitude with rate damping on the yoke, bank on the ailerons, a heading loop on the bank.
  * Everything here is in the FMU's frame, where the runway lies along x and the circuit is to the left.
  */

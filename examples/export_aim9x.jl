@@ -11,8 +11,8 @@
 #   export.jsonl          one line: the export report's method, dt, substeps and status.
 #
 # The target inputs are launch-relative NED (north/east relative to the launch point, down
-# absolute), as documented by library/ExternalTarget.jl. `apps/f16-sim/build_fmu.py` builds it
-# with bgsim_server.fmu_build; `apps/f16-sim` runs one instance per missile.
+# absolute), as documented by library/ExternalTarget.jl. `apps/web/build_fmu.py` builds it
+# with bgsim_server.fmu_build; the F-16 game (`apps/web`) runs one instance per missile.
 
 using BGSim
 import JSON3

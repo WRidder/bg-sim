@@ -1691,7 +1691,7 @@ def expected_sim() -> dict:
                          "brake_l": {"min": 0.0, "max": 1.0}, "brake_r": {"min": 0.0, "max": 1.0}},
               "interface": {"inputs": [m for m, _, _ in SIM_INPUTS],
                             "outputs": [m for m, _, _ in SIM_OUTPUT_SOURCES]},
-              "note": "the FMU of apps/f16-sim; its own acceptance (the host's settings and tunables, four "
+              "note": "the FMU of apps/web; its own acceptance (the host's settings and tunables, four "
                       "manoeuvres) is examples/export_f16_check.py"}
     checks_turn.append({"kind": "max_abs_le", "signal": "F16/Contact_nose/fn", "value": 1.0,
                         "note": "gear up: the retracted legs carry nothing (the strut's smooth contact leaves a few mN)"})

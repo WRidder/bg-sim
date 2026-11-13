@@ -19,7 +19,7 @@ line by line) and an SI mirror of the bg-sim blocks (`heli_si.py`).
 | model | what it shows |
 | --- | --- |
 | `a109-open-loop` | Four A109s released from trim (sea level). **Hover**: the trim holds. **Coll**: a +0.5 deg collective step in hover. The main-rotor torque grows, the reaction yaws the nose right (34 deg/s after 10 s) and the climb starts (13 m in 10 s); the rotor droops 0.25 % and the governor recovers it. **Lon**: a 0.5 deg forward cyclic pulse starts the unstable hover phugoid (+0.21 +- 0.60j 1/s). **Fwd**: a 1 deg pedal pulse at 100 kt shows the yaw-roll coupling of the Dutch roll. A dashboard switch sets the rotor speed the aerodynamics see: the drivetrain's, or the report's constant 385 rpm. |
-| `a109-sim` | The flyable A109 at 15 m with ground effect, on a tricycle gear of three stdlib `ContactPoint`s: Rigging (stick percent to blade angle), a switchable SCAS (attitude command and hold in pitch and roll, yaw-rate command and heading hold, turn coordination) that fades out with the weight on the wheels, and a demonstration pilot. The 120 s demonstration: hover, transition and climb to 75 kt and about 45 m, a coordinated 20 deg bank turn through 146 deg, deceleration and hover. ExportInputPass markers (collective, cyclic_lon, cyclic_lat, pedals, wind_n/e/d, scas) and ExportOutput markers form the FMU interface, and the start state is a set of globals an FMU host can set. The host app `apps/a109-sim` flies it. Sliders: demo, SCAS, stick offsets. |
+| `a109-sim` | The flyable A109 at 15 m with ground effect, on a tricycle gear of three stdlib `ContactPoint`s: Rigging (stick percent to blade angle), a switchable SCAS (attitude command and hold in pitch and roll, yaw-rate command and heading hold, turn coordination) that fades out with the weight on the wheels, and a demonstration pilot. The 120 s demonstration: hover, transition and climb to 75 kt and about 45 m, a coordinated 20 deg bank turn through 146 deg, deceleration and hover. ExportInputPass markers (collective, cyclic_lon, cyclic_lat, pedals, wind_n/e/d, scas) and ExportOutput markers form the FMU interface, and the start state is a set of globals an FMU host can set. The browser game Island Lift (`apps/web`) flies it. Sliders: demo, SCAS, stick offsets. |
 
 Both models have a 3D scene built from simple solids: cabin, nose and windscreen, tail cone and boom, engine fairing, fin and ventral fin, tailplane, mast and tricycle gear. The main-rotor disc (four blades and a faint disc) sits on the hub, tilted 6.3 deg forward with the shaft and tilted further with the flapping a1, b1. The blades and the two-blade tail rotor spin at a tenth of their real speed, so they do not strobe on video. As in the F-16 example, the view keeps the first helicopter framed by moving the world (block `HeliView`). The other helicopters of the open loop fly 16 m to the side or behind, and the floor stripes scroll with the ground track.
 
@@ -350,7 +350,7 @@ cases check it against its own statics:
   * the governor's integrator `xi0`.
 
   By default they are the 15 m hover of `heli_sim.py`. An FMU host sets them before
-  initialisation: `apps/a109-sim` starts on the pad, in a hover or in a trimmed approach this way.
+  initialisation: the browser game (`apps/web`) starts on the pad, in a hover or in a trimmed approach this way.
 
 ## Limitations
 

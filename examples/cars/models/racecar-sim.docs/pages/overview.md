@@ -1,6 +1,6 @@
 # Race car: the FMU source
 
-The race car with the interface of the `apps/car-sim` driving simulator, on the race track (flat, z = 0).
+The race car with the interface of the `apps/web` driving simulator, on the race track (flat, z = 0).
 
 ![The model canvas|900](assets/d20f1b764fcb.png)
 

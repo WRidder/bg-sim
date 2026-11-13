@@ -9,7 +9,7 @@ infrared seeker, proportional navigation and a proximity fuze. Three flight mode
 | `aim9x-airframe` | the open-loop plant: cubic lift and Mach-dependent drag, the canards, the variable mass, the roll/yaw damping and a short-period ring-down |
 | `aim9x-control` | the skid-to-turn autopilot: roll hold, a qbar-scheduled pitch/yaw rate loop and the TVC allocation |
 | `aim9x-intercept` | the full weapon against a target: seeker gimbal and field of view, LOS rates, proportional navigation, a lift-limited guidance law and the proximity fuze |
-| `aim9x-fmu` | the host-interface variant for `apps/f16-sim`: the target is supplied by the host, the fuze does not stop the instance, and the pose, air data, fins and status are FMU outputs |
+| `aim9x-fmu` | the host-interface variant for `apps/web`: the target is supplied by the host, the fuze does not stop the instance, and the pose, air data, fins and status are FMU outputs |
 
 ## The plant
 
@@ -127,7 +127,7 @@ Run them with
 ## The host FMU (`aim9x-fmu`)
 
 `aim9x-fmu` is generated from `aim9x-intercept` by `design/build_fmu_model.py` and exported by
-`examples/export_aim9x.jl`; `apps/f16-sim/build_fmu.py` builds it into `apps/f16-sim/build/aim9x_fmu.fmu`.
+`examples/export_aim9x.jl`; `apps/web/build_fmu.py missile` builds it into `apps/web/build/aim9x_fmu.fmu`.
 It is the same weapon with a host interface:
 
 - **inputs** (`ExportInput`): `target_north_m`, `target_east_m`, `target_down_m`, `target_vn_mps`,
@@ -147,7 +147,7 @@ It is the same weapon with a host interface:
 
 The F-16 app uses this model for both wingtip shots: it selects a drone in the seeker cue, sets the
 launch state and the launch-relative target data, steps the instance every 5 ms, and draws the body,
-canards and plume from the outputs. See `apps/f16-sim/README.md`, "Drones, lock-on and the AIM-9X".
+canards and plume from the outputs. See `apps/web/README.md`, "In the game".
 
 ## Limitations
 
