@@ -17,7 +17,7 @@ Then open http://127.0.0.1:8831/.
 The start lists of the F-16, the Cessna and the A109 (`src/<game>/starts.json`) are committed. They are trims from the design scripts of the examples; `uv run build_fmu.py --starts` writes them again, which is needed only when a model's trim changes.
 
 - `npm run build` writes a static site to `dist/`.
-- `GAME=f16 npm run build:single` writes one self-contained file to `dist-single/f16/index.html`. Also for `cessna`, `a109` and `cars`.
+- `npm run build:single` writes each game as one self-contained file: `dist-single/f16.html`, `cessna.html`, `a109.html` and `cars.html`. `node build_single.mjs f16` builds one.
 - `npx vitest run` runs the unit tests and the scripted pilots.
 - `node tests/keys.mjs out.png` flies with real key presses against the dev server.
 - `node tests/weapons-keys.mjs out.png` selects Intercept, waits for the lock and fires.
@@ -63,7 +63,7 @@ The velstand run in `tests/microduck.test.ts` reads `MICRODUCK_SECONDS` (run len
 - **Policies** are in `src/microduck/policies/`, at a pinned revision of https://huggingface.co/pollen-robotics/microduck-policies (Apache-2.0); their README has the revision, the hashes and how to fetch them again. The walk policy loads first; the sit-stand, ground pick, roulade and kicks follow in the background.
 - **The duck** is drawn with Pollen Robotics' CAD parts from microduck_rl (`src/microduck/duck.glb`, 77k triangles, 2.4 MB: a node per body and the lower beak on the mouth servo's axis), written by `examples/microduck/design/build_visuals.py`. **These meshes are CC BY-NC-SA 4.0, non-commercial only** (`src/microduck/duck.glb.NOTICE`). If the file does not load, the page draws the procedural duck (shapes sized to the joints) and logs a warning.
 - **ONNX Runtime Web** (`onnxruntime-web`, the plain WebAssembly backend, one thread, so no cross-origin isolation is needed) is imported only by this page and only when it starts: 75 kB of script and a 14.8 MB Wasm (3.9 MB gzipped), which no other game loads. A recurrent export (`h_in`/`c_in`) works too.
-- **Single file: not supported.** `GAME=microduck npm run build:single` makes a 66 MB file (the runtime's Wasm and the six policies as base64), and in it the runtime does not even start (Vite's preload helper is missing once dynamic imports are inlined): the page runs with the policy off and says so. Serve `dist/` instead.
+- **Single file: not supported.** A single-file build of it (`GAME=microduck npx vite build --mode single`) makes a 66 MB file (the runtime's Wasm and the six policies as base64), and in it the runtime does not even start (Vite's preload helper is missing once dynamic imports are inlined): the page runs with the policy off and says so. Serve `dist/` instead.
 
 ### The FMU the page expects
 

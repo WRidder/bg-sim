@@ -90,7 +90,7 @@ cd apps/web
 npm ci
 uv run build_fmu.py                                      # once: exports the FMUs and compiles them to Wasm
 npm run dev                                              # or: npm run build, then serve dist/
-GAME=f16 npm run build:single                            # dist-single/f16/index.html
+npm run build:single                                     # dist-single/<game>.html, one file per game
 npx vitest run
 node tests/keys.mjs out.png                              # real key presses against the dev server
 ```

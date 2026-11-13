@@ -1,6 +1,6 @@
 // Flies Island Lift with real key presses: lift off, climb, turn, speed up, sidestep, brake, set down,
 // views, pause, restart, and the stability handling's lever. node tests/a109-keys.mjs [out.png]
-// GAME_URL points it at another build, such as file:///.../dist-single/a109/index.html
+// GAME_URL points it at another build, such as file:///.../dist-single/a109.html
 import { chromium } from "playwright";
 const port = process.env.GAMES_PORT ?? "8831";
 const browser = await chromium.launch({ headless: true, args: ["--use-angle=d3d11", "--ignore-gpu-blocklist", "--enable-gpu", "--enable-unsafe-swiftshader"] });

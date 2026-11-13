@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "build:single": "tsc --noEmit && vite build --mode single",
+    "build:single": "tsc --noEmit && node build_single.mjs",
     "preview": "vite preview",
     "test": "vitest run"
   },
