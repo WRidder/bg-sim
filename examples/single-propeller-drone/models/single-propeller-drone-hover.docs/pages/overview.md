@@ -4,9 +4,9 @@ The same vehicle, released in hover at 1.32 m with the rotor at the hover speed.
 a **0.8 rad/s yaw kick** and a **0.3 rad/s roll kick**, and flies a 1 m lateral step from 3 s.
 There is no yaw command anywhere.
 
-![The 1 m step, the height and the yaw](assets/661057c72ee6.png)
+![The 1 m step, the height and the yaw](assets/1dede6e3b678.png)
 
-![During the step, 4.5 s](assets/1fad6dd95aea.png)
+![During the step, 4.5 s](assets/7fc7a7b54c61.png)
 
 ## What it shows
 
@@ -27,7 +27,7 @@ There is no yaw command anywhere.
 * **Gyroscopic plant.** With the rate loop switched off, the roll kick turns into a circular
   nutation at 2.02 Hz, against $h/\sqrt{J_xJ_y}$ = 2.06 Hz.
 
-![Free nutation with the rate loop off](assets/8c5b579fd2e8.png)
+![Free nutation with the rate loop off](assets/c68c62e51689.png)
 
 ## Checks
 

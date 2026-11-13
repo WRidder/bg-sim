@@ -18,13 +18,8 @@
     # `fs` is the specific force of these loads plus the contact normal (never gravity); the
     # accelerometer adds the fins' share (`AddVec3`).
     #
-    # `fc_max` is a peak hold of the landing-gear force: d/dt fc_max = k_pk max(fc - fc_max, 0),
-    # smoothed over 1e-5 N, which follows a rising force within 1/k_pk and then holds the
-    # largest value, so the touchdown load is read exactly although the impact lasts a few
-    # milliseconds and the output grid is coarser. The touchdown detection of the drive and of
-    # the mission reads it, so an impact between two of their ticks is not missed. It starts at
-    # 1 N, so it is idle (no stiffness) while the feet are off the ground; the smoothing lets it
-    # creep by k_pk 2.5e-11/fc_max N/s, 5e-7 N/s at 1 N, far from the 2 N touchdown threshold.
+    # `fc` is the true total landing-gear force, for plots and checks only. The drive and the
+    # mission do not read it: they get the foot loads from `FootSensor`.
     @inputs begin
         T::Real, [unit = "N"]
         Mx::Real, [unit = "N*m"]
@@ -43,7 +38,6 @@
         fs::Vec{3}
         Fdrag::Real, [unit = "N"]
         fc::Real, [unit = "N", description = "Total landing-gear normal force (world z)"]
-        fc_max::Real, [unit = "N", description = "Largest landing-gear force so far (peak hold)"]
     end
     @parameters begin
         m::Real = 1.2, [unit = "kg", min = 0.01, description = "Total mass (for the specific force)"]
@@ -58,7 +52,6 @@
         clin::Real = 0.08, [unit = "N*s/m", min = 0, description = "Linear drag for numerical smoothness"]
         epsv::Real = 1.0e-3, [unit = "m/s", min = 1.0e-9, description = "Smoothing speed of |u| u"]
         onel::Vec{4} = [1.0, 1.0, 1.0, 1.0], [description = "Summation vector over the contacts"]
-        k_pk::Real = 2.0e4, [unit = "1/s", min = 0, description = "Tracking rate of the peak hold"]
     end
     @variables begin
         R::Mat{3,3} = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], [description = "Body-to-world rotation"]
@@ -74,7 +67,6 @@
         fby::Real = 0.0, [unit = "N", description = "Body drag, body y"]
         fbz::Real = 0.0, [unit = "N", description = "Body drag, body z"]
         fcs::Real = 0.0, [unit = "N", description = "Total contact normal force (world z)"]
-        fpk::Real = 1.0, [unit = "N", state = :prefer, description = "Peak-hold state"]
     end
     @equations begin
         s ~ pose[1] * pose[1] + pose[2] * pose[2] + pose[3] * pose[3] + pose[4] * pose[4]
@@ -99,8 +91,6 @@
         fbz ~ -0.5 * rho * Ab * Cdb * a3 * uz
         fcs ~ dot(leg, onel)
         fc ~ fcs
-        ddt(fpk) ~ 0.5 * k_pk * ((fcs - fpk) + sqrt((fcs - fpk) * (fcs - fpk) + 1.0e-10))
-        fc_max ~ fpk
         fx ~ fdx + fbx
         fy ~ fdy + fby
         fz ~ T + fbz

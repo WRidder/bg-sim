@@ -24,14 +24,21 @@
     # -j_yh/g (`w_ff`, scaled with the tilt limit). Without it the acceleration feed-forward
     # reaches the body only through the lag of the attitude loop.
     #
-    # Ground contact (`contact` from `Waypoints`, latched at the touchdown): the loops stop
-    # flying. The integrators are frozen, the desired attitude is level in the measured
-    # heading, and the vertical channel no longer reacts to the measured motion: the rebound of
-    # the feet would otherwise read as a climb, cut the thrust and slow the rotor while the body
-    # is in the air, and the rotor's lost angular momentum would go into the body's yaw. The
-    # collective thrust is the value of the last tick before the touchdown times the mission's
-    # fraction `thr` (1 while the hop settles, then smoothly to 0); the drive caps the rotor
-    # speed below it (`RotorEsc`).
+    # Ground contact (`contact` from `Waypoints`, latched at the touchdown): the vertical channel
+    # stops flying. It no longer reacts to the measured motion: the rebound of the feet would
+    # otherwise read as a climb, cut the thrust and slow the rotor while the body is in the air,
+    # and the rotor's lost angular momentum would go into the body's yaw. The collective thrust
+    # is the value of the last tick before the touchdown times the mission's fraction `thr`
+    # (smoothly from 1 to 0). The drive does not follow this command on the ground: it scales
+    # its own touchdown cap, 3 % of the speed lower, with the same `thr` (`RotorEsc`), so the
+    # command only has to stay above the cap.
+    #
+    # The horizontal channel keeps flying, with its integrators frozen and no jerk feed-forward.
+    # Right after the touchdown the thrust still carries almost the whole weight, so the feet can
+    # hold neither a wind load nor the tipping moment of their own friction: the vehicle has to
+    # keep its lean into the wind until the weight is on the feet. As the thrust comes off, the
+    # feet level the body against the attitude loop, which then only pushes with
+    # Kp K_att times the lean (`RateCtrl` has no integral on the ground).
     @inputs begin
         p::Vec{3}
         v::Vec{3}
@@ -42,7 +49,7 @@
         j_sp::Vec{3}
         psi::Real
         armed::Real
-        contact::Real, [description = "1 from the touchdown latch: hold the thrust, level attitude"]
+        contact::Real, [description = "1 from the touchdown latch: hold the thrust, freeze the integrators"]
         thr::Real, [description = "Fraction of the touchdown thrust kept on the ground"]
     end
     @outputs begin
@@ -113,7 +120,7 @@
         fz = max(m_nom * (ac[3] + g0), 0.3 * m_nom * g0)
         ah = sqrt(ac[1] * ac[1] + ac[2] * ac[2])
         sc = min(1.0, g0 * tan(tilt_max) / max(ah, 1.0e-9))
-        Fv = [(1.0 - gc) * fz * ac[1] * sc / g0, (1.0 - gc) * fz * ac[2] * sc / g0, fz]
+        Fv = [fz * ac[1] * sc / g0, fz * ac[2] * sc / g0, fz]
         zd = Fv / norm(Fv)
         zb = [
             2 * (q[2] * q[4] + q[1] * q[3]),

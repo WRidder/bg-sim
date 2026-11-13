@@ -14,8 +14,8 @@ yaw rate.
 Two models are written from the same diagram:
 
 * `single-propeller-drone` - released in hover at 1.32 m (a hand launch: no take-off), a
-  +1.5 m x leg, a +1.5 m y leg, then the land mode (a steady 0.25 m/s descent until the feet
-  carry weight), touchdown detection and the motor run-down (20 s);
+  +1.5 m x leg, a +1.5 m y leg, then the land mode (a steady 0.25 m/s descent until the foot
+  load sensor reads a touch), the touchdown brake, the unload and the motor run-down (20 s);
 * `single-propeller-drone-hover` - released in hover with a 0.8 rad/s yaw kick and a 0.3 rad/s
   roll kick, then a 1 m lateral step from 3 s (8 s): the control and passive-yaw test.
 
@@ -280,6 +280,11 @@ def build(name: str, hover: bool) -> dict:
     D.node("LegMux", "stdlib:continuous/Mux4", 860, 700)
     for k in range(1, 5):
         D.sig(f"Leg{k}", "f_n", "LegMux", f"u{k}")
+    # the foot load cells, read by the drive's ADC at 400 Hz: the only landing-gear signal the
+    # drive and the mission get
+    D.node("Feet", "project:FootSensor", 1040, 700,
+           params={"sigma": num(d.SIGMA_FOOT), "f_touch": num(d.F_TOUCH), "n_hold": num(d.N_TOUCH_HOLD)})
+    D.sig("LegMux", "y", "Feet", "leg")
 
     # ------------------------------------------------------------ rotor, shaft and motor
     D.node("Rotor", "project:PropRotor", 580, 300,
@@ -326,6 +331,13 @@ def build(name: str, hover: bool) -> dict:
     D.node("Truth", "project:Truth", 760, 440)
     D.sig("Free", "pose", "Truth", "pose")
     D.sig("Body", "V", "Truth", "V")
+    # a read-out for plots and checks: the yaw rate without the once-per-revolution ripple of
+    # the cyclic torque (a first-order lag over T_YAW_MEAN; nothing else reads it)
+    D.node("YawMean", "stdlib:continuous/FirstOrder", 1040, 860, params={"k": 1.0, "tau": num(d.T_YAW_MEAN)},
+           starts={"x": num(r0)})
+    D.node("YawSel", "stdlib:continuous/Demux3", 940, 860)
+    D.sig("Truth", "wb", "YawSel", "u")
+    D.sig("YawSel", "y3", "YawMean", "u")
     D.node("Imu", "project:ImuSensor", 940, 560,
            params={"bgc": vec(d.BGC), "agc": vec(d.AGC), "bac": vec(d.BAC), "aac": vec(d.AAC),
                    "bias_a": vec(list(d.ACC_BIAS))})
@@ -363,13 +375,14 @@ def build(name: str, hover: bool) -> dict:
                 "dy": f"[0.0, {L}, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]",
                 "dz": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]",
                 "t_arm": 0.0, "t_disarm": 99.0, "t_land": num(d.T_LAND)}
-    mpar.update({"p0": vec(p_start), "f_touch": num(d.F_TOUCH), "t_spin": 2.0,
-                 "t_hold": num(d.T_HOLD), "t_unload": num(d.T_UNLOAD), "thr0": num(d.K_TD**2), "v_land": num(d.V_LAND), "t_ramp": num(d.T_RAMP)})
+    mpar.update({"p0": vec(p_start), "t_spin": num(d.T_SPIN), "t_unload": num(d.T_UNLOAD),
+                 "f_land": num(d.F_LAND), "n_land": num(d.N_LAND), "v_land": num(d.V_LAND), "t_ramp": num(d.T_RAMP)})
     D.node("Mission", "project:Waypoints", 1120, 40, params=mpar,
            starts={"p_sp": vec(p_start), "armed": "1.0", "motor": "1.0"})
     D.sig("Clock", "y", "Mission", "tm")
-    # the touchdown latch reads the peak hold, so an impact between two 50 Hz ticks is kept
-    D.sig("Aero", "fc_max", "Mission", "fc")
+    # the touchdown latch reads the sensor's touch flag (held for one 50 Hz period)
+    D.sig("Feet", "touch", "Mission", "touch")
+    D.sig("Feet", "fn", "Mission", "fn")
 
     D.node("Pos", "project:PosCtrl", 1300, 40,
            params={"m_nom": num(d.M * 0.99), "g0": d.G, "Kp_xy": d.KP_XY, "Kv_xy": d.KV_XY, "Ki_xy": d.KI_XY,
@@ -387,7 +400,7 @@ def build(name: str, hover: bool) -> dict:
     D.sig("Pos", "w_ff", "Att", "w_ff")
     D.node("Rate", "project:RateCtrl", 1480, 180,
            params={"Kp": num(d.KP_RATE), "Ki": num(d.KI_RATE), "Ja": d.JA, "k_gyro": 1.0,
-                   "tau_max": f"{d.K_M_EST} * cyclic_limit", "i_max": 0.05})
+                   "tau_max": f"{d.K_M_EST} * cyclic_limit", "i_max": 0.05, "k_ground": num(d.K_GROUND)})
     D.sig("Att", "w_sp", "Rate", "w_sp")
     D.sig("Nav", "w", "Rate", "w")
     D.sig("Rotor", "w", "Rate", "w_rot")
@@ -402,7 +415,8 @@ def build(name: str, hover: bool) -> dict:
     D.node("Esc", "project:RotorEsc", 1120, 180,
            params={"Kp": d.KP_ESC, "Ki": d.KI_ESC, "accel_max": d.ACCEL_ESC, "kQ": d.K_Q, "b_m": d.B_M, "Ja": d.JA,
                    "tau_min": num(d.TAU_MIN_ESC), "f_touch": num(d.F_TOUCH), "k_td": num(d.K_TD),
-                   "accel_td": num(d.ACCEL_TD)},
+                   "accel_td": num(d.ACCEL_TD), "k_mu": num(d.K_MU_ESC), "d_foot": num(2 * d.FOOT_XY),
+                   "f_min": num(d.F_MIN_FOOT)},
            starts={"tau": num(d.Q0 + d.B_M * d.OMEGA0), "w_ref": num(d.OMEGA0), "wr": num(d.OMEGA0),
                    "first": "1.0", "v_bus_s": num(d.V_BUS0)})
     D.sig("Alloc", "w_cmd", "Esc", "w_cmd")
@@ -410,7 +424,9 @@ def build(name: str, hover: bool) -> dict:
     D.sig("Mission", "motor", "Esc", "armed")
     D.sig("Alloc", "cyc_amp", "Esc", "cyc_amp")
     D.sig("Motor", "v_bus", "Esc", "v_bus")
-    D.sig("Aero", "fc_max", "Esc", "fc")
+    D.sig("Feet", "f", "Esc", "f")
+    D.sig("Mission", "land", "Esc", "land")
+    D.sig("Mission", "thr", "Esc", "thr")
     D.node("Drive", "project:CyclicDrive", 940, 180,
            params={"k_t": d.K_MOT, "R_w": d.R_W, "K_c": num(d.K_CUR), "tau_max": 1.6})
     D.sig("Esc", "tau", "Drive", "tau_base")
@@ -442,14 +458,14 @@ def build(name: str, hover: bool) -> dict:
         {"id": "p4", "title": "Swashplateless actuation: moment request (N m) and cyclic torque components (N m)",
          "signals": ["Rate/tau[1]", "Rate/tau[2]", "Alloc/cyc_x", "Alloc/cyc_y", "Alloc/cyc_amp"]},
         {"id": "p5", "title": "Yaw: rotor drag, fin torque (N m) and yaw rate (rad/s)",
-         "signals": ["Rotor/Q", "Fins/Qz", "Truth/wb[3]"]},
+         "signals": ["Rotor/Q", "Fins/Qz", "Truth/wb[3]", "YawMean/y"]},
         {"id": "p6", "title": "Battery: bus voltage (V), pack current and motor current (A)",
          "signals": ["Motor/BusV/y", "Motor/Ibat/y", "Motor/Imot/y"]},
         {"id": "p7", "title": "Navigation filter errors", "signals": ["Err/pos", "Err/vel", "Err/att"]},
         {"id": "p8", "title": "Tracking error: distance to the set-point (m)", "signals": ["Err/track"]},
-        {"id": "p9", "title": "Landing-gear normal force and its peak hold (N), touchdown and flight mode",
-         "signals": ["Aero/fc", "Aero/fc_max", "Esc/td", "Mission/contact", "Mission/thr", "Mission/armed",
-                     "Mission/motor", "Mission/landed"]},
+        {"id": "p9", "title": "Landing-gear load: true and sensed (N), touchdown and flight mode",
+         "signals": ["Aero/fc", "Feet/fn", "Feet/touch", "Esc/td", "Mission/land", "Mission/contact", "Mission/thr",
+                     "Mission/armed", "Mission/motor", "Mission/landed"]},
     ]
     bindings = [
         {"target": "link:body", "property": "pose",

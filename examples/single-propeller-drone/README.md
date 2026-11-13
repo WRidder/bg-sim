@@ -68,12 +68,16 @@ reference number quoted below.
   Flores' relation for a restitution of 0.2 at the landing speed.
 * **Sensors.** A 500 Hz IMU with bias and noise (the accelerometer reads the specific force of
   the air loads and the contacts, never gravity, each load once), a 100 Hz motion-capture fix,
-  a 50 Hz IR-beacon heading.
+  a 50 Hz IR-beacon heading, and a **foot load sensor** (`FootSensor`: a load cell in each leg,
+  sampled at 400 Hz with 0.03 N of noise per foot). The landing logic reads only this sensor:
+  the four loads go to the drive, their sum and a `touch` flag (the sum above 2 N, held for
+  8 samples so the 50 Hz mission sees it) go to the mission. The true contact force `Aero/fc`
+  is only plotted and checked.
 
 ## Controller
 
 PX4-style cascade: `Waypoints` (50 Hz smooth 7th-order moves with velocity, acceleration and
-jerk feed-forward; the land mode; the touchdown latch and the unload) → `PosCtrl` (50 Hz; thrust direction
+jerk feed-forward; the land mode; the touchdown latch, the unload and the landed latch, all from the foot load sensor) → `PosCtrl` (50 Hz; thrust direction
 from $(a_x,a_y,g)$, drag feed-forward, the jerk as a tilt-rate feed-forward) → `AttCtrl`
 (250 Hz) → `RateCtrl` (400 Hz PI with the gyroscopic feed-forward $(hq,-hp)$) → `Alloc`
 (400 Hz: thrust to rotor speed, moment to cyclic torque) → `RotorEsc` (400 Hz speed loop) →
@@ -106,10 +110,14 @@ Every reference below is derived in `design.py`; the measurement is from the che
 | vertical accelerometer bias estimate | 0.08 m/s² (the IMU's) | 0.0796 m/s² |
 | yaw rate in the 0.25 m/s descent (a model property, see below) | 0.859 rad/s | 0.827 rad/s (mean, 13–14.9 s) |
 | feet reach the ground | 15.057 s | 15.061 s |
-| touchdown load, four damped Hertz feet at once | ≤ 109.8 N | 85.2 N (peak hold `Aero/fc_max`; the feet touch one after another) |
-| yaw rate after the impact, to rest | ≤ 0.457 rad/s | 0.127 rad/s |
-| rise of the CoM above the contact height after the touchdown | ≤ 2.16 mm | 1.46 mm |
-| yaw rate once landed (from 16.41 s) | 0 (friction 1.33 N m against 0.091 N m) | below 0.001 rad/s |
+| touchdown detected by the drive (first contact + at most 2.56 ms) | 15.058 s ± 0.031 | 15.0625 s, 2.5 ms after the contact |
+| largest foot load sample, four damped Hertz feet at once (an upper bound) | ≤ 109.9 N | 78.7 N (`Feet/f_peak`; true peak 85.1 N, the feet touch one after another) |
+| yaw rate after the touchdown without the 1/rev ripple (`YawMean/y`, from 15.212 s) | ≤ 0.348 rad/s | 0.065 rad/s |
+| raw yaw rate after the touchdown (from 15.087 s), with the ripple | ≤ 0.782 rad/s | 0.149 rad/s (one-revolution mean 0.078) |
+| rise of the CoM above the contact height after the touchdown | ≤ 2.16 mm | 1.53 mm |
+| yaw rate once landed (from 16.26 s) | 0 (friction 1.33 N m against 0.091 N m) | below 0.001 rad/s |
+| 1 m/s wind along ±x, ±y: yaw rate through descent and landing (`YawMean/y`) | ≤ 1.375 rad/s | 1.00–1.01 rad/s (in the descent) |
+| 1 m/s wind: height after the touchdown (one foot down at the lean + the hop) | ≤ 0.18917 m | at most 0.18399 m |
 | rest height on the feet (static Hertz penetration 0.279 mm) | 0.18055 m | 0.180556 m |
 
 Height in the hover model stays between 1.3155 and 1.3228 m (set-point 1.32). Peak tilt 0.145 rad
@@ -138,36 +146,97 @@ amount of the same order. The check (6 %) shows only that the model agrees with 
 **Landing.** The land mode descends at 0.25 m/s, so the thrust carries the weight when the feet
 touch. The fins carry the rotor drag in any state, so the only unbalanced yaw torque on the body
 is the rotor's change of angular momentum. Any rotor speed lost while the feet do not hold the
-body goes into its yaw ($J_a/J_z=0.109$ rad/s per rad/s). Before this was handled, the
-50 Hz mission missed the 85 N impact (it sampled 0.31 N at 15.06 s) and latched the touchdown
-only 0.2 s later. In between, the vertical loop read the rebound as a climb and cut the thrust,
-and the speed loop slowed the rotor by 35 rad/s while the body was in the air: 3.27 rad/s of
-yaw. The touchdown sequence now runs in three stages:
+body goes into its yaw ($J_a/J_z=0.109$ rad/s per rad/s). A controller that reads the rebound of
+the feet as a climb cuts the thrust and slows the rotor while the body is in the air; a first
+version of this example did that and spun up to 3.27 rad/s. The feet hold a yaw torque only as
+a friction couple between two loaded feet; one foot alone holds none (the body pivots about it).
+The touchdown logic follows from that:
 
-1. **Impact (15.060 s).** The drive (`RotorEsc`, 400 Hz) reads the peak hold `Aero/fc_max`, so it
-   sees the impact at its next tick (15.0625 s). It brakes the rotor to 97 % of its speed at
-   4000 rad/s², inside the 1.2 N m braking limit. The feet are pressed hard enough to hold the
-   1.5 N m braking reaction from 0.32 to 5.59 ms of `design.py`'s impact simulation. At the
-   latest tick, 4.2 rad/s of the brake falls outside that window, so the landing can leave at
-   most 0.457 rad/s of yaw. The impact's friction stops the 0.84 rad/s descent yaw within 5 ms.
-2. **Hold.** The mission latches the touchdown on its next tick (15.08 s), also from the peak
-   hold. The position loop then holds its last thrust instead of reacting to the rebound, and
-   the drive keeps the rotor at its cap. The thrust carries $0.97^2$ of the weight, so the
-   rebound comes back down in a short hop: at most $(ev)^2/(2g(1-0.97^2))=2.16$ mm with the
-   pads' design restitution $e=0.2$, measured 1.46 mm. The rate loop only damps while the feet
-   are on the ground. An attitude or integral term would lean on the lightly loaded feet with the
-   attitude estimate's error and rock the body.
-3. **Unload (from 15.38 s).** The thrust comes off along a smooth step over 1 s, starting at the
-   drive's cap. The rotor slows gently while the feet carry little and faster as they take the
-   weight. The deceleration torque stays below 0.53 of the feet's friction. The flight
-   controller is off at 16.38 s and the motor 2 s later.
+1. **Detection.** In landing mode (`Mission/land`, from `t_land`) the drive (`RotorEsc`, 400 Hz)
+   latches the touchdown on its first sample of the foot load sensor above 2 N: at most 2.56 ms
+   after the first contact (`design.py`; measured 2.5 ms, at 15.0625 s). The impact lasts 21 ms,
+   so the drive samples it about eight times; the mission (50 Hz) latches on its next tick
+   (15.08 s) from the sensor's held `touch` flag.
+2. **Brake.** The drive sets its own cap, 97 % of its speed reference at the latch, and brakes
+   to it at up to 4000 rad/s², but never with more torque than half the friction its last load
+   samples give. During this first brake it counts the total load: on one foot the body pivots
+   about that foot, which takes 8.5 times less yaw from the same brake than a free body (at most
+   0.208 rad/s), and waiting for a second foot would leave the full thrust on during the
+   rebound. With the feet together at most 0.89 rad/s of the brake falls before the first sample
+   (0.098 rad/s of yaw). With the feet in the air the drive holds its speed.
+3. **Ground.** From the mission's latch the vertical channel no longer reacts to the measured
+   motion: the thrust command is the last value before the touchdown times the unload fraction.
+   The horizontal position and attitude loops **keep flying** (integrators frozen, the rate
+   loop without its integral). At 94 % thrust the feet carry 0.7 N: they cannot hold a wind load
+   or the tipping moment of their own friction, so the vehicle must keep its lean into the wind
+   until the weight is on the feet. The rebound comes back down in several small bounces
+   (measured: 1.53 mm high, the feet off the ground for 0.13 s in total over 0.4 s); the bound for
+   a level touchdown is $(ev)^2/(2g(1-0.97^2))=2.16$ mm with the pads' design restitution $e=0.2$.
+4. **Unload.** The mission's thrust fraction falls along a smooth step over 1 s **from the latch**,
+   and the drive scales its own cap with it, so the unload starts exactly at the cap and not at a
+   command the drive is not following. After the first brake the drive slows the rotor only with
+   the torque that *pairs* of loaded feet hold (the best of the two diagonals and the edge
+   pairs, half the friction): on one foot or in the air the rotor speed stays where it is, so a
+   bounce stretches the unload instead of spinning the body. On settled feet the deceleration
+   torque stays below 0.40 of the friction.
+5. **Landed.** Once the schedule has ended and the sensor has read more than half the weight for
+   5 mission ticks, the flight controller is off (16.16 s; at the latest 16.23 s in calm air) and
+   the motor 2 s later.
 
-The yaw rate after the impact peaks at 0.127 rad/s (0.135 rad/s inside the impact). Once landed,
-the feet's friction (1.33 N m) holds the run-down torque ($J_a\cdot 260$ rad/s² $=0.091$ N m),
-and the yaw rate stays below 0.001 rad/s.
+**What the yaw checks measure.** The raw yaw rate after the touchdown peaks at 0.149 rad/s, but
+most of that is not a spin: the cyclic torque shakes the body in yaw against the rotor once per
+revolution, up to $A_{max}/(J_z\omega)=0.476$ rad/s at full cyclic, with zero mean. `YawMean/y`
+(the yaw rate through a 25 ms lag, a read-out only) removes it: 0.065 rad/s after the touchdown;
+the one-revolution mean of the raw signal peaks at 0.078 rad/s. With the landing 11 ms later
+(`Mission/t_land = 10.011`, another phase against the 400 Hz and 50 Hz ticks) the values are
+0.144 rad/s (`YawMean`), 0.255 rad/s raw and a 1.66 mm hop. Once landed, the feet's friction
+(1.33 N m) holds the run-down torque ($J_a\cdot 260$ rad/s² $=0.091$ N m), and the yaw rate
+stays below 0.001 rad/s.
+
+**Landing in wind.** The dashboard's wind sliders go to ±3 m/s; the landing logic is checked to
+**1 m/s** (four check variants, wind along ±x and ±y). In a wind the vehicle leans (0.044 rad at
+1 m/s) and arrives with more yaw (the crossflow changes the fin torque; 0.91 rad/s in the descent,
+1.0 with the ripple), and one foot touches first with the vehicle still moving a little. The
+flat, calm bounds above do not apply; the wind checks bound the yaw by what the vehicle arrives
+with plus the one-foot brake (1.375 rad/s), and the height by the lean geometry plus the hop.
+Measured, from 15.087 s (yaw in rad/s, raw peak / one-revolution mean; hop above the contact
+height):
+
+| wind | yaw peak / mean | from 0.1 s after the contact | hop | landed |
+| --- | --- | --- | --- | --- |
+| calm | 0.15 / 0.08 | 0.15 / 0.08 | 1.5 mm | 16.16 s |
+| 0.3 m/s x | 0.47 / 0.33 | 0.47 / 0.33 | 2.1 mm | 16.22 s |
+| 0.5 m/s x | 0.80 / 0.63 | 0.80 / 0.63 | 3.7 mm | 16.42 s |
+| 1 m/s x | 1.33 / 0.88 | 0.55 / 0.30 | 2.5 mm | 16.28 s |
+| 1 m/s y | 1.37 / 0.95 | 0.58 / 0.33 | 3.1 mm | 16.30 s |
+| −1 m/s x | 0.68 / 0.59 | 0.68 / 0.59 | 2.8 mm | 16.28 s |
+| −1 m/s y | 0.78 / 0.65 | 0.78 / 0.65 | 3.2 mm | 16.58 s |
+| 2 m/s x | 1.25 / 0.88 | 1.25 / 0.88 | 6.2 mm | 18.08 s |
+
+In every row to 2 m/s the vehicle ends upright on four feet with no spin. The early peaks at
+1 m/s are the arrival yaw, which a single foot does not stop for about 70 ms; later yaw comes
+from a foot scrubbing sideways while it carries load (the friction of one sliding foot turns the
+body, about 6 rad/s per m/s of sideways speed), which no rotor logic removes. At 2 m/s the
+vehicle bounces for over a second before the weight settles (landed at 18.08 s, the rotor still
+running down at 20 s). At **3 m/s it tips over** on the touchdown. So: the landing is good to
+about 1 m/s, lands late but upright at 2 m/s, and fails at 3 m/s; the calm bounds (0.348 rad/s,
+2.16 mm) hold only in calm air.
+
+**Limits of the landing logic.**
+
+* The mission flies **one landing**: its touchdown and landed latches do not reset, and there
+  is no take-off. The drive's latch does reset, whenever landing mode is off or the drive is
+  disarmed, and it can only latch in landing mode, so a foot load in normal flight (or a
+  re-arm) does not leave the brake on.
+* In landing mode any touch above 2 N latches (a foot brushing an obstacle during the descent
+  would start the unload); there is no go-around.
+* The drive counts on half the feet's friction coefficient (0.4 of 0.8). On a slippery floor
+  (below 0.4) the body would turn during the unload.
+* The sensor is a model: white noise, no drift, no dynamics, and the friction in the simulation
+  is the ideal Coulomb law the drive assumes.
 
 **Cost.** Hover model: 23 790 solver steps (8 s, 10 s of solve on this machine); flight model:
-110 969 steps (20 s, 14 s of solve). An earlier version of the example took 8 805 and 29 840 steps. The hub moment
+111 987 steps (20 s, 14 s of solve). An earlier version of the example took 8 805 and 29 840 steps. The hub moment
 now follows the rotor's revolution (a 2/rev ripple the solver resolves), and the winding current
 is a state with a 0.6 ms time constant.
 
@@ -182,6 +251,13 @@ is a state with a 0.6 ms time constant.
   velocity integrator builds the lean (−0.64 m/s² at 3 s), the step then overshoots 11.9 cm, and
   the heading keeps turning (2.58 rad at 8 s): a crossflow changes the fin torque only at second
   order (design.py: +0.85 mN m at 1 m/s), and nothing holds the heading.
+* **Wind at the landing.** `wind_x = 1` in the flight model: plot `Feet/f`, `Esc/t_hold`,
+  `Truth/wb[3]` and `YawMean/y` around 15 s. One foot touches first and `Esc/t_hold` (the yaw
+  torque the drive may use) stays at zero after the first brake until a second foot is loaded.
+  At 3 m/s the vehicle tips over.
+* **Ground attitude hold off.** `Rate/k_ground = 0` makes the rate loop only damp on the ground
+  (no attitude command). In calm air this lands; in a 1 m/s wind the vehicle, still carried by
+  the thrust, loses its lean and tips over.
 * **No gyroscopic feed-forward.** Set `Rate/k_gyro = 0`: the rate loop then fights the
   precession with its PI alone (design.py: coupled damping 0.360 instead of 0.691).
 * **Free nutation.** Set `Rate/Kp`, `Rate/Ki` and `Rate/k_gyro` to 0 in the hover model and plot
@@ -194,11 +270,11 @@ is a state with a 0.6 ms time constant.
 * `library/Motor.bgsub.json` (generated: battery, bus, inverter, winding and EM converter, used
   once per model)
 * `bgsim.project.json`, `expected.json`, `scenes/single-propeller-drone.sdf` (generated)
-* `library/` `PropRotor`, `CyclicDrive`, `RotorEsc` (with the touchdown brake), `AeroWrench`, `FinSet`, `Alloc`, `PosCtrl`,
+* `library/` `PropRotor`, `CyclicDrive`, `RotorEsc` (with the touchdown latch, brake and friction-limited unload), `AeroWrench`, `FinSet`, `Alloc`, `PosCtrl`,
   `AttCtrl`, `RateCtrl`, `NavFilter`, `ImuSensor`, `Mocap`, `IrBeacon`, `Truth`, `EstError`,
-  `Waypoints`, `AddVec3`
+  `Waypoints`, `FootSensor` (the foot load sensor), `AddVec3`
 * `design/design.py` (mass properties, slipstream and fin trim, yaw damping, drive and battery
-  operating point, gains and the linear models, nutation, landing and the touchdown sequence), `design/build_model.py`
+  operating point, gains and the linear models, nutation, landing, the touchdown bounds with the sampled foot load, and the wind landing bounds), `design/build_model.py`
   (model, subsystem and scene generator), `design/design.json`
 * `tools/example_docs/src/single-propeller-drone.md` (docs source)
 

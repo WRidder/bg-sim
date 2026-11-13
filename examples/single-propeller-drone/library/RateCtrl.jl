@@ -15,16 +15,19 @@
     # (kM_est A_max), and the integral is frozen while the limit is active and the error pushes
     # into it. There is no yaw channel: the vehicle has no yaw actuator.
     #
-    # On the ground (`ground` = 1, the touchdown latch) the loop only damps: the rate set-point
-    # is zero and the integral is cleared, so it brakes any rocking of the body on its feet but
-    # never pushes against them (an attitude or integral term would lean on the feet with the
-    # attitude estimate's error and lift the lightly loaded ones).
+    # On the ground (`ground` = 1, the touchdown latch) the integral is zero (cleared on the first
+    # ground tick and kept at zero, also while the moment limit is active), and the rate
+    # set-point is scaled by `k_ground`. With k_ground = 1 the attitude loop keeps its
+    # proportional authority, so the vehicle holds its lean into the wind while the thrust still
+    # carries it (`PosCtrl`). Without the integral the loop pushes against the loaded feet with
+    # no more than Kp K_att times the attitude error. With k_ground = 0 the loop only damps the
+    # body rates; the vehicle then tips over in a wind.
     @inputs begin
         w_sp::Vec{2}, [unit = "rad/s", description = "Roll/pitch rate set-point"]
         w::Vec{3}, [unit = "rad/s", description = "Estimated body rates"]
         w_rot::Real, [unit = "rad/s", description = "Measured rotor speed"]
         armed::Real
-        ground::Real, [description = "1 on the ground: rate damping only"]
+        ground::Real, [description = "1 on the ground: no integral, set-point scaled by k_ground"]
     end
     @outputs tau::Vec{2} = [0.0, 0.0]
     @parameters begin
@@ -34,24 +37,27 @@
         k_gyro::Real = 1.0, [description = "Gyroscopic feed-forward on (1) or off (0)"]
         tau_max::Real = 0.2, [unit = "N*m", min = 0, description = "Moment limit (magnitude)"]
         i_max::Real = 0.05, [unit = "N*m", description = "Integral limit per axis"]
+        k_ground::Real = 1.0, [min = 0, max = 1, description = "Fraction of the rate set-point kept on the ground"]
     end
     @variables I::Vec{2} = [0.0, 0.0], [description = "Integral state"]
     @discrete Ts = 2.5e-3 begin
         h = Ja * w_rot
         fl = ifelse(ground > 0.5, 0.0, 1.0)
-        e1 = fl * w_sp[1] - w[1]
-        e2 = fl * w_sp[2] - w[2]
+        ks = fl + (1.0 - fl) * k_ground
+        e1 = ks * w_sp[1] - w[1]
+        e2 = ks * w_sp[2] - w[2]
         i1 = fl * clamp(I[1] + Ki * e1 * Ts, -i_max, i_max)
         i2 = fl * clamp(I[2] + Ki * e2 * Ts, -i_max, i_max)
         u1 = Kp * e1 + i1 + k_gyro * h * w[2]
         u2 = Kp * e2 + i2 - k_gyro * h * w[1]
         un = sqrt(u1 * u1 + u2 * u2)
         if un > tau_max
+            # freeze the integral where the error pushes into the limit (on the ground: zero)
             if u1 * e1 > 0.0
-                i1 = I[1]
+                i1 = fl * I[1]
             end
             if u2 * e2 > 0.0
-                i2 = I[2]
+                i2 = fl * I[2]
             end
             u1 = Kp * e1 + i1 + k_gyro * h * w[2]
             u2 = Kp * e2 + i2 - k_gyro * h * w[1]

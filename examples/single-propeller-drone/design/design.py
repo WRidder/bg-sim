@@ -19,7 +19,9 @@ Everything the model and the checks need is derived here, and `build_model.py` i
 * the passive yaw time constant (Jz + Ja)/D from the linearised fin law;
 * the electrical operating point of the drive (motor, inverter, 6S pack);
 * the control gains from stated targets, checked on a linear model of one tilt axis;
-* the free nutation frequency of the body plus gyrostat, h/sqrt(Jx Jy).
+* the free nutation frequency of the body plus gyrostat, h/sqrt(Jx Jy);
+* the touchdown: the flat impact with the drive's sampled foot-load law, the one-foot
+  pivot, the unload, and the wind landing bounds.
 
 The fin law below is a Python twin of `library/FinSet.jl`; keep the two in step.
 """
@@ -600,95 +602,175 @@ TAU_FRICTION = MU_FEET * M * G * math.hypot(FOOT_XY, FOOT_XY)
 # Touchdown. In the descent the thrust carries the weight, so the rebound of the feet would float
 # the body, and taking the thrust off means slowing the rotor. The fins carry the drag torque Q
 # in any state, so the only unbalanced yaw torque on the body is the rotor's change of
-# angular momentum: whatever speed the rotor loses while the feet are off the ground goes into
-# the body's yaw, Jz dr = -Ja dW (Ja/Jz = 0.109 rad/s per rad/s). The speed therefore comes
-# down while the feet are pressed or loaded:
-#  * the drive sees the touchdown at its 400 Hz tick from the peak hold and brakes the rotor to
-#    K_TD w0 with the reference slewing at ACCEL_TD (inside what the torque limit TAU_MIN_ESC
-#    allows); the brake takes T_BRAKE, inside the impact T_IMPACT, and the feet's friction
-#    mu F_n r holds the braking reaction while F_n > F_N_BRAKE;
-#  * the thrust then carries K_TD^2 of the weight: the rebound e v comes back within a hop of
-#    height (e v)^2 / (2 g (1 - K_TD^2)) and duration 2 e v / (g (1 - K_TD^2)) at a constant
-#    rotor speed, so no yaw torque;
-#  * T_HOLD after the latch (longer than the hop) the thrust comes off along the smooth step
-#    over T_UNLOAD, from the drive's cap K_TD^2 of the touchdown thrust: the rotor slows gently
-#    while the feet carry little and faster as they take the weight m g (1 - x^2), so their
-#    friction always exceeds the deceleration torque (UNLOAD_RATIO < 1).
-F_TOUCH = 2.0                 # N  landing-gear force that counts as touchdown (drive and mission)
+# angular momentum: whatever speed the rotor loses while the feet do not hold the body goes into
+# the body's yaw, Jz dr = -Ja dW (Ja/Jz = 0.109 rad/s per rad/s). What holds the body:
+#  * two loaded feet a distance s apart hold a yaw torque mu s min(N_a, N_b) as a friction
+#    couple (four equal feet: mu r_foot F_n in total);
+#  * one loaded foot holds no torque. The body pivots about it, with the yaw inertia
+#    Jz + m r_foot^2 instead of Jz (a factor K_PIVOT);
+#  * feet in the air hold nothing.
+# The drive therefore reads the foot loads (FootSensor, at its own 400 Hz) and never changes the
+# rotor speed faster than a fraction GAMMA_FR of what the last samples hold:
+#  * touchdown brake: on the first tick with a total load above F_TOUCH the drive caps the speed
+#    at K_TD times its reference and slews down to the cap at up to ACCEL_TD (inside the torque
+#    limit TAU_MIN_ESC), limited by the total load: Ja a <= K_MU_ESC r_foot (F - 4 f_min).
+#    This brake does not wait for a second foot, because until it is done the thrust carries
+#    the whole weight; on one foot it costs the pivot's share (R_PIVOT below);
+#  * after the brake: only the load that two feet share counts (RotorEsc's pairing), and the
+#    slew is at most ACCEL_ESC. In the air or on one foot the speed stays where it is;
+#  * the mission's ground thrust fraction falls from 1 to 0 along the smooth step over
+#    T_UNLOAD from its touchdown latch, and scales the drive's cap. The drive follows as the
+#    feet take the weight m g (1 - x^2), x = w / w_touchdown, never above GAMMA_FR of the
+#    friction the settled feet give.
+# Until the weight is on the feet the vehicle still flies: the position and attitude loops keep
+# the horizontal axes (the lean into a wind), only the vertical channel is frozen.
+F_TOUCH = 2.0                 # N  total foot load that counts as touchdown (sensor, drive)
+SIGMA_FOOT = 0.03             # N  white noise of one foot's load sample
+F_MIN_FOOT = 0.1              # N  load below which the drive counts a foot as unloaded (3.3 sigma)
 K_TD = 0.97                   # fraction of the rotor speed kept at touchdown
 TAU_MIN_ESC = -1.2            # N m  braking torque limit of the drive (the drive's limit is 1.6 N m)
-TAU_BRAKE_REACT = Q0 + B_M * OMEGA0 - TAU_MIN_ESC      # N m  yaw torque on the body while braking
+TAU_BRAKE_REACT = Q0 + B_M * OMEGA0 - TAU_MIN_ESC      # N m  yaw torque on the body at the braking limit
 A_BRAKE_MAX = TAU_BRAKE_REACT / JA                     # rad/s^2  deceleration at the torque limit
-ACCEL_TD = 4000.0             # rad/s^2  slew of the speed reference while braking
+ACCEL_TD = 4000.0             # rad/s^2  largest slew of the speed reference while braking
 assert ACCEL_TD < A_BRAKE_MAX
-T_TICK_ESC = 2.5e-3           # s  the drive's tick: the latest it sees the impact
-T_BRAKE = (1.0 - K_TD) * OMEGA0 / ACCEL_TD
-assert T_TICK_ESC + T_BRAKE < T_IMPACT, "the brake must end while the feet are pressed"
-F_N_BRAKE = TAU_BRAKE_REACT / (MU_FEET * math.hypot(FOOT_XY, FOOT_XY))
+T_TICK_ESC = 2.5e-3           # s  the drive's and the foot sensor's tick
+T_TICK_MISSION = 20e-3        # s  the mission's tick
+N_TOUCH_HOLD = round(T_TICK_MISSION / T_TICK_ESC)      # ticks the sensor holds its touch flag
+R_FOOT = math.hypot(FOOT_XY, FOOT_XY)                  # m  foot radius from the body axis
+GAMMA_FR = 0.5                # fraction of the feet's friction the drive counts on
+K_MU_ESC = GAMMA_FR * MU_FEET
+T_UNLOAD = 1.0                # s  the mission's ground thrust fraction falls to 0 over this time
+T_SPIN = 2.0                  # s  motor off this long after `landed`
+F_LAND = 0.5 * M * G          # N  sensed foot load that counts as landed (half the weight) ...
+N_LAND = 5                    # ... for this many mission ticks in a row
+K_GROUND = 1.0                # the attitude loop keeps its proportional authority on the ground
+T_YAW_MEAN = 0.025            # s  lag of the yaw-rate read-out YawMean (about two revolutions)
+K_PIVOT = JZ / (JZ + M * R_FOOT**2)                    # yaw rate of a body pivoting on one foot / free body
+V_REB = E_FEET * V_LAND       # m/s  rebound at the pads' design restitution
 
 
-def impact_window(v: float, c: float, f_lo: float, f_hi: float, dt: float = 2.0e-7) -> tuple[float, float, float]:
-    """The flat impact of `impact`: the time the force first exceeds f_lo, first exceeds f_hi,
-    and last exceeds f_hi (from the first contact)."""
-    x, xd, t = 0.0, v, 0.0
-    t_lo = t_hi0 = t_hi1 = None
-    while x >= 0.0:
-        f = K_HERTZ4 * max(x, 0.0) ** 1.5 * max(1.0 + c * xd, 0.0)
-        if t_lo is None and f > f_lo:
-            t_lo = t
-        if f > f_hi:
-            t_hi0 = t if t_hi0 is None else t_hi0
-            t_hi1 = t
-        a = -f / M
-        x += xd * dt + 0.5 * a * dt * dt
-        xd += a * dt
+def touchdown_flat(phase: float, dt: float = 1.0e-6) -> dict[str, float]:
+    """The flat touchdown with the drive's sampled law: four equal Hunt-Crossley feet hit at
+    V_LAND with the thrust carrying the weight, m x'' = m g (1 - xi^2) - F(x, x'), xi the rotor
+    speed over its touchdown value. The drive samples F every T_TICK_ESC, first `phase` after
+    the first contact, latches above F_TOUCH and slews xi down to K_TD at
+    a = min(ACCEL_TD, K_MU_ESC R_FOOT (F_k - 4 F_MIN_FOOT) / Ja), held over the tick (the rotor
+    follows its reference: ACCEL_TD is inside the torque limit).
+
+    Returns the peak force, the latch time, the rotor speed lost while the reaction Ja a exceeds
+    the feet's friction mu R_FOOT F(t) (rad/s), xi and the rebound speed at lift-off, and the
+    contact duration."""
+    x, xd, xi, t = 0.0, V_LAND, 1.0, 0.0
+    a, t_next, latched, t_latch = 0.0, phase, False, float("nan")
+    fmax, dw_unheld = 0.0, 0.0
+    while True:
+        f = K_HERTZ4 * max(x, 0.0) ** 1.5 * max(1.0 + C_CONTACT * xd, 0.0)
+        if t >= t_next:
+            t_next += T_TICK_ESC
+            if not latched and f > F_TOUCH:
+                latched, t_latch = True, t
+            a = 0.0
+            if latched and xi > K_TD:
+                a = min(ACCEL_TD, K_MU_ESC * R_FOOT * max(f - 4.0 * F_MIN_FOOT, 0.0) / JA,
+                        (xi - K_TD) * OMEGA0 / T_TICK_ESC)
+        fmax = max(fmax, f)
+        if a > 0.0:
+            xi -= a * dt / OMEGA0
+            dw_unheld += max(0.0, JA * a - MU_FEET * R_FOOT * f) / JA * dt
+        acc = G * (1.0 - xi * xi) - f / M
+        x += xd * dt + 0.5 * acc * dt * dt
+        xd += acc * dt
         t += dt
-    return t_lo, t_hi0, t_hi1
+        if x <= 0.0:
+            return {"f_peak": fmax, "t_latch": t_latch, "dw_unheld": dw_unheld, "xi": xi, "v_reb": -xd, "t": t}
 
 
-# When the brake works and when the feet hold it: the drive sees the force pass F_TOUCH at its
-# next tick (at most T_TICK_ESC later) and brakes for T_BRAKE; the friction holds the braking
-# reaction only while F_n > F_N_BRAKE. Whatever the rotor loses outside that window goes into the
-# body's yaw (Ja/Jz per rad/s): with the latest tick, that bounds the yaw the landing can leave.
-T_TOUCH, T_STRONG0, T_STRONG1 = impact_window(V_LAND, C_CONTACT, F_TOUCH, F_N_BRAKE)
-_brake0 = T_TOUCH + T_TICK_ESC
-DW_UNHELD = ACCEL_TD * (max(0.0, T_STRONG0 - _brake0) + max(0.0, _brake0 + T_BRAKE - T_STRONG1))
-R_LAND_MAX = JA / JZ * DW_UNHELD
-A_HOP = G * (1.0 - K_TD**2)   # m/s^2  net downward acceleration after the brake
-# rebound speed of the feet: the pads are sized for a restitution E_FEET at the landing speed
-# (the flat impact simulation gives E_IMPACT, a little less); the bound uses E_FEET
-V_REB = E_FEET * V_LAND
-H_HOP = V_REB**2 / (2.0 * A_HOP)
-T_HOP = 2.0 * V_REB / A_HOP
-T_TICK_MISSION = 20e-3        # s  the mission's tick: the latest it latches the touchdown
-T_HOLD = 0.3                  # s  thrust held from the latch (longer than the hop) ...
-assert T_HOLD > T_IMPACT + T_HOP
-T_UNLOAD = 1.0                # s  ... then taken off along the smooth step over this time
-N_UNLOAD = M * G * (1.0 - K_TD**2)
-TAU_FRICTION_UNLOAD = MU_FEET * N_UNLOAD * math.hypot(FOOT_XY, FOOT_XY)
+# The tick phase is not known, so the bounds take the worst of a scan over one tick. The hop
+# uses the rebound of the scan or the pads' design restitution, whichever is larger, against
+# the net downward acceleration g (1 - xi^2) the brake has reached at lift-off.
+TD_SCAN = [touchdown_flat((k + 0.5) / 20.0 * T_TICK_ESC) for k in range(20)]
+T_DETECT = max(r["t_latch"] for r in TD_SCAN)            # s  latest latch after the first contact
+DW_UNHELD = max(r["dw_unheld"] for r in TD_SCAN)         # rad/s
+R_LAND_FLAT = JA / JZ * DW_UNHELD                        # rad/s  yaw the flat brake can leave
+XI_LIFT = max(r["xi"] for r in TD_SCAN)                  # rotor speed fraction at lift-off, worst
+H_HOP = max(max(r["v_reb"], V_REB) ** 2 / (2.0 * G * (1.0 - r["xi"] ** 2)) for r in TD_SCAN)
+T_HOP = max(2.0 * max(r["v_reb"], V_REB) / (G * (1.0 - r["xi"] ** 2)) for r in TD_SCAN)
+F_SENSED_MAX = max(r["f_peak"] for r in TD_SCAN)         # N  (the sensor cannot read more than the true peak)
+# one foot first (a leaning vehicle): the whole brake acts on a body pivoting about that foot,
+# and so does the yaw rate it arrives with
+R_PIVOT = JA * (1.0 - K_TD) * OMEGA0 / (JZ + M * R_FOOT**2)
+# the once-per-revolution cyclic torque (amplitude up to A_MAX) shakes the body in yaw against
+# the rotor: a ripple of A_MAX / (Jz w) in the yaw rate, with zero mean. YawMean, a first-order
+# lag over T_YAW_MEAN, passes 1/sqrt(1 + (w T)^2) of it.
+R_RIPPLE = A_MAX / (JZ * K_TD * OMEGA0)
+R_RIPPLE_MEAN = R_RIPPLE / math.sqrt(1.0 + (K_TD * OMEGA0 * T_YAW_MEAN) ** 2)
 
 
-def unload_margin(n: int = 4000) -> float:
-    """Largest ratio of the rotor's deceleration torque to the feet's friction during the unload.
+def unload_time(dt: float = 1.0e-4) -> tuple[float, float, float]:
+    """The unload on settled, equally loaded feet, from the mission's latch (t = 0, x = K_TD).
 
-    The thrust command is K_TD^2 F_td (1 - S(s)), s = t / T_UNLOAD (it starts at the drive's
-    touchdown cap); the rotor follows x = w / w0 = K_TD sqrt(1 - S) at no more than ACCEL_ESC,
-    and the feet carry m g (1 - x^2) (thrust and fin download both scale with w^2)."""
-    worst, ts = 0.0, T_UNLOAD / n
-    x_prev = K_TD
-    for k in range(1, n + 1):
-        s = k / n
-        sg = s**4 * (35 - 84 * s + 70 * s * s - 20 * s**3)
-        x = max(K_TD * math.sqrt(max(1.0 - sg, 0.0)), x_prev - ACCEL_ESC * ts / OMEGA0)
-        tau = JA * OMEGA0 * (x_prev - x) / ts
-        fr = MU_FEET * M * G * (1.0 - x * x) * math.hypot(FOOT_XY, FOOT_XY)
-        worst = max(worst, tau / fr)
-        x_prev = x
-    return worst
+    The target is x = K_TD sqrt(1 - S(t / T_UNLOAD)); the drive follows at no more than
+    ACCEL_ESC and no more than its own limit Ja a <= K_MU_ESC R_FOOT (m g (1 - x^2) - 4 f_min).
+    The first T_IMPACT + T_HOP are skipped (the feet may be in the air: nothing happens).
+    Returns the time at which the feet carry F_LAND (and the schedule has ended), the time the
+    rotor reaches the end of the schedule's range, and the largest ratio of the rotor's
+    deceleration torque to the feet's friction."""
+    t, x, worst, t_land = 0.0, K_TD, 0.0, None
+    x_idle = 90.0 / OMEGA0
+    while x > x_idle + 1e-9 or t_land is None:
+        t += dt
+        s = min(t / T_UNLOAD, 1.0)
+        target = max(K_TD * math.sqrt(max(1.0 - s**4 * (35 - 84 * s + 70 * s * s - 20 * s**3), 0.0)), x_idle)
+        load = M * G * (1.0 - x * x)
+        if t > T_IMPACT + T_HOP:
+            a = min(ACCEL_ESC, K_MU_ESC * R_FOOT * max(load - 4.0 * F_MIN_FOOT, 0.0) / JA, max(x - target, 0.0) * OMEGA0 / dt)
+            x -= a * dt / OMEGA0
+            if a > 0.0:
+                worst = max(worst, JA * a / (MU_FEET * R_FOOT * load))
+        if t_land is None and s >= 1.0 and M * G * (1.0 - x * x) > F_LAND:
+            t_land = t
+    return t_land, t, worst
 
 
-UNLOAD_RATIO = unload_margin()
-assert UNLOAD_RATIO < 1.0, "the feet must hold the run-down torque throughout the unload"
+T_FEET_LAND, T_RUNDOWN, UNLOAD_RATIO = unload_time()
+assert UNLOAD_RATIO <= GAMMA_FR + 1e-9, "the drive's own limit keeps the unload inside the feet's friction"
+# `landed` at the latest: contact (as late as the zero-crossing check allows) + the drive's latch
+# + one mission tick + the unload until the feet carry F_LAND + N_LAND ticks + one tick
+T_LANDED_MAX = T_CONTACT + 0.03 + T_DETECT + T_TICK_MISSION + T_FEET_LAND + (N_LAND + 1) * T_TICK_MISSION
+
+
+def lean(wind: float) -> float:
+    """Tilt of the vehicle holding its position in a steady horizontal wind: drag / weight (the
+    fins' and airframe's linear drag, the rotor disc and body drag), plus the lean the
+    horizontal accelerometer bias causes."""
+    drag = (C_FIN_X + C_LIN_AERO) * wind + 0.5 * RHO * (A_PROP * C_DD + A_BODY * C_DB) * wind * wind
+    return math.atan2(drag, M * G) + B_H / G
+
+
+def _descent_yaw_rate_wind(vz: float, wind: float) -> float:
+    """As `_descent_yaw_rate`, with a horizontal wind (body axes, the lean neglected)."""
+    lo, hi = -10.0, 10.0
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if fin_wrench((0, 0, mid, 0, 0, vz), T0, Q0, DELTA_FIN, (wind, 0.0, 0.0))[2] > Q0:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+# The wind landing checks (1 m/s along x, and along y). The vehicle leans, so one foot touches
+# first. Bounds:
+#  * yaw rate (YawMean): what it arrives with (the descent yaw in that wind, with the 6 % of
+#    the descent check), plus the brake on one foot, plus the ripple the read-out passes. A
+#    foot alone does not stop the arrival yaw, so it stays in the bound;
+#  * height: one foot on the ground at the lean raises the CoM by R_FOOT sin(lean); the hop is
+#    added to that.
+W_CHECK = 1.0
+LEAN_W = lean(W_CHECK)
+R_DESCENT_W = _descent_yaw_rate_wind(-V_LAND, W_CHECK)
+R_LAND_WIND = 1.06 * R_DESCENT_W + R_PIVOT + R_RIPPLE_MEAN
+Z_HOP_WIND = Z_CONTACT + R_FOOT * math.sin(LEAN_W) + H_HOP
 
 DATA = {
     "g": G, "rho": RHO, "m": M, "m_rotor": M_ROTOR,
@@ -720,11 +802,15 @@ DATA = {
     "t_to_contact": T_TO_CONTACT, "k_contact": K_CONTACT, "c_contact": C_CONTACT, "e_feet": E_FEET,
     "r_descent": R_DESCENT, "x_impact": X_IMPACT, "f_impact": F_IMPACT,
     "f_impact_damped": F_IMPACT_D, "e_impact": E_IMPACT, "t_impact": T_IMPACT,
-    "f_touch": F_TOUCH, "k_td": K_TD, "tau_min_esc": TAU_MIN_ESC, "tau_brake_react": TAU_BRAKE_REACT,
-    "accel_td": ACCEL_TD, "t_brake": T_BRAKE, "f_n_brake": F_N_BRAKE, "a_hop": A_HOP, "v_reb": V_REB,
-    "h_hop": H_HOP, "t_hop": T_HOP, "t_touch": T_TOUCH, "t_strong": [T_STRONG0, T_STRONG1],
-    "dw_unheld": DW_UNHELD, "r_land_max": R_LAND_MAX, "t_hold": T_HOLD, "t_unload": T_UNLOAD, "unload_ratio": UNLOAD_RATIO, "n_unload": N_UNLOAD,
-    "tau_friction_unload": TAU_FRICTION_UNLOAD,
+    "f_touch": F_TOUCH, "sigma_foot": SIGMA_FOOT, "f_min_foot": F_MIN_FOOT, "k_td": K_TD,
+    "tau_min_esc": TAU_MIN_ESC, "tau_brake_react": TAU_BRAKE_REACT, "accel_td": ACCEL_TD,
+    "r_foot": R_FOOT, "gamma_fr": GAMMA_FR, "k_mu_esc": K_MU_ESC, "k_pivot": K_PIVOT, "v_reb": V_REB,
+    "t_detect": T_DETECT, "dw_unheld": DW_UNHELD, "r_land_flat": R_LAND_FLAT, "xi_lift": XI_LIFT,
+    "h_hop": H_HOP, "t_hop": T_HOP, "f_sensed_max": F_SENSED_MAX, "r_pivot": R_PIVOT,
+    "r_ripple": R_RIPPLE, "r_ripple_mean": R_RIPPLE_MEAN, "t_yaw_mean": T_YAW_MEAN,
+    "t_unload": T_UNLOAD, "t_spin": T_SPIN, "f_land": F_LAND, "n_land": N_LAND,
+    "t_feet_land": T_FEET_LAND, "t_rundown": T_RUNDOWN, "unload_ratio": UNLOAD_RATIO, "t_landed_max": T_LANDED_MAX,
+    "w_check": W_CHECK, "lean_w": LEAN_W, "r_descent_w": R_DESCENT_W, "r_land_wind": R_LAND_WIND, "z_hop_wind": Z_HOP_WIND,
     "x_static": X_STATIC, "z_rest": Z_REST, "accel_esc": ACCEL_ESC, "mu_feet": MU_FEET, "tau_rundown": TAU_RUNDOWN, "tau_friction": TAU_FRICTION,
     "lp": {"bgc": BGC, "agc": AGC, "bac": BAC, "aac": AAC},
 }
@@ -791,16 +877,24 @@ def main() -> int:
     print(f"  impact simulation with that damping: peak force {F_IMPACT_D:.1f} N, restitution {E_IMPACT:.3f}")
     print(f"  at rest: static penetration {X_STATIC * 1e3:.3f} mm, CoM height {Z_REST:.5f} m")
     print(f"  run-down on the ground: rotor deceleration torque {TAU_RUNDOWN:.3f} N m, feet friction {TAU_FRICTION:.2f} N m")
-    print(f"  touchdown brake: to {K_TD} w0 at {ACCEL_TD:.0f} rad/s^2 in {T_BRAKE * 1e3:.1f} ms (impact lasts {T_IMPACT * 1e3:.1f} ms), "
-          f"braking reaction {TAU_BRAKE_REACT:.3f} N m held while F_n > {F_N_BRAKE:.1f} N")
-    print(f"  impact: force above {F_TOUCH} N after {T_TOUCH * 1e3:.2f} ms, above {F_N_BRAKE:.1f} N from {T_STRONG0 * 1e3:.2f} "
-          f"to {T_STRONG1 * 1e3:.2f} ms; brake (latest tick) {(T_TOUCH + T_TICK_ESC) * 1e3:.2f} to "
-          f"{(T_TOUCH + T_TICK_ESC + T_BRAKE) * 1e3:.2f} ms")
-    print(f"  rotor speed braked outside the hold {DW_UNHELD:.1f} rad/s: body yaw rate at most Ja/Jz x that = {R_LAND_MAX:.3f} rad/s")
-    print(f"  hop: rebound {V_REB:.4f} m/s, net {A_HOP:.3f} m/s^2 down: {H_HOP * 1e3:.2f} mm, {T_HOP * 1e3:.0f} ms; "
-          f"thrust held {T_HOLD} s")
-    print(f"  unload over {T_UNLOAD} s: feet carry >= {N_UNLOAD:.2f} N; rotor deceleration torque at most "
-          f"{UNLOAD_RATIO:.2f} of the feet's friction")
+    print(f"  foot load sensor: {1 / T_TICK_ESC:.0f} Hz, noise {SIGMA_FOOT} N per foot, touch above {F_TOUCH} N held {N_TOUCH_HOLD} ticks; "
+          f"the drive counts a foot above {F_MIN_FOOT} N")
+    print(f"  touchdown brake: to {K_TD} of the speed at up to {ACCEL_TD:.0f} rad/s^2 (torque limit allows {A_BRAKE_MAX:.0f}), "
+          f"limited to {GAMMA_FR} of the friction the sampled load gives (k_mu = {K_MU_ESC}, r_foot = {R_FOOT:.4f} m)")
+    print(f"  flat touchdown with the sampled law, tick phase scanned: latch at most {T_DETECT * 1e3:.2f} ms after the first contact, "
+          f"sampled peak at most {F_SENSED_MAX:.1f} N")
+    print(f"      rotor speed lost outside the feet's friction at most {DW_UNHELD:.2f} rad/s: yaw rate Ja/Jz x that = {R_LAND_FLAT:.3f} rad/s")
+    print(f"      speed fraction at lift-off at most {XI_LIFT:.4f}; hop at most {H_HOP * 1e3:.2f} mm, {T_HOP * 1e3:.0f} ms "
+          f"(rebound {V_REB:.3f} m/s at e = {E_FEET})")
+    for r in TD_SCAN[::5]:
+        print(f"        latch {r['t_latch'] * 1e3:5.2f} ms: lost unheld {r['dw_unheld']:.2f} rad/s, xi {r['xi']:.4f}, rebound {r['v_reb']:.4f} m/s, "
+              f"contact {r['t'] * 1e3:.1f} ms")
+    print(f"  one foot first: the body pivots, yaw inertia x {1 / K_PIVOT:.2f}; the brake leaves {R_PIVOT:.3f} rad/s")
+    print(f"  cyclic ripple of the yaw rate at full cyclic {R_RIPPLE:.3f} rad/s; YawMean ({T_YAW_MEAN} s lag) passes {R_RIPPLE_MEAN:.3f}")
+    print(f"  unload over {T_UNLOAD} s on settled feet: deceleration torque at most {UNLOAD_RATIO:.2f} of the friction; the feet carry "
+          f"{F_LAND:.2f} N {T_FEET_LAND:.3f} s after the latch, idle after {T_RUNDOWN:.3f} s; landed by {T_LANDED_MAX:.3f} s")
+    print(f"  wind {W_CHECK} m/s: lean {LEAN_W:.4f} rad, descent yaw {R_DESCENT_W:.3f} rad/s; yaw bound {R_LAND_WIND:.3f} rad/s, "
+          f"height bound {Z_HOP_WIND:.5f} m (+{(Z_HOP_WIND - Z_CONTACT) * 1e3:.2f} mm)")
     out = HERE / "design.json"
     out.write_text(json.dumps(DATA, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"\nwrote {out}")

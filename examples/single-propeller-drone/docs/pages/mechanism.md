@@ -31,7 +31,7 @@ The example follows
 ArduPilot `MCOUT` / moteus `mcout` firmware: the flight controller runs the attitude loops and
 the motor controller adds the phase-locked cyclic torque from its encoder.
 
-![The model canvas](assets/f88750202992.png)
+![The model canvas](assets/67b371074d77.png)
 
 The two models are:
 

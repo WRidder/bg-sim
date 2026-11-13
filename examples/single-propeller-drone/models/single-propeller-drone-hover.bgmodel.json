@@ -374,6 +374,30 @@
         }
       },
       {
+        "id": "Feet",
+        "name": "Feet",
+        "block": {
+          "ref": "project:FootSensor"
+        },
+        "position": {
+          "x": 1040,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "sigma": "0.03",
+          "f_touch": "2",
+          "n_hold": "8"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
         "id": "Rotor",
         "name": "Rotor",
         "block": {
@@ -591,6 +615,51 @@
         }
       },
       {
+        "id": "YawMean",
+        "name": "YawMean",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 1040,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "0.025"
+        },
+        "constants": {},
+        "starts": {
+          "x": "0.8"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YawSel",
+        "name": "YawSel",
+        "block": {
+          "ref": "stdlib:continuous/Demux3"
+        },
+        "position": {
+          "x": 940,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
         "id": "Imu",
         "name": "Imu",
         "block": {
@@ -725,11 +794,10 @@
           "t_disarm": "99.0",
           "t_land": "99.0",
           "p0": "[0, 0, 1.32]",
-          "f_touch": "2",
-          "t_spin": "2.0",
-          "t_hold": "0.3",
+          "t_spin": "2",
           "t_unload": "1",
-          "thr0": "0.9409",
+          "f_land": "5.886",
+          "n_land": "5",
           "v_land": "0.25",
           "t_ramp": "1"
         },
@@ -822,7 +890,8 @@
           "Ja": "0.0003505922",
           "k_gyro": "1.0",
           "tau_max": "0.25 * cyclic_limit",
-          "i_max": "0.05"
+          "i_max": "0.05",
+          "k_ground": "1"
         },
         "constants": {},
         "starts": {},
@@ -881,7 +950,10 @@
           "tau_min": "-1.2",
           "f_touch": "2",
           "k_td": "0.97",
-          "accel_td": "4000"
+          "accel_td": "4000",
+          "k_mu": "0.4",
+          "d_foot": "0.2",
+          "f_min": "0.1"
         },
         "constants": {},
         "starts": {
@@ -1266,7 +1338,21 @@
         "label": null
       },
       {
-        "id": "b024",
+        "id": "s024",
+        "kind": "signal",
+        "from": {
+          "node": "LegMux",
+          "port": "y"
+        },
+        "to": {
+          "node": "Feet",
+          "port": "leg"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b025",
         "kind": "bond",
         "from": {
           "node": "Body",
@@ -1280,7 +1366,7 @@
         "label": null
       },
       {
-        "id": "b025",
+        "id": "b026",
         "kind": "bond",
         "from": {
           "node": "Shaft"
@@ -1293,7 +1379,7 @@
         "label": null
       },
       {
-        "id": "b026",
+        "id": "b027",
         "kind": "bond",
         "from": {
           "node": "Shaft"
@@ -1306,7 +1392,7 @@
         "label": null
       },
       {
-        "id": "b027",
+        "id": "b028",
         "kind": "bond",
         "from": {
           "node": "Shaft"
@@ -1319,7 +1405,7 @@
         "label": null
       },
       {
-        "id": "s028",
+        "id": "s029",
         "kind": "signal",
         "from": {
           "node": "Rotor",
@@ -1333,7 +1419,7 @@
         "label": null
       },
       {
-        "id": "s029",
+        "id": "s030",
         "kind": "signal",
         "from": {
           "node": "Psi",
@@ -1347,7 +1433,7 @@
         "label": null
       },
       {
-        "id": "s030",
+        "id": "s031",
         "kind": "signal",
         "from": {
           "node": "Aero",
@@ -1355,20 +1441,6 @@
         },
         "to": {
           "node": "WrenchAero",
-          "port": "tx"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s031",
-        "kind": "signal",
-        "from": {
-          "node": "Fins",
-          "port": "tx"
-        },
-        "to": {
-          "node": "WrenchFins",
           "port": "tx"
         },
         "route": [],
@@ -1378,12 +1450,12 @@
         "id": "s032",
         "kind": "signal",
         "from": {
-          "node": "Aero",
-          "port": "ty"
+          "node": "Fins",
+          "port": "tx"
         },
         "to": {
-          "node": "WrenchAero",
-          "port": "ty"
+          "node": "WrenchFins",
+          "port": "tx"
         },
         "route": [],
         "label": null
@@ -1392,11 +1464,11 @@
         "id": "s033",
         "kind": "signal",
         "from": {
-          "node": "Fins",
+          "node": "Aero",
           "port": "ty"
         },
         "to": {
-          "node": "WrenchFins",
+          "node": "WrenchAero",
           "port": "ty"
         },
         "route": [],
@@ -1406,12 +1478,12 @@
         "id": "s034",
         "kind": "signal",
         "from": {
-          "node": "Aero",
-          "port": "tz"
+          "node": "Fins",
+          "port": "ty"
         },
         "to": {
-          "node": "WrenchAero",
-          "port": "tz"
+          "node": "WrenchFins",
+          "port": "ty"
         },
         "route": [],
         "label": null
@@ -1420,11 +1492,11 @@
         "id": "s035",
         "kind": "signal",
         "from": {
-          "node": "Fins",
+          "node": "Aero",
           "port": "tz"
         },
         "to": {
-          "node": "WrenchFins",
+          "node": "WrenchAero",
           "port": "tz"
         },
         "route": [],
@@ -1434,12 +1506,12 @@
         "id": "s036",
         "kind": "signal",
         "from": {
-          "node": "Aero",
-          "port": "fx"
+          "node": "Fins",
+          "port": "tz"
         },
         "to": {
-          "node": "WrenchAero",
-          "port": "fx"
+          "node": "WrenchFins",
+          "port": "tz"
         },
         "route": [],
         "label": null
@@ -1448,11 +1520,11 @@
         "id": "s037",
         "kind": "signal",
         "from": {
-          "node": "Fins",
+          "node": "Aero",
           "port": "fx"
         },
         "to": {
-          "node": "WrenchFins",
+          "node": "WrenchAero",
           "port": "fx"
         },
         "route": [],
@@ -1462,12 +1534,12 @@
         "id": "s038",
         "kind": "signal",
         "from": {
-          "node": "Aero",
-          "port": "fy"
+          "node": "Fins",
+          "port": "fx"
         },
         "to": {
-          "node": "WrenchAero",
-          "port": "fy"
+          "node": "WrenchFins",
+          "port": "fx"
         },
         "route": [],
         "label": null
@@ -1476,11 +1548,11 @@
         "id": "s039",
         "kind": "signal",
         "from": {
-          "node": "Fins",
+          "node": "Aero",
           "port": "fy"
         },
         "to": {
-          "node": "WrenchFins",
+          "node": "WrenchAero",
           "port": "fy"
         },
         "route": [],
@@ -1490,6 +1562,20 @@
         "id": "s040",
         "kind": "signal",
         "from": {
+          "node": "Fins",
+          "port": "fy"
+        },
+        "to": {
+          "node": "WrenchFins",
+          "port": "fy"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s041",
+        "kind": "signal",
+        "from": {
           "node": "Aero",
           "port": "fz"
         },
@@ -1501,7 +1587,7 @@
         "label": null
       },
       {
-        "id": "s041",
+        "id": "s042",
         "kind": "signal",
         "from": {
           "node": "Fins",
@@ -1515,29 +1601,15 @@
         "label": null
       },
       {
-        "id": "s042",
-        "kind": "signal",
-        "from": {
-          "node": "Rotor",
-          "port": "T"
-        },
-        "to": {
-          "node": "Aero",
-          "port": "T"
-        },
-        "route": [],
-        "label": null
-      },
-      {
         "id": "s043",
         "kind": "signal",
         "from": {
           "node": "Rotor",
-          "port": "Mx"
+          "port": "T"
         },
         "to": {
           "node": "Aero",
-          "port": "Mx"
+          "port": "T"
         },
         "route": [],
         "label": null
@@ -1547,6 +1619,20 @@
         "kind": "signal",
         "from": {
           "node": "Rotor",
+          "port": "Mx"
+        },
+        "to": {
+          "node": "Aero",
+          "port": "Mx"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s045",
+        "kind": "signal",
+        "from": {
+          "node": "Rotor",
           "port": "My"
         },
         "to": {
@@ -1557,7 +1643,7 @@
         "label": null
       },
       {
-        "id": "s045",
+        "id": "s046",
         "kind": "signal",
         "from": {
           "node": "Body",
@@ -1571,7 +1657,7 @@
         "label": null
       },
       {
-        "id": "s046",
+        "id": "s047",
         "kind": "signal",
         "from": {
           "node": "Free",
@@ -1585,7 +1671,7 @@
         "label": null
       },
       {
-        "id": "s047",
+        "id": "s048",
         "kind": "signal",
         "from": {
           "node": "LegMux",
@@ -1599,7 +1685,7 @@
         "label": null
       },
       {
-        "id": "s048",
+        "id": "s049",
         "kind": "signal",
         "from": {
           "node": "Body",
@@ -1613,7 +1699,7 @@
         "label": null
       },
       {
-        "id": "s049",
+        "id": "s050",
         "kind": "signal",
         "from": {
           "node": "Free",
@@ -1627,35 +1713,35 @@
         "label": null
       },
       {
-        "id": "s050",
-        "kind": "signal",
-        "from": {
-          "node": "Rotor",
-          "port": "T"
-        },
-        "to": {
-          "node": "Fins",
-          "port": "T"
-        },
-        "route": [],
-        "label": null
-      },
-      {
         "id": "s051",
         "kind": "signal",
         "from": {
           "node": "Rotor",
-          "port": "Q"
+          "port": "T"
         },
         "to": {
           "node": "Fins",
-          "port": "Q"
+          "port": "T"
         },
         "route": [],
         "label": null
       },
       {
         "id": "s052",
+        "kind": "signal",
+        "from": {
+          "node": "Rotor",
+          "port": "Q"
+        },
+        "to": {
+          "node": "Fins",
+          "port": "Q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s053",
         "kind": "signal",
         "from": {
           "node": "Aero",
@@ -1669,7 +1755,7 @@
         "label": null
       },
       {
-        "id": "s053",
+        "id": "s054",
         "kind": "signal",
         "from": {
           "node": "Fins",
@@ -1683,7 +1769,7 @@
         "label": null
       },
       {
-        "id": "s054",
+        "id": "s055",
         "kind": "signal",
         "from": {
           "node": "Free",
@@ -1697,7 +1783,7 @@
         "label": null
       },
       {
-        "id": "s055",
+        "id": "s056",
         "kind": "signal",
         "from": {
           "node": "Body",
@@ -1711,7 +1797,35 @@
         "label": null
       },
       {
-        "id": "s056",
+        "id": "s057",
+        "kind": "signal",
+        "from": {
+          "node": "Truth",
+          "port": "wb"
+        },
+        "to": {
+          "node": "YawSel",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s058",
+        "kind": "signal",
+        "from": {
+          "node": "YawSel",
+          "port": "y3"
+        },
+        "to": {
+          "node": "YawMean",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s059",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -1725,7 +1839,7 @@
         "label": null
       },
       {
-        "id": "s057",
+        "id": "s060",
         "kind": "signal",
         "from": {
           "node": "AddF",
@@ -1739,7 +1853,7 @@
         "label": null
       },
       {
-        "id": "s058",
+        "id": "s061",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -1753,7 +1867,7 @@
         "label": null
       },
       {
-        "id": "s059",
+        "id": "s062",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -1767,7 +1881,7 @@
         "label": null
       },
       {
-        "id": "s060",
+        "id": "s063",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -1781,7 +1895,7 @@
         "label": null
       },
       {
-        "id": "s061",
+        "id": "s064",
         "kind": "signal",
         "from": {
           "node": "Imu",
@@ -1795,7 +1909,7 @@
         "label": null
       },
       {
-        "id": "s062",
+        "id": "s065",
         "kind": "signal",
         "from": {
           "node": "Imu",
@@ -1809,7 +1923,7 @@
         "label": null
       },
       {
-        "id": "s063",
+        "id": "s066",
         "kind": "signal",
         "from": {
           "node": "Mocap",
@@ -1823,7 +1937,7 @@
         "label": null
       },
       {
-        "id": "s064",
+        "id": "s067",
         "kind": "signal",
         "from": {
           "node": "Mocap",
@@ -1837,7 +1951,7 @@
         "label": null
       },
       {
-        "id": "s065",
+        "id": "s068",
         "kind": "signal",
         "from": {
           "node": "Beacon",
@@ -1851,7 +1965,7 @@
         "label": null
       },
       {
-        "id": "s066",
+        "id": "s069",
         "kind": "signal",
         "from": {
           "node": "Mocap",
@@ -1865,7 +1979,7 @@
         "label": null
       },
       {
-        "id": "s067",
+        "id": "s070",
         "kind": "signal",
         "from": {
           "node": "Clock",
@@ -1879,63 +1993,77 @@
         "label": null
       },
       {
-        "id": "s068",
-        "kind": "signal",
-        "from": {
-          "node": "Aero",
-          "port": "fc_max"
-        },
-        "to": {
-          "node": "Mission",
-          "port": "fc"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s069",
-        "kind": "signal",
-        "from": {
-          "node": "Nav",
-          "port": "p"
-        },
-        "to": {
-          "node": "Pos",
-          "port": "p"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s070",
-        "kind": "signal",
-        "from": {
-          "node": "Nav",
-          "port": "v"
-        },
-        "to": {
-          "node": "Pos",
-          "port": "v"
-        },
-        "route": [],
-        "label": null
-      },
-      {
         "id": "s071",
         "kind": "signal",
         "from": {
-          "node": "Nav",
-          "port": "q"
+          "node": "Feet",
+          "port": "touch"
         },
         "to": {
-          "node": "Pos",
-          "port": "q"
+          "node": "Mission",
+          "port": "touch"
         },
         "route": [],
         "label": null
       },
       {
         "id": "s072",
+        "kind": "signal",
+        "from": {
+          "node": "Feet",
+          "port": "fn"
+        },
+        "to": {
+          "node": "Mission",
+          "port": "fn"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s073",
+        "kind": "signal",
+        "from": {
+          "node": "Nav",
+          "port": "p"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s074",
+        "kind": "signal",
+        "from": {
+          "node": "Nav",
+          "port": "v"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "v"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s075",
+        "kind": "signal",
+        "from": {
+          "node": "Nav",
+          "port": "q"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s076",
         "kind": "signal",
         "from": {
           "node": "Nav",
@@ -1949,71 +2077,15 @@
         "label": null
       },
       {
-        "id": "s073",
-        "kind": "signal",
-        "from": {
-          "node": "Mission",
-          "port": "p_sp"
-        },
-        "to": {
-          "node": "Pos",
-          "port": "p_sp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s074",
-        "kind": "signal",
-        "from": {
-          "node": "Mission",
-          "port": "v_sp"
-        },
-        "to": {
-          "node": "Pos",
-          "port": "v_sp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s075",
-        "kind": "signal",
-        "from": {
-          "node": "Mission",
-          "port": "a_sp"
-        },
-        "to": {
-          "node": "Pos",
-          "port": "a_sp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s076",
-        "kind": "signal",
-        "from": {
-          "node": "Mission",
-          "port": "j_sp"
-        },
-        "to": {
-          "node": "Pos",
-          "port": "j_sp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
         "id": "s077",
         "kind": "signal",
         "from": {
           "node": "Mission",
-          "port": "armed"
+          "port": "p_sp"
         },
         "to": {
           "node": "Pos",
-          "port": "armed"
+          "port": "p_sp"
         },
         "route": [],
         "label": null
@@ -2023,6 +2095,62 @@
         "kind": "signal",
         "from": {
           "node": "Mission",
+          "port": "v_sp"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "v_sp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s079",
+        "kind": "signal",
+        "from": {
+          "node": "Mission",
+          "port": "a_sp"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "a_sp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s080",
+        "kind": "signal",
+        "from": {
+          "node": "Mission",
+          "port": "j_sp"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "j_sp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s081",
+        "kind": "signal",
+        "from": {
+          "node": "Mission",
+          "port": "armed"
+        },
+        "to": {
+          "node": "Pos",
+          "port": "armed"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s082",
+        "kind": "signal",
+        "from": {
+          "node": "Mission",
           "port": "contact"
         },
         "to": {
@@ -2033,7 +2161,7 @@
         "label": null
       },
       {
-        "id": "s079",
+        "id": "s083",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2047,77 +2175,77 @@
         "label": null
       },
       {
-        "id": "s080",
-        "kind": "signal",
-        "from": {
-          "node": "Nav",
-          "port": "q"
-        },
-        "to": {
-          "node": "Att",
-          "port": "q"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s081",
-        "kind": "signal",
-        "from": {
-          "node": "Pos",
-          "port": "qd"
-        },
-        "to": {
-          "node": "Att",
-          "port": "qd"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s082",
-        "kind": "signal",
-        "from": {
-          "node": "Pos",
-          "port": "w_ff"
-        },
-        "to": {
-          "node": "Att",
-          "port": "w_ff"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s083",
-        "kind": "signal",
-        "from": {
-          "node": "Att",
-          "port": "w_sp"
-        },
-        "to": {
-          "node": "Rate",
-          "port": "w_sp"
-        },
-        "route": [],
-        "label": null
-      },
-      {
         "id": "s084",
         "kind": "signal",
         "from": {
           "node": "Nav",
-          "port": "w"
+          "port": "q"
         },
         "to": {
-          "node": "Rate",
-          "port": "w"
+          "node": "Att",
+          "port": "q"
         },
         "route": [],
         "label": null
       },
       {
         "id": "s085",
+        "kind": "signal",
+        "from": {
+          "node": "Pos",
+          "port": "qd"
+        },
+        "to": {
+          "node": "Att",
+          "port": "qd"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s086",
+        "kind": "signal",
+        "from": {
+          "node": "Pos",
+          "port": "w_ff"
+        },
+        "to": {
+          "node": "Att",
+          "port": "w_ff"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s087",
+        "kind": "signal",
+        "from": {
+          "node": "Att",
+          "port": "w_sp"
+        },
+        "to": {
+          "node": "Rate",
+          "port": "w_sp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s088",
+        "kind": "signal",
+        "from": {
+          "node": "Nav",
+          "port": "w"
+        },
+        "to": {
+          "node": "Rate",
+          "port": "w"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s089",
         "kind": "signal",
         "from": {
           "node": "Rotor",
@@ -2131,7 +2259,7 @@
         "label": null
       },
       {
-        "id": "s086",
+        "id": "s090",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2145,7 +2273,7 @@
         "label": null
       },
       {
-        "id": "s087",
+        "id": "s091",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2159,7 +2287,7 @@
         "label": null
       },
       {
-        "id": "s088",
+        "id": "s092",
         "kind": "signal",
         "from": {
           "node": "Pos",
@@ -2173,7 +2301,7 @@
         "label": null
       },
       {
-        "id": "s089",
+        "id": "s093",
         "kind": "signal",
         "from": {
           "node": "Rate",
@@ -2187,7 +2315,7 @@
         "label": null
       },
       {
-        "id": "s090",
+        "id": "s094",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2201,7 +2329,7 @@
         "label": null
       },
       {
-        "id": "s091",
+        "id": "s095",
         "kind": "signal",
         "from": {
           "node": "Alloc",
@@ -2215,7 +2343,7 @@
         "label": null
       },
       {
-        "id": "s092",
+        "id": "s096",
         "kind": "signal",
         "from": {
           "node": "Rotor",
@@ -2229,7 +2357,7 @@
         "label": null
       },
       {
-        "id": "s093",
+        "id": "s097",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2243,7 +2371,7 @@
         "label": null
       },
       {
-        "id": "s094",
+        "id": "s098",
         "kind": "signal",
         "from": {
           "node": "Alloc",
@@ -2257,7 +2385,7 @@
         "label": null
       },
       {
-        "id": "s095",
+        "id": "s099",
         "kind": "signal",
         "from": {
           "node": "Motor",
@@ -2271,21 +2399,49 @@
         "label": null
       },
       {
-        "id": "s096",
+        "id": "s100",
         "kind": "signal",
         "from": {
-          "node": "Aero",
-          "port": "fc_max"
+          "node": "Feet",
+          "port": "f"
         },
         "to": {
           "node": "Esc",
-          "port": "fc"
+          "port": "f"
         },
         "route": [],
         "label": null
       },
       {
-        "id": "s097",
+        "id": "s101",
+        "kind": "signal",
+        "from": {
+          "node": "Mission",
+          "port": "land"
+        },
+        "to": {
+          "node": "Esc",
+          "port": "land"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s102",
+        "kind": "signal",
+        "from": {
+          "node": "Mission",
+          "port": "thr"
+        },
+        "to": {
+          "node": "Esc",
+          "port": "thr"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s103",
         "kind": "signal",
         "from": {
           "node": "Esc",
@@ -2299,7 +2455,7 @@
         "label": null
       },
       {
-        "id": "s098",
+        "id": "s104",
         "kind": "signal",
         "from": {
           "node": "Alloc",
@@ -2313,7 +2469,7 @@
         "label": null
       },
       {
-        "id": "s099",
+        "id": "s105",
         "kind": "signal",
         "from": {
           "node": "Alloc",
@@ -2327,7 +2483,7 @@
         "label": null
       },
       {
-        "id": "s100",
+        "id": "s106",
         "kind": "signal",
         "from": {
           "node": "Psi",
@@ -2341,7 +2497,7 @@
         "label": null
       },
       {
-        "id": "s101",
+        "id": "s107",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2355,7 +2511,7 @@
         "label": null
       },
       {
-        "id": "s102",
+        "id": "s108",
         "kind": "signal",
         "from": {
           "node": "Rotor",
@@ -2369,7 +2525,7 @@
         "label": null
       },
       {
-        "id": "s103",
+        "id": "s109",
         "kind": "signal",
         "from": {
           "node": "Motor",
@@ -2383,7 +2539,7 @@
         "label": null
       },
       {
-        "id": "s104",
+        "id": "s110",
         "kind": "signal",
         "from": {
           "node": "Esc",
@@ -2397,7 +2553,7 @@
         "label": null
       },
       {
-        "id": "s105",
+        "id": "s111",
         "kind": "signal",
         "from": {
           "node": "Drive",
@@ -2411,7 +2567,7 @@
         "label": null
       },
       {
-        "id": "s106",
+        "id": "s112",
         "kind": "signal",
         "from": {
           "node": "Nav",
@@ -2425,7 +2581,7 @@
         "label": null
       },
       {
-        "id": "s107",
+        "id": "s113",
         "kind": "signal",
         "from": {
           "node": "Nav",
@@ -2439,7 +2595,7 @@
         "label": null
       },
       {
-        "id": "s108",
+        "id": "s114",
         "kind": "signal",
         "from": {
           "node": "Nav",
@@ -2453,7 +2609,7 @@
         "label": null
       },
       {
-        "id": "s109",
+        "id": "s115",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -2467,7 +2623,7 @@
         "label": null
       },
       {
-        "id": "s110",
+        "id": "s116",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -2481,7 +2637,7 @@
         "label": null
       },
       {
-        "id": "s111",
+        "id": "s117",
         "kind": "signal",
         "from": {
           "node": "Truth",
@@ -2495,7 +2651,7 @@
         "label": null
       },
       {
-        "id": "s112",
+        "id": "s118",
         "kind": "signal",
         "from": {
           "node": "Mission",
@@ -2572,7 +2728,8 @@
       "signals": [
         "Rotor/Q",
         "Fins/Qz",
-        "Truth/wb[3]"
+        "Truth/wb[3]",
+        "YawMean/y"
       ]
     },
     {
@@ -2602,11 +2759,13 @@
     },
     {
       "id": "p9",
-      "title": "Landing-gear normal force and its peak hold (N), touchdown and flight mode",
+      "title": "Landing-gear load: true and sensed (N), touchdown and flight mode",
       "signals": [
         "Aero/fc",
-        "Aero/fc_max",
+        "Feet/fn",
+        "Feet/touch",
         "Esc/td",
+        "Mission/land",
         "Mission/contact",
         "Mission/thr",
         "Mission/armed",

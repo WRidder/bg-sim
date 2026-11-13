@@ -8,24 +8,26 @@
     # Landing (PX4's land mode): from `t_land` the height set-point descends at `v_land`, the
     # descent speed itself ramped in over `t_ramp` with the same smooth step, until touchdown.
     # The vehicle meets the ground at a steady descent speed, so the thrust is close to the
-    # weight and nothing has to brake against the ground. Touchdown: after `t_land` the block
-    # watches the landing-gear force `fc`, the peak hold of `AeroWrench`: the impact lasts about
-    # 20 ms and falls between two 50 Hz ticks, but the peak hold keeps it, so the first tick
-    # after the impact latches the touchdown time `t_td` (at most one tick late). From then on
-    # the set-point is frozen and `contact` is 1: the position controller holds the thrust it
-    # had before the touchdown instead of reacting to the rebound of the feet, and the rate
-    # loop only damps (`RateCtrl`): the feet keep the body level, and an attitude or integral
-    # term would lean on its lightly loaded feet. The drive has already braked the rotor to its
-    # touchdown cap (`RotorEsc`). From `t_td + t_hold`, after the short hop, the thrust fraction
-    # `thr` falls from `thr0` (the drive's cap, k_td^2) to 0 over `t_unload` along the smooth
-    # step: the rotor slows gently at first, while the feet carry little weight, and faster as
-    # they take it, so their friction always holds the motor reaction. Then the vehicle is `landed` (the flight controller is
-    # off) and the motor is switched off `t_spin` later. `t_arm`/`t_disarm` switch everything
-    # on and off.
+    # weight and nothing has to brake against the ground. From `t_land` the output `land` is 1:
+    # it enables the drive's touchdown brake (`RotorEsc`), and the block watches the foot load
+    # sensor's `touch` flag (`FootSensor`: sampled at 400 Hz and held for one 50 Hz period, so
+    # this slower block cannot miss a touch the drive saw). The first tick with `touch` latches
+    # the touchdown time `t_td`. From then on the set-point is frozen and `contact` is 1: the
+    # position controller holds the thrust it had before the touchdown instead of reacting to
+    # the rebound of the feet, while it and the attitude loop keep flying the horizontal axes
+    # (`PosCtrl`, `RateCtrl`). The ground thrust
+    # fraction `thr` falls from 1 to 0 over `t_unload` along the smooth step; the drive scales
+    # its touchdown cap with it and follows no faster than the measured foot load can hold, so
+    # the block does not have to know whether the feet are on the ground. The vehicle is
+    # `landed` (the flight controller is off) once the schedule has ended and the sensor has read
+    # more than `f_land` for `n_land` ticks in a row, and the motor is switched off `t_spin`
+    # later. `t_arm`/`t_disarm` switch everything on and off. The block flies one landing: its
+    # latches do not reset.
     @constants W::Int = 8
     @inputs begin
         tm::Real
-        fc::Real, [unit = "N", description = "Total landing-gear normal force, peak hold"]
+        touch::Real, [description = "Touch flag of the foot load sensor"]
+        fn::Real, [unit = "N", description = "Total foot load from the load sensor"]
     end
     @outputs begin
         p_sp::Vec{3} = [0.0, 0.0, 0.0]
@@ -38,6 +40,7 @@
         contact::Real = 0.0, [description = "1 from the touchdown latch: thrust held, vertical loop off"]
         thr::Real = 1.0, [description = "Fraction of the touchdown thrust kept on the ground"]
         t_td::Real = 99.0, [unit = "s", description = "Touchdown time (99 until it happens)"]
+        land::Real = 0.0, [description = "1 in landing mode: the drive may latch a touchdown"]
     end
     @parameters begin
         p0::Vec{3} = [0.0, 0.0, 0.0], [unit = "m", description = "Start position"]
@@ -51,13 +54,17 @@
         t_land::Real = 99.0, [unit = "s", description = "Start of the landing descent; touchdown detection is active after it"]
         v_land::Real = 0.25, [unit = "m/s", min = 0, description = "Landing descent speed"]
         t_ramp::Real = 1.0, [unit = "s", min = 0.01, description = "Time to ramp in the landing descent speed"]
-        f_touch::Real = 2.0, [unit = "N", description = "Landing-gear force that counts as touchdown"]
-        t_hold::Real = 0.2, [unit = "s", min = 0, description = "Thrust held after the touchdown latch (longer than the hop)"]
-        t_unload::Real = 1.0, [unit = "s", min = 0.01, description = "Time over which the thrust then comes off"]
-        thr0::Real = 1.0, [min = 0, max = 1, description = "Thrust fraction at the start of the unload (the drive's touchdown cap squared)"]
+        t_unload::Real = 1.0, [unit = "s", min = 0.01, description = "Time over which the ground thrust fraction falls to 0"]
+        f_land::Real = 5.0, [unit = "N", description = "Foot load that counts as landed once the unload has ended"]
+        n_land::Real = 5.0, [min = 1, description = "Ticks in a row the load must stay above f_land"]
         t_spin::Real = 2.0, [unit = "s", description = "Motor run-down time after the flight controller is off"]
     end
-    @variables lat::Real = 0.0, [description = "Touchdown latch"]
+    @variables begin
+        lat::Real = 0.0, [description = "Touchdown latch"]
+        ld::Real = 0.0, [description = "Landed latch"]
+        t_ld::Real = 99.0, [unit = "s", description = "Time of the landed latch"]
+        cl::Real = 0.0, [description = "Ticks in a row with the load above f_land"]
+    end
     @discrete Ts = 20e-3 begin
         p = p0
         v = [0.0, 0.0, 0.0]
@@ -78,7 +85,8 @@
         # landing descent: speed v_land S(s), S the smooth step, s = (t - t_land)/t_ramp; the
         # position is its integral, 7 s^5 - 14 s^6 + 10 s^7 - 5/2 s^8 (= 1/2 at s = 1)
         # (frozen at the touchdown latch)
-        if lat < 0.5 && tm >= t_land && fc > f_touch
+        on = ifelse(tm >= t_arm && tm < t_disarm, 1.0, 0.0)
+        if lat < 0.5 && on > 0.5 && tm >= t_land && touch > 0.5
             lat = 1.0
             t_td = tm
         end
@@ -98,12 +106,17 @@
         v_sp = v
         a_sp = a
         j_sp = j
-        on = ifelse(tm >= t_arm && tm < t_disarm, 1.0, 0.0)
         contact = done
-        su = clamp((tm - t_td - t_hold) / t_unload, 0.0, 1.0)
-        thr = ifelse(tm >= t_td + t_hold, thr0, 1.0) * (1.0 - su * su * su * su * (35.0 - 84.0 * su + 70.0 * su * su - 20.0 * su * su * su))
-        landed = ifelse(tm >= t_td + t_hold + t_unload, 1.0, 0.0)
-        armed = on * (1.0 - landed)
-        motor = on * ifelse(tm >= t_td + t_hold + t_unload + t_spin, 0.0, 1.0)
+        su = clamp((tm - t_td) / t_unload, 0.0, 1.0)
+        thr = 1.0 - su * su * su * su * (35.0 - 84.0 * su + 70.0 * su * su - 20.0 * su * su * su)
+        cl = ifelse(tm >= t_td + t_unload && fn > f_land, cl + 1.0, 0.0)
+        if ld < 0.5 && cl >= n_land
+            ld = 1.0
+            t_ld = tm
+        end
+        landed = ld
+        armed = on * (1.0 - ld)
+        motor = on * ifelse(tm >= t_ld + t_spin, 0.0, 1.0)
+        land = on * ifelse(tm >= t_land, 1.0, 0.0)
     end
 end

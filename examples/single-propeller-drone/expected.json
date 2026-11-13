@@ -1,6 +1,6 @@
 {
   "project": "single-propeller-drone",
-  "description": "A swashplateless single-propeller drone: one motor makes both thrust and the roll/pitch moments by modulating its torque once per revolution; the lag-pitch hinges turn the rotor's acceleration within each turn into cyclic blade pitch, and PropRotor computes the hub moment from the rotor's own state (2 kM tau_net (cos psi, sin psi), tau_net = motor torque - drag). Throttle is rotor speed, and there is no yaw actuator: four fins, lifting surfaces inside the momentum-theory slipstream, carry the motor reaction and damp the yaw rate; nothing holds the heading. The plant is a 6-DOF multibond body, the PropRotor gyrostat on a 1-junction shaft with the motor's electrical bond graph (6S pack, inverter MTF, winding R and I, EM converter), the aerodynamic and fin loads as imposed wrenches, and four Leg subsystems (Hertz contacts with damped pads). The controller is a PX4-style cascade (position -> velocity -> attitude -> body rate with gyroscopic feed-forward -> allocation -> rotor speed -> current loop) on a biased, noisy IMU, a 100 Hz motion-capture fix and a 50 Hz IR-beacon heading. Each reference value comes from design/design.py (derived independently of the simulation), not from an earlier run; the notes give the measured value.",
+  "description": "A swashplateless single-propeller drone: one motor makes both thrust and the roll/pitch moments by modulating its torque once per revolution; the lag-pitch hinges turn the rotor's acceleration within each turn into cyclic blade pitch, and PropRotor computes the hub moment from the rotor's own state (2 kM tau_net (cos psi, sin psi), tau_net = motor torque - drag). Throttle is rotor speed, and there is no yaw actuator: four fins, lifting surfaces inside the momentum-theory slipstream, carry the motor reaction and damp the yaw rate; nothing holds the heading. The plant is a 6-DOF multibond body, the PropRotor gyrostat on a 1-junction shaft with the motor's electrical bond graph (6S pack, inverter MTF, winding R and I, EM converter), the aerodynamic and fin loads as imposed wrenches, and four Leg subsystems (Hertz contacts with damped pads). The controller is a PX4-style cascade (position -> velocity -> attitude -> body rate with gyroscopic feed-forward -> allocation -> rotor speed -> current loop) on a biased, noisy IMU, a 100 Hz motion-capture fix and a 50 Hz IR-beacon heading. Each reference value comes from design/design.py (derived independently of the simulation), not from an earlier run; the notes give the measured value. The landing runs on a declared foot load sensor (400 Hz, noisy); it is checked in calm air against the flat-impact bounds and, as four variants, in a 1 m/s wind along +x, -x, +y and -y against the wind bounds.",
   "models": {
     "single-propeller-drone-hover": {
       "run_timeout": 900,
@@ -184,18 +184,36 @@
           "note": "the feet reach the ground at t_land + t_ramp + (1.32 - 0.1808 - v t_ramp/2)/v = 15.057 s (design.py); measured 15.061 s"
         },
         {
+          "kind": "zero_crossing",
+          "signal": "Esc/td",
+          "level": 0.5,
+          "n": 1,
+          "direction": "up",
+          "value": 15.058,
+          "abs": 0.0313,
+          "note": "touchdown detection: the drive latches on its first 400 Hz tick with a sampled foot load above f_touch = 2 N, at most 2.56 ms after the first contact (design.py: the flat impact with the sampled sensor, tick phase scanned), so between 15.057 - 0.03 and 15.057 + 0.03 + 0.0026 s; measured 15.0625 s, 2.5 ms after the contact at 15.0600 s"
+        },
+        {
           "kind": "max_abs_le",
-          "signal": "Aero/fc_max",
-          "value": 109.8,
-          "note": "touchdown load: the vertical impact of the rigid body on four damped Hertz feet at 0.25 m/s peaks at 109.8 N (design.py impact simulation); measured peak hold 85.2 N, the feet touch one after another"
+          "signal": "Feet/f_peak",
+          "value": 109.93,
+          "note": "the foot load sensor's largest sample (the declared sensor, 400 Hz, 0.03 N noise per foot; the true contact force Aero/fc is only plotted). An upper bound, not a prediction: the flat vertical impact at 0.25 m/s on four damped Hertz feet peaks at 109.9 N (design.py impact simulation with the drive's brake), and a sample cannot exceed the true force by more than the noise. Measured 78.7 N (true peak 85.1 N): the feet touch one after another, and the sensor samples every 2.5 ms of an impact that lasts 21 ms"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "YawMean/y",
+          "from_t": 15.212,
+          "to_t": 20.0,
+          "value": 0.348,
+          "note": "landing yaw without the once-per-revolution ripple (YawMean: the yaw rate through a 25 ms lag), from the latest first contact the zero-crossing check allows plus five lags (15.087 + 0.125 s; the lag then holds 0.7 % of the 0.86 rad/s descent yaw, 0.006). The fins carry the drag torque in any state, so the body gains yaw only from rotor speed lost while the feet do not hold it. design.py: the drive brakes 3 % of the speed and never asks more than half the friction its load samples give; with the feet together at most 0.89 rad/s of the brake falls before the first sample (0.098 rad/s of yaw); on one foot the body pivots about it and the whole brake leaves 0.208 rad/s; the lag passes 0.036 rad/s of ripple. Sum 0.348 rad/s. Measured 0.065 rad/s (0.144 with the landing 11 ms later)"
         },
         {
           "kind": "max_abs_le",
           "signal": "Truth/wb[3]",
           "from_t": 15.087,
           "to_t": 20.0,
-          "value": 0.457,
-          "note": "landing yaw, from the latest first contact the zero-crossing check allows (15.057 + 0.03 s; the impact's friction stops the descent yaw within 5 ms) to rest. The fins carry the drag torque in any state, so the body can only gain yaw from rotor speed it loses while the feet do not hold it, Ja/Jz = 0.109 rad/s per rad/s. The drive brakes 3 % of the speed at 4000 rad/s^2 from its first tick after the impact; in design.py's impact simulation the feet hold the 1.525 N m braking reaction only from 0.32 to 5.59 ms, so at the latest tick 4.2 rad/s of the brake falls outside: at most 0.457 rad/s. The hold keeps the speed constant and the friction exceeds the unload's deceleration torque (ratio 0.53). Measured peak 0.127 rad/s (0.135 rad/s inside the impact; 3.27 rad/s before the touchdown brake)"
+          "value": 0.782,
+          "note": "the raw yaw rate after the touchdown: the same 0.208 + 0.098 rad/s plus the ripple of the cyclic torque, A_max/(Jz w) = 0.476 rad/s at full cyclic (design.py). The raw peaks are mostly this ripple, at the rotor frequency and with zero mean, not a spin: measured peak 0.149 rad/s with a one-revolution mean of 0.078 rad/s"
         },
         {
           "kind": "max_abs_le",
@@ -203,15 +221,15 @@
           "from_t": 15.087,
           "to_t": 20.0,
           "value": 0.18299,
-          "note": "hop after the touchdown: the CoM may rise above the contact height 0.180833 m by at most (e v)^2 / (2 g (1 - k_td^2)) = 2.16 mm, the rebound at the pads' design restitution e = 0.2 (the flat impact simulation gives 0.156) against the net downward acceleration once the drive has braked to k_td = 0.97 of the speed (design.py): 0.18299 m. Measured peak 0.182296 m (1.46 mm)"
+          "note": "hop after the touchdown: the CoM may rise above the contact height 0.180833 m by at most (e v)^2 / (2 g (1 - k_td^2)) = 2.16 mm, the rebound at the pads' design restitution e = 0.2 (the flat impact simulation gives 0.156) against the net downward acceleration once the drive has braked to k_td = 0.97 of the speed (design.py): 0.18299 m. Holds for a level touchdown in calm air; measured peak 0.182366 m (1.53 mm; several bounces, the feet are off the ground for 0.13 s in total)"
         },
         {
           "kind": "max_abs_le",
           "signal": "Truth/wb[3]",
-          "from_t": 16.41,
+          "from_t": 16.26,
           "to_t": 20.0,
           "value": 0.01,
-          "note": "landed (the thrust is off t_hold + t_unload = 1.3 s after the touchdown latch, at the latest 15.057 + 0.03 + one 20 ms tick + 1.3 = 16.41 s): the feet carry the weight and their friction (1.33 N m) holds the rotor's run-down torque Ja * accel_max = 0.091 N m, so there is no spin on the ground (measured peak 0.00071 rad/s)"
+          "note": "landed: the mission declares it once the 1 s unload has ended and the sensor has read more than half the weight for 5 ticks, at the latest 16.229 s (design.py: latest contact 15.087 + latch + unload on settled feet + ticks), plus 0.03 s. The feet then carry the weight and their friction (1.33 N m) holds the rotor's run-down torque Ja * accel_max = 0.091 N m, so there is no spin on the ground (measured peak 0.0008 rad/s; landed at 16.16 s)"
         },
         {
           "kind": "cursor_value",
@@ -225,7 +243,7 @@
           "kind": "max_abs_le",
           "signal": "Truth/tilt",
           "value": 0.2,
-          "note": "the thrust vector stays inside the 0.20 rad tilt limit of the position loop (measured peak 0.145 rad)"
+          "note": "the thrust vector stays inside the 0.20 rad tilt limit of the position loop (measured peak 0.145 rad, in flight)"
         },
         {
           "kind": "max_abs_le",
@@ -258,6 +276,278 @@
           "kind": "no_diagnostics",
           "codes": ["E901", "E106", "E007", "W201", "W202", "W205", "W206"],
           "note": "no solver failure, causal conflict, frame mismatch, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "single-propeller-drone-wind-x": {
+      "model": "single-propeller-drone",
+      "run_timeout": 900,
+      "overrides": {
+        "global:wind_x": 1.0
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "YawMean/y",
+          "from_t": 13.0,
+          "to_t": 20.0,
+          "value": 1.375,
+          "note": "landing in a steady 1 m/s wind (world +x). The vehicle leans 0.044 rad into the wind, so one foot touches first, and a single foot holds no yaw torque: the yaw the vehicle arrives with stays until a second foot is down. Bound (design.py): the descent yaw in that wind, 1.067 rad/s with the 6 % of the descent check, plus the brake on one foot 0.208, plus the ripple the read-out passes 0.036 = 1.375 rad/s: the landing adds no more than the pivot term to the yaw the descent already has. Measured 1.006 rad/s (in the descent), 0.231 rad/s from 15.212 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/z",
+          "from_t": 15.087,
+          "to_t": 20.0,
+          "value": 0.18917,
+          "note": "height after the touchdown in the wind: contact height + r_foot sin(lean) = 6.2 mm (one foot down at the lean) + the 2.16 mm hop: 0.18917 m (design.py). Measured 0.182612 m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "value": 0.2,
+          "note": "inside the tilt limit throughout, also on the ground (measured peak 0.149 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mission/landed",
+          "t": 19.0,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "the mission declared the landing (measured at 16.28 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/wb[3]",
+          "from_t": 19.0,
+          "to_t": 20.0,
+          "value": 0.01,
+          "note": "no spin on the ground"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 20.0,
+          "value": 0.180555,
+          "abs": 2e-05,
+          "note": "upright at rest on all four feet: the same rest height as in calm air"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "E007",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure or event-limit stop"
+        }
+      ]
+    },
+    "single-propeller-drone-wind-neg-x": {
+      "model": "single-propeller-drone",
+      "run_timeout": 900,
+      "overrides": {
+        "global:wind_x": -1.0
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "YawMean/y",
+          "from_t": 13.0,
+          "to_t": 20.0,
+          "value": 1.375,
+          "note": "landing in a steady 1 m/s wind (world -x). The vehicle leans 0.044 rad into the wind, so one foot touches first, and a single foot holds no yaw torque: the yaw the vehicle arrives with stays until a second foot is down. Bound (design.py): the descent yaw in that wind, 1.067 rad/s with the 6 % of the descent check, plus the brake on one foot 0.208, plus the ripple the read-out passes 0.036 = 1.375 rad/s: the landing adds no more than the pivot term to the yaw the descent already has. Measured 0.996 rad/s (in the descent), 0.423 rad/s from 15.212 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/z",
+          "from_t": 15.087,
+          "to_t": 20.0,
+          "value": 0.18917,
+          "note": "height after the touchdown in the wind: contact height + r_foot sin(lean) = 6.2 mm (one foot down at the lean) + the 2.16 mm hop: 0.18917 m (design.py). Measured 0.183614 m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "value": 0.2,
+          "note": "inside the tilt limit throughout, also on the ground (measured peak 0.182 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mission/landed",
+          "t": 19.0,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "the mission declared the landing (measured at 16.28 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/wb[3]",
+          "from_t": 19.0,
+          "to_t": 20.0,
+          "value": 0.01,
+          "note": "no spin on the ground"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 20.0,
+          "value": 0.180555,
+          "abs": 2e-05,
+          "note": "upright at rest on all four feet: the same rest height as in calm air"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "E007",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure or event-limit stop"
+        }
+      ]
+    },
+    "single-propeller-drone-wind-y": {
+      "model": "single-propeller-drone",
+      "run_timeout": 900,
+      "overrides": {
+        "global:wind_y": 1.0
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "YawMean/y",
+          "from_t": 13.0,
+          "to_t": 20.0,
+          "value": 1.375,
+          "note": "landing in a steady 1 m/s wind (world +y). The vehicle leans 0.044 rad into the wind, so one foot touches first, and a single foot holds no yaw torque: the yaw the vehicle arrives with stays until a second foot is down. Bound (design.py): the descent yaw in that wind, 1.067 rad/s with the 6 % of the descent check, plus the brake on one foot 0.208, plus the ripple the read-out passes 0.036 = 1.375 rad/s: the landing adds no more than the pivot term to the yaw the descent already has. Measured 0.997 rad/s (in the descent), 0.260 rad/s from 15.212 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/z",
+          "from_t": 15.087,
+          "to_t": 20.0,
+          "value": 0.18917,
+          "note": "height after the touchdown in the wind: contact height + r_foot sin(lean) = 6.2 mm (one foot down at the lean) + the 2.16 mm hop: 0.18917 m (design.py). Measured 0.183334 m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "value": 0.2,
+          "note": "inside the tilt limit throughout, also on the ground (measured peak 0.147 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mission/landed",
+          "t": 19.0,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "the mission declared the landing (measured at 16.30 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/wb[3]",
+          "from_t": 19.0,
+          "to_t": 20.0,
+          "value": 0.01,
+          "note": "no spin on the ground"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 20.0,
+          "value": 0.180555,
+          "abs": 2e-05,
+          "note": "upright at rest on all four feet: the same rest height as in calm air"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "E007",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure or event-limit stop"
+        }
+      ]
+    },
+    "single-propeller-drone-wind-neg-y": {
+      "model": "single-propeller-drone",
+      "run_timeout": 900,
+      "overrides": {
+        "global:wind_y": -1.0
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "YawMean/y",
+          "from_t": 13.0,
+          "to_t": 20.0,
+          "value": 1.375,
+          "note": "landing in a steady 1 m/s wind (world -y). The vehicle leans 0.044 rad into the wind, so one foot touches first, and a single foot holds no yaw torque: the yaw the vehicle arrives with stays until a second foot is down. Bound (design.py): the descent yaw in that wind, 1.067 rad/s with the 6 % of the descent check, plus the brake on one foot 0.208, plus the ripple the read-out passes 0.036 = 1.375 rad/s: the landing adds no more than the pivot term to the yaw the descent already has. Measured 1.003 rad/s (in the descent), 0.540 rad/s from 15.212 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/z",
+          "from_t": 15.087,
+          "to_t": 20.0,
+          "value": 0.18917,
+          "note": "height after the touchdown in the wind: contact height + r_foot sin(lean) = 6.2 mm (one foot down at the lean) + the 2.16 mm hop: 0.18917 m (design.py). Measured 0.183985 m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "value": 0.2,
+          "note": "inside the tilt limit throughout, also on the ground (measured peak 0.181 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mission/landed",
+          "t": 19.0,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "the mission declared the landing (measured at 16.58 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/wb[3]",
+          "from_t": 19.0,
+          "to_t": 20.0,
+          "value": 0.01,
+          "note": "no spin on the ground"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 20.0,
+          "value": 0.180555,
+          "abs": 2e-05,
+          "note": "upright at rest on all four feet: the same rest height as in calm air"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "E007",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure or event-limit stop"
         }
       ]
     }
