@@ -133,11 +133,19 @@ export class PadState {
     return this.held(button) && !((this.before[button] ?? 0) > 0.5);
   }
 
+  /** A stick axis as the pad gives it, for a caller with a shape of its own. */
+  rawAxis(index: number): number {
+    return this.axes[index] ?? 0;
+  }
+
   /** A stick axis with its dead zone taken out, -1..1. */
   axis(index: number, deadzone = 0.12): number {
     return shape(this.axes[index] ?? 0, deadzone, 0);
   }
 }
+
+/** Seconds for the camera to ease most of the way to where a pad's right stick points. */
+export const LOOK_EASE = 0.3;
 
 const MOVE = 0.05;
 

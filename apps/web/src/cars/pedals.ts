@@ -2,9 +2,13 @@
  * Steering wheel and pedals from a keyboard or a pad. The engine's controls are a pilot's: this has
  * two one-way pedals, and a steering range that closes as the speed rises. At 250 km/h the same key
  * must not ask for the lock of a hairpin, or nobody could drive with one.
+ *
+ * A gamepad is laid out as in Gran Turismo: the left stick (or the D-pad) steers, R2 is the
+ * accelerator and L2 the brake, Circle the handbrake, Triangle reverse, L1 looks behind, R1 changes
+ * the view, the right stick looks round and Options pauses. Cross answers a menu, Create restarts.
  */
 
-import { type AxisMap, mapAxis } from "../engine/input";
+import { type AxisMap, mapAxis, PAD, PadState } from "../engine/input";
 
 const PAD_STEER: AxisMap = { axis: 0, invert: false, deadzone: 0.07, expo: 0.45 };
 
@@ -18,11 +22,13 @@ export interface Pressed {
 export class Pedals {
   readonly value: Pressed = { steer: 0, throttle: 0, brake: 0, handbrake: 0 };
   /** Called once per press of these pad buttons. */
-  onButton: (name: "view" | "pause" | "reverse" | "reset") => void = () => {};
+  onButton: (name: "view" | "pause" | "reverse" | "reset" | "confirm") => void = () => {};
   deviceName = "";
+  /** The pad's right stick, -1..1 each way, and whether L1 is held to look behind. */
+  readonly look = { x: 0, y: 0, behind: false };
+  private readonly pad = new PadState();
   private readonly held = new Set<string>();
   private board = 0;
-  private lastButtons: boolean[] = [];
   private device: "keys" | "pad" = "keys";
 
   constructor() {
@@ -39,6 +45,34 @@ export class Pedals {
 
   private any(...codes: string[]): boolean {
     return codes.some((code) => this.held.has(code));
+  }
+
+  /** Reads the pad, once a frame in every phase: its buttons work in the menus too. */
+  poll(): void {
+    const pad = this.pad;
+    pad.update();
+    this.look.x = pad.axis(2);
+    this.look.y = pad.axis(3);
+    this.look.behind = pad.held(PAD.LB);
+    if (!pad.connected) {
+      return;
+    }
+    this.deviceName = pad.id;
+    if (pad.pressed(PAD.RB)) {
+      this.onButton("view");
+    }
+    if (pad.pressed(PAD.START)) {
+      this.onButton("pause");
+    }
+    if (pad.pressed(PAD.Y)) {
+      this.onButton("reverse");
+    }
+    if (pad.pressed(PAD.BACK)) {
+      this.onButton("reset");
+    }
+    if (pad.pressed(PAD.A)) {
+      this.onButton("confirm");
+    }
   }
 
   /** `reach` is the share of full lock that is still useful at this speed. */
@@ -60,12 +94,13 @@ export class Pedals {
     let brake = eased(v.brake, down ? 1 : 0, down ? 0.1 : 0.06);
     let handbrake = hand ? 1 : 0;
 
-    const pad = (navigator.getGamepads?.() ?? []).find((p) => p && p.connected);
-    if (pad) {
-      this.deviceName = pad.id;
-      const stick = mapAxis(pad.axes[0] ?? 0, PAD_STEER);
-      const gas = pad.buttons[7]?.value ?? 0;
-      const stop = pad.buttons[6]?.value ?? 0;
+    const pad = this.pad;
+    if (pad.connected) {
+      // The D-pad steers as the stick does at full throw, as it does in Gran Turismo.
+      const cross = (pad.held(PAD.RIGHT) ? 1 : 0) - (pad.held(PAD.LEFT) ? 1 : 0);
+      const stick = cross !== 0 ? cross : mapAxis(pad.rawAxis(0), PAD_STEER);
+      const gas = pad.value(PAD.RT);
+      const stop = pad.value(PAD.LT);
       if (Math.abs(stick) > 0.02 || gas > 0.02 || stop > 0.02) {
         this.device = "pad";
       }
@@ -73,23 +108,8 @@ export class Pedals {
         steer = stick * Math.min(1, reach * 1.3);
         throttle = gas;
         brake = stop;
-        handbrake = pad.buttons[0]?.pressed ? 1 : handbrake;
+        handbrake = pad.held(PAD.B) ? 1 : handbrake;
       }
-      const buttons = pad.buttons.map((b) => b.pressed);
-      const pressed = (i: number): boolean => buttons[i] === true && this.lastButtons[i] !== true;
-      if (pressed(3)) {
-        this.onButton("view");
-      }
-      if (pressed(9)) {
-        this.onButton("pause");
-      }
-      if (pressed(2)) {
-        this.onButton("reverse");
-      }
-      if (pressed(8)) {
-        this.onButton("reset");
-      }
-      this.lastButtons = buttons;
     }
     v.steer = steer;
     v.throttle = throttle;

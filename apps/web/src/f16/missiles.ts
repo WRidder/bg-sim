@@ -2,7 +2,9 @@
  * The AIM-9X FMU on the browser side. Each round in flight is one `Fmu` instance and one `Missile`
  * (a `Sim` view of it); the host gives the missile a launch frame and the target's launch-relative
  * NED position/velocity every 5 ms. The FMU has no fuze stop: the first `fuze`/`hit` retires the
- * shot in the game, the same as in the desktop host.
+ * shot in the game, the same as in the desktop host. A round that will not get there destroys
+ * itself: once its seeker has been without the target for `LOST_LIMIT` seconds on end, or at
+ * `MAX_FLIGHT` seconds whatever it sees.
  */
 
 import * as THREE from "three";
@@ -30,6 +32,13 @@ export interface LaunchFrame {
   heading: number;   // degrees, north toward east
   alt: number;
 }
+
+/** Seconds without the target, on end, after which the round destroys itself. */
+export const LOST_LIMIT = 7;
+/** Seconds of flight after which it does so anyway: by then it has coasted down to a glide. */
+export const MAX_FLIGHT = 30;
+/** The seeker needs this long off the rail before a missing lock counts as lost. */
+const ACQUIRE = 0.6;
 
 const DEG = Math.PI / 180;
 const IR_W = 1e6;
@@ -72,6 +81,10 @@ export class Missile extends Sim<MissileOutput> {
   active = false;
   done = false;
   justHit = false;
+  /** Set for the game when the round has destroyed itself; the game clears it. */
+  justDestroyed = false;
+  /** Seconds the seeker has been without the target, on end. */
+  lostFor = 0;
 
   constructor(fmu: Fmu) {
     super(fmu, MISSILE_INPUTS, MISSILE_OUTPUTS);
@@ -86,6 +99,8 @@ export class Missile extends Sim<MissileOutput> {
     this.active = true;
     this.done = false;
     this.justHit = false;
+    this.justDestroyed = false;
+    this.lostFor = 0;
     this.restart({
       vt0: Math.max(100, Math.min(700, speed)),
       h0: Math.max(0, Math.min(20000, frame.alt)),
@@ -112,6 +127,13 @@ export class Missile extends Sim<MissileOutput> {
     if (!this.done && (this.get("fuze") > 0.5 || this.get("hit") > 0.5)) {
       this.done = true;
       this.justHit = true;
+      this.stopped = true;
+      return;
+    }
+    this.lostFor = this.tracking || this.time < ACQUIRE ? 0 : this.lostFor + this.fmu.step;
+    if (!this.done && (this.lostFor >= LOST_LIMIT || this.time >= MAX_FLIGHT)) {
+      this.done = true;
+      this.justDestroyed = true;
       this.stopped = true;
     }
   }

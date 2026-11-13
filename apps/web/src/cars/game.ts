@@ -18,6 +18,7 @@ import { COLOURS, deltaText, Hud, type HudState, lapText } from "./hud";
 import { roadHeight } from "./land";
 import { Line } from "./line";
 import { CarModel } from "./model";
+import { LOOK_EASE } from "../engine/input";
 import { Pedals } from "./pedals";
 import { Pilot } from "./pilot";
 import { buildScenery, type Scenery } from "./scenery";
@@ -413,9 +414,31 @@ async function main(): Promise<void> {
       pause();
     } else if (name === "reverse") {
       carNow.toggleReverse();
+    } else if (name === "confirm") {
+      // Cross answers the screen that is up: it starts from the menu, drives on from a pause.
+      if (phase === "title" || phase === "over") {
+        sound.start();
+        begin();
+      } else if (phase === "paused") {
+        pause();
+      }
     } else if (phase === "driving" || phase === "over") {
       begin();
     }
+  };
+  /** The right stick looks round the car and L1 looks behind; both let go like the mouse does. */
+  const padLook = (dt: number): void => {
+    const { x, y, behind } = pedals.look;
+    if (behind) {
+      views.azimuth = Math.PI;
+      return;
+    }
+    if (x === 0 && y === 0) {
+      return;
+    }
+    const follow = 1 - Math.exp(-dt / LOOK_EASE);
+    views.azimuth += (-x * 2.6 - views.azimuth) * follow;
+    views.elevation += (THREE.MathUtils.clamp(-y * 0.8, -0.5, 1.2) - views.elevation) * follow;
   };
   addEventListener("keydown", (event) => {
     if (event.repeat) {
@@ -601,6 +624,8 @@ async function main(): Promise<void> {
     const dt = Math.min(interval / 1000, 0.1);
     stage.judge(interval);
     requestAnimationFrame(frame);
+    pedals.poll();
+    padLook(dt);
     const car = carNow;
     if (changing) {
       // The old car on the new land is nobody's business.

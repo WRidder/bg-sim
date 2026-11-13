@@ -114,6 +114,7 @@ def _write_starts(game: str, out) -> None:
 F16_XCG = 0.35
 # (label, ft/s, ft)
 F16_STARTS = [
+    ("Cruise 360 kt, 10 000 ft, 25 % throttle", 700.0, 10000.0),   # 362 KCAS; trims at 0.249
     ("Cruise 500 ft/s, 10 000 ft", 500.0, 10000.0),
     ("Slow 300 ft/s, 10 000 ft", 300.0, 10000.0),
     ("Fast 700 ft/s, 5 000 ft", 700.0, 5000.0),

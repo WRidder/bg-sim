@@ -61,7 +61,7 @@ describe("the flight", () => {
 describe("the title screen's flight", () => {
   it("is a calm orbit: shallow banks, no rocking, clear of the ground", async () => {
     const orbit = { north: 6000, east: 1500, radius: 30000, alt: 1500 };
-    const flight = await Flight.create(ground, starts[2] as Start);
+    const flight = await Flight.create(ground, starts[3] as Start);
     flight.frame = { north: orbit.north, east: orbit.east - orbit.radius, heading: 0 };
     flight.reset();
     let bank = 0;
@@ -90,7 +90,7 @@ describe("the title screen's flight", () => {
 
 describe("the gate run", () => {
   it("can be flown from its start without touching the ground", async () => {
-    const flight = await Flight.create(ground, starts[2] as Start);
+    const flight = await Flight.create(ground, starts[3] as Start);
     const { run } = flight;
     run.start(gateCourse(ground));
     const report: string[] = [];

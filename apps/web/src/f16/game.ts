@@ -8,7 +8,7 @@ import { JetVoice } from "../engine/audio";
 import { Rig, VIEWS } from "../engine/camera";
 import { Burst, Trail } from "../engine/effects";
 import { attitude } from "../engine/frames";
-import { ACE_BUTTONS, ACE_PAD, Controls, PAD, PadState } from "../engine/input";
+import { ACE_BUTTONS, ACE_PAD, Controls, LOOK_EASE, PAD, PadState } from "../engine/input";
 import { coastOutline, type ScreenPoint } from "../engine/overlay";
 import { Stage } from "../engine/stage";
 import { SideBar } from "../engine/side";
@@ -35,7 +35,7 @@ import starts from "./starts.json";
 const q = new URLSearchParams(location.search);
 const DEMO = q.has("demo");
 /** Fast and fairly low, with the first gate straight ahead. */
-const GATE_START = starts[2] as Start;
+const GATE_START = starts[3] as Start;
 const STARTS: readonly Start[] = [...(starts as Start[]), RUNWAY_START, FINAL_START];
 /** What a good landing is in a fast jet: firm, on the mains, with the nose well up. */
 const JET: Marks = { sink: [100, 600], pitch: 9 };
@@ -329,7 +329,7 @@ async function main(): Promise<void> {
     if (x === 0 && y === 0) {
       return;
     }
-    const follow = Math.min(1, dt * 10);
+    const follow = 1 - Math.exp(-dt / LOOK_EASE);
     rig.azimuth += (-x * 2.8 - rig.azimuth) * follow;
     rig.elevation += (THREE.MathUtils.clamp(-y * 1.1, -1.3, 1.3) - rig.elevation) * follow;
   };
@@ -471,6 +471,10 @@ async function main(): Promise<void> {
         fighter.stations[0].visible = weapons.slotFree(0);
         fighter.stations[1].visible = weapons.slotFree(1);
         for (const missile of weapons.live) {
+          if (missile.justDestroyed) {
+            missile.justDestroyed = false;
+            burst.fire(missile.worldPosition(tip));
+          }
           if (missile.justHit) {
             missile.justHit = false;
             const target = targets.byId(missile.targetId);

@@ -2,11 +2,14 @@
  * The pilot's hands. Two hands on a keyboard fit a helicopter better than one: the arrows are the
  * cyclic, W and S the lever, A and D the pedals. Unlike the fixed-wing games the lever needs its own
  * memory, and the cyclic a trim: a real one stays where it is left, so Space moves the centre the
- * sticks spring back to. A gamepad's left stick is the cyclic, the right stick the pedals and lever,
- * the triggers the lever too. Per control the input touched last wins, as in the other games.
+ * sticks spring back to. A gamepad is laid out as the aeroplanes' are, which is also how console
+ * games fly a helicopter: the left stick is the cyclic, the triggers move the lever (right up, left
+ * down), the bumpers are the pedals and the right stick looks round. A device without the browser's
+ * standard mapping (a flight stick) keeps its twist for the pedals and its fourth axis for the lever.
+ * Per control the input touched last wins, as in the other games.
  */
 
-import { shape } from "../engine/input";
+import { PAD, shape } from "../engine/input";
 import type { Sticks } from "./pilot";
 
 const KEYS = {
@@ -40,6 +43,10 @@ export class Controls {
   private readonly usingPad = { fore: false, side: false, pedals: false, lift: false };
   private readonly pad = { fore: 0, side: 0, pedals: 0, lift: 0 };
   private padPressed = new Set<number>();
+  /** The bumpers of a standard pad: they work the pedals as held keys do. */
+  private bumpers = { left: false, right: false };
+  /** A standard pad's right stick, -1..1 each way: the camera's. */
+  readonly look = { x: 0, y: 0 };
   /** Called as a pad's button goes down. */
   onButton: (button: number) => void = () => {};
 
@@ -59,7 +66,7 @@ export class Controls {
   }
 
   get braking(): boolean {
-    return this.held.has("Space") || this.padPressed.has(0);
+    return this.held.has("Space") || this.padPressed.has(PAD.A);
   }
 
   private axis(value: number, minus: boolean, plus: boolean, dt: number): number {
@@ -89,17 +96,36 @@ export class Controls {
     this.board.fore = this.board.side = this.board.pedals = this.board.lift = 0;
   }
 
+  private hasPad = false;
+
+  /** Reads the pad, once a frame in every phase: its buttons work in the menus too. */
+  poll(): void {
+    this.hasPad = this.readPad();
+  }
+
   private readPad(): boolean {
     const pad = (navigator.getGamepads?.() ?? []).find((p) => p);
+    this.bumpers.left = this.bumpers.right = false;
+    this.look.x = this.look.y = 0;
     if (!pad || pad.axes.length < 2) {
       return false;
     }
     this.deviceName = pad.id;
+    const standard = pad.mapping === "standard";
     this.pad.side = shape(pad.axes[0], 0.08, 0.35);
     this.pad.fore = shape(-pad.axes[1], 0.08, 0.35);
-    this.pad.pedals = pad.axes.length > 2 ? shape(pad.axes[2], 0.1, 0.3) : 0;
-    const triggers = (pad.buttons[7]?.value ?? 0) - (pad.buttons[6]?.value ?? 0);
-    this.pad.lift = Math.abs(triggers) > 0.05 ? triggers : pad.axes.length > 3 ? shape(-pad.axes[3], 0.1, 0.3) : 0;
+    const triggers = (pad.buttons[PAD.RT]?.value ?? 0) - (pad.buttons[PAD.LT]?.value ?? 0);
+    if (standard) {
+      this.pad.pedals = 0;
+      this.pad.lift = Math.abs(triggers) > 0.05 ? triggers : 0;
+      this.bumpers.left = pad.buttons[PAD.LB]?.pressed ?? false;
+      this.bumpers.right = pad.buttons[PAD.RB]?.pressed ?? false;
+      this.look.x = shape(pad.axes[2] ?? 0, 0.12, 0);
+      this.look.y = shape(pad.axes[3] ?? 0, 0.12, 0);
+    } else {
+      this.pad.pedals = pad.axes.length > 2 ? shape(pad.axes[2], 0.1, 0.3) : 0;
+      this.pad.lift = Math.abs(triggers) > 0.05 ? triggers : pad.axes.length > 3 ? shape(-pad.axes[3], 0.1, 0.3) : 0;
+    }
     const down = new Set<number>();
     pad.buttons.forEach((button, i) => {
       if (button.pressed) {
@@ -118,16 +144,19 @@ export class Controls {
     const board = this.board;
     board.fore = this.axis(board.fore, this.any(k.aft), this.any(k.fore), dt);
     board.side = this.axis(board.side, this.any(k.left), this.any(k.right), dt);
-    board.pedals = this.axis(board.pedals, this.any(k.yawLeft), this.any(k.yawRight), dt);
+    // `poll` has read the pad: its bumpers are pedal keys.
+    const hasPad = this.hasPad;
+    const yawLeft = this.any(k.yawLeft) || this.bumpers.left;
+    const yawRight = this.any(k.yawRight) || this.bumpers.right;
+    board.pedals = this.axis(board.pedals, yawLeft, yawRight, dt);
     // The lever's key is on or off: a ramp would only delay it.
     board.lift = (this.any(k.up) ? 1 : 0) - (this.any(k.down) ? 1 : 0);
     const pressed = {
       fore: this.any(k.fore) || this.any(k.aft),
       side: this.any(k.left) || this.any(k.right),
-      pedals: this.any(k.yawLeft) || this.any(k.yawRight),
+      pedals: yawLeft || yawRight,
       lift: this.any(k.up) || this.any(k.down),
     };
-    const hasPad = this.readPad();
     for (const control of ["fore", "side", "pedals", "lift"] as const) {
       if (hasPad && pressed[control]) {
         this.usingPad[control] = false;
